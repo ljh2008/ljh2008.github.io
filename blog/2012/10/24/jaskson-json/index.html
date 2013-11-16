@@ -1,0 +1,332 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>使用jackson对json的操作 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;jackson是一个开源的处理json的工具包，spring mvc中的json类型响应就是用这个东西实现的，性能比较优异。我以前最早的项目用的是json-lib，后来因效率问题改为gson，现在看来可以换成jackson了。 &emsp;&emsp; &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2012/10/24/jaskson-json">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">使用jackson对json的操作</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-24T15:18:00+08:00" pubdate data-updated="true">2012年10月24日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;jackson是一个开源的处理json的工具包，spring mvc中的json类型响应就是用这个东西实现的，性能比较优异。我以前最早的项目用的是json-lib，后来因效率问题改为gson，现在看来可以换成jackson了。</p>
+
+<p>&emsp;&emsp;下面给大家讲讲jackson的使用：</p>
+
+<p>&emsp;&emsp;<strong>一、简单对象转为json</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">StringWriter</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringWriter</span><span class="o">();</span>
+</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">result</span><span class="o">,</span> <span class="err">【这个参数是你要转换的东西，对象或集合都是可以的】</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，如果你不想用StringWriter的话，你可以直接用om.writeValueAsString(obj)直接输出字符串。</p>
+
+<p>&emsp;&emsp;<strong>二、日期的处理</strong></p>
+
+<p>&emsp;&emsp;默认情况下，jackson会把日期处理为毫秒，如果你想处理成字符串，可以：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">setDateFormat</span><span class="o">(</span><span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>三、排除不想要的属性</strong></p>
+
+<p>&emsp;&emsp;这个主要是用来解决对象间循环关联的情况的，使用如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SimpleBeanPropertyFilter</span> <span class="n">filter</span> <span class="o">=</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">serializeAllExcept</span><span class="o">(</span><span class="s">&quot;不要的属性名&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">SimpleFilterProvider</span> <span class="n">fp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">();</span>
+</span><span class='line'><span class="n">fp</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;user_json&quot;</span><span class="o">,</span> <span class="n">filter</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">fp</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，这个设置将对全局的ObjectMapper都起作用，我们也可以使用下面这种：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">writer</span><span class="o">(</span><span class="n">fp</span><span class="o">).</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">obj</span><span class="o">)</span><span class="err">；</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;每次使用前再设置，这个也是全局作用域。</p>
+
+<p>&emsp;&emsp;如果仅仅想要自己需要的属性，如下写法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span> <span class="s">&quot;title&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;注意：addFilter的第一个参数，要用注解指写，比如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@JsonFilter</span><span class="o">(</span><span class="s">&quot;user_json&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">User</span> <span class="o">{}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果持久层使用的是hibernate，需要将hibernateLazyInitializer属性也排除。</p>
+
+<p>&emsp;&emsp;<strong>四、反序列化</strong></p>
+
+<p>&emsp;&emsp;反序列化用的没有序列化多。我们先看普通对象的处理：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">json_str</span><span class="o">,</span> <span class="n">User</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;集合对象，处理方式不同，请看list的处理方式：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span> <span class="n">uss</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">json_str</span><span class="o">,</span> <span class="k">new</span> <span class="n">TypeReference</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;&gt;()</span> <span class="o">{});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>五、图片等二进制类型的json转换</strong></p>
+
+<p>&emsp;&emsp;这个不用担心，jackson可直接完成转换，前提是：</p>
+
+<p>&emsp;&emsp;你要用byte[]类型表示二进制数据，比如：private byte[] photo ;</p>
+
+<p>&emsp;&emsp;当然，上面的的代码都是在线手工操作下的示例，jackson也是支持注解的，比如：排除属性，日期格式的定义等，都可以用注解的方式去实现，请大家自己so一下吧。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-24T15:18:00+08:00" pubdate data-updated="true">2012年10月24日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/09/21/jvm-error/" title="上一篇文章: PermGen space溢出解决方法">&laquo;上一篇:&nbsp;&nbsp;PermGen space溢出解决方法</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/10/30/poi-excel/" title="下一篇文章: excel文件导出代码">下一篇: &nbsp;&nbsp;excel文件导出代码 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

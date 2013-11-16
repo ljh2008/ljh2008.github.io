@@ -1,0 +1,1048 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;“高耦合、低内聚”是评判一个系统优劣的标准之一，作为一名合格的程序员，如何在实际的开发过程中让系统向这个标准靠拢，是我们要思考的问题。在系统的设计中“开闭原则”非常的重要，它是OOD的第一原则，在这个原则的实现中，我们一般会将系统中变化的部分进行抽象， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/page/5">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/07/04/config/">谈解耦合在项目中的配置方式</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-07-04T15:18:00+08:00" pubdate data-updated="true">2011年07月04日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;“高耦合、低内聚”是评判一个系统优劣的标准之一，作为一名合格的程序员，如何在实际的开发过程中让系统向这个标准靠拢，是我们要思考的问题。在系统的设计中“开闭原则”非常的重要，它是OOD的第一原则，在这个原则的实现中，我们一般会将系统中变化的部分进行抽象，将不变的东西与可能变化的东西分离开，这样，在不久的将来，系统发生变化，这个变化将不会对系统中设计为不变部分产生影响，系统相对来说是稳定的。</p>
+
+<p>&emsp;&emsp;话又说回来，“变化”与“不变”只是相对的，不能“刻舟求剑”，也不能“杞人忧天”，“变化”与“不变”的把握，在需求分析和设计上都要依据项目经验来找到一个“平衡点”。</p>
+
+<h2>一、设计上的考虑</h2>
+
+<p>&emsp;&emsp;在设计上，我们将变化的部分会抽取出来放到接口（或抽象类）中，由具体的实现类负责实现，这样做最直接的好处是：软件系统中各个模块、层次之间不再依赖于具体而是依赖抽象，而抽象是稳定的。另一个原因是：代码实现会从AOP中获益（想想代理模式中必须要抽象接口哦），我曾经见过有些设计人员认为DAO（或 Service）的实现在某个特定项目中不再改变而将DAO（或 Service）的接口全部省去，让层次间直接依赖于实现类，这种方式不值得推荐，因为他忽略了AOP在项目中的作用。</p>
+
+<h2>二、代码实现上的考虑</h2>
+
+<p>&emsp;&emsp;在设计上做到了模块、层次间的解耦合，但是代码实现上往往会和具体实现产生依赖。比如代码：IUserService userService = new UserServiceImpl()将在代码级别产生和具体实现的依赖，而且是编译期依赖，如果我们更换实现类就得重新编译代码，当然，这种依赖对eclipse这种保存时即时编译的工具来说产生的影响可能不大，但对于c、c++这些语言来说可能非常的“恼火”（我还记得当年Delphi的“闪电编译”是如何捍卫Borland在编程领域的地位）。因此，我们希望在代码级别，最好不要产生对具体实现类的依赖。做法倒是很简单，我们把这种依赖关系放到外部的元数类型文件中描述，在程序运行时由第三方（一般是容器）读取配置信息并依据这些信息来维护、生成正确的对象依赖关系，这就是IOC/DI，有效果地解除了编译期依赖（耦合）问题。</p>
+
+<h2>三、配置方式</h2>
+
+<p><strong>1、xml文件</strong></p>
+
+<p>&emsp;&emsp;将依赖信息写到第三方的配置文件中，xml文件肯定是首选。j2ee开源框架通常都是把配置文件写到 xml文件中，当依赖关系发生改变时，我们要做的仅仅是修改配置文件，这种方式已经被广大开发人员接受。</p>
+
+<p>&emsp;&emsp;但经过众多的项目实践我们发现，当某项需求变更发生时，我们要修改代码，但往往要修改多处代码，比如在SSH项目中：一个需求更，带来领域对象的改变，紧接着是hbm文件的修改，再下来是业务代码修改，可能又会对spring配置文件中bean配置的修改，再接着对action代码修改，对struts的映射文件修改，又会引发action在spring中配置信息的修改。从这个修改“链式反应”中可以看出，项目在开发和维护期，程序员会反复对实现代码、配置文件进行修改，维护二者一致性以满足项目业务需求。“解耦合”是做到了，但程序员工作量没有减少，生产率并没有得到提高。</p>
+
+<p><strong>2、注解</strong></p>
+
+<p>&emsp;&emsp;以xml（properties）配置方式已遭到程序员的“反感”，相反，Anotation注解方式逐渐变得流行起来。Anotation方式是将配置信息直接写入源代码中，在编译时由编译器将这些信息写入class字节码文件（当然也可以选择不编译到class中），系统在运行时，框架通过反射机制获得配置信息，进行相应的行为控制。</p>
+
+<p>&emsp;&emsp;我们可以看到，无论是xml配置方式还是Anotation配置方式，对于框架系统而言，只是配置信息存放的位置不一样而已，只要读到这些配置信息，框架的后续操作都是相同的。但对于程序员来说就很不一样了：首先是项目开发与维护时，只需要在一个地方进行修改（即源代码中），其次，配置的信息量至少减少了一半（这点你可以思考一下：注解在源代码中的位置是不是已经代表了注解所作用的对象）。</p>
+
+<p>&emsp;&emsp;可能有人要提出反对意见了：“需求更改了，要改配置，还得修改源代码中的注解，还得重新编译，我们似乎又回到了以前的老路上”。确实如此，不过我们再想想，难道把配置信息写到xml文件中，需求改变了，你的项目不重新编译，系统不重新启动？你真的见过能够提供7*24小时不间断服务的系统？恐怕中国最赚钱的网游都还要在固定时段停机维护！</p>
+
+<p>&emsp;&emsp;当然，注解用得过头了会“适得其反”，带来降低源代码可读性的弊端，我们可以看到mybatis中加入了注解功能，在dao源代码中通过注解嵌入大量的sql语句，看起来让人心里“发毛”（注：mybatis是ibatis的升级版本，核心类名和api都改了，但功能并没见得增强，最新版本spring都不支持mybatis，看来这种升级会流失用户的。另，想了解ibtaits的，可以查看我的《<a href="/blog/2011/06/30/ibatis/">ibatis使用荟萃</a>》一文）。</p>
+
+<p>&emsp;&emsp;也许，生活就像走钢丝，我们不停的在寻找一个平衡点，重心时而偏左时而偏右，但我们都在会回归平衡，又走向下一个不平衡。前几年网页游戏逐渐受到网民的欢迎，这就是人们厌恶了庞大的客户端游戏的安装、更新之苦，网页游戏流行过为，大家又发现网页游戏的效果又大打折扣，现在，大家似乎又要回归到大客户端游戏中去了。项目开发也是如此，“开发效率”是不断追求的平衡点，项目配置方式的变化如此，架构、技术的选择也如此。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/07/02/wap/">WAP系统上线测试中，总结一下</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-07-02T15:18:00+08:00" pubdate data-updated="true">2011年07月02日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;《wap精准招生系统》前端部分用古老的wap展示，后端管理功能用j2ee技术完成，我们在项目开发中遇到了一些问题，现总结一下。</p>
+
+<p>&emsp;&emsp;一、客户端如何访问wap系统
+很显然是通过wap浏览器，如果用手机来访问，一种是手机客户端直接访问wap网站，另一种是通过服务提供商代理访问wap网站后返回wap页面内容，这两种方式对用户来说几乎感觉不到区别，对网站服务器来说，第二种方式可能会获得除ip地址以外的更多信息，比如：比如手机号码等。</p>
+
+<p>&emsp;&emsp;二、wap开发工具</p>
+
+<p>&emsp;&emsp;wap页面编写试了很多工具，最后发现WapTor不错，简洁易用，可即时预览界面，看了一下该软件的about，居然是2000年时出的，距今已11年，可见wap技术的年份。
+wap的主要语言是wml，当然wap浏览器也可以运行简单的脚本文件WMLScript，大家可以到w3school查看wml的语法。</p>
+
+<p>&emsp;&emsp;书写wml代码时要注意：</p>
+
+<p>&emsp;&emsp;1、 某些标记，有些wap浏览器中不支持，比如：table；
+&emsp;&emsp;2、 空格不能用&amp;nbsp，要用 表示；
+&emsp;&emsp;3、 页面提交代码和html不同，下面是一段向服务器提交数据的演示代码：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;anchor title="提交"&gt;提交 &lt;go method="post" href="&lt;%=path%&gt;/register.action" accept-charset="utf-8"&gt;
+</span><span class='line'>&lt;postfield name="name" value="$name" /&gt;
+</span><span class='line'>&lt;/go&gt; &lt;/anchor&gt;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;注意其中的postfield字段中的name属性是后台接收参数时的名称，value要和wap页面中的输入元素名称对应；</p>
+
+<p>&emsp;&emsp;4、 服务器返的的页面实际上是xml文件，这种格式可以严格规范页面的内容；</p>
+
+<p>&emsp;&emsp;5、 wml很简洁，是html的一个子集，但又有所扩展。</p>
+
+<p><strong>三、服务器端响应</strong></p>
+
+<p>&emsp;&emsp;服务器端在给客户响应时，需设置头信息为“text/vnd.wap.wml”，并且还要注意编码集格式问题。比如 java后台，可以写上：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">response</span><span class="o">.</span><span class="na">setContentType</span><span class="o">(</span><span class="s">&quot;text/vnd.wap.wml&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>四、服务器上部署出现的问题</strong></p>
+
+<p>&emsp;&emsp;1、 由于没太注意将本项目tomcat的shutdown端口号及服务器中另一个项目的相同，致使在调试过程中关闭本项目服务器，造成另一个项目tomcat关闭，很长时间都没有被发现（请大家以后在配置集群的时候，一定要注意这些细节）。</p>
+
+<p>&emsp;&emsp;2、 后台管理部分有一个jfreechat图形报表（用于直观显示每日的访问量），部署后发现图形报表中的中文全部显示为“方格”，经查明，原因是liunx 服务器中的jdk缺少中文字体，解决办法如下：</p>
+
+<p>&emsp;&emsp;将windows下的字体fonts\simsun.ttf文件上传至 linux服务器中的jre/lib/fonts中，修改服务器上/jre/lib/fonts/fonts.dir文件，在文件最后加一行：simsun.ttc -SungtiL GB-medium-r-normal–0-0-0-0-c-0-gb2312.1988-0，并将该文件第一行的数字+1，这个数字表示jre中总的字体数。</p>
+
+<p>&emsp;&emsp;jfreechat中生成图表部分的代码也要做相应的修改，下面贴出一段演示代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//配置字体  </span>
+</span><span class='line'><span class="n">Font</span> <span class="n">xfont</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Font</span><span class="o">(</span><span class="s">&quot;SimSun&quot;</span><span class="o">,</span><span class="n">Font</span><span class="o">.</span><span class="na">PLAIN</span><span class="o">,</span><span class="mi">15</span><span class="o">)</span> <span class="o">;</span><span class="c1">// X轴  </span>
+</span><span class='line'><span class="c1">//其它代码略去……</span>
+</span><span class='line'><span class="n">XYPlot</span> <span class="n">plot</span> <span class="o">=</span> <span class="n">chart</span><span class="o">.</span><span class="na">getXYPlot</span><span class="o">();</span><span class="c1">// 图形的绘制结构对象 </span>
+</span><span class='line'><span class="n">ValueAxis</span> <span class="n">va</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="na">getDomainAxis</span><span class="o">();</span>
+</span><span class='line'><span class="n">va</span><span class="o">.</span><span class="na">setTickLabelFont</span><span class="o">(</span><span class="n">xfont</span><span class="o">);</span>
+</span><span class='line'><span class="n">va</span><span class="o">.</span><span class="na">setLabelFont</span><span class="o">(</span><span class="n">xfont</span><span class="o">);</span>
+</span><span class='line'><span class="c1">//其它代码略去……</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>五、客户端测试</strong></p>
+
+<p>&emsp;&emsp;wap系统上线测试时，我们发现在NOKIA赛班中显示正常，但在android和iphone平台上显示为乱码，后来发现是有些页面没有加response.setCharacterEncoding(“utf-8″)造成，当然也要注意jsp文件自身的存盘格式为utf-8。</p>
+
+<p>&emsp;&emsp;<strong>六、开发阶段的测试工具</strong></p>
+
+<p>&emsp;&emsp;开发阶段可以安装firefox wml插件，或者直接用Opera浏览器，因为Opera内置wml支持。IE 下的wml 浏览器下载了好几个都不能用，几乎都是些嵌广告的垃圾软件。
+当项目布署到服务器上后，可以用手机去访问，也可以在网上找到上些在线wap模拟器，方便调整wap页面的显示效果。</p>
+
+<p>&emsp;&emsp;最后一个问题，wap系统一定要检测访问ip是来息普通电脑还是手机客户端，如果发现是电脑系统，我们将拒绝提供服务。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/06/30/ibatis/">Ibatis使用荟萃</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-30T15:18:00+08:00" pubdate data-updated="true">2011年06月30日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;ibatis相对hibernate来说，是一个半自动化的ORM映射框架，它是在jdbc的基础上进行了有限的封装，网上有很多关于ibatis与hibernate的讨论、争议，我在这就不再去论述二者之间的优劣，下面，我从程序员开发的角度来看看ibatis的使用。</p>
+
+<p>&emsp;&emsp;ibatis已经改名至mybatis，mybaits在动态sql配置、N+1查询方面有比大改进，其它方面改进不多，我觉得ibatis的老用户没有必要升级至mybaits，而且spring尚不支持mybaits（目前mybatis不得不自己提供spring插件）。</p>
+
+<p>&emsp;&emsp;<strong>一、开发sql日志输出</strong></p>
+
+<p>&emsp;&emsp;ibatis中配置日志输入，需要在log4j的properties文件中进行配置。
+开发阶段我们将下面两个参数在日志文件中设置为 debug，即可看到详细的sql语句：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>log4j.logger.java.sql.Connection=DEBUG
+</span><span class='line'>log4j.logger.java.sql.Statement=DEBUG</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果想看到参数和结果集中的具体数据，可将：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>log4j.logger.java.sql.PreparedStatement=DEBUG
+</span><span class='line'>log4j.logger.java.sql.ResultSet=DEBUG</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在日志输出上，ibatis没有hibernate来得方便。</p>
+
+<p>&emsp;&emsp;<strong>二、命名空间要启动</strong></p>
+
+<p>&emsp;&emsp;在ibatis的配置文件中，我们一般都会把useStatementNamespaces=”true”（默认是没有启动的），对于大中型项目一定得这么做，大项目中sql语句块(statement)的重名将不可避免（注：mybatis中已经强制启动）。</p>
+
+<p>&emsp;&emsp;<strong>三、关系映射</strong></p>
+
+<p>&emsp;&emsp;对于领域对象来说关系映射是重点，这也是每一个ORM框架需要解决的问题，我们一起来看ibatis中的关系映射示例：</p>
+
+<p>&emsp;&emsp;1、<strong> 一对一关系</strong>（配置片段为：老公和老婆）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;typeAlias</span> <span class="na">alias=</span><span class="s">&quot;Husbnad&quot;</span> <span class="na">type=</span><span class="s">&quot;com.my.domain.one2one.Husband&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;typeAlias</span> <span class="na">alias=</span><span class="s">&quot;Wife&quot;</span> <span class="na">type=</span><span class="s">&quot;com.my.domain.one2one.Wife&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;HusbandResult&quot;</span> <span class="na">class=</span><span class="s">&quot;Husbnad&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;age&quot;</span> <span class="na">column=</span><span class="s">&quot;f_age&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;wife&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">select=</span><span class="s">&quot;one2one.selectWifeByHusbandId&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;WifeResult&quot;</span> <span class="na">class=</span><span class="s">&quot;Wife&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_husband_id&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;age&quot;</span> <span class="na">column=</span><span class="s">&quot;f_age&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;husband&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_husband_id&quot;</span> <span class="na">select=</span><span class="s">&quot;one2one.selectHusbandByWifeId&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>
+</span><span class='line'>   <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectHusbandById&quot;</span> <span class="na">parameterClass=</span><span class="s">&quot;int&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;HusbandResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    select
+</span><span class='line'>     *
+</span><span class='line'>    from t_husband
+</span><span class='line'>    where pk_id = #id#
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectHusbandByWifeId&quot;</span> <span class="na">parameterClass=</span><span class="s">&quot;int&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;HusbandResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    select
+</span><span class='line'>     *
+</span><span class='line'>    from t_husband
+</span><span class='line'>    where pk_id = #id#
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectWifeByHusbandId&quot;</span> <span class="na">parameterClass=</span><span class="s">&quot;int&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;WifeResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    select
+</span><span class='line'>     *
+</span><span class='line'>    from t_wife
+</span><span class='line'>    where pk_husband_id = #id#
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;2、<strong> 一对多关系</strong>（配置片段为：客户和订单）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'> <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;CustomerResult&quot;</span> <span class="na">class=</span><span class="s">&quot;Customer&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;phone&quot;</span> <span class="na">column=</span><span class="s">&quot;f_phone&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>   <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;orders&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">select=</span><span class="s">&quot;one2many.selectOrderByCustomerId&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectOrderByCustomerId&quot;</span> <span class="na">parameterClass=</span><span class="s">&quot;int&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;OrderResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    select
+</span><span class='line'>      *
+</span><span class='line'>    from t_order
+</span><span class='line'>    where fk_customer_id = #customerId#
+</span><span class='line'><span class="nt">&lt;/select&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;3、<strong>多对多</strong>（配置片段为用户、用户组关系）：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;typeAlias</span> <span class="na">alias=</span><span class="s">&quot;Group&quot;</span> <span class="na">type=</span><span class="s">&quot;com.my.domain.many2many.Group&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;typeAlias</span> <span class="na">alias=</span><span class="s">&quot;User&quot;</span> <span class="na">type=</span><span class="s">&quot;com.my.domain.many2many.User&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;GroupResult&quot;</span> <span class="na">class=</span><span class="s">&quot;Group&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;groupName&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;users&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">select=</span><span class="s">&quot;many2many.getUsersByGroupId&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;UserResult&quot;</span> <span class="na">class=</span><span class="s">&quot;User&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;userName&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;groups&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">select=</span><span class="s">&quot;many2many.getGroupsByUserId&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>
+</span><span class='line'>   <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectGroupById&quot;</span> <span class="na">parameterClass=</span><span class="s">&quot;int&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;GroupResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    select *
+</span><span class='line'>    from t_group where pk_id = #id#
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span><span class='line'>
+</span><span class='line'>   <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;getUsersByGroupId&quot;</span> <span class="na">parameterClass=</span><span class="s">&quot;int&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;UserResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    select *
+</span><span class='line'>    from t_user u left join  t_user_group ug
+</span><span class='line'>    on u.pk_id = ug.fk_user_id where ug.fk_group_id =  #gid#
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectUserById&quot;</span> <span class="na">parameterClass=</span><span class="s">&quot;int&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;UserResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    select *
+</span><span class='line'>    from t_user where pk_id = #id#
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span><span class='line'>
+</span><span class='line'>   <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;getGroupsByUserId&quot;</span> <span class="na">parameterClass=</span><span class="s">&quot;int&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;GroupResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    select *
+</span><span class='line'>    from t_group g left join  t_user_group ug
+</span><span class='line'>    on g.pk_id = ug.fk_group_id where ug.fk_user_id =  #uid#
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;4、 <strong>继承映射</strong>（配置片段为动物父类，猫、狗子类）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>  <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;AnimalResult&quot;</span> <span class="na">class=</span><span class="s">&quot;Animal&quot;</span> <span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;discriminator</span> <span class="na">column=</span><span class="s">&quot;f_type&quot;</span> <span class="na">javaType=</span><span class="s">&quot;int&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;subMap</span> <span class="na">resultMap=</span><span class="s">&quot;CatResult&quot;</span> <span class="na">value=</span><span class="s">&quot;1&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;subMap</span> <span class="na">resultMap=</span><span class="s">&quot;DogResult&quot;</span> <span class="na">value=</span><span class="s">&quot;2&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/discriminator&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;DogResult&quot;</span> <span class="na">class=</span><span class="s">&quot;Dog&quot;</span> <span class="na">extends=</span><span class="s">&quot;AnimalResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;boneCount&quot;</span> <span class="na">column=</span><span class="s">&quot;f_bone&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>   <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;CatResult&quot;</span> <span class="na">class=</span><span class="s">&quot;Cat&quot;</span> <span class="na">extends=</span><span class="s">&quot;AnimalResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;mouseCount&quot;</span> <span class="na">column=</span><span class="s">&quot;f_mouse&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectAnimalById&quot;</span> <span class="na">parameterClass=</span><span class="s">&quot;int&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;AnimalResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  select * from t_animal
+</span><span class='line'>  where pk_id = #id#
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;selectAnimalById会根据f_type（1：猫、2：狗）的取值正确实例化子类类型。</p>
+
+<p>&emsp;&emsp;5、<strong>多对一关系</strong>，自关联关系映射可以参照上面的写出，我不再贴出示例代码。</p>
+
+<p>&emsp;&emsp;<strong>四、解决N+1查询问题</strong></p>
+
+<p>&emsp;&emsp;ibatis中的一对一、一对多映射配置代码都存在查询N+1问题，何为N+1？比如一对一关系中：有10条老公数据，在执行selectAllHusabnds时，将会产生11条sql，一条是取husbnad集合的，另10条是加载husbnad中的wife对象的。</p>
+
+<p>&emsp;&emsp;如果在业务中取到husbnad后不使用其中的wife对象，将造成不必要的加载（当然可以用延迟加载解决），如果用到wife系统将额外产生10条查询sql，在系统性能上也存在问题，因此，我们来看看ibatis 中如何解决这个问题。</p>
+
+<p>&emsp;&emsp;1、<strong>一对一的N+1问题</strong>，可以用下面的配置代码解决：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;HusbandResult&quot;</span> <span class="na">class=</span><span class="s">&quot;Husbnad&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;age&quot;</span> <span class="na">column=</span><span class="s">&quot;f_age&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;wife.id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_husband_id&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;wife.name&quot;</span> <span class="na">column=</span><span class="s">&quot;w_name&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;wife.age&quot;</span> <span class="na">column=</span><span class="s">&quot;w_age&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectHusbandById&quot;</span> <span class="na">parameterClass=</span><span class="s">&quot;int&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;HusbandResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    select
+</span><span class='line'>     *, w.f_name as w_name, w.f_age as w_age
+</span><span class='line'>    from t_husband  h, t_wife  w
+</span><span class='line'>    where h.pk_id = w.pk_husband_id and h.pk_id = #id#
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;我们把两张表关联查询后产生的结果集映射到resultMap中，减少了sql的查询，从而提高了系统性能。</p>
+
+<p>&emsp;&emsp;2<strong>、一对多N+1</strong>也可采用类似的方法实现。</p>
+
+<p>&emsp;&emsp;比如，客户和订单一对多关系的N+1方案的配置代码如下，使用了groupBy来指定按什么属性（注意是属性名，而非列名）分组：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>  <span class="nt">&lt;typeAlias</span> <span class="na">alias=</span><span class="s">&quot;Customer&quot;</span> <span class="na">type=</span><span class="s">&quot;com.my.domain.one2many.Customer&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;typeAlias</span> <span class="na">alias=</span><span class="s">&quot;Order&quot;</span> <span class="na">type=</span><span class="s">&quot;com.my.domain.one2many.Order&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;CustomerResult&quot;</span> <span class="na">class=</span><span class="s">&quot;Customer&quot;</span> <span class="na">groupBy=</span><span class="s">&quot;id&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;phone&quot;</span> <span class="na">column=</span><span class="s">&quot;f_phone&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;orders&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;one2many2.OrderResult&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'> <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;OrderResult&quot;</span> <span class="na">class=</span><span class="s">&quot;Order&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;orderID&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_o_id&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_o_name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;money&quot;</span> <span class="na">column=</span><span class="s">&quot;f_money&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectAllCustomers&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;one2many2.CustomerResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  select c.pk_id, c.f_name, c.f_phone,
+</span><span class='line'>  o.pk_id as pk_o_id, o.f_name as f_o_name, o.f_money
+</span><span class='line'>  from t_customer c
+</span><span class='line'>  left join t_order o
+</span><span class='line'>  on o.fk_customer_id = c.pk_id
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;3、<strong>多对多的N+1问题</strong>，可以通过下面的配置解决：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;typeAlias</span> <span class="na">alias=</span><span class="s">&quot;Group&quot;</span> <span class="na">type=</span><span class="s">&quot;com.my.domain.many2many.Group&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;typeAlias</span> <span class="na">alias=</span><span class="s">&quot;User&quot;</span> <span class="na">type=</span><span class="s">&quot;com.my.domain.many2many.User&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;GroupResult&quot;</span> <span class="na">class=</span><span class="s">&quot;Group&quot;</span> <span class="na">groupBy=</span><span class="s">&quot;id&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_g_id&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;groupName&quot;</span> <span class="na">column=</span><span class="s">&quot;f_g_name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;users&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_g_id&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;many2many.UserResult&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;resultMap</span> <span class="na">id=</span><span class="s">&quot;UserResult&quot;</span> <span class="na">class=</span><span class="s">&quot;User&quot;</span> <span class="na">groupBy=</span><span class="s">&quot;id&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_u_id&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;result</span> <span class="na">property=</span><span class="s">&quot;userName&quot;</span> <span class="na">column=</span><span class="s">&quot;f_u_name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/resultMap&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectAllGrups&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;many2many.GroupResult&quot;</span> <span class="nt">&gt;</span>
+</span><span class='line'> select g.pk_id as pk_g_id, g.f_name as f_g_name,
+</span><span class='line'>  u.pk_id as pk_u_id, u.f_name as f_u_name
+</span><span class='line'>  from t_group g
+</span><span class='line'>  left join t_user_group ug
+</span><span class='line'>  on ug.fk_group_id = g.pk_id
+</span><span class='line'>  left join  t_user u
+</span><span class='line'>  on ug.fk_user_id = u.pk_id
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;但是要注意的是，上面多对多配置代码中的resultMap并没有完整表达领域对象的关系，如果我们在UserResult中加入了resultMap=”many2many.GroupResult”，ibatis中将会出现死循环错误。如果要完整表达领域对象关系，还得在配置文件上想办法，比如：另外定义一个resultMap。
+ibatis在查询的N+1问题上需要程序员意识到这个问题并且进行手工配置，这点在mybatis中得到了解决，mybatis引入了collection配置节点。</p>
+
+<p>&emsp;&emsp;如果想立即加载而又不想出现N+1查询问题，就得用我在上面提出的一些配置办法。
+当然，前提是你得对sql比较熟悉才行，我写sql就是弱项，复杂sql研究研究也写得出来，但是写完来后会很快忘记，下次遇到同类型的sql我还是去“研究”，呵呵，我有点“烦”sql哦，复杂sql别找我！</p>
+
+<p>&emsp;&emsp;<strong>五、动态查询</strong></p>
+
+<p>&emsp;&emsp;动态查询可谓是ibatis的亮点，ibatis的实现方式也非常优雅，请看下面的配置片段：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectAllCustomers&quot;</span>  <span class="na">parameterClass=</span><span class="s">&quot;Customer&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;CustomerResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    select * from t_customer
+</span><span class='line'>    <span class="nt">&lt;dynamic</span> <span class="na">prepend=</span><span class="s">&quot;where&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;isNotEmpty</span> <span class="na">prepend=</span><span class="s">&quot;and&quot;</span> <span class="na">property=</span><span class="s">&quot;name&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          (f_name like #name#)
+</span><span class='line'>      <span class="nt">&lt;/isNotEmpty&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;isNotEmpty</span> <span class="na">prepend=</span><span class="s">&quot;and&quot;</span> <span class="na">property=</span><span class="s">&quot;phone&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          (f_phone like #phone#)
+</span><span class='line'>      <span class="nt">&lt;/isNotEmpty&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/dynamic&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;ibatis会根据传入对象中的条件，组合生成相应的查询语句，其实就是QBE，hibernate虽然也有类似功能，但比较弱，比如：对象中的多个复杂对象做为example的时hibernate无法解决。而mybaits在这一块更是改进很多，使用起来也更加的方便。</p>
+
+<p>&emsp;&emsp;<strong>六、延迟加载</strong></p>
+
+<p>&emsp;&emsp;延迟加载是所有ORM框架提高效率必用手段之一，ibatis中设置lazyLoadingEnabled=”true”，会延迟加载集合以及复杂对象类型（默认情况下就是延迟加载的，一般字节码增强也要打开，以进一步提高效率）。</p>
+
+<p>&emsp;&emsp;<strong>七、缓存的应用</strong></p>
+
+<p>&emsp;&emsp;从底层来看，java通过JDBC访问数据库应该是最高效的，任何ORM框架都没有直接通过底层操作来得快，因此，ORM提速的另一个途径就是使用缓存， ibatis可以使用多种缓存框架，而且配置灵活。我们用cacheModel节点定义一个缓存区域。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;cacheModel</span> <span class="na">type=</span><span class="s">&quot;MEMORY&quot;</span> <span class="na">id=</span><span class="s">&quot;your_cache_range_name&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;/cacheModel&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;某个sql statement 需要缓存结果时，只需用cacheModel属性指定缓存区域名称即可，例如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectDomainObjectById&quot;</span> <span class="na">parameterClass=</span><span class="s">&quot;someType&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;DomainObjectResult&quot;</span> <span class="na">cacheModel=</span><span class="s">&quot; your_cache_range_name &quot;</span><span class="nt">&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>八、自动化生成工具</strong></p>
+
+<p>&emsp;&emsp;1、abator插件</p>
+
+<p>&emsp;&emsp;你可以用abator for eclipse plugin来帮助你从表生成对象、xml映射代码、 CRUD的配置代码、DAO代码（还可选择生成spring集成后风格的DAO代码），abator的配置代码不再贴出，自己上网搜一下。</p>
+
+<p>&emsp;&emsp;另，abator生成的QBE代码可以研究一下，可用来解决多条件组合查询问题。</p>
+
+<p>&emsp;&emsp;2、mybaits generator工具</p>
+
+<p>&emsp;&emsp;此工具在命令行下运行，也需要预先编辑好配置文件，使用方法请google一下。</p>
+
+<p>&emsp;&emsp;自动化生成工具会为每个对象都生成相应的dao代码，但如果你的项目中使用的是通用dao的架构（请参阅我的《<a href="/blog/2010/11/01/p4/">四种持久层设计方案比较</a>》一文），ibatis技术框架也是适用的。</p>
+
+<p>&emsp;&emsp;<strong>九、项目中的决择</strong></p>
+
+<p>&emsp;&emsp;ibatis是一个“半自动化”的框架，使用起来自然没有“全自动化”的方便，也正是因为“半自动化”的原因，ibatis才拥有自己独特的适用场合和表演舞台。</p>
+
+<p>&emsp;&emsp;在项目中进行底层技术选型时，我认为有存在下面的因素可优先选择ibatis：在遗留系统现在数据基础上进行开发；公司开发人员非常熟悉且喜欢写sql （有些老程序员更习惯以数据库表为中心的开发模式）；项目的其它非功能性需求。除些之外，请选择更加OO的ＯＲＭ映射框架。</p>
+
+<p>&emsp;&emsp;我曾经看过好几个公司ibatis开发的项目，对象和表结构都是一一对应（更有甚者把表外键都建成了对象属性），对象关系几乎不存在，也就没有了领域建模的概念。从我上面写的一些配置代码也可以看出，ibatis在处理一对一、一对多、多对多查询（主要是N+1）上都这么复杂，更不用说一对一、一对多、多对多的增、删、改操作了（请想想hibernate中的cascade，inverse带来便捷），也就是说，对象之间的所有关系要程序员手工书写sql去维护，这对于增、删、改操作还是非常麻烦的，一些级联操作还得在业务实现代码中主动调用，增加了业务的复杂性。</p>
+
+<p>&emsp;&emsp;也许，在ibatis的项目中将对象和表结构进行一一映射是一种最方便、最快捷的方法，但对于喜欢OO建模的人来说，可能无法接受。项目中如果用表结构对象代替领域对象，只会增加项目实现复杂性和后期维护成本。</p>
+
+<p>&emsp;&emsp;话又说回来，Hibernate、JDO这些ORM框架可以较好地支持对象透明持久化，但学习成本相对来说也要高一些，也正是这些原因让很多项目经理放弃了这些技术。还有人说hibernate性能低下，项目失败的风险很大，我认为这些人并没有全面、深入地掌握Hibernate，比如：对于性能低下的部分，你可以通过hibernate执行native sql解决，甚至存储过程。还有一个是技术转型的原因，对于从C/S转到B/S的老程序员来说，我很清楚OO思想和以表结构为中心的思想之间的冲突，但只你要突破了，你才会达到另一个认识层次，才能体会到其中的好处。</p>
+
+<p>&emsp;&emsp;这两天在搭建省质监督局二期项目的领域模型，项目小组中的主力程序员几次让我想发火。因为我和他一谈到某项具体需要，他总是提出表结构、冗余、外键，提到后期如何操作表实现功能，而且我必须要努力说服他，毕竟后期的代码是由他们去实现的。此人是一个很执着的人，只有自己认可的、领会的才会按照方案去执行，呵呵。我就是要引导他，逐步建立起一个合理的、双方都认可的域模型。</p>
+
+<p>&emsp;&emsp;最后，希望本文对想深入了解、学习ibatis的人有用。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/06/16/validation/">如何处理项目中的数据验证</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-16T15:18:00+08:00" pubdate data-updated="true">2011年06月16日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;有人说，所有的程序本质上都是“输入->处理->输出”，仔细想来确实如此。话又说回来，你输入的是垃圾，输出的肯定也是垃圾，你输入的是“炸 弹”，面临的将是系统崩溃、瘫痪，也就无法得到预期的结果。因此，数据的验证，在任何一个项目中，都是不可回避、不可忽视的问题。</p>
+
+<p>&emsp;&emsp;下面，我还是按web应用程序的分层结构和大家探讨一下数据的验证实现的一些问题。</p>
+
+<p>&emsp;&emsp;<strong>一、表现层：</strong>
+表现层是接受客户数据输入的来源，第一道数据检验“关卡”应该也在这里。</p>
+
+<p>&emsp;&emsp;<strong>A、 客户端的验证</strong>
+web系统客户端采用的方法是：用js对客户在浏览器中输入的数据进行验证，这些验证通常不包括业务方面的内容，比如：字段是否已经填写，字段是否为数字，字段是否为email，字段长度是否满足要求，是否是一个合法的身份证号码，是否是合法的日期等，如果结合正则表达式，则可以实现一些更为复杂的数据验证功能。</p>
+
+<p>&emsp;&emsp;客户端有时还得借助ajax实现一些业务验证，比哪：用户注册功能中，就可以利用ajax及时检测用户输入的登录名是否已经重复等，这类型的验证已经具有了业务逻辑的影子，类似这种情况的简单业务验证是允许在客户端验证中出现的。</p>
+
+<p>&emsp;&emsp;客户端验证通常采用一些验证框架提高开发效率，比如jQuery中就有一些很不错的验证插件，不仅验证条件的书写很简单，而且验证没有通过的提示信息更加的友好。我推荐jQuery validate，这个插件的使用我会在另一文件中写出。</p>
+
+<p>&emsp;&emsp;当然，客户端的js验证可以被某些不怀好意的人轻易绕过（比如禁用js或用特殊工具提交），因此，真正的验证还得在服务器上做，客户端的验证，就全当做为提高系统人机交互效率而存在。
+如果你将flex，java swing这类技术应于于表现层，原理同上，我不再复述。</p>
+
+<p>&emsp;&emsp;<strong>B、服务器端的验证</strong>
+提到表现层，MVC模式肯定要说说。我们知道，几乎所有的MVC框架，都提供了数据验证实现，这种数据验证功能是在服务器端实现的（其实就是服务器端的验证了），因些它不会被恶意绕过。
+validate验证框架的原理是把通用的验证逻辑代码提取出来，将应用程序界面输入字段元素的验证规则写到配置文件（xml）中去，并由框架根据配置的验证规则调用验证逻辑完成验证，如果验证不通过，将跳转到指定的出错显示页面，控制器（controller，即action）中的业务调用代码将不会被执行。</p>
+
+<p>&emsp;&emsp;使用验证框架的优点是统一、规范，程序员手工验证代码移走后（变成了通用的验证代码），控制器中的代码将变得非常的简洁，这有利于系统维护。当然，缺点是引入了新的框架，系统和验证框架产生了耦合（不过，这点对于大型项目来说并不存在问题）。</p>
+
+<p>&emsp;&emsp;我认为，小系统或者表单验证字段不多的情况下，没有必要引入验证框架，程序员直接在 controller中加入验证代码即可，即手工书写if else，或者你也可以把你的验证代码重构一下，提出一个工具类来。</p>
+
+<p>&emsp;&emsp;如果一个表单中验证段过多，这种方法就不是太好。自己写验证代码还有一个缺点是数据回填问题（就是将不合法信息提示给用户的同时，用户以前在页面上输入的数据都要回填显示，以避免用户从新来过）比较麻烦，需要程序员专门来处理这种情况（其实，不同的MVC框架也是借助于自定义页面标记来实现的）。如果有了客户端的验证，数据回填显示似乎并不存在问题，呵呵。</p>
+
+<p>&emsp;&emsp;<strong>二、业务层：</strong></p>
+
+<p>业务层的数据验证，主要是针对输入数据在业务逻辑中是否存在问题，也就是说，表现层和业务层的数据验证，应该各自有各自的职责，表现层偏向于数据是否为空等简单的判断，几乎不会和数据库发生交互，而业务层主要是针对业务逻辑的数据合法合理性判断。</p>
+
+<p>&emsp;&emsp;说起来简单，做起来并不容易。在实际的项目中，我们很有可能将一些业务数据合理性检测放到controller中去做了。</p>
+
+<p>&emsp;&emsp;举个例子：新用户注册功能中，需要检测用户名是否重复，而检测用户名是否重复要和数据库交互，我看见很多人都是在controller中去调用service中一个叫checkUniqueRegUserName的方法，如果重复将直接跳转出错页面。这种做法个人认为不是太好，检测用户名是否重复属于业务范畴。</p>
+
+<p>&emsp;&emsp;如果你把这个检测过程封装到保存注册用户方法中，通过异常机制来检测注册过程中发生的故障，也许更合理些。你可以定义这么一个方法 public void register(User user) thorws RegException。</p>
+
+<p>&emsp;&emsp;有了这个方法，我们的程序代码结构将更加的清晰。页面表单输入的User数据合法性检测由验证框架或手写if else来向用户报告，User的名称是否重复由register方法向调用者报告，职责更加明确了，也更符合“职责单一原则”。</p>
+
+<p>&emsp;&emsp;当然，哪些是普通合法性验证？哪些是业务逻辑验证？对这两者的划分不同，你的验证代码在服务器端写的代码将不一样，我认为只要和数据库交互或和其它领域对象协作才能得到的结果都是属业务逻辑验证。</p>
+
+<p>&emsp;&emsp;<strong>三、持久层</strong></p>
+
+<p>&emsp;&emsp;持久层也可以对数据进行验证，有两个验证地点，一个是在ORM框架中，二是用数据库自身的约束机制。</p>
+
+<p>&emsp;&emsp;ORM映射框架，比如说hiberante，就可以配置column的字段类型，是否可以为空，长度是多少等，如果在保存或修改的过程中，数据不符合hbm配置要求，hibernate框架会发现这个错误。
+数据库中可以通过设计字段类型，是否可以为空、外键、主键等，通过数据库自身的约束机制来拒绝非法的数据。</p>
+
+<p>&emsp;&emsp;持久层的数据验证已经属于最终的数据验证了，我们的数据验证策略应该是：尽量提前验证。如果你可以确保前阶段数据已经经过了严格的验证，持久层这边可以安全放行，不做检测。
+经常有人问我项目中数据库这边的外键约束，非空约束是否要加上，我一般采用的策略是项目开发阶段不加（给程序员开发带来方便），项目上线后根据情况来看，加上是最好的了（可访止DBA误操作引入非法数据）。</p>
+
+<p>&emsp;&emsp;<strong>总结：</strong></p>
+
+<p>&emsp;&emsp;1、 客户端用js框架帮助我们实现验证；</p>
+
+<p>&emsp;&emsp;2、 服务器端通过MVC验证框架帮助我们实现（请看我的《都spring mvc了（二）》，spring mvc 是如何实现的验证的）；</p>
+
+<p>&emsp;&emsp;3、 分清哪些由业务方法去做的验证，哪些是由普通的验证；如果前面做好了，持久层验证可以省去。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/06/14/project-finished/">省质监局一期项目结束了，总结一下！</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-14T15:18:00+08:00" pubdate data-updated="true">2011年06月14日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;经过两个半月的努力，省质监局一期项目告一段落，在这段不长的时间内，我们开发团队成员已变得成熟、稳重，能够从容应对开发中遇到的棘手问题，这点我感到非常欣慰。</p>
+
+<p>&emsp;&emsp;省质监局项目是老大借助些关系拿过来的，这个项目开始是由另一个公司开发的，但最终结果不被质监局上层领导们认可，当我们接手这个项目时，已经有一些可供参考的界面原型，但当我们向该公司要更多项目资料时，对方不予积极配合，给的PD物理模型上都有很多错误，很显然这不是最终的东西（据说这个模型他们反复讨论了两个月才定下来的，肯定不会轻易给我们的）。</p>
+
+<p>&emsp;&emsp;根省质监局领导协调，指示我们可以全新设计，有这句话就好办多了。</p>
+
+<p>&emsp;&emsp;项目开始后，我们把对方遗留（未完成）系统页面进行了截图，拿回来熟悉业务流程。在梳理业务流程的过程中，我们产生了很多疑问，并且也发现了对方系统中存在的一些不合理的操作，对一些不清楚的流程，我们先进行“自我假设”，假想合理的业务流程，因为第二天要到客户现场进行需求的确认。</p>
+
+<p>&emsp;&emsp;当天会议结束，我整理了10个有疑问的问题清单，第二天和开发小组成员一起来到现场。想见到了省质监局信息办主任来确认需求还有点困难，领导们大多都很忙，一上午连续开了两个会，快到中午了才些时间，我带了一个开发组长来到主任办公室，对有问题的需求进行了一一确认，并且得到了他们的一些业务文档，当然，最重要的文档是《全省质监系统信息化建设和应用考评实施方案》，这个文件详细描述了很多重要的业务规则及内容。</p>
+
+<p>&emsp;&emsp;回来后和尹哥商量了需求上的一些情况，并明确按照我们的即定项目开发流程来实施项目，因为目前有很多公司都在为省质监局做项目（当时就有做OA的，还有做视频会议的公司），项目的开发流程比较混乱，质监局也希望通过我们本次的介入，能够做出一个规范的项目开发流程，用这个流程（规范）来要求其它的开发公司照做。看来我们这边的开发流程还是非常不错的，呵呵。</p>
+
+<p>&emsp;&emsp;开发的详细流程可以参阅我的博文《<a href="/blog/2010/11/22/flow/">一个迭代周期内的项目开发流程</a>》以及《<a href="/blog/2010/12/13/jeee-tou-1/">一个简单的j2ee入门教程（第一部分——需求分析 ）</a>》至《<a href="/blog/2010/12/28/jeee-tou-6/">一个简单的j2ee入门教程（第六部分—细节完善及测试）</a>》部分的描述。先期的《可行性分析报告》、《项目计划书》等用模板写好即可，尹哥写的（尹哥那还做了一个甘特图，感觉不错）。</p>
+
+<p>&emsp;&emsp;开发人员花了大概3天的时间进行原型的设计，之后我们一起进行了评审（注意，用Balsamiq Mockups做的原型只可用于内部评审，一般的客户无法理解这种原型草图）。原型确定下来后，程序员分工进行页面的实现，美工进行首页、主页的制作及页面风格的确定，开发人员进行具体页面的实现，4天时间完成了所有的页面。</p>
+
+<p>&emsp;&emsp;项目小组带着页面到客户现场，进行演示和确认，这个过程大概持续了一周的时候，每次需求演示都会带回来一些新的需求及改动，因为这段时间我比较忙，一直没抽出时间过去，所有的工作都由开发组组长负责完成。每次演示回来，我都要和开发组成员一起对改动进行评估，主要是考虑后期的可实现性及操作的合理性。（尹哥这个时候已经全身心做Android 项目了，我们这边已无法顾及）。</p>
+
+<p>&emsp;&emsp;需求分析总共花费了近1个月的时间，这个阶段一定要慢一些，需求搞不清楚对后面的影响就大了。话又说回来，做过政府项目的人都知道，政府部门的需求是变化最快的，各个领导的意见都有分岐，以至于我们每次过去都会有些新的东西要添加，有时甚至会和头一天的说法自相矛盾，但这些都没有办法，我们面对的都是些领导。</p>
+
+<p>&emsp;&emsp;当我们认为html版的原型基本得到客户确认（只能是基本确认，我们要就此打住，否则没完没了，无法进行后期的开发了，呵呵），这个时候发现已经在原版本的基础上添加了很多新的东西。</p>
+
+<p>&emsp;&emsp;后来安排项目组写出了《需求分析说明书》，按功能模块的方式描述了每个模块的功能及操作细节、业务约束（尹哥喜欢按这种需求描述方式，我个人更偏向于用例文本），这些文件最终都要向省质监局提交。</p>
+
+<p>&emsp;&emsp;接着进入设计阶段，由于我们已经有成型的技术框架，因此，架构原型上的要做的东西很少，我只做了一个webservice的界构原型，主要是对安全性进行了验证（请参阅我的《<a href="/blog/2011/04/06/webservice-cxf/">webservice之cxf实现</a>》及《<a href="/blog/2011/04/11/webservice-architect/">webservice架构设计</a>》）。领域模型的完善、物理模型的制作是设计阶段要做的第一件事，这些东西我安排项目组的人员去做，最终由我审核后通过。</p>
+
+<p>&emsp;&emsp;接下来，开发人员设计了业务类及接口，参照已经成型的界面原型应该不成问题，经过审核后通过。设计工作历时2天时间（其实可以算是详细设计）。</p>
+
+<p>&emsp;&emsp;终于可以进行项目代码实现了，我安排一个开发人员完善hbm文件配置，其它人员搭建项目结构、配置svn以及页面的转换等等前期工作，我制定了近1周的工作任务（后续的开发都是以周为单分配），工作任务以“一个CRUD操作1.5工作日”为标准确定时间进度，当然，安排任务时要考虑到业务代码实现的复杂性以及开发人员的技术能力，因为我们开发组的成员都不能算是熟练的开发人员，很多技术都需要在实际项目中磨练，在任务分配时要考虑很多的冗余，一般项目周期的是10%~20%。</p>
+
+<p>&emsp;&emsp;后期都是驻客户现场项目开发，偶尔有些问题，直接咨询客户，一般的技术问题都由我电话解答，QQ解决，电话说不清楚的或者一些重大问题我都会将开发人员召回，开会明确。这一段时间，我们的开发人员非常的辛苦，工作时都是只休息一天，我经常在周六接到他们的电话，问题解决之余我都要叮嘱一下“注意休息”。有的时候项目组长解决一个问题会坚持到晚上1、2点钟，开发小组群中很晚都还有人在“冒泡”，我也心存感激。由于我这边的工作性质，开发小组的人员回来，我一般都没有充分的时候沟通，只有等到下班后，再集中解决遇到的问题，我们的开发人员确实不容易。其实，我能做的只是提供完善的技术支持、解决方案，并对开发过程进行把控，排除影响进度的因素。</p>
+
+<p>&emsp;&emsp;近20天的开发终于结束了（中途我进行过一次代码评审），大家也比较疲惫，项目也可以给客户演示了。</p>
+
+<p>&emsp;&emsp;由于项目没有经过严格的测试，第一次演示失败，流程走了约2/3时出现故障无法进行下去，后面又经过2天的bug修改及测试。</p>
+
+<p>&emsp;&emsp;第二次演示基本通过，但客户随即提出了新的需求变动方案，拿出了一个我们之前从没有见过的文件，这个文件将会对代码及页面交互实现代码造成很大的影响（还好，设计上不需要变化），我也很清楚开发人员要改动的地方，这次需求变更的提出对开发人员的打击很大，回来开会时个个都垂头丧气。尹哥也刚出差回来，我们只有安抚开发人员，给他们讲需求变动是项目开发中常见的事。我们当即和对方的一个负责人协商，并预估了这次变更实现需要的时间，希望对方做出让步，我也让开发人员先回去好好休息一下，第二天再说。经过第二天的现场协商，对方做了让步，我们双方选择了一种折中的方案，最后，经过近一周的修改，完成了这次需求的改动。</p>
+
+<p>&emsp;&emsp;第三次演示也通过，在演示过程中，我们的开发人员曾经怀疑我们设计上的一些问题，没想到对方负责人说：“你们的设计是对的，错不了”，还说我们的开发人员有些问题比他想得更深入、全面，呵呵，确实，这个系统做完后，我们项目组的人都变成了这个领域的业务专家。</p>
+
+<p>&emsp;&emsp;第四次演示给其它更高层领导看，这次演示基本没有大的问题，仅仅对主页面中的一些显示效果提出了修改意见。</p>
+
+<p>&emsp;&emsp;上周，我们完成了项目在质监督局服务器上的布署（32G内存的服务器，真够有钱的），听客户说这一阶段的项目暂不投入实际运行，他们想要加入更多的一些东西，想让这个系统变成更加的通用，并想让我们在一周的时候内实现这一部分需求添加。我预估计了时间，光是这项改动，项目组在一周内肯定是完不成的，更何况，本期项目组的开发人员要陆续离开（这点确实有点头痛），新开发人员的项目交接也需要一段时间，这些新的东西，恐怕只有在二期中完成了。</p>
+
+<p>&emsp;&emsp;目前，项目二期工程即将启动，项目组人员的搭建、培训以及新旧人员顺利交接都是近期的工作（项目文档这些还算完善）。新班子建好后将进行二期的需求调研，希望我们二期项目的开发可以走得更顺一些。</p>
+
+<p>&emsp;&emsp;质监局项目一期开发过程中，我体会很深的有下面几点：</p>
+
+<p>&emsp;&emsp;一、项目中能用旧技术、方案解决的，最好不要引入新的东西。</p>
+
+<p>&emsp;&emsp;本项目中有一个“考评方案维护”模块，尹哥从产品交互效果、项目亮点等方面考虑引入了TableTree控件（一个js控件），这个控件的引入给项目后期的实现带来了困难，主要表现在该控件api不全，甚至缺少我们要的一些特殊处理的方法，最后在这一块耗费了一个程序员近三周的开发时间（还有其它人帮忙），边写功能还要边读 果js框架源代码。</p>
+
+<p>&emsp;&emsp;最终做出来的效果是非常不错，但问题又接出现了，这个模块的交互全部用js实现（包括ajax文件上传等复杂操作），致使代码量非常庞大，核心操作部分js代码近1000行，虽说这块代码写了详细注释，但目前阅读、修改起来都非常困难（包括代码实现程序员本人）。</p>
+
+<p>&emsp;&emsp;因些，另一个js弹窗控件（可遮罩iframe以外的地方）也准备引入，最后我还是决定放弃这个控件，而改用普通的请求响应交互模式完成，因为我很清楚这个控件对开发带来的负面影响。</p>
+
+<p>&emsp;&emsp;我的原则是：先实现功能，再考虑交互效果。</p>
+
+<p>&emsp;&emsp;二、客户就是上帝，需求变化无常，要尽量做到设计上的可扩展性。政府单位的项目的开发更是要注意这点，这要求我们在设计上有一定的前瞻性。本次一期项目开发中虽有些需求变化，但对整个项目设计并没产生影响，仅仅是对程序员的代码实现有很多改动。</p>
+
+<p>&emsp;&emsp;当然，预见未来的变化只是一个相对的说法，如果大家都能做到超前预见，那么一款软件的生命周期可能会大大延长，很多程序员也就要“下岗”了。</p>
+
+<p>&emsp;&emsp;质监局项目二期的需求中，我们就没有预见到，信息办主任也从未提及二期的规划和设想，现在算是明白他的想法了：完全抛弃一期项目，二期全新从头开发（政府单位真的这么有钱？）。难道我们两个半月的努力白费了？我想，我们还是得要在一期项目上更改，只不过有些地方要动动“手术”，影响还是有些大，但不至于全盘推翻。</p>
+
+<p>&emsp;&emsp;三、项目的开发流程我做了些小调整。PD中的ER模型省去了，直接做物理模型。ER和UML工具中做的领域相比并无优势，因此，我们的领域对象、业务接口这些将直接从UML工具中出图出代码 ，建表 sql、数据字典直接从PD物理模型中出，省去ER会节省时间。</p>
+
+<p>&emsp;&emsp;四、ORM关系映射文件要选择有经验的开发人员来完成。本项目中我安排给了一个普通程序员来做，致使在项目进行的全过程中，不断发现映射文件中的配置小错误，这点对项目的影响非常大，浪费了我们很多宝贵时间（有些问题查来查去最终发现问题在映射文件上，大家只能埋怨写映射文件的程序员）。</p>
+
+<p>&emsp;&emsp;五、 webservice 接口的数据交互方式，我们采用的是由第三方系统主动推送，这种方式在项目中并不常见。我当时提的其它几个方案都被信息办主任否定了(请查看我的《<a href="/blog/2011/04/15/project-effect/">你一定要知道的几种项目间数据交互方式</a>》)，呵呵。后来才知道，此人计算机专业出生，10年前是做开发的，对我们这行了解很多。所以，以后做需求调研的时候，最好还是要把对方的背景了解清楚，做到“知己知彼”。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+      <a class="prev" href="/blog/page/6/">&larr; 更多早期老文章</a>
+    
+    <a href="/blog/archives">所有文章</a>
+    
+    <a class="next" href="/blog/page/4/">更多近期文章 &rarr;</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>谈解耦合在项目中的配置方式 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;“高耦合、低内聚”是评判一个系统优劣的标准之一，作为一名合格的程序员，如何在实际的开发过程中让系统向这个标准靠拢，是我们要思考的问题。在系统的设计中“开闭原则”非常的重要，它是OOD的第一原则，在这个原则的实现中，我们一般会将系统中变化的部分进行抽象， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2011/07/04/config">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">谈解耦合在项目中的配置方式</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-07-04T15:18:00+08:00" pubdate data-updated="true">2011年07月04日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;“高耦合、低内聚”是评判一个系统优劣的标准之一，作为一名合格的程序员，如何在实际的开发过程中让系统向这个标准靠拢，是我们要思考的问题。在系统的设计中“开闭原则”非常的重要，它是OOD的第一原则，在这个原则的实现中，我们一般会将系统中变化的部分进行抽象，将不变的东西与可能变化的东西分离开，这样，在不久的将来，系统发生变化，这个变化将不会对系统中设计为不变部分产生影响，系统相对来说是稳定的。</p>
+
+<p>&emsp;&emsp;话又说回来，“变化”与“不变”只是相对的，不能“刻舟求剑”，也不能“杞人忧天”，“变化”与“不变”的把握，在需求分析和设计上都要依据项目经验来找到一个“平衡点”。</p>
+
+<h2>一、设计上的考虑</h2>
+
+<p>&emsp;&emsp;在设计上，我们将变化的部分会抽取出来放到接口（或抽象类）中，由具体的实现类负责实现，这样做最直接的好处是：软件系统中各个模块、层次之间不再依赖于具体而是依赖抽象，而抽象是稳定的。另一个原因是：代码实现会从AOP中获益（想想代理模式中必须要抽象接口哦），我曾经见过有些设计人员认为DAO（或 Service）的实现在某个特定项目中不再改变而将DAO（或 Service）的接口全部省去，让层次间直接依赖于实现类，这种方式不值得推荐，因为他忽略了AOP在项目中的作用。</p>
+
+<h2>二、代码实现上的考虑</h2>
+
+<p>&emsp;&emsp;在设计上做到了模块、层次间的解耦合，但是代码实现上往往会和具体实现产生依赖。比如代码：IUserService userService = new UserServiceImpl()将在代码级别产生和具体实现的依赖，而且是编译期依赖，如果我们更换实现类就得重新编译代码，当然，这种依赖对eclipse这种保存时即时编译的工具来说产生的影响可能不大，但对于c、c++这些语言来说可能非常的“恼火”（我还记得当年Delphi的“闪电编译”是如何捍卫Borland在编程领域的地位）。因此，我们希望在代码级别，最好不要产生对具体实现类的依赖。做法倒是很简单，我们把这种依赖关系放到外部的元数类型文件中描述，在程序运行时由第三方（一般是容器）读取配置信息并依据这些信息来维护、生成正确的对象依赖关系，这就是IOC/DI，有效果地解除了编译期依赖（耦合）问题。</p>
+
+<h2>三、配置方式</h2>
+
+<p><strong>1、xml文件</strong></p>
+
+<p>&emsp;&emsp;将依赖信息写到第三方的配置文件中，xml文件肯定是首选。j2ee开源框架通常都是把配置文件写到 xml文件中，当依赖关系发生改变时，我们要做的仅仅是修改配置文件，这种方式已经被广大开发人员接受。</p>
+
+<p>&emsp;&emsp;但经过众多的项目实践我们发现，当某项需求变更发生时，我们要修改代码，但往往要修改多处代码，比如在SSH项目中：一个需求更，带来领域对象的改变，紧接着是hbm文件的修改，再下来是业务代码修改，可能又会对spring配置文件中bean配置的修改，再接着对action代码修改，对struts的映射文件修改，又会引发action在spring中配置信息的修改。从这个修改“链式反应”中可以看出，项目在开发和维护期，程序员会反复对实现代码、配置文件进行修改，维护二者一致性以满足项目业务需求。“解耦合”是做到了，但程序员工作量没有减少，生产率并没有得到提高。</p>
+
+<p><strong>2、注解</strong></p>
+
+<p>&emsp;&emsp;以xml（properties）配置方式已遭到程序员的“反感”，相反，Anotation注解方式逐渐变得流行起来。Anotation方式是将配置信息直接写入源代码中，在编译时由编译器将这些信息写入class字节码文件（当然也可以选择不编译到class中），系统在运行时，框架通过反射机制获得配置信息，进行相应的行为控制。</p>
+
+<p>&emsp;&emsp;我们可以看到，无论是xml配置方式还是Anotation配置方式，对于框架系统而言，只是配置信息存放的位置不一样而已，只要读到这些配置信息，框架的后续操作都是相同的。但对于程序员来说就很不一样了：首先是项目开发与维护时，只需要在一个地方进行修改（即源代码中），其次，配置的信息量至少减少了一半（这点你可以思考一下：注解在源代码中的位置是不是已经代表了注解所作用的对象）。</p>
+
+<p>&emsp;&emsp;可能有人要提出反对意见了：“需求更改了，要改配置，还得修改源代码中的注解，还得重新编译，我们似乎又回到了以前的老路上”。确实如此，不过我们再想想，难道把配置信息写到xml文件中，需求改变了，你的项目不重新编译，系统不重新启动？你真的见过能够提供7*24小时不间断服务的系统？恐怕中国最赚钱的网游都还要在固定时段停机维护！</p>
+
+<p>&emsp;&emsp;当然，注解用得过头了会“适得其反”，带来降低源代码可读性的弊端，我们可以看到mybatis中加入了注解功能，在dao源代码中通过注解嵌入大量的sql语句，看起来让人心里“发毛”（注：mybatis是ibatis的升级版本，核心类名和api都改了，但功能并没见得增强，最新版本spring都不支持mybatis，看来这种升级会流失用户的。另，想了解ibtaits的，可以查看我的《<a href="/blog/2011/06/30/ibatis/">ibatis使用荟萃</a>》一文）。</p>
+
+<p>&emsp;&emsp;也许，生活就像走钢丝，我们不停的在寻找一个平衡点，重心时而偏左时而偏右，但我们都在会回归平衡，又走向下一个不平衡。前几年网页游戏逐渐受到网民的欢迎，这就是人们厌恶了庞大的客户端游戏的安装、更新之苦，网页游戏流行过为，大家又发现网页游戏的效果又大打折扣，现在，大家似乎又要回归到大客户端游戏中去了。项目开发也是如此，“开发效率”是不断追求的平衡点，项目配置方式的变化如此，架构、技术的选择也如此。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-07-04T15:18:00+08:00" pubdate data-updated="true">2011年07月04日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2011/07/02/wap/" title="上一篇文章: WAP系统上线测试中，总结一下">&laquo;上一篇:&nbsp;&nbsp;WAP系统上线测试中，总结一下</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2011/08/31/domain/" title="下一篇文章: 谈谈富血模型">下一篇: &nbsp;&nbsp;谈谈富血模型 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

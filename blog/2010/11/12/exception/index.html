@@ -1,0 +1,276 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>项目中异常设计及处理总结 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;异常，为我们处理非正常的业务流程提供了很好的解决方案，如果你有过dbase、c、pascal等过程式语言开发的经历，你一定会深刻体会到，异常机制给你的代码可读行、可维护性带来的好处，同时，程序的健壮性也得到了增强。 &emsp;&emsp;在 java项目中， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2010/11/12/exception">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">项目中异常设计及处理总结</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-12T15:18:00+08:00" pubdate data-updated="true">2010年11月12日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;异常，为我们处理非正常的业务流程提供了很好的解决方案，如果你有过dbase、c、pascal等过程式语言开发的经历，你一定会深刻体会到，异常机制给你的代码可读行、可维护性带来的好处，同时，程序的健壮性也得到了增强。</p>
+
+<p>&emsp;&emsp;在 java项目中，异常设计要注意下面的几点。</p>
+
+<p>&emsp;&emsp;<strong>一、自定义异常父类的选择</strong></p>
+
+<p>&emsp;&emsp;A、自定义异常的父类，可以选择为RuntimeException或Exception。RuntimeException是运行时异常，你可以选择它来做为你的异常父类，因为这种异常不受到编译器检查，因此，给予了程序员很大的灵活性，程序员可以处理这种异常，也可以不处理（实际上并不是不处理，而是不立即处理，等到一个合适的地方再进行处理）。选择RuntimeException作为父类，是很多框架常采用的，如果你是做底层框架的，可以选择 RuntimeException。</p>
+
+<p>&emsp;&emsp;B、业务层异常，一般选择Exception作为父类，因为业务层异常比较重要，一般都是要由调用者进行处理或者是要告知调用者会发生这种异常。如果你的代码是提供给第三方厂商用的，业务层封闭统一的异常就显得非常的有必要。这类异常会强制要求程序员进行处理（异常转译或继续声明抛出），程序完整性、健壮性得到了加强。</p>
+
+<p>&emsp;&emsp;<strong>二、业务层自定义异常结构的设计</strong></p>
+
+<p>&emsp;&emsp;A、业务层自定义异常可以考虑按子系统来划分，也就是说，每一个子系统（模块）都有自己的异常定义，每个子系统自己维护自己的，统一向调用者抛出。</p>
+
+<p>&emsp;&emsp;B、根据业务类型，从逻辑上划分异常类型，比如：权限相关的，安全相关的，数据库相关的等等。</p>
+
+<p>&emsp;&emsp;总的来说，这两种自定义异常也可以混合使用，因为有的时候，子系统（业务模块）本身就是从逻辑上进行划分的。</p>
+
+<p>&emsp;&emsp;<strong>三、异常结构定义</strong></p>
+
+<p>&emsp;&emsp;异常类的父类选定后，再定义自己的异常结构。一般的异常类中，要定义这么一些东西。</p>
+
+<p>&emsp;&emsp;A、描述字符串，说明异常的起因，或说明等。</p>
+
+<p>&emsp;&emsp;B、异常码。定义一个int或String类型的异常码，异常码在整个系统中统一定义，根据异常继承结构，异常码也可以定义得有层次结构。异常码在大的系统中比较常见，Oracle ,Sqlserver等数据库产品中，或华为、中兴的一些驱动api中。</p>
+
+<p>&emsp;&emsp;C、定义一个Throwable的成员变量，用以封装异常结构链。</p>
+
+<p>&emsp;&emsp;D、定义无参数、有参数（String，Throwable）的构造方法。</p>
+
+<p>&emsp;&emsp;<strong>四、在WEB三层模型中，异常的处理</strong></p>
+
+<p>&emsp;&emsp;在经典的三层架构模型中，通常都是这样来进行异常处理的：</p>
+
+<p>&emsp;&emsp;A、持久层一般抛出的是RuntiomeException类型的异常，一般不处理，直接向上抛出。</p>
+
+<p>&emsp;&emsp;B、业务层一般要封装自定义异常，统一向外抛出（这里要注意，如果用spring在业务层管理异常，一定要配置好异常回滚类型，因为spring默认只回滚RuntiomeException类型的）。我也见过一些想省事的人，业务层也不定义任何异常，也不进行try catch，如果业务层出现异常将在表现层进行处理及页面跳转。</p>
+
+<p>&emsp;&emsp;C、表现层必须要处理业务层的异常，以正确向客户报告系统出现的问题，这里面是最后一道异常处理的地方。我也见过有懒人在业务层都不处理，直接在web.xml中配置errorPage的，但不建议这么做。</p>
+
+<p>&emsp;&emsp;用好异常，对于项目的可维护性、健壮性都有极大的好处，当然，异常也不是万能的，在有些项目中并不适用，比如：纯算法项目，对性能要求极高的项目等，因为异常栈会对系统性能有一定开销，在这些项目中，最后还在老老实实用方法的返回值去标识方法执行的结果，用if else去处理业务逻辑中的非正常情况吧。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-12T15:18:00+08:00" pubdate data-updated="true">2010年11月12日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>, <a class='category' href='/blog/categories/jia-gou/'>架构</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2010/11/10/linux-tools/" title="上一篇文章: 服务器端常用远程维护工具简介">&laquo;上一篇:&nbsp;&nbsp;服务器端常用远程维护工具简介</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2010/11/22/flow/" title="下一篇文章: 一个迭代周期内的项目开发流程">下一篇: &nbsp;&nbsp;一个迭代周期内的项目开发流程 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

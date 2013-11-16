@@ -1,0 +1,296 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>常见界面原型业务方法设计示例 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;进入详细设计阶段后的一个重要任务是对业务方法进行设计，如果业务逻辑是封装到事务脚本方法中的，那就简单得多了，即根据界面可设计得到事务脚本业务方法。很多事情都是说起来容易，做起来难，下面我结合一个简单的实例，说明业务方法的设计过程。 &emsp;&emsp;一、 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2010/12/03/gui-prototype">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">常见界面原型业务方法设计示例</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-03T15:18:00+08:00" pubdate data-updated="true">2010年12月03日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;进入详细设计阶段后的一个重要任务是对业务方法进行设计，如果业务逻辑是封装到事务脚本方法中的，那就简单得多了，即根据界面可设计得到事务脚本业务方法。很多事情都是说起来容易，做起来难，下面我结合一个简单的实例，说明业务方法的设计过程。</p>
+
+<p>&emsp;&emsp;一、先贴出界面原型设计图，具体操作图中已经标注得非常清楚了，我不再描述。</p>
+
+<p><img src="/uploads/2011/03/49.png" title="界面原型示意图" alt="" /></p>
+
+<p>&emsp;&emsp;二、根据界面原型，建立简单的域模型，如下图：</p>
+
+<p><img src="/uploads/2011/03/15.png" title="领域设计图" alt="" /></p>
+
+<p>&emsp;&emsp;（注：其中的分页对象，是根据界面原型，在设计模型中加入的）</p>
+
+<p>&emsp;&emsp;三、业务方法设计过程是我说明的重点</p>
+
+<p>&emsp;&emsp;我们最先遇到的问题，应该是业务对象粒度的确定，常见的有两种方法，一种是根据功能模块来划分，另一种是根据用例来划分，如果你仔细想想就会发现，这两种划分方式都是从逻辑上对业务方法进行归类，总的原则是：有利于实现以及后期的维护。如果业务类粒度太细，业务类过多，会加大实现及管理上的复杂性；如果粒度过粗，一个业务类中业务方法过多，逻辑相关性不强，也会大了实现和维护难度。</p>
+
+<p>&emsp;&emsp;对界面原型分析后，我们基本上可以确定两个业务类（当然是用接口定义的），一个是菜单相关的，一个是与学生相关的（如果再细一点，也可以把班级相关的抽出来）。</p>
+
+<p>&emsp;&emsp;1、IMenuService</p>
+
+<p>&emsp;&emsp;从上面仅有的需求看，登录成功后我们要展示一个树型结构的菜单，而菜单设计为一对多自关联，所以，我们设计了下面的一个方法：+ getMemnuByLevel(level : int) : List，即根据菜单级别，得到这个级别菜单的集合，在实现的时候，需要取到所有的顶级菜单，通过jstl的循环标记取出子菜单并显示(当然，具体实现时你可能还要动动脑筋)。</p>
+
+<p>&emsp;&emsp;2、IStudentService</p>
+
+<p>&emsp;&emsp;这是本例中的核心。有人说业务方法命名无非就是一些CRUD的操作，但我认为，业务方法在命名上应该具更有业务含义，而不仅仅是一些简单的CRUD，比如：changePassword，login，register，pay，sendMail等等，这些方法都具有明确的业务含义。以有明确业务含义来为业务方法命名可以作为业务方法设计的一个标准，话又说回来，在实际项目中，还是有70%以上的业务方法命名是具有明显的CRUD含义的，还是来看看具体的设计吧。</p>
+
+<p>&emsp;&emsp;a、首先看到的第一个界面是登录界面，界面中有两个输入字段：学号及密码，登录成功后进入主界面，系统应该在作用域中保存用户的状态信息，登录有可能会失败，基于这个需求，设计业务方法如下：</p>
+
+<p>&emsp;&emsp;+ login(code : String, password : String) : Student，返回值为Student将作为状态信息保存，这个方法会throws LoginException异常，这个异常是自定义的。</p>
+
+<p>&emsp;&emsp;在这个方法的设计中，也有人把code与password封装在一个Studnet对象中传递，看起来就像这样+ login(s: Student) : Student，我个人觉得这种设计就没有第一种方式来得直观。</p>
+
+<p>&emsp;&emsp;LoginException也可以不定义，通过返回值Student是否为null，检测登录的执行情况，但我更倾向于业务层抛出统一的异常的做法。</p>
+
+<p>&emsp;&emsp;b、学生的分页查询。分页查询功能有两个地方可以触发，一个是：菜单中的“学生信息一览表”，一个是主界面中的“查询”按钮，但主界面中是带查询条件的，那我们是设计一个方法还是设计两个方法呢（我倒是见过不少初学者设计两个方法的哦）？答案是统一成一个，方法签名为+ getStudentsByPage(pageNo : int, pageSize : int, studentExample : Student) : Page。</p>
+
+<p>&emsp;&emsp;在上面的方法中，我们在studentExample封装了多个查询条件（我也见过一些初入门的程序员把每个条件都单传的设计，条件多了的话方法参数会非常庞大），后期用QBE实现，我会用一篇文章单独介绍这种多条件的具体实现方法。</p>
+
+<p>&emsp;&emsp;c、主界面的查询中会出现班级列表的选择，提供+ getAllClasses() : List就可搞定，但前提是班级不是太多，如果班级非常多，这种设计就有问题了，界面原型设计出得改。</p>
+
+<p>&emsp;&emsp;d、新增学生。方法为+ addStudent(studnet : Student) : void，这个方法写出来又有人提出疑问：你的方法返回void，那保存失败怎么办？很显示，提出这样问题的人对异常机制没有理解透，要去好好看书了哦。</p>
+
+<p>&emsp;&emsp;新增学生的时候，我们要会对学号（业务主键）的惟一性进行检测（使用ajax或保存时的检测），因此，还要提供一个业务方法+ getStudnetByCode(code : String) : Student来做这件事。</p>
+
+<p>&emsp;&emsp;e、修改学生信息。很明显，实现步骤是先查询后修改，因此设计了下面两个方法：+ getStudnetById(id : long) : Student根据id查询学生，+ updateStudent(studnet : Student) : void保存学生信息。</p>
+
+<p>&emsp;&emsp;f、删除学生信息。步骤也是先查后删除，查询的方法前面已经设计了+ getStudnetById(id : long) : Student，我们仅设计一个删除方法+ deleteStudentById(student: Student) : void。</p>
+
+<p>&emsp;&emsp;也有人设计成这样+ deleteStudentById(id : long) : void，即根据id来删除一个学员，当然底层实现也是先查后删除，这样的设计也是非常不错的，把查询对象的过程都封装到业务类实现中，而不用在 action中进行查询，效率会有一点点的提升，我推荐这种设计。</p>
+
+<p>&emsp;&emsp;g、批量删除。可以设计为+ deleteStudentByIds(ids : long[]) : void，也可以在action中通过for循环调用+ deleteStudentById(id : long) : void实现，根据你个人喜好自行设计。或都也可以设计成根据对象集合删除，即传入一个Collection。</p>
+
+<p>&emsp;&emsp;h、查看学生信息。+ getStudnetById(id : long) : Student就可以实现，这个方法我们前面已经设计好了。</p>
+
+<p>&emsp;&emsp;最终详细设计业务方法如下图：</p>
+
+<p><img src="/uploads/2011/03/20.png" title="业务方法设计" alt="" /></p>
+
+<p>&emsp;&emsp;从以上的分析过程可以发现，我们的业务方法设计完全是依赖于界面原型一点一点“扣”出来的，业务有增删或变化，业务方法进行相应的调整，这种按用例或模块确定业务方法粒度并依据界面原型确定、分配业务方法的过程比较直观，也比较简单，业务实现采用事务脚本模式，事务脚本为何在目前的web应用开发中如此流行，与设计过程简单化是息息有关的。掌握了上面这个例子中的业务方法设计，你已经可以胜任软件开发了。</p>
+
+<p>&emsp;&emsp;后面的文章中，我会用一个更简单的例子，结合软件开发流程讲，讲解整个实现过程（包括关键部分的伪代码），我努力写成一个对于初级程序员来说最好的基础教程。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-03T15:18:00+08:00" pubdate data-updated="true">2010年12月03日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2010/11/30/tx-script/" title="上一篇文章: 浅谈事务脚本">&laquo;上一篇:&nbsp;&nbsp;浅谈事务脚本</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2010/12/13/jeee-tou-1/" title="下一篇文章: 一个简单的j2ee入门教程（第一部分——需求分析 ）">下一篇: &nbsp;&nbsp;一个简单的j2ee入门教程（第一部分——需求分析 ） &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

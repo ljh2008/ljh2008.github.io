@@ -1,0 +1,256 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>一种报表实现设计方案 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;报表是每一个MIS系统中的必有功能，我们可以通过一个软件产品中查询统计、报表功能是否丰富来评判一个软件产品的成熟度。报表数据对于客户的日常工作、决策有非常重要的作用，报表也是我们程序员必定要遇到的问题。 &emsp;&emsp;中国式的报表样式复杂，实现起来难度也比较大， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2011/09/15/report">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">一种报表实现设计方案</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-09-15T15:18:00+08:00" pubdate data-updated="true">2011年09月15日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;报表是每一个MIS系统中的必有功能，我们可以通过一个软件产品中查询统计、报表功能是否丰富来评判一个软件产品的成熟度。报表数据对于客户的日常工作、决策有非常重要的作用，报表也是我们程序员必定要遇到的问题。</p>
+
+<p>&emsp;&emsp;中国式的报表样式复杂，实现起来难度也比较大，而对于系统设计者来说，客户的某些特殊报表可能会影响到我们的系统设计（说具体点就是表结构、加余字段等方面）。</p>
+
+<p>&emsp;&emsp;请看下面的这张报表，这张表的特点是表头、数据行全部是动态生成。表头是一个嵌套结构，由树状考评类别组成（动态生成），而第一列的单位也由参与本考评方案的单位得分生成，每一个类别的得分，是由该类别下所有的考评项最终得分累积得到（当然，上面的是我描述的一个简化流程，具体业务打分过程比这个要复杂）。</p>
+
+<p><img src="/uploads/2011/09/1.jpg" title="系统报表样式一" alt="" /></p>
+
+<p>&emsp;&emsp;上面这种类型的报表，相信很多人都碰到过，如何快捷地实现它呢？最常用的办法就是拼装出符合样式要求的html表格，比如说表头的生成，我们先调用业务方法，生成符合表头的数据结构（自关联的树状结构），使用页面语言（如JSTL，EL）生成出来，最终显示给用户，但问题在于每一行数据体要和表头上的每一列对应起来的代码实现比较复杂，这个过程相当考究一个程序员的逻辑思维能力，特别是跨行、跨列、以及行、列数据对应问题。</p>
+
+<p>&emsp;&emsp;上面我所描述的实现方案是可行的，很多人也是这么在做，但存在的问题也是非常明显：报表的实现代码不好维护，页面上的展示更是复杂，如果要实现另一张样式差不多的报表，我们又得copy头一张报表的代码，进行相应的调整、修改，很多人也是这么在做。</p>
+
+<p>&emsp;&emsp;一种改进的设计是以面向对象的思想来进行封装，比如下面的这张类图，就是上面这种类型报表的一种设计方案：我们将报表拆分成了表头与表行，表头由表头项组成，表行由数据单元格组成，我们把这些抽象成接口，并提供HTML版本的实现类。我们抽取出来的表格、表头、行对象都具有生成自身html代码的功能，并且还有很多辅助方法，这使得最终的代码很容易理解。</p>
+
+<p><img src="/uploads/2011/09/2.jpg" title="报表类图设计" alt="" /></p>
+
+<p>&emsp;&emsp;我们接下来的工作就是在service中，查询相应的业务数据来生成这个Report对象，你会发现生成Report的代码非常清晰、好理解。而façade中，页面中的实现就变得非常的简单，只需要调用service中的方法得到Report对象，之后通过generateReportCode()方法就得到了页面要显示的html代码。</p>
+
+<p>&emsp;&emsp;分析上面的类图我们可以发现，报表对象就是一个聚合根（当然也是值对象），而下面的每一个子对象负责自身显示代码的生成，通过service，业务逻辑也得到了很好封装，这就是面向对象带来的好处。只不过，我们要设计很多的小对象来承担各自的职责。这让我想到delphi，pb中报表的超强设计能力，也不禁有些怀念那个年代。</p>
+
+<p>&emsp;&emsp;当然，不同的报表风格会有不同的设计对象设计方案，不同的报表框加也会有不同的设计方案（比如：jFreeChart，jsperReport这种服务器端的报表生成框架，Highcharts、fusioncharts这类客户端报表框架户端的报表生成框架在设计上都会有所不同）。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-09-15T15:18:00+08:00" pubdate data-updated="true">2011年09月15日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>, <a class='category' href='/blog/categories/jia-gou/'>架构</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2011/08/31/domain/" title="上一篇文章: 谈谈富血模型">&laquo;上一篇:&nbsp;&nbsp;谈谈富血模型</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/07/14/jsoup/" title="下一篇文章: 让jsoup支持https,接受任意来源证书">下一篇: &nbsp;&nbsp;让jsoup支持https,接受任意来源证书 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

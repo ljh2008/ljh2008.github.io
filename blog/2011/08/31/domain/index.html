@@ -1,0 +1,292 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>谈谈富血模型 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;省质监局考评系统二期工程已经启动，当前处于编码实现阶段，预计在一个半月内完成核心功能。 &emsp;&emsp;相对一期项目比较而言，二期业务需求比一期项目要复杂，因此，在概要设计阶段我就决定按照领域模型方式来实现代码。本文将对富血领域模型的设计、实现谈谈我个人的理解与看法 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2011/08/31/domain">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">谈谈富血模型</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-08-31T15:18:00+08:00" pubdate data-updated="true">2011年08月31日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;省质监局考评系统二期工程已经启动，当前处于编码实现阶段，预计在一个半月内完成核心功能。</p>
+
+<p>&emsp;&emsp;相对一期项目比较而言，二期业务需求比一期项目要复杂，因此，在概要设计阶段我就决定按照领域模型方式来实现代码。本文将对富血领域模型的设计、实现谈谈我个人的理解与看法，实际开发中出现的问题及经验，我会在二期工程结束后进行总结。</p>
+
+<p>&emsp;&emsp;综观当前软件开发的潮流，失血模型仍是主流，至少90%以上的公司都采用失血模型。有句话叫“存在即是合理”，采用失血模型进行项目开发，有下面的一些好处：</p>
+
+<p>&emsp;&emsp;1、项目的设计要求大大降低，只要找出实体对象就可以了（更有甚者直接将表结构拿来当对象用，对象中充斥着很多int型外键，这个有点太极端了）；</p>
+
+<p>&emsp;&emsp;2、项目按照service，domain value object，dao分层，出service接口中的操作方法可以依照界面原型直接映射得到，设计变得很简单（更有甚者不进行这块的设计，由程序员在实现时自行添加，这种方式也未尝不可）；</p>
+
+<p>&emsp;&emsp;3、 代码实现人员容易理解，上面提到的分层方式已经被大家所熟悉。新员工入职后，只需要讲明白ER模型、表结构，再结合界面、需求文档就可以立即投入开发，培训投入少，上手很快。</p>
+
+<p>&emsp;&emsp;失血模型可以减少项目在设计阶段所花费的时间，降低开发难度及风险，缩短开发周期，失血模型似乎有很多优点，被业界广泛使用也不足为奇了。</p>
+
+<p>&emsp;&emsp;但是，如果你做过项目的维护，你一定会深刻体会到这种方式带来的苦恼，毕竟一个项目80~90%时间都是在进行后期维护，最吃成本、最耗精力的也是维护。维护期可以把“曾经”的盈利“吃”回去，也可以把一个公司拖死。</p>
+
+<p>&emsp;&emsp;因此，失血模型的缺点会在软件维护期暴露出来，越是业务复杂的项目越明显，其根本在于业务逻辑的封装上，主要有下面几点，看你是否有同感：</p>
+
+<p>&emsp;&emsp;1、  没有一个更好的业务逻辑封装地点。业务可以封装到service中，也可以在controller中实现部分业务逻辑（如果项目是按模块分配给程序员实现，还没法约束程序员把业务逻辑代码写在什么地方）。业务逻辑“散落”在各个分层中，存在于代码中的各个脚落，自然是不好维护了。</p>
+
+<p>&emsp;&emsp;2、  业务逻辑是采用面向过程的方式来实现。面向过程方式实现的程序代码不利于阅读和理解（当然可以通过重构出更小的方法缓解，但这不能从根本上解决问题），自然是代码后期不好维护了。</p>
+
+<p>&emsp;&emsp;业务逻辑的面向过程化实现、业务职责不在相应的领域对象中，而软件在维护期又要反复阅读以前的代码以添加、修改功能，代码的可读性、可理解性不高，封装度不也不高，维护会变得非常的困难了。我曾经经过过一些这样的项目，后期的需求修改、功能添加，我只能硬着头皮理解前人的代码，在copy以前代码的基础上修改，吃尽了苦头，用“每天都在救火”来形容非常合适，我也在不断的思考：是否有一种更好的解决方案？</p>
+
+<p>&emsp;&emsp;2004年前后，我在jdon上闲逛，看到“板桥里人”极力推荐的《领域驱动设计.软件核心复杂性应对之道》（简称DDD）一书，当时网上只有英文版本，迫不及待地download下来后读了几个章节，由于理论性太强，当时无法理解书中的内容。后来我又买了中文版的书，还是没能悟出更多的东西，这本书扔在角落里两年，最后将该书给了刘宁。</p>
+
+<p>&emsp;&emsp;近两年来，我静下心来梳理以前的项目经验，使我的技术得到了很好的沉淀，再次翻开DDD电子版本，这次阅读的体会已经截然不同，很多地方深有同感。后来看了老大强力推荐的《pojo in action》一书，我的疑问都得到了解决，有种“豁然开朗”的感觉，也坚定了我以前的一些想法：领域驱动方式确实是一种非常好的项目开发方式（注：我现在还看到一些初学都跟风看《DDD》，《pojo in action》，我敢断言，收获甚微），业务逻辑写在领域对象中是最好、最自然的地方。</p>
+
+<p>&emsp;&emsp;我画了一个简单的示意图，供大家参考：</p>
+
+<p><img src="/uploads/2011/08/1.jpg" title="富血模型实现示意图" alt="" /></p>
+
+<p>&emsp;&emsp;当然，使用DDD富血模型方式开发，会面临一些挑战，我们不可回避下面的一些问题，这许从失血、贫血模型的转给转型，这些问题会给你带来的不适应感：</p>
+
+<p>&emsp;&emsp;1、  按DDD开发，首先是要根据对客户的需求、业务的了解，提炼并不断修正领域对象。对于每一个对象的取名，都要反复斟酌，努力做到和业务保持一致，并且通俗易懂（特别是在详细设计阶段翻译成英文时更是要注意，多查询英汉字典，选择最合适的翻译，当然，属性的取名也是一样）。</p>
+
+<p>&emsp;&emsp;2、  根据对业务的理解，正确分配领域对象职责。每个对象做自己分内的工作，有些行为无法明确地分配到对象中时，就建立服务(service)对象，这点是和失血模型的本质区别，这里的service类不是失血模型中的service接口哦，大家要注意。</p>
+
+<p>&emsp;&emsp;3、  仓储对象是用来分担领域对象的持久化职责的，是根据面向对象职责单一原则产生。仓储对象就是DAO对象，如果使用用通用DAO的话，会省去仓储设计的过程（但这样会在领域逻辑实现代码中暴露SQL相关的东西）。</p>
+
+<p>&emsp;&emsp;4、  富血模型中事务边界的确定比较麻烦，我们引入了façade外观，调用者（比如：controller或远程客户）一律通过façade门面完成业务调用，事务边界就在façade中控制。Façade在这里有两个非常重要的作用：</p>
+
+<p>&emsp;&emsp;一是事务边界就是这里，具体代码实现时通过spring aop管理事务，二是处理领域对象与持久层脱钩。如果领域对象不与持久层脱钩，调用者得到的是带有行为的对象，可能会误调用了里面的行为，脱钩后就不存在这个问题，因为调用行为已经无法持久化到数据库中（这似乎和我们在失血模型中广泛使用的openSessionInView有冲突哈）。</p>
+
+<p>&emsp;&emsp;6、领域逻辑实现过程中需要使用仓储对象，因为我们使用了通用dao，所以可以声明一个领域对象超类，其中包含通用dao对象，通过spring的ApplicationContextAware接口完成注入，这样，无论是从数据库中实例化出来的对象，还是程序员new的领域对象，都可以访问仓储对象（如果是每个领域实体对象都有自己的仓储对象，则需要在每一个领域方法中传入仓储对象，设计起来有些麻烦，POJO In Action中就是采用的这种做法）。</p>
+
+<p>&emsp;&emsp;7、想办法简化对象之间的关系，对象关系越简单越有利于系统的理解和实现，可以通过约束和抽取领域service方法来简化一对多、多对多关系。</p>
+
+<p>&emsp;&emsp;8、用聚合根减少系统的复杂性，将领域对象划分到合适的逻辑包中，进一步增强系统的表达力，因些，在包的结构划分上，也和贫血模型有所不同，它不再是贫血模型中的service,vo,dao这样的扁平结构。下面是质监局二期中核心领域对象部分设计图，每个对象都有自己的行为职责，并建立了良好的包结构：</p>
+
+<p><img src="/uploads/2011/08/2.jpg" title="质监局二期项目核心域对象分包图" alt="" /></p>
+
+<p>&emsp;&emsp;9、DDD对设计人员和开发人员都有较高要求，如果设计人员没有理解到需求的核心、本质，将很难做出好的设计方案；如果开发人员没有理解领域对象，也无法进行开发。</p>
+
+<p>&emsp;&emsp;DDD的设计与开发远远不止上面我提到的这些，并且这一块的水很“深”，我们只有通过在不同的项目中实践，把理论恰当地应用在合适的项目当中，切实为项目带来好处，这个是我们追求的终极目标。</p>
+
+<p>&emsp;&emsp;“会道者一缕发丝牵大象，盲修者千钧铁棒打苍蝇”，应对软件核心复杂性之“道”，DDD是不二的选择。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-08-31T15:18:00+08:00" pubdate data-updated="true">2011年08月31日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>, <a class='category' href='/blog/categories/jia-gou/'>架构</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2011/07/04/config/" title="上一篇文章: 谈解耦合在项目中的配置方式">&laquo;上一篇:&nbsp;&nbsp;谈解耦合在项目中的配置方式</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2011/09/15/report/" title="下一篇文章: 一种报表实现设计方案">下一篇: &nbsp;&nbsp;一种报表实现设计方案 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

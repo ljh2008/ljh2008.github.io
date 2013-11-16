@@ -1,0 +1,254 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>系统性能优化总结之表现层 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;对系统性能的考虑，是一个新手和老手的重要区别之一，面试的时候，问一些性能优化的问题，很容易判断应聘者的工作经验。下面是我对性能优化的考虑，将从表现层、业务层、技术层三个大的方面来阐述。本篇先介绍表现层性能优化要点。 &emsp;&emsp; &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2010/11/05/prof-web">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">系统性能优化总结之表现层</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-05T15:18:00+08:00" pubdate data-updated="true">2010年11月05日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;对系统性能的考虑，是一个新手和老手的重要区别之一，面试的时候，问一些性能优化的问题，很容易判断应聘者的工作经验。下面是我对性能优化的考虑，将从表现层、业务层、技术层三个大的方面来阐述。本篇先介绍表现层性能优化要点。</p>
+
+<p>&emsp;&emsp;表现层优化的一个重要原则是<strong>减少向服务器发送请求的次数以及减少每次请求的数据传输量</strong>，围绕这一点，将会想到有很多的优化办法。</p>
+
+<ul>
+<li><p>ajax:大家都知道,ajax可以实现局部更新，显然减少了数据通讯量以及请求次数（全页面刷新，页面上的很多资源都要进行请求哦），而且ajax可以增强客户体验；</p></li>
+<li><p>减少图片文件大小，这个是减少数据通讯量的方法，可用png之类较小的文件存盘格式；</p></li>
+<li><p>使用css对图片分割，把多个地方的小图标集成到一张图片上来。比如：.zhu{background:url(“../img/shenxiao /sx.png”) no-repeat scroll 0 -528px transparent;}，注意其中的0 -528处，是关键；</p></li>
+<li><p>减少css与js文件的数据，最好不要按照页面逻辑将文件划分成多个，以减少请求次数；在同一个文件中，也要想法减少文件大小，多余的空格，回车，在项目上 线前都要去掉，我曾经见过一些网站，就一个css文件，打开，里面只有一行，这一行非常的长，可见，边回车换行都已经被删除了，呵呵。再有,js文件上线 前要找个工具压缩一下，文件大小一般会减少一半以上；</p></li>
+<li><p>从程序上，对页面进行静态化处理（页面静态化处理的详细内容我将在后面的博客中介绍）。</p></li>
+<li><p>对页面进行缓存，squid开源产品居多，oscache也是可以的。</p></li>
+<li><p>如果是jsp，可以考虑更换成其它的模板框架，比如：velocity，freemarker等，一来可以提高页面响应速度，还可以强制程序员按model2书写页面交互。</p></li>
+<li><p>根据实际情况选择合适的数据通讯方式，json,xml，或者是服务器拼好页面再发往客户端。</p></li>
+<li><p>合理利用好浏览器缓存。但有的时候，是禁止缓存的哦，比如一些ajax操作中。</p></li>
+<li><p>启用服务器gzip压缩。</p></li>
+</ul>
+
+
+<p>&emsp;&emsp;当然，条条大道通罗马，以“减少向服务器发送请求的次数以及减少每次请求的数据传输量”为优化核心，办法还是很多的。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-05T15:18:00+08:00" pubdate data-updated="true">2010年11月05日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>, <a class='category' href='/blog/categories/jia-gou/'>架构</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2010/11/03/gui-prototype/" title="上一篇文章: 管理系统界面的十条潜规则">&laquo;上一篇:&nbsp;&nbsp;管理系统界面的十条潜规则</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2010/11/08/prof-service/" title="下一篇文章: 系统性能优化总结之业务层">下一篇: &nbsp;&nbsp;系统性能优化总结之业务层 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

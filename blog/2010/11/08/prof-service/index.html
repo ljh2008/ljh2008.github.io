@@ -1,0 +1,250 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>系统性能优化总结之业务层 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;业务层的性能优化，可能普通程序员更关注些，我总结了下面几点，仅当抛砖引玉吧。 代码级别：变量的声明范围，for循环或while，++及移位操作等，这方面相当考究一个程序员的基础功力（尹哥在这块很牛的），我认 为对于企业级应用开发，这块应该不是重点， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2010/11/08/prof-service">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">系统性能优化总结之业务层</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-08T15:18:00+08:00" pubdate data-updated="true">2010年11月08日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;业务层的性能优化，可能普通程序员更关注些，我总结了下面几点，仅当抛砖引玉吧。</p>
+
+<ul>
+<li><p>代码级别：变量的声明范围，for循环或while，++及移位操作等，这方面相当考究一个程序员的基础功力（尹哥在这块很牛的），我认 为对于企业级应用开发，这块应该不是重点，因为现在的服务器性能都非常好，代码写得烂一点，性能影响也不大。当然，项目不同，则要另当另论哦，比如嵌入 式、j2me等的开发要求就比较高，游戏服务器端的代码要求也很严格，甚至list类型集合都不让用，全部用array。</p></li>
+<li><p>针对特点框架的性能优化：在业务实现代码上，可考虑有针对性的优化。比如用hibernate做持久层实现吧，就得认识到load,get,iterator等方法的性能问题，批量sql操作及批量对象操作的性能影响，一级及二级缓存的应用等等。</p></li>
+<li><p>失血领域对象在各层中传递，减少不必要的dto或vo对象。失血模型的广泛应用，可能也和这个有关，简单、高效。</p></li>
+<li><p>合理的业务逻辑实现设计。这点是对设计人员提出的，合理的实现设计，可大幅提高业务执行性能。
+数据库连接池的使用。这点也许可以放到持久层去说合理些，但我觉得和业务的关系更紧密。数据库连接池可以使用容器低层的实现，这也是一种不错的选择，但我们 一般为了项目能够快速简单地布署，都在项目中直接实现。比如：直接将dbcp或proxool配置为spring的数据源（dbcp与proxool的选 择我将在另一文章中进行比较）。</p></li>
+<li><p>缓存的应用。缓存其实是架构级的提升性能之道，主要是对领域对象的缓存，因为一般的性能瓶颈都在数据 库，对域对象的缓存，可以减少和数据库的交互以提高性能。比如用hibernate做持久层实现，就存在一级缓存及二级缓存，一级的我们一般不管，基本是 透明的，二级存存就需要我们根据实际情况设定合理的缓存参数，而且要合理使用好查询缓存。常用的二级缓存有 c3p0，oscached，memcached等，个人偏向memcached。</p></li>
+<li><p>项目发布后，要对日志文件的级别，及sql的输入选择进行重新配置，以符合生产环境（本人曾有深刻教训的）。</p></li>
+<li><p>使用服务器集群（软件或硬件方式，我会在另一篇文章中详细说明），对服务器的性能进行水平扩展。</p></li>
+</ul>
+
+
+<p>&emsp;&emsp;最近一起非常关注周鸿伟与tx之间的战争，全力支持360。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-08T15:18:00+08:00" pubdate data-updated="true">2010年11月08日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>, <a class='category' href='/blog/categories/jia-gou/'>架构</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2010/11/05/prof-web/" title="上一篇文章: 系统性能优化总结之表现层">&laquo;上一篇:&nbsp;&nbsp;系统性能优化总结之表现层</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2010/11/09/prof-dao/" title="下一篇文章: 系统性能优化总结之持久层篇">下一篇: &nbsp;&nbsp;系统性能优化总结之持久层篇 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

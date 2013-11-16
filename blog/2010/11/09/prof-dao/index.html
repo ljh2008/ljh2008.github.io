@@ -1,0 +1,253 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>系统性能优化总结之持久层篇 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;最后一篇是关于持久层的性能优化，和dba的关系比较密切，我认为持久层优化的主要原则是：减少表关联查询。即使必须要有关联查询，也要减少关联的表的个数。根据经验，大多数的应用，性能瓶颈都在数据库这边，我们围绕上面的原则，可有下面的一些办法来进行优化。 增加表冗余字段。 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2010/11/09/prof-dao">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">系统性能优化总结之持久层篇</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-09T15:18:00+08:00" pubdate data-updated="true">2010年11月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;最后一篇是关于持久层的性能优化，和dba的关系比较密切，我认为持久层优化的主要原则是：<strong>减少表关联查询</strong>。即使必须要有关联查询，也要减少关联的表的个数。根据经验，大多数的应用，性能瓶颈都在数据库这边，我们围绕上面的原则，可有下面的一些办法来进行优化。</p>
+
+<ul>
+<li><p>增加表冗余字段。这种方法会使你的表不符合范式要求，但是我们必须知道，范式仅仅是理论上的，也就是建议你的表设计的一个标准，恐怕严格符合第四范式的项目 不能满足非功能性需求。我们在进行er设计的时候，可根据项目实际需求，在某些表中加入冗余字段，前提是这些冗余字段不会经常变化，如果变化过快，将会给 数据同步更新带来麻烦。</p></li>
+<li><p>增加数据库索引。在对系统上线一段时间后跟踪的sql进行归类统计，按表、按where字段排序，找出一张表中最常做为查询条件的字段，在这些字段上建立索引，一般一张表可以建很多个索引，对查询性能的提升，效果是非常明显的。</p></li>
+<li><p>分表。设计前要预估算出一张表的最大记录行数，考虑是否要进行分表设计（我的其它文章中会专门讲到）。</p></li>
+<li><p>对表进行水平和垂直分区。设计前要预估算出一张表的最大记录行数，以决定是否会对该表数据分区。根据我的经验，一般一张表的数据量达到10万条以上，就可以 考虑分区了。分区类型有很多种，要根据项目情况考虑，mysql是在5.15中才加入分区功能的，使用mysql的同学要注意哦。</p></li>
+<li><p>数据文件物理存储问题。在进行建表或建分区时，都可以选择文件的物理存储路径，因为服务器一般都有多块磁盘，那我们就一定要注意，根据表的访问题情况，利用 单独磁盘的I/O，合理的分配到物理磁盘上去，提高效率。如果只有一块盘，可考虑将存储文件划分到不同逻辑分区上去，逻辑分区在物理扇区上是连续分配的， 对效率提升有好处。</p></li>
+<li><p>数据库集群。一般数据库都是支持集群功能的，配置集群，水平扩展数据库的性能。
+采用读写分离。我曾经帮朋友设计过的一个高并发系统，数据库采用mysql实现，就采用了读、写分离机制，这个也是许多高并发网站常用的方法。</p></li>
+<li><p>程序员写程序的时候要注意，可尽量使用一些特有数据库的专用语句，对性能提升是有好处的，缺点是不便于数据库的更改移植。</p></li>
+<li><p>程序员要尽量避免行级锁，程序中尽可能用乐观锁或离线锁。</p></li>
+<li><p>可将有些大数据量的sql操作写到存储过程中去，因为存储过程都是经过编译的，执行效率非常的高，我们的一些早期项目都用这个来做复杂的大数据量业务操作。 缺点也很明显，一是数据库平台更换与移植，另一个就是性能优化时无法水平提升系统性能，比如：应用服务器做了集群，但数据库这边的存储过程仍然是瓶颈。</p></li>
+<li><p>最后一点是设计上的，原理是数据库删除效率不高，那我们就少用删除。平进的删除，只是对数据库打上删除标志，在非系统高峰期，用定时任务真正删除打了标记的数据，这种做法在移动、电信的项目中比较常见。</p></li>
+</ul>
+
+
+<p>&emsp;&emsp;性能优化需要在实践中不断总结积累，上面的一些是我这些年来的实践所总结，谈不上全面与深刻，我也相信，每个人都有自己的一套独门绝技，欢迎补充完善。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-09T15:18:00+08:00" pubdate data-updated="true">2010年11月09日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>, <a class='category' href='/blog/categories/jia-gou/'>架构</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2010/11/08/prof-service/" title="上一篇文章: 系统性能优化总结之业务层">&laquo;上一篇:&nbsp;&nbsp;系统性能优化总结之业务层</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2010/11/10/linux-tools/" title="下一篇文章: 服务器端常用远程维护工具简介">下一篇: &nbsp;&nbsp;服务器端常用远程维护工具简介 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

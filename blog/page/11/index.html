@@ -1,0 +1,1812 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;做架构设计必须要根据系统非功能性需求来开展，以使系统的架构可以在一定程度上满足将来系统发展、变化。但是将来的事情认谁也无法预测，因此，我们的架构在运行维护期随着用户需求的变化而调整的情况也比较常见，下面我结合以前的一次项目经历，谈谈大数据量应用中的一些设计经验。 &emsp &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/page/11">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/12/29/pf-aduj/">一个大数据量应用的痛苦经历</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-29T15:18:00+08:00" pubdate data-updated="true">2010年12月29日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;做架构设计必须要根据系统非功能性需求来开展，以使系统的架构可以在一定程度上满足将来系统发展、变化。但是将来的事情认谁也无法预测，因此，我们的架构在运行维护期随着用户需求的变化而调整的情况也比较常见，下面我结合以前的一次项目经历，谈谈大数据量应用中的一些设计经验。</p>
+
+<p>&emsp;&emsp;先描述一下需求（几年前的项目了）：这是一个 CAI票预测网站，根据预先录入的母公式及前600~700期开奖号码生成最终的下期奖预测结果。核心部分的领域对象图如下（凭记忆画出）：</p>
+
+<p><img src="/uploads/2011/03/31.png" title="彩票网站设计领域模型" alt="" /></p>
+
+<p>&emsp;&emsp;彩票号有很多种，当时客户就提出了4种（全部为3D类型CAI票），每种类型需要至少录入600期历史开奖号码数据，输入历史数据后，要根据已经输入的母公式生成子公式，客户录入了约300个母公式，一个母公式在一期中奖号码上会生成近200个子公式，最后对生成的子公式进行处理，计算出这些子公式在历史开奖号上的准确率，然后进行后续的预测流程。</p>
+
+<p>&emsp;&emsp;根据需求画出了上面的领域模型，我们又很快设计了ER模型，并生成物理模型，物理模型是这样的（我只描述关键表中的关键字段）：</p>
+
+<p>&emsp;&emsp;彩票号码表：用一个标识字段来区别不同的彩票类型（领域中采用继承映射）；</p>
+
+<p>&emsp;&emsp;子公式表：用一外键指向母公式id，再用一外键指向彩票号码id。</p>
+
+<p>&emsp;&emsp;根据我们的经验，这样的设计合情合理，没有任何问题，在实际的开发过程中也证明确实如此，我们很快完成了开发，并交给了用户使用，大家都认为可以轻松一下了，呵呵。</p>
+
+<p>&emsp;&emsp;很快，客户的电话很快就来了，程序运行效率有问题，有一项计算子公式准确率的功能，竟然跑了近1个小时才完成，这对于一些实时性要求较高的CAI票种类（有的CAI票每5分钟开一期）根本无法使用。效率怎么会相差这么大呢？我们开始排查原因。</p>
+
+<p>&emsp;&emsp;一、首先想到的是程序算法问题，特别在在公式解析及计算这一块，算法十分的复杂，我们就先对它进行了优化（变量声明范围、数据替代List等），完成后再跑程序，问题依旧，看来不是这的原因。</p>
+
+<p>&emsp;&emsp;二、那就看看日志文件中记录了些什么吧，也许会发现些问题。当我们从服务器上down日志文件时，才发现这个日志文件竟然达到3G大小，完全无法取下来。一查原因才发现，我们将hibernate的show_sql设置为ture了，因为该项业务操作会对表进行大量的insert操作，日志文件又没有分卷保存，因此会记录很多的sql日志。而当日志文件非常大的时候，log4j在写日志时将会非常的缓慢，最终的性能就出在这里。我们关闭hibernate的 sql日志输出，日志文件是弯小了，但运行还是很耗时，非常的郁闷，看来问题的根本不在这。</p>
+
+<p>&emsp;&emsp;三、想到这项业务操作的算法中，会分批从子公式表中读出数据，再分批进行处理，最后再将处理结果存入其它表中，也许这就是性能问题所在。为了验证，我们在分批操作的一次循环开始和结束处加上日志输出（要取系统时间的，算出执行时间差），发现这里果然有问题，一次循环要执行近2分钟，问题找到就赶紧解决吧。</p>
+
+<p>&emsp;&emsp;我们想到了多线程，修改程序，同时启动了10个线程，每个线程处理一定范围内的批次（当然线程还需要同步，比较麻烦），等10个线程全部完成后再进行后续操作。程序写完了，满以为可以大功告成，但上服务器一跑，结果同样令人沮丧，效率完全没有任何改进。</p>
+
+<p>&emsp;&emsp;四、估计问题还是在数据批量处理处这个地方，我们这个时候才想到可能问题出在数据库上。马上将日志输入定位在数据库批量查询处，真相终于被发现了，一次查询要近2分钟，也就是一条查询sql的执行要2分钟，太恐怖了。</p>
+
+<p>&emsp;&emsp;我们来对数据量进行一个计算：一个母公式一个号码生成200个子公式，总计300个母公式、600期号码就是：200 * 300 * 600=36000000，即3千600万条记录，这还是一种彩票类型，如果4种彩票类型同时上线运行，子公式表中就得存放：3千600万条 * 4 = 144000000条记录，原因清楚了，就开始解决。</p>
+
+<p>&emsp;&emsp;我们首先是根据查询条件，对查询字段建立起复合索引，测试后无效，也就是说，在非常大的数据量下对表建立索引对性能提升无明显作用。</p>
+
+<p>&emsp;&emsp;突然想到可以对表进行分区（Oracle下有，MySql下也有），在查询条件中是按业务中的一个叫col的字段分批查询处理的，我们一定可以按这个字段来建立RANGE类型的分区，于是规划了一个分区方案：对子公式表，按col范围进行分区，划分单独的物理文件存放，经过这样的操作，性能提升非常可观，大约10分钟可以跑完准确率计算业务。</p>
+
+<p>&emsp;&emsp;五、分表，然后再分区。这个是后面进一步考虑到的，就是把子公式按不同CAI票类型分不同的表存放，客户有4种类型的CAI票类型，我们就建立了4个子公式表，与之一一对应，这样一来，每张表中最多就3千600万条记，现在再对一张表来按业务col字段分区，保证每个物理分区文件中的记录在100万条以下，性能提升非常明显，1分钟完成了该项业务操作。</p>
+
+<p>&emsp;&emsp;当然，分表后，hibernate的映射文件要进行相应的修改。</p>
+
+<p>&emsp;&emsp;六、进一步优化。在表中加冗余字段，比如：子公式表中直接加入中奖号码，其它的表也加入一些冗余，使很多以前要关联两张或三张表的查询，现在只需对一张表操作就搞定（这种情况下就不要过多的去考虑OO了哦）。</p>
+
+<p>&emsp;&emsp;七、更换proxool连接池为dbcp。以前据我的经验，proxool的稳定性和性能优于dbcp，但是在这个项目中，proxool无法处理这种大数据量的一次性事务提交处理，dbcp反而不错（proxool要报错的哈）。</p>
+
+<p>&emsp;&emsp;八、根据客户的实际使用情况，我们最后将数据库中的一些表改成非事务方式，即由mysql的innodb改为myisam模式，性能又有所提升。</p>
+
+<p>&emsp;&emsp;最后，这项最耗时的操作完全可以在1分钟内跑完，满足了客户的要求，项目后期，我们又对后台正在执行的任务用状态对象持久化保存，使客户可以知道后台的正在进行某项耗时工作任务，让操作更加人性化。</p>
+
+<p>&emsp;&emsp;从1个小时到1分钟，一步一步走来十分不易，当你也有了这些经验后，在面对下一个系统的设计时，就能做到心中有数，设计出更好的方案来。我们可以从这个项目中总结出来一些结论来：</p>
+
+<p>&emsp;&emsp;<strong>一、应用90%以上的性能瓶颈在数据库，此话不假。</strong></p>
+
+<p>&emsp;&emsp;<strong>二、设计系统时，应该对表的数据量有一个估算，根据数据量决定是否分表、分区、加冗余。</strong></p>
+
+<p>&emsp;&emsp;<strong>三、大数据量应用中，可采用面向过程的领域对象设计，毕竟这种情形是以性能为中心的，面向过程、面向对象、面向需求，其实最终是面向需求的，特别是非功能性需求。</strong></p>
+
+<p>&emsp;&emsp;mysql性能也不错哦，不要一想到大数据量就想到oracle、db2这些哈(mysql分区资料，请访问这个地址：<a href="http://dev.mysql.com/doc/refman/5.1/zh/partitioning.html">http://dev.mysql.com/doc/refman/5.1/zh/partitioning.html</a>)。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/12/28/jeee-tou-6/">一个简单的j2ee入门教程（第六部分—细节完善及测试）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-28T15:18:00+08:00" pubdate data-updated="true">2010年12月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;在项目的主要功能都完成后，我们会对表现层代码进行一个测试，重点是页面的跳转流程是否正确。当然，国内很多小公司的项目可能并不会做这项测试。</p>
+
+<p>&emsp;&emsp;表现层的测试要做到和容器解耦合才能进行下去（顺便提一下，ejb2有一个最大的弊病是不能和容器解耦）：</p>
+
+<p>&emsp;&emsp;如果你用的是struts1.x，可以选择使用StrutsTestCase开源框架的来做表现层的测试，在 <a href="http://strutstestcase.sourceforge.net">http://strutstestcase.sourceforge.net</a>官网上有使用详细说明，看看例子你就明白该怎么做了；如果你用的是 Struts2就十分的方便了，我们从spring容器中得到action对象后，调用相应的方法并验证返回结果字符串就可知道测试结果；单纯 servlet要实现测试可能比较复杂些。页面间的跳转流程测试通过后，就需要对页面的交互细节进一步的完善，我们先来考虑页面数据合法性验证问题。页面的数据合法性验证，可以用下面三种方式为实现：</p>
+
+<p>&emsp;&emsp;1、一种是采用客户端js实现，优点是可以快速对用户输入的非法数据以友好的提示，提高交互效率，缺点是容易被绕过；</p>
+
+<p>&emsp;&emsp;2、第二种是采用框架的验证功能实现，这种方式优点是配置配置就可完成，和框架本身集成紧密，缺点是配置繁琐；</p>
+
+<p>&emsp;&emsp;3、最后一种是程序员在后台人工验证，优点是灵活，缺点是对大数据字段表单操作起来极为不便，而且对验证没通过后的数据回填也比较麻烦。</p>
+
+<p>&emsp;&emsp;上面的三种验证方式，第一种是客户端验证，后两种中服务器端验证，服务器端的验证在任何情况下都是必不可少的。我们在这个示例中，采用jQuery完成对客户端数据的验证，有些好看的显示效果使用jQuery ui插件完成；服务器端采用程序验证的方式。</p>
+
+<p>&emsp;&emsp;使用jQuery的原因是：常简单、高效，而且插件众多，可以大幅度提高前台页面的开发效率。首先将jQuery的js文下载到本地，引入到页面文件中，其次还要有一份jQuery API在手，按API上的示例去写js代码即可。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="o">&lt;</span><span class="nx">link</span> <span class="nx">type</span><span class="o">=</span><span class="err">”</span><span class="nx">text</span><span class="o">/</span><span class="nx">css</span><span class="err">”</span> <span class="nx">rel</span><span class="o">=</span><span class="err">”</span><span class="nx">stylesheet</span><span class="err">”</span> <span class="nx">href</span><span class="o">=</span><span class="err">”</span><span class="nx">css</span><span class="o">/</span><span class="nx">ui</span><span class="o">-</span><span class="nx">lightness</span><span class="o">/</span><span class="nx">jquery</span><span class="o">-</span><span class="nx">ui</span><span class="o">-</span><span class="mf">1.8</span><span class="p">.</span><span class="mi">5</span><span class="p">.</span><span class="nx">custom</span><span class="p">.</span><span class="nx">css</span><span class="err">”</span> <span class="o">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="err">”</span><span class="nx">text</span><span class="o">/</span><span class="nx">javascript</span><span class="err">”</span> <span class="nx">src</span><span class="o">=</span><span class="err">”</span><span class="nx">js</span><span class="o">/</span><span class="nx">jquery</span><span class="o">-</span><span class="mf">1.4</span><span class="p">.</span><span class="mi">2</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">js</span><span class="err">”</span><span class="o">&gt;&lt;</span><span class="err">/script&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="err">”</span><span class="nx">text</span><span class="o">/</span><span class="nx">javascript</span><span class="err">”</span> <span class="nx">src</span><span class="o">=</span><span class="err">”</span><span class="nx">js</span><span class="o">/</span><span class="nx">jquery</span><span class="o">-</span><span class="nx">ui</span><span class="o">-</span><span class="mf">1.8</span><span class="p">.</span><span class="mi">5</span><span class="p">.</span><span class="nx">custom</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">js</span><span class="err">”</span><span class="o">&gt;&lt;</span><span class="err">/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;大家要注意的是js引入的顺序问题，一般是先引入jQuery核心库文件，再引入插件库文件，如果插件库自身带有样式，还要引入css样式文件。还要注意js和css都要分目录存入（我在页面规则中写得有）。下面贴出在登录页面中加入的js验证代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#login_btn&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">if</span> <span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=id]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;学生编码不能为空！&quot;</span><span class="p">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=password]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      
+</span><span class='line'>        <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;登录密码不能为空！&quot;</span><span class="p">);</span>
+</span><span class='line'>      
+</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>  
+</span><span class='line'>   <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果想提示信息更加友好，可使用jQuery ui的Dialog，具体做法你去查询jQuery ui的api文档，这些东西说起来很简单，但要熟悉掌握仍然需要我们大量的实践。可参阅我的&lt;写好登录注册-向商业软件的蜕变>，页面交互这一块内容还很多。</p>
+
+<p>&emsp;&emsp;最看来看看集成测试，大致分为功能性（需求）测试和性能测试两个部分，先来看功能性测试：</p>
+
+<p>&emsp;&emsp;1、最简单、有效的办法是按照功能说明书，用人工的方式逐一测试页面功能，发现错误记录下来。人工方式也是最强、最灵活的，有些功能测试必须由人工来做，比如webgame；如果前期的详细设计非常到位，可以采用自动化工具对需求进行测试，比如Selenium。</p>
+
+<p>&emsp;&emsp;2、性能测试，主要针对有问题的模块进行，常用工具有loadrunner,jmeter,ab等，测试发现系统不满足非功能性需求就要对系统性能进行调优（可参阅我<a href="/blog/2010/11/05/prof-web/">&lt;系统性能优化总结之表现层></a>、<a href="/blog/2010/11/08/prof-service/">&lt;系统性能优化总结之业务层></a>、<a href="/blog/2010/11/09/prof-dao/">&lt;系统性能优化总结之持久层篇></a>）。关于测试这块，我计划用另一篇文章详细讲述。</p>
+
+<p>&emsp;&emsp;j2ee入门教程至此暂告一段落，写作的过程比较艰辛。希望初学者能从这个简单的例子中，真正悟到一个项目究竟是按什么样的流程来做的，每个流程中要注意些什么事项，并能够在实际工作中做到举一反三，这就是本入门系列文章的目的所在。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/12/27/jeee-tou-5/">一个简单的j2ee入门教程（第五部分—页面交互实现）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-27T15:18:00+08:00" pubdate data-updated="true">2010年12月27日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;页面交互实现是一个非常费时间、费精力的过程，如果这个过程做得不好，会影响到项目工期以及系统非功能性需求，我感觉这一块的工作用软件行业的一句话“没有银弹”来形容比较贴切。</p>
+
+<p>&emsp;&emsp;表现层会用到MVC模式，通过引入控制器将视图与业务模型解耦，MVC流程可以总结为下面几个步骤：</p>
+
+<p>&emsp;&emsp;1． 将Web页面中的输入元素封装为一个（请求）数据对象。</p>
+
+<p>&emsp;&emsp;2． 根据请求的不同，调度相应的逻辑处理单元，并将（请求）数据对象作为参数传入。</p>
+
+<p>&emsp;&emsp;3． 逻辑处理单元完成运算后，返回一个结果数据对象。</p>
+
+<p>&emsp;&emsp;4． 将结果数据对象中的数据与预先设计的表现层相融合并展现给用户。</p>
+
+<p>&emsp;&emsp;根据设计，本示例中分为两个action（控制器Controller），一个是LoginAction完成登录相关操作，一个是StrudentAction完成对学生CRUD相关的操作。</p>
+
+<p>&emsp;&emsp;下面贴出控制转发部分的配置文件内容：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;action</span> <span class="na">name=</span><span class="s">&quot;login&quot;</span> <span class="na">class=</span><span class="s">&quot;loginActionRef&quot;</span> <span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">type=</span><span class="s">&quot;chain&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;param</span> <span class="na">name=</span><span class="s">&quot;actionName&quot;</span><span class="nt">&gt;</span>student_queryByPage<span class="nt">&lt;/param&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/result&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/action&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;action</span> <span class="na">name=</span><span class="s">&quot;student_*&quot;</span> <span class="na">class=</span><span class="s">&quot;studentActionRef&quot;</span> <span class="na">method=</span><span class="s">&quot;{1}&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">name=</span><span class="s">&quot;stduent_list&quot;</span><span class="nt">&gt;</span>/student_list.jsp<span class="nt">&lt;/result&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">name=</span><span class="s">&quot;to_modify&quot;</span><span class="nt">&gt;</span>/update_student.jsp<span class="nt">&lt;/result&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">name=</span><span class="s">&quot;to_detail&quot;</span><span class="nt">&gt;</span>/student_detail.jsp<span class="nt">&lt;/result&gt;</span>
+</span><span class='line'>  
+</span><span class='line'><span class="nt">&lt;/action&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在这两个action配置中，都指明了请求路径、对应的action处理类（本配置文件中指向为spring容器中的action的id）以及处理完成后的跳转页面。如果你使用struts1.x或者servlet来做，原理与之类似，只是一些配置参数写法不同而已（注：学生CRUD操作合并到了一个 action中，这与struts1.x中的DispatcherAction类似）。</p>
+
+<p>&emsp;&emsp;登录页面主要代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">”&lt;%=path%</span><span class="nt">&gt;</span>/login.action” method=”post”&gt;
+</span><span class='line'>
+</span><span class='line'>学生编号：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">’text’</span> <span class="na">name=</span><span class="s">”id”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>登录密码：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">”password”</span> <span class="na">name=</span><span class="s">”password”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">”submit”</span> <span class="na">value=</span><span class="s">”登录”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">”reset”</span> <span class="na">value=</span><span class="s">”重置”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/form&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;登录操作的Action代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 用户登录Action</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @author Ljh</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LoginAction</span> <span class="kd">extends</span> <span class="n">ActionSupport</span> <span class="kd">implements</span> <span class="n">SessionAware</span><span class="o">,</span> <span class="n">RequestAware</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">Long</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">String</span> <span class="n">password</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//对应HttpSesson作用域，由SessionAware注入</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">①</span><span class="kd">private</span> <span class="n">Map</span> <span class="n">session</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//对应HttpRequest作用域，由RequestAware注入</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">②</span><span class="kd">private</span> <span class="n">Map</span> <span class="n">request</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//学生业务对象</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">IStudentService</span> <span class="n">studentService</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//登录执行的方法</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">③</span><span class="kd">public</span> <span class="n">String</span> <span class="n">execute</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//进行前台表单数据合法性验证</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">id</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="s">&quot;学生id号不能为空！&quot;</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//调用业务层登录方法</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">try</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">login</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">password</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">session</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;student_session_key&quot;</span><span class="o">,</span> <span class="n">student</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">return</span> <span class="n">SUCCESS</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">......</span><span class="na">get</span> <span class="n">set</span> <span class="err">方法略去。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;可以看到，页面表单名称和action中接收参数的属性名称相同，struts2通过拦截器直接把页面参数放放到相应的字段中，在execute执行时已经正确接收到了页面表单参数值了。</p>
+
+<p>&emsp;&emsp;在 struts1.x中，你还需要一个FromBean来接收页面参数，而在servlet中你需要request.getParameter来取页面参数，由此可见，struts2的这种做法将变得十分的简单，可以提高开发的效率。当然，任何事物都有两面性，struts2的action必须是一个请求一个实例，不再像struts1.x和servlet的单实例哦，这对运行性能有一点影响。</p>
+
+<p>&emsp;&emsp;上述代码①②处值得大家注意，struts2把对httpSession、httptRequest的操作变成了对普通Map的操作，这一变化将使得struts2与web容器完全解耦，页面的交互逻辑测试将变得很容易。</p>
+
+<p>&emsp;&emsp;③处的execute方法无参数，并返加string作为跳转结果标识，这个和struts1.x也有很大的变化，目的只有一个：解耦方便测试。</p>
+
+<p>&emsp;&emsp;下面贴出学生CRUD操作的action代码，代码写得很精简，可以做为你今后表现层代码模板：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+<span class='line-number'>170</span>
+<span class='line-number'>171</span>
+<span class='line-number'>172</span>
+<span class='line-number'>173</span>
+<span class='line-number'>174</span>
+<span class='line-number'>175</span>
+<span class='line-number'>176</span>
+<span class='line-number'>177</span>
+<span class='line-number'>178</span>
+<span class='line-number'>179</span>
+<span class='line-number'>180</span>
+<span class='line-number'>181</span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+<span class='line-number'>194</span>
+<span class='line-number'>195</span>
+<span class='line-number'>196</span>
+<span class='line-number'>197</span>
+<span class='line-number'>198</span>
+<span class='line-number'>199</span>
+<span class='line-number'>200</span>
+<span class='line-number'>201</span>
+<span class='line-number'>202</span>
+<span class='line-number'>203</span>
+<span class='line-number'>204</span>
+<span class='line-number'>205</span>
+<span class='line-number'>206</span>
+<span class='line-number'>207</span>
+<span class='line-number'>208</span>
+<span class='line-number'>209</span>
+<span class='line-number'>210</span>
+<span class='line-number'>211</span>
+<span class='line-number'>212</span>
+<span class='line-number'>213</span>
+<span class='line-number'>214</span>
+<span class='line-number'>215</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 学生相关操作Action</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @author Ljh</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">StudentAction</span> <span class="kd">extends</span> <span class="n">ActionSupport</span> <span class="kd">implements</span> <span class="n">RequestAware</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//学生对象关参数</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">Long</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//分页参数</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">Integer</span> <span class="n">pno</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//日志记录</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="n">Logger</span> <span class="n">log</span> <span class="o">=</span> <span class="n">Logger</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">StudentAction</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//httpRequest，由RequestAware注入</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">Map</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="n">String</span><span class="o">,</span> <span class="n">Object</span><span class="o">&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">request</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//学生业务类对象</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">IStudentService</span> <span class="n">studentService</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 分页查询学生信息</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return 学生列表展示页面</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">queryByPage</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//查询学生数据</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Page</span> <span class="n">pagebean</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">getStudentByPage</span><span class="o">(</span><span class="n">pno</span><span class="o">,</span> <span class="n">IConstant</span><span class="o">.</span><span class="na">PAGE_SIZE</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//将分页对象放到作用域中</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;pb&quot;</span><span class="o">,</span> <span class="n">pagebean</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//跳转至分页显示页面</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="s">&quot;stduent_list&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 添加学生信息</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">addStudent</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//将页面属性拷贝到student中</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">BeanUtils</span><span class="o">.</span><span class="na">copyProperties</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">studentService</span><span class="o">.</span><span class="na">addStudent</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="nf">queryByPage</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 删除学生信息</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">delete</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="n">studentService</span><span class="o">.</span><span class="na">deleteStudentById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="nf">queryByPage</span><span class="o">();</span>
+</span><span class='line'>  
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 修改学生信息</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">updateStudent</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//先根据id查询学生（一定要先查）</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">student</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span><span class="s">&quot;你要修改的学生对象不存在！&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//将页面属性拷贝到student中</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">BeanUtils</span><span class="o">.</span><span class="na">copyProperties</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">student</span><span class="o">,</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{});</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="n">studentService</span><span class="o">.</span><span class="na">updateStudent</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="nf">queryByPage</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 转到修改学生信息，这是修改的第一步</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">toModify</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//根据id查询学生</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//放入web作用域</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;student&quot;</span><span class="o">,</span> <span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;pno&quot;</span><span class="o">,</span> <span class="n">pno</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//跳转到修改页面</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="s">&quot;to_modify&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 查看学生信息</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">detail</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//根据id查询学生</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//放入web作用域</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;student&quot;</span><span class="o">,</span> <span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//跳转到修改页面</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="s">&quot;to_detail&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;再贴一段分页部分的核心代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;table&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;tr</span> <span class="na">style=</span><span class="s">”background-color:gray;”</span><span class="nt">&gt;&lt;td&gt;</span>学生编码<span class="nt">&lt;/td&gt;&lt;td</span> <span class="na">width=</span><span class="s">”100″</span><span class="nt">&gt;</span>姓名<span class="nt">&lt;/td&gt;&lt;td</span> <span class="na">width=</span><span class="s">”150″</span><span class="nt">&gt;</span>出生日期<span class="nt">&lt;/td&gt;&lt;td</span> <span class="na">width=</span><span class="s">”100″</span><span class="nt">&gt;</span>操作<span class="nt">&lt;/td&gt;&lt;/tr&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;c:forEach</span> <span class="na">items=</span><span class="s">”${pb.data}”</span> <span class="na">var=</span><span class="s">”e”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;tr&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;td&gt;</span>${e.id}<span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;td&gt;&lt;a</span> <span class="na">href=</span><span class="s">”student_detail.action?id=${e.id}”</span><span class="nt">&gt;</span>${e.name }<span class="nt">&lt;/a&gt;&lt;/td&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;td&gt;&lt;fmt:formatDate</span> <span class="na">value=</span><span class="s">”${e.birthday}”</span> <span class="na">pattern=</span><span class="s">”yyyy年MM月dd日”/</span><span class="nt">&gt;&lt;/td&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;td&gt;&lt;a</span> <span class="na">href=</span><span class="s">”student_toModify.action?id=${e.id}&amp;pno=${pb.currentPageNo}”</span> <span class="na">style=</span><span class="s">”margin-right:25px;”</span><span class="nt">&gt;</span>修改<span class="nt">&lt;/a&gt;&lt;a</span> <span class="na">href=</span><span class="s">”student_delete.action?id=${e.id}&amp;pno=${pb.currentPageNo}”</span> <span class="na">onclick=</span><span class="s">”javascript:return</span> <span class="na">confirm</span><span class="err">(‘确定要删除记录吗?’);”</span><span class="nt">&gt;</span>删除<span class="nt">&lt;/a&gt;&lt;/td&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/tr&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/c:forEach&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/table&gt;</span>
+</span><span class='line'>
+</span><span class='line'>${pb.currentPageNo}/${pb.totalPages }页，共${pb.totalRows }条记录<span class="ni">&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">”student_queryByPage.action?pno=1″</span><span class="nt">&gt;</span>第一页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">”student_queryByPage.action?pno=${pb.prePageNo}”</span><span class="nt">&gt;</span>上一页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">”student_queryByPage.action?pno=${pb.nextPageNo}”</span><span class="nt">&gt;</span>下一页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">”student_queryByPage.action?pno=${pb.totalPages}”</span><span class="nt">&gt;</span>末一页<span class="nt">&lt;/a&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码你自己仔细阅读、研究吧，我要强调下面几点：</p>
+
+<p>&emsp;&emsp;1、擅于使用BeanUtils.copyProperties完成对象间属性的copy；</p>
+
+<p>&emsp;&emsp;2、修改对象，必须要先查后改。即先查出要修改的对象，再用BeanUtils.copyProperties赋值，最后再调用业务层方法完成修改；</p>
+
+<p>&emsp;&emsp;3、删除对象也要先查后删除，即不要new出对象再set OID值 再删除；</p>
+
+<p>&emsp;&emsp;4、合理利于异常机制，直接显示业务层出来的异常信息；</p>
+
+<p>&emsp;&emsp;5、定义通用出错页面；</p>
+
+<p>&emsp;&emsp;6、分页的页面代码中，要注意jstl的标记用法，日期格式化代码。</p>
+
+<p>&emsp;&emsp;最后还要注意一点，hibernate属性延迟加载问题。我们使用了spring的OpenSessionInView过滤器（底层用 ThreadLocal实现，建议大家去研究一下哦）来解决在action及页面中访问域对象属性的延迟加载问题，但是在struts2中，你一定要把该过滤器配置到struts2过滤器之前，否则OpenSessionInView不起作用。</p>
+
+<p>&emsp;&emsp;至此，表现层的代码基本完成，你可能已经发现表现层代码会占用我们很多的开发时间，表现层的开发可以通过一些高效、设计良好的表现层框架提高开发的效率，比如：本例使用struts2，你也可以尝试一下JSF之类的框架，也许会有新的发现。</p>
+
+<p>&emsp;&emsp;下一篇，我想谈谈页面的数据合法性验证及测试方面的知识，请大家继续关注。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/12/23/jeee-tou-4/">一个简单的j2ee入门教程（第四部分—业务层编码）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-23T15:18:00+08:00" pubdate data-updated="true">2010年12月23日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;编码在整个项目中占用的时间比例不是太多，我篇文章的将结合实例，讲解编码的一些流程和规范。</p>
+
+<p>&emsp;&emsp;按照常规顺序，先从持久层开始编码实现。持久层预先定义了接口，我们要写出持久层实现类，并写出测试用例保证测试通过，本示例中我们使用的是通用持久层封装，因此，在持久层并没有太多的工作要做。</p>
+
+<p>&emsp;&emsp;业务层是我们的重点，做法基本按照测试驱动开发来做（当然不是严格意义上的测试驱动开发），我们只是要保证每个业务方法的实现都要有相应的测试代码，测试代码的编写和业务实现代码的编写交替进行，并无严格先后顺序。</p>
+
+<p>&emsp;&emsp;在eclipse环境中，所有的测试代码位于src下以test开头的一个包中，在这个包中再按测试模块逻辑名称分类存放，目录结构截图如下：</p>
+
+<p><img src="/uploads/2011/03/32.png" title="项目单元测试类目录结构" alt="" /></p>
+
+<p>&emsp;&emsp;本例中是基于junit测试，版本3.8（4.0以上是支持注解测试的哦，不过检人更喜欢写单独测试类），所有测试类以Test结尾，测试中主要通过断言机制，通过观察测试结果进度条的颜色（红、绿）来判断测试结果，下面贴出部分测试代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">StudentServiceTest</span> <span class="kd">extends</span> <span class="n">TestCase</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">IStudentService</span> <span class="n">sts</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">setUp</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">BeanFactory</span> <span class="n">bf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ClassPathXmlApplicationContext</span><span class="o">(</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">sts</span> <span class="o">=</span> <span class="o">(</span><span class="n">IStudentService</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;studentService&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">testStudentService</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//测试按照id查询学生信息</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Student</span> <span class="n">s</span> <span class="o">=</span> <span class="n">sts</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">assertNotNull</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">assertEquals</span><span class="o">(</span><span class="s">&quot;张三&quot;</span><span class="o">,</span> <span class="n">s</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//测试分页</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Page</span> <span class="n">page</span> <span class="o">=</span> <span class="n">sts</span><span class="o">.</span><span class="na">getStudentByPage</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">5</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">assertEquals</span><span class="o">(</span><span class="mi">3</span><span class="o">,</span> <span class="n">page</span><span class="o">.</span><span class="na">getTotalPages</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">assertEquals</span><span class="o">(</span><span class="mi">5</span><span class="o">,</span> <span class="n">page</span><span class="o">.</span><span class="na">getData</span><span class="o">().</span><span class="na">size</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">assertEquals</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="n">page</span><span class="o">.</span><span class="na">getCurrentPageNo</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//测试其它的业务方法.....（略）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;写出业务代码后，运行该测试用例，如果测试没有通过，再回过头去修改业务实现代码，如此交替进行，最后保证业务类得以实现。这种做法要注意几点：数据库中应预先录入测试数据；要知道如何测试CRUD（一般先测试R通过，再测CUD，因为CUD要依赖于R进行验证）；要知道如何测试有异常抛出的业务方法（要用到fail方法）。</p>
+
+<p>&emsp;&emsp;在多人开发环境中经常碰到测试数据库是大家共有的情况，在这种情况下，我们遇到的问题是一个人对测试数据的更改会影响到他人的测试代码通过，在这种环境下就得保证每个人的测试不真正提交到数据库，但又要保证测试的通过，具体请参阅我的另一篇文章《junit测试之hiberante延迟加载问题》的内容。</p>
+
+<p>&emsp;&emsp;下面贴出在spring环境下带事务回滚功能的测试代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">StudentServiceInSpringTest</span> <span class="kd">extends</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AbstractTransactionalSpringContextTests</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">IStudentService</span> <span class="n">sts</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testUpdateStudent</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="c1">//先按照id查询学生信息</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Student</span> <span class="n">s</span> <span class="o">=</span> <span class="n">sts</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">assertNotNull</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">assertEquals</span><span class="o">(</span><span class="s">&quot;张三&quot;</span><span class="o">,</span> <span class="n">s</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//本测试方法中的事务不回滚，真正向数据库提交</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//this.setComplete();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;张三丰&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>          <span class="n">sts</span><span class="o">.</span><span class="na">updateStudent</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">s</span> <span class="o">=</span> <span class="n">sts</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">assertNotNull</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">assertEquals</span><span class="o">(</span><span class="s">&quot;张三丰&quot;</span><span class="o">,</span> <span class="n">s</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>          <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">protected</span> <span class="n">String</span><span class="o">[]</span> <span class="nf">getConfigLocations</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">return</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">};</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//.....其它代码略去。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;业务层代码经过测试通过后，将提交到版本控制服务器中，把所有人的测试用例加入到一个测试套件中，统一运行测试套件（TestSuite）没有问题后，业务层代码就算写好了。当然，这个过程中我们可能会发现诸如orm映射文件问题，业务方法设计问题等等，这些存在的问题都会在编码和单元测试的过程中解决。</p>
+
+<p>&emsp;&emsp;下面贴出本示例中业务层代码的实现示例，这部分代码应该成为业务代码实现的规范，非常的重要。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="err">①</span><span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span><span class="o">=</span><span class="kc">false</span><span class="o">,</span><span class="n">rollbackFor</span><span class="o">=</span><span class="n">BizException</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">StudentServiceImpl</span> <span class="kd">implements</span> <span class="n">IStudentService</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 通用DAO</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">IBaseDao</span> <span class="n">baseDao</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">* 用于日志记录</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">②</span><span class="kd">private</span> <span class="kd">static</span> <span class="n">Logger</span> <span class="n">log</span> <span class="o">=</span> <span class="n">Logger</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">StudentServiceImpl</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">*用户登录方法实现</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">③</span><span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span><span class="o">=</span><span class="kc">true</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">Student</span> <span class="nf">login</span><span class="o">(</span><span class="n">Long</span> <span class="n">id</span><span class="o">,</span> <span class="n">String</span> <span class="n">password</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">BizException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">String</span> <span class="n">hql</span> <span class="o">=</span> <span class="err">“</span><span class="n">from</span> <span class="n">Student</span> <span class="n">s</span> <span class="n">where</span> <span class="n">s</span><span class="o">.</span><span class="na">id</span> <span class="o">=</span> <span class="o">?</span> <span class="n">and</span> <span class="n">s</span><span class="o">.</span><span class="na">password</span> <span class="o">=</span> <span class="o">?</span><span class="err">”</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">List</span><span class="o">&lt;</span><span class="n">Student</span><span class="o">&gt;</span> <span class="n">students</span> <span class="o">=</span> <span class="n">baseDao</span><span class="o">.</span><span class="na">queryEntitys</span><span class="o">(</span><span class="n">hql</span><span class="o">,</span> <span class="k">new</span> <span class="n">Object</span><span class="o">[]</span> <span class="o">{</span> <span class="n">id</span><span class="o">,</span> <span class="n">password</span> <span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">students</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">return</span> <span class="n">students</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="err">④</span><span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="err">“</span><span class="n">Student</span> <span class="n">login</span> <span class="n">failure</span><span class="o">,</span> <span class="n">the</span> <span class="n">id</span> <span class="nl">is:</span><span class="err">”</span> <span class="o">+</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="err">⑤</span><span class="k">throw</span> <span class="k">new</span> <span class="n">BizException</span><span class="o">(</span><span class="err">“学生登录失败，</span><span class="n">id</span><span class="err">号是：”</span> <span class="o">+</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 根据id删除学生对象实现</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @param id</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">deleteStudentById</span><span class="o">(</span><span class="kt">long</span> <span class="n">id</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">BizException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">⑥</span><span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="o">(</span><span class="n">Student</span><span class="o">)</span> <span class="n">baseDao</span><span class="o">.</span><span class="na">queryEntityById</span><span class="o">(</span><span class="n">Student</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">student</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">baseDao</span><span class="o">.</span><span class="na">deleteEntity</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="err">④</span><span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="err">“</span><span class="n">student</span> <span class="n">not</span> <span class="n">exist</span><span class="o">,</span> <span class="n">the</span> <span class="n">id</span> <span class="nl">is:</span><span class="err">”</span> <span class="o">+</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="err">⑤</span><span class="k">throw</span> <span class="k">new</span> <span class="n">BizException</span><span class="o">(</span><span class="err">“你要删除的学生不存在，学生</span><span class="n">id</span><span class="err">号是：”</span> <span class="o">+</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">* 分页查询学生对象实现</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @param pageNo</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @param pageSize</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span><span class="o">=</span><span class="kc">true</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">Page</span> <span class="nf">getStudentByPage</span><span class="o">(</span><span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">String</span> <span class="n">hql</span> <span class="o">=</span> <span class="err">“</span><span class="n">from</span> <span class="n">Student</span><span class="err">”</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">baseDao</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">.</span><span class="na">queryEntityByPage</span><span class="o">(</span><span class="n">pageNo</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">,</span> <span class="n">hql</span><span class="o">,</span> <span class="k">new</span> <span class="n">Object</span><span class="o">[]</span> <span class="o">{});</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//…..其它代码略去。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;请大家注意代码中的数字标识：</p>
+
+<p>&emsp;&emsp;①可以看出，我们使用spring注解方式管理业务方法事务，它标明本实现类中所有的业务方法都是非只读事务，并且业务方法中抛出BizException表示该业务方法执行失败。</p>
+
+<p>&emsp;&emsp;②一个静态日志类，用来实现本类中日志的统一输出。</p>
+
+<p>&emsp;&emsp;③登录业务方法是一个只读事务，如此声明对性能提升有作用。</p>
+
+<p>&emsp;&emsp;④出现异常先进行日志记录，建议用英文（unix、linux下英文维护起来更方便）。</p>
+
+<p>&emsp;&emsp;⑤抛出统一的业务层异常，建议用中文写出原因，因为该信息可以直接放到页面上显示。</p>
+
+<p>&emsp;&emsp;⑥删除时，先查后改；更新同理。</p>
+
+<p>&emsp;&emsp;业务层代码已经完成，下面我们要进入页面交互部分的编写，页面部分工作量非常大，也非常繁琐，占用的编码周期较长，下面一篇文章将详细介绍。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/12/20/jeee-tou-3/">一个简单的j2ee入门教程（第三部分——编码前的准备）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-20T15:18:00+08:00" pubdate data-updated="true">2010年12月20日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;<strong>原型实现</strong></p>
+
+<p>&emsp;&emsp;这篇文章主要讲述项目在进入编码前的一些准备工作，如果这些工作不做好，会影响到编码的进度。</p>
+
+<p>&emsp;&emsp;<strong>一、搭建项目结构</strong></p>
+
+<p>在概要设计阶段已经确定的技术框架基础上，搭建立起项目结构，主要有下面的一些内容：</p>
+
+<p>&emsp;&emsp;1、源代码</p>
+
+<p>&emsp;&emsp;确定源代码的逻辑包结构，明确域对象、接口、实现类、工具类、控制类的存放规则。我们要知道，不论什么样的规则，都是以项目可读性、可维护性为目标的，如果你明白了这一点，就可以确定出很多规则：比如 分包，命名等。</p>
+
+<p>&emsp;&emsp;a、一图胜千言，贴出本示例中的源代码截图如下：。</p>
+
+<p><img src="/uploads/2011/03/27.png" title="项目包结构图" alt="" /></p>
+
+<p>&emsp;&emsp;在上面这个图中，基础框架部分（也就是framework中的所有东西）需要打成一个jar包导入项目lib中（我还没有打jar包），其它部分都按我们的规范文档来做（文档内容不再贴出）。有几点要强调一下：域对象要实现序列化接口，所有集合必须预先初始化，很多人不重视这些细节，后期写起来就会发现问题哈。</p>
+
+<p>&emsp;&emsp;b、配置文件</p>
+
+<p>所有配置文件全部放到src的config目录中，这样做的好处一方面是利于统一管理维护，另一方面是利于测试。配置文件又按框架分子目录存放，每一种框架又有一篇自己的基础配置文件，然后才是每个程序员自己的配置文件。</p>
+
+<p>&emsp;&emsp;c、测试类要另建包存入。</p>
+
+<p>&emsp;&emsp;按照测试驱动开发的方法来做，业务类中的每个方法都要测试通过。</p>
+
+<p>&emsp;&emsp;d、日志配置文件一定要写好。</p>
+
+<p>&emsp;&emsp;配置好日志文件，项目中的信息统一用log输出。</p>
+
+<p>&emsp;&emsp;e、导出源代码。我们把本例中详细设计图（有些书上叫设计模型）中的类图导出成源代码，再将这些代码放入我们的目录中（要注意导出时选择utf-8编码集）。</p>
+
+<p>&emsp;&emsp;<strong>二、项目页面的处理</strong></p>
+
+<p>&emsp;&emsp;如果后期采用jsp实现，在这就得将原型实现产生的html文件全部转为jsp，在转换时要注意下面几点：</p>
+
+<p>&emsp;&emsp;a、页面中对所有资源（图片、js、css）的引用，要使用绝对路径。比如：</p>
+
+<p>&emsp;&emsp;在jsp开头定义&lt;%Stringpath=request.getContextPath(); %></p>
+
+<p>&emsp;&emsp;在登录form的路径引用：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">”&lt;%=path%</span><span class="nt">&gt;</span>/login.action” method=”post”&gt;
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其它引用的资源也与之类似。</p>
+
+<p>&emsp;&emsp;b、页面编码集采用utf-8(有的项目还必须用GBK哦，比如一些支付页面，当然这是特例)。</p>
+
+<p>&emsp;&emsp;<strong>三、建表，准备测试数据</strong></p>
+
+<p>&emsp;&emsp;a、从经过审核的PD物理模型中导入建表sql语句，并在所选择的数据库执行该sql语语建立起表结构，本阶段数据库索引、外键这些可以暂不考虑，在性能调优时再统一添加。</p>
+
+<p>&emsp;&emsp;b、在表中添加合理的测试数据，这是规范的软件开发流程中的做法，当然，也可以由程序员在编码时自行添加。另外，在PD中可以帮助你统一生成测试数据，但这些数据是随机的，没有业务含义，不好理解（如果你懒得手工去输入，可以考虑这种方式）。</p>
+
+<p>本例导出sql如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="o">`</span><span class="n">t_student</span><span class="o">`</span> <span class="p">(</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">`</span><span class="n">pk_id</span><span class="o">`</span> <span class="nb">bigint</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="n">AUTO_INCREMENT</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">`</span><span class="n">f_name</span><span class="o">`</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">`</span><span class="n">f_birthday</span><span class="o">`</span> <span class="nb">date</span> <span class="k">DEFAULT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">`</span><span class="n">f_password</span><span class="o">`</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span> <span class="k">DEFAULT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="o">`</span><span class="n">pk_id</span><span class="o">`</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">)</span> <span class="n">ENGINE</span><span class="o">=</span><span class="n">InnoDB</span> <span class="n">AUTO_INCREMENT</span><span class="o">=</span><span class="mi">1</span> <span class="k">DEFAULT</span> <span class="n">CHARSET</span><span class="o">=</span><span class="n">utf8</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;测试数据由手工添加。</p>
+
+<p>&emsp;&emsp;<strong>四、配置orm映射文件</strong></p>
+
+<p>本例使用hibernate作为持久层框架，所以要编写hbm映射文件。映射文件的编写应交由1~2个人负责，过程要一气呵成，具体做法：可采用反向生成工具一次性生成，再手工调整；或者全部手工来写，两个程序员，一个人屏幕上打开领域对象，一个人打开物理模型，对照起来结对编程，也可高效地完成映射文件的编写（一定不要由每个人自己写自己的映射文哦）。</p>
+
+<p>&emsp;&emsp;本示例中只有一个领域对象，映射文件的编写非常的简单，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="cp">&lt;?xml version=”1.0″ encoding=”utf-8″?&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">&lt;!DOCTYPE hibernate-mapping PUBLIC “-//Hibernate/Hibernate Mapping DTD 3.0//EN”</span>
+</span><span class='line'><span class="cp"> </span>
+</span><span class='line'><span class="cp">“http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd”&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">&lt;!– Mapping file autogenerated by MyEclipse Persistence Tools –&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;hibernate-mapping&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">”com.yourcompany.yourproject.model.Student”</span> <span class="na">table=</span><span class="s">”t_student”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">”id”</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”pk_id”</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">”identity”</span><span class="nt">&gt;&lt;/generator&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">”name”</span> <span class="na">type=</span><span class="s">”java.lang.String”</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”f_name”</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">”password”</span> <span class="na">type=</span><span class="s">”java.lang.String”</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”f_password”</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">”birthday”</span> <span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”f_birthday”/</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/class&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/hibernate-mapping&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在编写映射文件的时候要注意的几点是：级联，反转，延迟，fetch加载这几个重要的属性，这些属性对业务和系统的性能都有较大影响。</p>
+
+<p>&emsp;&emsp;<strong>五、版本控制服务器</strong></p>
+
+<p>&emsp;&emsp;a、搭建起版本控制服务器，本示例中使用svn。在使用版本控制服务器时要注意一些基本的用法，比如：上传项目、检入、检出、更新、还原、解决冲突，更换服务器ip等等，这些内容我在这全部讲出来你也不回明白的，只有靠大家在项目中积累。</p>
+
+<p>&emsp;&emsp;b、版本控制服务器客户端要安装好，如果采用eclipse做svn客户端，则下载相应的插件压缩包，将文件拷贝到eclipse相应目录即可；如果用 TortoiseSVN-客户端则更简单，安装完后在系统右键菜单中会出现相应的操作。据我的经验，TortoiseSVN更加的稳定，非常不错。</p>
+
+<p>&emsp;&emsp;<strong>六、完善项目文档</strong></p>
+
+<p>&emsp;&emsp;a、在项目文夹下建立doc目录，将项目需求，数据库相关，变更相关，计划相关的文档全部放到该文夹下，以便后期的统一管理，doc目录结构如下图所示：</p>
+
+<p><img src="/uploads/2011/03/26.png" title="项目文档目录结构" alt="" /></p>
+
+<p>&emsp;&emsp;当然，你也可以在版本控制服务器上建立一个新的文档仓库，专门用来存放项目的各类型文档，这种做法也更规范。本示例直接将doc放以了项目中，仅仅做为示范。</p>
+
+<p>&emsp;&emsp;<strong>七、制定后期的开发计划</strong></p>
+
+<p>&emsp;&emsp;制定编码期的项目开发计划，可详细到每一天，如果感觉太细可详细到2~3天，时间点到了就得按计划进行审核，对出现的问题及时处理。</p>
+
+<p>&emsp;&emsp;计划的制定要根据用例（或模块）的复杂性及人员的具体能力分配，量力而行，充分利用每个人的特点和能力，当然，前提是要对每个程序员有充分的了解。计划可以按最终项目完成时间倒退得出，一个迭代期还要留有两到三天的冗余时间。</p>
+
+<p>&emsp;&emsp;<strong>八、明确规范，开始编码</strong></p>
+
+<p>&emsp;&emsp;规范是新员工入职的时候要培训的，在编码前最好再次明确一下，架构级规范、代码级规范、svn规范等等，一切规范都是为了后期代码可读性、可维护性而制定的，大家一定要严格遵照执行。</p>
+
+<p>&emsp;&emsp;终于可以进入编码了，很多人都期待着这一天的早日到来，但是你真的有把握写好代码吗？如果你前面的工作没做好，编码将非常的痛苦。请继续关注我的下一篇关于编码阶段的文章。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+      <a class="prev" href="/blog/page/12/">&larr; 更多早期老文章</a>
+    
+    <a href="/blog/archives">所有文章</a>
+    
+    <a class="next" href="/blog/page/10/">更多近期文章 &rarr;</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,443 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>一个简单的j2ee入门教程（第三部分——编码前的准备） - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;原型实现 &emsp;&emsp;这篇文章主要讲述项目在进入编码前的一些准备工作，如果这些工作不做好，会影响到编码的进度。 &emsp;&emsp;一、搭建项目结构 在概要设计阶段已经确定的技术框架基础上，搭建立起项目结构，主要有下面的一些内容： &emsp;&emsp;1 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2010/12/20/jeee-tou-3">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">一个简单的j2ee入门教程（第三部分——编码前的准备）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-20T15:18:00+08:00" pubdate data-updated="true">2010年12月20日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;<strong>原型实现</strong></p>
+
+<p>&emsp;&emsp;这篇文章主要讲述项目在进入编码前的一些准备工作，如果这些工作不做好，会影响到编码的进度。</p>
+
+<p>&emsp;&emsp;<strong>一、搭建项目结构</strong></p>
+
+<p>在概要设计阶段已经确定的技术框架基础上，搭建立起项目结构，主要有下面的一些内容：</p>
+
+<p>&emsp;&emsp;1、源代码</p>
+
+<p>&emsp;&emsp;确定源代码的逻辑包结构，明确域对象、接口、实现类、工具类、控制类的存放规则。我们要知道，不论什么样的规则，都是以项目可读性、可维护性为目标的，如果你明白了这一点，就可以确定出很多规则：比如 分包，命名等。</p>
+
+<p>&emsp;&emsp;a、一图胜千言，贴出本示例中的源代码截图如下：。</p>
+
+<p><img src="/uploads/2011/03/27.png" title="项目包结构图" alt="" /></p>
+
+<p>&emsp;&emsp;在上面这个图中，基础框架部分（也就是framework中的所有东西）需要打成一个jar包导入项目lib中（我还没有打jar包），其它部分都按我们的规范文档来做（文档内容不再贴出）。有几点要强调一下：域对象要实现序列化接口，所有集合必须预先初始化，很多人不重视这些细节，后期写起来就会发现问题哈。</p>
+
+<p>&emsp;&emsp;b、配置文件</p>
+
+<p>所有配置文件全部放到src的config目录中，这样做的好处一方面是利于统一管理维护，另一方面是利于测试。配置文件又按框架分子目录存放，每一种框架又有一篇自己的基础配置文件，然后才是每个程序员自己的配置文件。</p>
+
+<p>&emsp;&emsp;c、测试类要另建包存入。</p>
+
+<p>&emsp;&emsp;按照测试驱动开发的方法来做，业务类中的每个方法都要测试通过。</p>
+
+<p>&emsp;&emsp;d、日志配置文件一定要写好。</p>
+
+<p>&emsp;&emsp;配置好日志文件，项目中的信息统一用log输出。</p>
+
+<p>&emsp;&emsp;e、导出源代码。我们把本例中详细设计图（有些书上叫设计模型）中的类图导出成源代码，再将这些代码放入我们的目录中（要注意导出时选择utf-8编码集）。</p>
+
+<p>&emsp;&emsp;<strong>二、项目页面的处理</strong></p>
+
+<p>&emsp;&emsp;如果后期采用jsp实现，在这就得将原型实现产生的html文件全部转为jsp，在转换时要注意下面几点：</p>
+
+<p>&emsp;&emsp;a、页面中对所有资源（图片、js、css）的引用，要使用绝对路径。比如：</p>
+
+<p>&emsp;&emsp;在jsp开头定义&lt;%Stringpath=request.getContextPath(); %></p>
+
+<p>&emsp;&emsp;在登录form的路径引用：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">”&lt;%=path%</span><span class="nt">&gt;</span>/login.action” method=”post”&gt;
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其它引用的资源也与之类似。</p>
+
+<p>&emsp;&emsp;b、页面编码集采用utf-8(有的项目还必须用GBK哦，比如一些支付页面，当然这是特例)。</p>
+
+<p>&emsp;&emsp;<strong>三、建表，准备测试数据</strong></p>
+
+<p>&emsp;&emsp;a、从经过审核的PD物理模型中导入建表sql语句，并在所选择的数据库执行该sql语语建立起表结构，本阶段数据库索引、外键这些可以暂不考虑，在性能调优时再统一添加。</p>
+
+<p>&emsp;&emsp;b、在表中添加合理的测试数据，这是规范的软件开发流程中的做法，当然，也可以由程序员在编码时自行添加。另外，在PD中可以帮助你统一生成测试数据，但这些数据是随机的，没有业务含义，不好理解（如果你懒得手工去输入，可以考虑这种方式）。</p>
+
+<p>本例导出sql如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="o">`</span><span class="n">t_student</span><span class="o">`</span> <span class="p">(</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">`</span><span class="n">pk_id</span><span class="o">`</span> <span class="nb">bigint</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="n">AUTO_INCREMENT</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">`</span><span class="n">f_name</span><span class="o">`</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">`</span><span class="n">f_birthday</span><span class="o">`</span> <span class="nb">date</span> <span class="k">DEFAULT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">`</span><span class="n">f_password</span><span class="o">`</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span> <span class="k">DEFAULT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="o">`</span><span class="n">pk_id</span><span class="o">`</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">)</span> <span class="n">ENGINE</span><span class="o">=</span><span class="n">InnoDB</span> <span class="n">AUTO_INCREMENT</span><span class="o">=</span><span class="mi">1</span> <span class="k">DEFAULT</span> <span class="n">CHARSET</span><span class="o">=</span><span class="n">utf8</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;测试数据由手工添加。</p>
+
+<p>&emsp;&emsp;<strong>四、配置orm映射文件</strong></p>
+
+<p>本例使用hibernate作为持久层框架，所以要编写hbm映射文件。映射文件的编写应交由1~2个人负责，过程要一气呵成，具体做法：可采用反向生成工具一次性生成，再手工调整；或者全部手工来写，两个程序员，一个人屏幕上打开领域对象，一个人打开物理模型，对照起来结对编程，也可高效地完成映射文件的编写（一定不要由每个人自己写自己的映射文哦）。</p>
+
+<p>&emsp;&emsp;本示例中只有一个领域对象，映射文件的编写非常的简单，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="cp">&lt;?xml version=”1.0″ encoding=”utf-8″?&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">&lt;!DOCTYPE hibernate-mapping PUBLIC “-//Hibernate/Hibernate Mapping DTD 3.0//EN”</span>
+</span><span class='line'><span class="cp"> </span>
+</span><span class='line'><span class="cp">“http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd”&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">&lt;!– Mapping file autogenerated by MyEclipse Persistence Tools –&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;hibernate-mapping&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">”com.yourcompany.yourproject.model.Student”</span> <span class="na">table=</span><span class="s">”t_student”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">”id”</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”pk_id”</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">”identity”</span><span class="nt">&gt;&lt;/generator&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">”name”</span> <span class="na">type=</span><span class="s">”java.lang.String”</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”f_name”</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">”password”</span> <span class="na">type=</span><span class="s">”java.lang.String”</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”f_password”</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">”birthday”</span> <span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”f_birthday”/</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/class&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/hibernate-mapping&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在编写映射文件的时候要注意的几点是：级联，反转，延迟，fetch加载这几个重要的属性，这些属性对业务和系统的性能都有较大影响。</p>
+
+<p>&emsp;&emsp;<strong>五、版本控制服务器</strong></p>
+
+<p>&emsp;&emsp;a、搭建起版本控制服务器，本示例中使用svn。在使用版本控制服务器时要注意一些基本的用法，比如：上传项目、检入、检出、更新、还原、解决冲突，更换服务器ip等等，这些内容我在这全部讲出来你也不回明白的，只有靠大家在项目中积累。</p>
+
+<p>&emsp;&emsp;b、版本控制服务器客户端要安装好，如果采用eclipse做svn客户端，则下载相应的插件压缩包，将文件拷贝到eclipse相应目录即可；如果用 TortoiseSVN-客户端则更简单，安装完后在系统右键菜单中会出现相应的操作。据我的经验，TortoiseSVN更加的稳定，非常不错。</p>
+
+<p>&emsp;&emsp;<strong>六、完善项目文档</strong></p>
+
+<p>&emsp;&emsp;a、在项目文夹下建立doc目录，将项目需求，数据库相关，变更相关，计划相关的文档全部放到该文夹下，以便后期的统一管理，doc目录结构如下图所示：</p>
+
+<p><img src="/uploads/2011/03/26.png" title="项目文档目录结构" alt="" /></p>
+
+<p>&emsp;&emsp;当然，你也可以在版本控制服务器上建立一个新的文档仓库，专门用来存放项目的各类型文档，这种做法也更规范。本示例直接将doc放以了项目中，仅仅做为示范。</p>
+
+<p>&emsp;&emsp;<strong>七、制定后期的开发计划</strong></p>
+
+<p>&emsp;&emsp;制定编码期的项目开发计划，可详细到每一天，如果感觉太细可详细到2~3天，时间点到了就得按计划进行审核，对出现的问题及时处理。</p>
+
+<p>&emsp;&emsp;计划的制定要根据用例（或模块）的复杂性及人员的具体能力分配，量力而行，充分利用每个人的特点和能力，当然，前提是要对每个程序员有充分的了解。计划可以按最终项目完成时间倒退得出，一个迭代期还要留有两到三天的冗余时间。</p>
+
+<p>&emsp;&emsp;<strong>八、明确规范，开始编码</strong></p>
+
+<p>&emsp;&emsp;规范是新员工入职的时候要培训的，在编码前最好再次明确一下，架构级规范、代码级规范、svn规范等等，一切规范都是为了后期代码可读性、可维护性而制定的，大家一定要严格遵照执行。</p>
+
+<p>&emsp;&emsp;终于可以进入编码了，很多人都期待着这一天的早日到来，但是你真的有把握写好代码吗？如果你前面的工作没做好，编码将非常的痛苦。请继续关注我的下一篇关于编码阶段的文章。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-20T15:18:00+08:00" pubdate data-updated="true">2010年12月20日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2010/12/17/jeee-tou-2/" title="上一篇文章: 一个简单的j2ee入门教程（第二部分——设计）">&laquo;上一篇:&nbsp;&nbsp;一个简单的j2ee入门教程（第二部分——设计）</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2010/12/23/jeee-tou-4/" title="下一篇文章: 一个简单的j2ee入门教程（第四部分—业务层编码）">下一篇: &nbsp;&nbsp;一个简单的j2ee入门教程（第四部分—业务层编码） &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

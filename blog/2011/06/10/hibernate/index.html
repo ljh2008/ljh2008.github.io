@@ -1,0 +1,366 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>hibernate中的“隐喻” - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;隐喻，百科上的解释是“隐喻是在彼类事物的暗示之下感知、体验、想象、理解、谈论此类事物的心理行为、语言行为和文化行为。”，隐喻一词用在计算机软件领域，意思是：我们想当然或我们认为是这样的，但实际的执行情况却大相径庭，直至错误出现才意识到问题严重性，下面我举两个实例来说明。 & &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2011/06/10/hibernate">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Hibernate中的“隐喻”</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-10T15:18:00+08:00" pubdate data-updated="true">2011年06月10日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;隐喻，百科上的解释是“隐喻是在彼类事物的暗示之下感知、体验、想象、理解、谈论此类事物的心理行为、语言行为和文化行为。”，隐喻一词用在计算机软件领域，意思是：我们想当然或我们认为是这样的，但实际的执行情况却大相径庭，直至错误出现才意识到问题严重性，下面我举两个实例来说明。</p>
+
+<p>&emsp;&emsp;第一个例子和<strong>hibernate继承映射（多态）</strong>有关，比如：我们的领域中有员工和客户两个对象，每个员工和客户都有自己的附件资料，是一对多双向关联关系。由于附件的大多数属性都相同，我们使用了泛化关系，即：员工附件、客户附件都是附件类的子类型，这种设计方式在项目中比较常见，领域模型见下图。</p>
+
+<p><img src="/uploads/2011/06/4.jpg" title="hibernate继承映射领域关系实例" alt="" /></p>
+
+<p>&emsp;&emsp;数据库物理模型如下图所示。</p>
+
+<p><img src="/uploads/2011/06/5.jpg" title="hibernate继承映射物理模型" alt="" /></p>
+
+<p>&emsp;&emsp;附件被设计成存储在一张表中，用f_accessor_type来标识不同的附件类型，而用fk_owner_id来标识这个附件的属主，可能是员工，也有可能是客户。</p>
+
+<p>&emsp;&emsp;下面来看hibernate的映射文件。</p>
+
+<p>&emsp;&emsp;附件类非常简单，按照多态映射很容易写好，xml文件如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">&quot;com.my.domain.ext.Accessory&quot;</span>
+</span><span class='line'>          <span class="na">table=</span><span class="s">&quot;t_accessory&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">unsaved-value=</span><span class="s">&quot;0&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">&quot;identity&quot;</span><span class="nt">&gt;&lt;/generator&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="nt">&lt;discriminator</span> <span class="na">column=</span><span class="s">&quot;f_accessory_type&quot;</span><span class="nt">&gt;&lt;/discriminator&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span> <span class="na">type=</span><span class="s">&quot;string&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>      <span class="cp">&lt;!- 其它普通属性配置略去---&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;subclass</span>
+</span><span class='line'>      <span class="na">name=</span><span class="s">&quot;com.my.domain.ext. Accessory4Employee&quot;</span>
+</span><span class='line'>      <span class="na">discriminator-value=</span><span class="s">&quot;1&quot;</span>
+</span><span class='line'>      <span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;otherProperty&quot;</span> <span class="na">column=</span><span class="s">&quot;f_otherColumn&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;many-to-one</span> <span class="na">name=</span><span class="s">&quot;Employee&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Employee&quot;</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/many-to-one&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/subclass&gt;</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="nt">&lt;subclass</span>
+</span><span class='line'>      <span class="na">name=</span><span class="s">&quot;com.my.domain.ext. Accessory4Customer&quot;</span>
+</span><span class='line'>      <span class="na">discriminator-value=</span><span class="s">&quot;2&quot;</span>
+</span><span class='line'>      <span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;otherProperty&quot;</span> <span class="na">column=</span><span class="s">&quot;f_otherColumn&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;many-to-one</span> <span class="na">name=</span><span class="s">&quot;customer&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Customer&quot;</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/many-to-one&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/subclass&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;/class&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;员工和客户的映射文件我只贴出一个，因为这两篇文件很相似，不再浪费篇幅。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">&quot;com.my.domain.ext.Employee&quot;</span>
+</span><span class='line'>          <span class="na">table=</span><span class="s">&quot;t_employee&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">unsaved-value=</span><span class="s">&quot;0&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">&quot;identity&quot;</span><span class="nt">&gt;&lt;/generator&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span> <span class="na">type=</span><span class="s">&quot;string&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;set</span> <span class="na">name=</span><span class="s">&quot;accessorys&quot;</span> <span class="na">table=</span><span class="s">&quot;t_accessory&quot;</span> <span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;key</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/key&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;one-to-many</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Accessory4Employee&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/set&gt;</span>    
+</span><span class='line'>  <span class="nt">&lt;/class&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;完成配置文件后，手工录入测试数据，添加了一个id为1的员工，又添加了一个id为1的客户，在附件表中分别给员工和客户添加附件，员工添加两条附件记录，客户也添加两条附件记录（你可以想像一下t_accessory中的数据情况，fk_owner_id全部为1，fk_accessory_type两条值为1，另两条值为2）。我们随即写出了下面的一段代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Employee</span> <span class="n">employee</span> <span class="o">=</span> <span class="o">(</span><span class="n">Employee</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Employee</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>     
+</span><span class='line'><span class="n">Set</span> <span class="n">accessorys</span> <span class="o">=</span> <span class="n">employee</span><span class="o">.</span><span class="na">getAccessorys</span><span class="o">(</span> <span class="o">);</span>  
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">accessorys</span><span class="o">.</span><span class="na">size</span><span class="o">());</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;没运行之前，我们先猜猜输出的结果是多少？我相信大多数人的回答是：2，因为id号为1的员工只有两个附件。而最终的结果是4，这和我们想的有很大差别，看来，很多事情不能想当然啊。
+查看sql就会发现，在取附件的时候，hibernate没有带上子类类型在表中的标识，即f_accessory_type并没有作为查询条件，导致查出了所有fk_owner_id 为1的附件，这里指定的具体子类类型竟然被hibernate忽略了。</p>
+
+<p>&emsp;&emsp;上面的这个案例发生在一个真实的项目中（不过为了说明问题，代码是我另写的一个演示），程序员一直在给我抱怨查出的数据条数不对，但有时又是正确的，我当时没有在意，让他们检查测试数据是否存在问题。后来项目要上线了，这块代码开始报子类类型转换出错，看来不解决这个问题肯定是不行的了，逐坐下来和其中一个程序员一起找问题原因所在，发现了这个hibernate中存在的“隐喻”。解决办法也很简单：在set集合的配置上加上where属性再次指定子类类型字段标志值，比如在employee映射文件的set上加上 where = “f_accessory_type=1”，问题终于解决了（其实也可以通过更改Customer、Employee的OID生成方式为uuid解决本问题）。</p>
+
+<p>&emsp;&emsp;第二个例子和<strong>hibernate的hql查询</strong>有关。比如Customer和Order是一对多双向关联，关系图如下：</p>
+
+<p><img src="/uploads/2011/06/6.jpg" title="客户与订单领域关系图" alt="" /></p>
+
+<p>&emsp;&emsp;客户中包含订单的集合，而该集合默认情况下是lazy的，但有时为了提高性能，我们想用一条sql加载用户及其订单，我们可以写出下面的HQL。</p>
+
+<p>&emsp;&emsp;<em>from Customer c left join fetch c.orders o;</em></p>
+
+<p>&emsp;&emsp;但这条HQL得到了客户List集合中，却有很多重复的用户对象，又和我们的想法不太一样，我们只是想加载客户时初始化客户的订单集合，实际上我们得到了一些重复客户对象集合。</p>
+
+<p>&emsp;&emsp;正确的HQL应该这么写：<em>select distinct( c ) from Customer c left join fetch c.orders o</em>，这条HQL会得到唯一的客户集合（我见有人写过用Set来过滤List集合重复元素的代码，其实没有这个必要）。</p>
+
+<p>&emsp;&emsp;补充一点HQL的东西，很多人是写不出来这条HQL的：查询订了iphone订单的客户集合，HQL可以这么写：<em>select distinct( c ) from Customer c left join fetch c.orders o where o.name = ‘iphone’</em>，你不要老是想着orders是集合而觉不能用o.name这样的条件哦，呵呵。这种查询同样适用于多对多中集合条件的查询。</p>
+
+<p>&emsp;&emsp;记得Ruby on rails中曾经提到一个“惯例重于配置”的原则，也就是说很多规则不用配置，会按我们的惯例进行处理，但很多时候，恰恰是我们认为惯例是这样的，而实际上却是另外的“一番景象”。</p>
+
+<p>&emsp;&emsp;“实践是检验真理的惟一标准”，软件开发人员也应牢记这一点！</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-10T15:18:00+08:00" pubdate data-updated="true">2011年06月10日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2011/06/09/spring-tx/" title="上一篇文章: 不得不说spring事务管理的几个问题">&laquo;上一篇:&nbsp;&nbsp;不得不说spring事务管理的几个问题</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2011/06/13/father-day/" title="下一篇文章: 父亲节的礼物">下一篇: &nbsp;&nbsp;父亲节的礼物 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

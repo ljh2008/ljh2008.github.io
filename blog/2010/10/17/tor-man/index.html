@@ -1,0 +1,277 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>tor的安装与配置 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;tor是本人很早就使用的一个翻越长城的工具，下面介绍我在linux上的安装过程及步骤： &emsp;&emsp;一、服务器采用ubuntu 9.10版本，由于tor并没有在9.10发行软件更新列表中，所以，我们首先要在更新列表中加入tor的更新地址，修改修改/etc/apt &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2010/10/17/tor-man">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Tor的安装与配置</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-17T15:18:00+08:00" pubdate data-updated="true">2010年10月17日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;tor是本人很早就使用的一个翻越长城的工具，下面介绍我在linux上的安装过程及步骤：</p>
+
+<p>&emsp;&emsp;一、服务器采用ubuntu 9.10版本，由于tor并没有在9.10发行软件更新列表中，所以，我们首先要在更新列表中加入tor的更新地址，修改修改/etc/apt/sources.list，加入：</p>
+
+<p>deb <a href="http://mirror.noreply.org/pub/tor">http://mirror.noreply.org/pub/tor</a> etch main</p>
+
+<p>deb-src <a href="http://mirror.noreply.org/pub/tor">http://mirror.noreply.org/pub/tor</a> etch main</p>
+
+<p>再sudo apt-get update，更新源。</p>
+
+<p>&emsp;&emsp;二、系统提示需要libevent1包，再网上搜寻到libevent1_1.3e-3_amd64.deb安装包（这里请注意服务器cpu位数，32 or 64），用sudo dpkg -i libevent1_1.3e-3_amd64.deb命令完成libevent1包的安装。</p>
+
+<p>&emsp;&emsp;三、安装privoxy，这个非常简单，直接命令sudo –apt-get install tor privoxy搞定。</p>
+
+<p>&emsp;&emsp;四、配置tor文件。具体编辑/etc/tor/下的配置文件，主要是加入连接桥，原因是GF屏蔽了tor的直连端口。桥接服务器地址及端口获得，大家可参考网上文章，一般采用向tor邮件服务器发一封get bridge的邮件，几秒钟后，你就可以收到加信，信中会列出3个桥接服务器地址。</p>
+
+<p>&emsp;&emsp;五、重启tor软件</p>
+
+<p>sudo /etc/init.d/tor restart</p>
+
+<p>sudo /etc/init.d/privoxy restart</p>
+
+<p>&emsp;&emsp;最后，说一下java服务器软件如何访问被和诣网站。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Properties</span> <span class="n">prop</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">getProperties</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">prop</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;http.proxyHost&quot;</span><span class="o">,</span><span class="s">&quot;127.0.0.1&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">prop</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;http.proxyPort&quot;</span><span class="o">,</span><span class="s">&quot;8118&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;8118就是tor的默认代理端口号，经过上面的系统属性设置后，你的网络http访问，都将通过tor代理完成，访问网页，下载资源，都没有任何问题。</p>
+
+<p>&emsp;&emsp;tor在运行一段时间后，可用原已经连接的外部转发端口无法使用，需要重新启动一次tor服务器，此时最有可能出现的情况是桥接服务器已经被封，你又得重新去获得新的桥接服务器地址及端口号。</p>
+
+<p>&emsp;&emsp;由于2010世博会期间，很多网站已经解封，如果再通过tor去访问，效率不一定高，所以，建议大家将是否使用代理写入一个配置文件中，要使用代理时，只需修改一下配置文件；解禁时，也修改一下配置文件，非常的简单，有效。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-17T15:18:00+08:00" pubdate data-updated="true">2010年10月17日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2010/10/10/hello-world/" title="上一篇文章: 活在这个世上，应该留下点什么">&laquo;上一篇:&nbsp;&nbsp;活在这个世上，应该留下点什么</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2010/10/18/Memcached/" title="下一篇文章: Memcached在项目中的应用">下一篇: &nbsp;&nbsp;Memcached在项目中的应用 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

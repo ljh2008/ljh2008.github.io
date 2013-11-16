@@ -1,0 +1,487 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>都spring mvc了（二） - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;任何软件系统的开发，都必须考虑输入数据的有效性问题，即要保证非法的数据不被系统接收，又要有较好的用户操作体验。B/S系统的开发更是如此，数据的验证至少都要建立起：客户端和服务器端两道防线。建立客户端验证机制是为了加快验证速度，提高用户交互效率，而服务器端验证将是数据必经之路 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2011/06/06/spring-mvc2">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+  <li><a href="/blog/archives">绘画作品</a></li>
+  <li><a href="/blog/archives">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">都spring Mvc了（二）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-06T15:18:00+08:00" pubdate data-updated="true">2011年06月06日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;任何软件系统的开发，都必须考虑输入数据的有效性问题，即要保证非法的数据不被系统接收，又要有较好的用户操作体验。B/S系统的开发更是如此，数据的验证至少都要建立起：客户端和服务器端两道防线。建立客户端验证机制是为了加快验证速度，提高用户交互效率，而服务器端验证将是数据必经之路，这道关卡是必不可少的。</p>
+
+<p>&emsp;&emsp;B/S系统中的表现层框架中，struts2是一个即能自动生成客户端，又能生成服务器端数据验证代码的框架，这点非常可贵，但是必须要引用struts2的自定标记库。struts1和struts2的验证，都是通过在xml文件中配置formbean的中每一个字段的验证规则以及出错提示消息，结合相应的标记库，可以显示服务器端的验证结果，并且通过标记库，可以保留（回填）用户之前输入的数据。</p>
+
+<p>&emsp;&emsp;因此，我们在开发中要考虑三个问题，一是页面上哪些输入元素用什么样的验证规则，二是出错后如何在页面上显示出错信息，三是用户之前输入的数据回填（避免用户重新再输入）。</p>
+
+<p>&emsp;&emsp;我之前在一些小项目中都是不主张引入验证框架的，输入表单不算太复杂，由程序员手工if esle 做验证，并将验证信息放入request中。但对于大、中型项目，这种做法显然并不规范。我们用DTO(VO)接收页面表单数据，之后根据配置的验证规则对表单数据进行验证，如果满足验证规则执行后面的业务处理，否则回填数据，并向用户报告未通过验证的原因。</p>
+
+<p>&emsp;&emsp;下面我们一起来看看spring mvc中是如何做的。spring mvc通过JSR 303规范对java bean字段验证定义，通过注解配置来实现对数据的合法性验证。JSR 303目前有jboss和hibernate的两个实现，我们在这里采用hibernate的实现。</p>
+
+<p>&emsp;&emsp;先要在项目中导入validation-api-1.0.0.GA.jar和hibernate-validator-4.1.0.Final.jar两个包，之后就在DTO(VO)中对需要验证的字段进行配置了（如果页面字段内容和领域模型中的POJO字段一致，可以不必定义新的DTO(VO)对象，直接使用POJO即可），示例代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Student</span> <span class="kd">implements</span> <span class="n">Serializable</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//姓名</span>
+</span><span class='line'>  <span class="nd">@NotEmpty</span><span class="o">(</span><span class="n">message</span><span class="o">=</span><span class="s">&quot;姓名不可以为空！&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="nd">@Length</span><span class="o">(</span><span class="n">min</span><span class="o">=</span><span class="mi">2</span><span class="o">,</span><span class="n">max</span><span class="o">=</span><span class="mi">5</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>  <span class="c1">//出生日期</span>
+</span><span class='line'>  <span class="nd">@Past</span><span class="o">(</span><span class="n">message</span><span class="o">=</span><span class="s">&quot;生日输入不正确，请核对！&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;先来看上面代码中的name字段，我们用了@NotEmpty注解，标明此字段不能为空，如果为空将显示由message指定的消息，如果想指定资源文件中的消息key，可以用NotEmpty.modelname.fieldname指定，modelname是DTO对象在spring mvc作用域中的名称，fieldname是字段属性名。</p>
+
+<p>&emsp;&emsp;@Length指定该字段的长度区间，在这里我没有指定默认消息，系统将使用内置的默认消息（英文的），当然你可以在资源文件中指定消息key，比如，在资源文件中定义：Length.student.name = 用户的姓名长度必须在 2 到 5之间!。</p>
+
+<p>&emsp;&emsp;@Past注解标明该日期必须在今天以后。
+更多更复杂的验证规则配置，大家可参考下面表格的描述（转自hiberante validator官网）：</p>
+
+<table>
+<thead>
+<tr>
+<th align="center">Annotation</th>
+<th align="center"> Part of Bean Validation Specification</th>
+<th align="left"> Apply on</th>
+<th align="left"> Use</th>
+<th align="center"> Hibernate Metadata impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">@AssertFalse</td>
+<td align="center"> yes</td>
+<td align="left"> field/property</td>
+<td align="left"> check that the annotated element is false.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@AssertTrue</td>
+<td align="center"> yes</td>
+<td align="left"> field/property</td>
+<td align="left"> check that the annotated element is true.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@DecimalMax</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> The annotated element must be a number whose value must be lower or equal to the specified maximum. The parameter value is the string representation of the max value according to the BigDecimal string representation.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@DecimalMin</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> The annotated element must be a number whose value must be higher or equal to the specified minimum. The parameter value is the string representation of the min value according to the BigDecimal string representation.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">&ldquo;@Digits(integer=, fraction=)&rdquo;</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> Check whether the property is a number having up to integer digits and fraction fractional digits.</td>
+<td align="center"> Define column precision and scale.</td>
+</tr>
+<tr>
+<td align="center">@Email</td>
+<td align="center"> no</td>
+<td align="left"> field/property. Needs to be a string.</td>
+<td align="left"> Check whether the specified string is a valid email address.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@Future</td>
+<td align="center"> yes</td>
+<td align="left"> field/property. Supported types are java.util.Date and java.util.Calendar.</td>
+<td align="left"> Checks whether the annotated date is in the future.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">&ldquo;@Length(min=, max=)&rdquo;</td>
+<td align="center"> no</td>
+<td align="left"> field/property. Needs to be a string.</td>
+<td align="left"> Validate that the annotated string is between min and max included.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@Max</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> Checks whether the annotated value is less than or equal to the specified maximum.</td>
+<td align="center"> Add a check constraint on the column.</td>
+</tr>
+<tr>
+<td align="center">@Min</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> Check whether the annotated value is higher than or equal to the specified minimum.</td>
+<td align="center"> Add a check constraint on the column.</td>
+</tr>
+<tr>
+<td align="center">@NotNull</td>
+<td align="center"> yes</td>
+<td align="left"> field/property</td>
+<td align="left"> Check that the annotated value is not null.</td>
+<td align="center"> Column(s) are not null.</td>
+</tr>
+<tr>
+<td align="center">@NotEmpty</td>
+<td align="center"> no</td>
+<td align="left"> field/property. Needs to be a string.</td>
+<td align="left"> Check if the string is not null nor empty.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@Null</td>
+<td align="center"> yes</td>
+<td align="left"> field/property</td>
+<td align="left"> Check that the annotated value is null.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@Past</td>
+<td align="center"> yes</td>
+<td align="left"> field/property. Supported types are java.util.Date and java.util.Calendar.</td>
+<td align="left"> Checks whether the annotated date is in the past.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">&ldquo;@Pattern(regex=, flag=)&rdquo;</td>
+<td align="center"> yes</td>
+<td align="left"> field/property. Needs to be a string.</td>
+<td align="left"> Check if the annotated string match the regular expression regex.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">&ldquo;@Range(min=, max=)&rdquo;</td>
+<td align="center"> no</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> Check whether the annotated value lies between (inclusive) the specified minimum and maximum.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">&ldquo;@Size(min=, max=)&rdquo;</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are String, Collection, Map and arrays.&rdquo;</td>
+<td align="left"> Check if the annotated element size is between min and max (inclusive).</td>
+<td align="center"> Column length will be set to max.</td>
+</tr>
+<tr>
+<td align="center">@Valid</td>
+<td align="center"> yes</td>
+<td align="left"> field/property</td>
+<td align="left"> Perform validation recursively on the associated object.</td>
+<td align="center"> none</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>&emsp;&emsp;再来看看action中新增学生的代码中，是如何进行数据验证的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 添加学生信息</span>
+</span><span class='line'><span class="cm"> * @return String</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">params</span><span class="o">=</span><span class="s">&quot;add&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">addStudent</span><span class="o">(</span><span class="n">ModelMap</span> <span class="n">model</span><span class="o">,</span>
+</span><span class='line'>      <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;pno&quot;</span><span class="o">,</span><span class="n">defaultValue</span><span class="o">=</span><span class="s">&quot;1&quot;</span><span class="o">)</span><span class="kt">int</span> <span class="n">pno</span><span class="o">,</span>
+</span><span class='line'>      <span class="nd">@ModelAttribute</span><span class="o">(</span><span class="s">&quot;student&quot;</span><span class="o">)</span> <span class="nd">@Valid</span> <span class="n">Student</span> <span class="n">stu</span><span class="o">,</span>
+</span><span class='line'>      <span class="n">BindingResult</span> <span class="n">result</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">result</span><span class="o">.</span><span class="na">hasErrors</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;add_student&quot;</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
+</span><span class='line'>  <span class="c1">//将页面属性拷贝到student中</span>
+</span><span class='line'>  <span class="n">BeanUtils</span><span class="o">.</span><span class="na">copyProperties</span><span class="o">(</span><span class="n">stu</span><span class="o">,</span> <span class="n">student</span><span class="o">,</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{});</span>
+</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">studentService</span><span class="o">.</span><span class="na">addStudent</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">model</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;error&quot;</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="k">return</span> <span class="s">&quot;redirect:student.action?page&amp;pno=&quot;</span> <span class="o">+</span> <span class="n">pno</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码@ModelAttribute(“student”) @Valid Student stu中，我们用@Valid注解标明，页面传入的 Student stu必须要验证，规则当然是我们前面用注解定义过的了。
+如果验证没有通过，我们怎么能够知道呢？BindingResult result，看到这个参数了么，这个里面有验证是否通过的信息，我们用result.hasErrors()就可以知道验证是否通过，如果没有通过，则转到出错的页面。</p>
+
+<p>&emsp;&emsp;最后一个问题，页面中如果显示这个错误信息呢？需要引入&lt;%@ taglib uri=&ldquo;/WEB-INF/spring-form.tld&rdquo; prefix=&ldquo;form&rdquo; %>标记库，这个是spring mvc定义的。比如对姓名的错误显示，我们通过</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form:errors</span> <span class="na">path=</span><span class="s">&quot;student.name&quot;</span><span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;就可以显示这个字段的验证出错信息了。</p>
+
+<p>&emsp;&emsp;有人说，引入spring mvc的标签库，似乎在jsp中产生了和spring mvc的耦合。确实如此，天下没有免费的午餐，你想想，其它的mvc验证框架，不是也要引入相应的视图标签库么。spring mvc将org.springframework.validation.BindingResult.modelAttributeName名作为key保存出错的信息，本例中用org.springframework.validation.BindingResult.student为key保存了一个org.springframework.validation.BeanPropertyBindingResult的错误对象，如果用EL表达式来取出错的信息，还真取不出来。</p>
+
+<p>&emsp;&emsp;数据的回填问题非常简单，直接访问作用域中的modelAttributeName的对象就可以了，本例中是studnet，姓名的页面元素，就可以写成：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">value=</span><span class="s">&quot;${student.name}&quot;</span><span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好了，就这么多，这就是spring mvc，够简单，够强大的吧。如果你还有什么问题，请给我留言。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-06T15:18:00+08:00" pubdate data-updated="true">2011年06月06日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2011/06/05/spring-mvc1/" title="上一篇文章: 都spring mvc了（一）">&laquo;上一篇:&nbsp;&nbsp;都spring mvc了（一）</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2011/06/07/json/" title="下一篇文章: B/S系统中json操作必读">下一篇: &nbsp;&nbsp;B/S系统中json操作必读 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
+		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
+		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+	 
+   </ul>
+</section>
+
+
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

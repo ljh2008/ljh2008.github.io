@@ -9,52 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;直接看代码。 1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-41
-42
-43
-44
-45
-46 &hellip;">
+  <meta name="description" content="&emsp;&emsp;开发工具，可以选择免费的eclipse，并在上面安装express插件（或vjet插件）， &emsp;&emsp;插件地址：http://www.nodeclipse.org/updates/，最后使用Kepler Release版本，低版本可能安装不成功。 &emsp &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -93,9 +48,9 @@
   
 <ul class="main-navigation">
   <li><a href="/">博客文章</a></li>
-  <li><a href="/blog/archives">所有文章</a></li>
-  <li><a href="/blog/archives">绘画作品</a></li>
-  <li><a href="/blog/archives">关于我</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
 </ul>
 
 </nav>
@@ -109,7 +64,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012/08/21/cglib/">Cglib动态代理演示代码</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013/08/09/nodejs-express-mysql-crud2/">node.js中基本于expresss、mysql的CRUD之二（代码实现）</a></h1>
     
     
       <p class="meta">
@@ -125,14 +80,256 @@
   
 
 
-<time datetime="2012-08-21T15:18:00+08:00" pubdate data-updated="true">2012年08月21日</time>
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;直接看代码。</p>
+  <div class="entry-content"><p>&emsp;&emsp;开发工具，可以选择免费的eclipse，并在上面安装express插件（或vjet插件），</p>
+
+<p>&emsp;&emsp;插件地址：<a href="http://www.nodeclipse.org/updates/">http://www.nodeclipse.org/updates/</a>，最后使用Kepler Release版本，低版本可能安装不成功。</p>
+
+<p>&emsp;&emsp;nodeclipse中，请注意express的配置部分，一定要选择到bin下的express文件，如下图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/6.jpg' width='' height='' title='eclipse node.js express plugin setup'><span class='caption-text'>eclipse node.js express plugin setup</span></span></p>
+
+<p>&emsp;&emsp;当然，eclipse中的这个插件并不好用，配置不好的话智能提示出来来，但eclipse中的这个插件也有优势，比如运行npm非常的方便。</p>
+
+<p>&emsp;&emsp;下面我主要讲解使用webstorm中的开发，webstorm应该是最为强大的node.js及前端开发的利器。</p>
+
+<p>&emsp;&emsp;首先，利用项目向导生成的项目中，我们先要对目录结构进行规范：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/7.jpg' width='' height='' title='目录结构'><span class='caption-text'>目录结构</span></span></p>
+
+<p>&emsp;&emsp;根目录下的app.js，是程序入口，express之web框架的启动，就在这里；package.json，是本项目中需要的第三方依赖包，npm包管理器，会读取这个文件，完成依赖的下载及更新。</p>
+
+<p>&emsp;&emsp;views目录，是服务器端页面，你可以根据业务功能，在这个目录下再划分目录存放jade文件。</p>
+
+<p>&emsp;&emsp;routes为路由执行函数，可以理解为ssh中的action部分。</p>
+
+<p>&emsp;&emsp;public目录中存放所有前端的文件，html,js,css,image及上传的资源等等。</p>
+
+<p>&emsp;&emsp;node_models为项目依赖的第三方插件包，由npm管理。</p>
+
+<p>&emsp;&emsp;commons中，存放一些公共的或公用的东西。</p>
+
+<p>&emsp;&emsp;test目录，可以存入测试相关的文件。</p>
+
+<p>&emsp;&emsp;另外，你还可以建立biz,service之类的目录，用来存放复杂的业务逻辑。</p>
+
+<p>&emsp;&emsp;也许你还有疑问，ssh中的dao在哪去了？因为我们使用了orm，orm定义完对象后，可直接通过对象自身来完成crud操作，这有点类似于.net中的表数据模型。</p>
+
+<p>&emsp;&emsp;好了，下面来看看具体的代码吧。</p>
+
+<p>&emsp;&emsp;先来看package.json，此文件为本项目的依赖的所有第三方插件：</p>
+
+<figure class='code'><figcaption><span>package.json</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='json'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;application-name&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.0.1&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;private&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;scripts&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="s2">&quot;node app.js&quot;</span>
+</span><span class='line'>  <span class="p">},</span>
+</span><span class='line'>  <span class="nt">&quot;dependencies&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nt">&quot;express&quot;</span><span class="p">:</span> <span class="s2">&quot;3.3.4&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;jade&quot;</span><span class="p">:</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;mysql&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;node-uuid&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;fs-extra&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span> <span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;orm&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;orm-transaction&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+</span><span class='line'>     <span class="nt">&quot;seq&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在webstorm中，我们需要到cmd命令行下，进入项目目录，然后运行npm install，安装或更新依赖包。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/08/09/nodejs-express-mysql-crud1/">node.js中基本于expresss、mysql的CRUD之一（技术选择及需求）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;要在项目中使用一种新的技术，必须要用这种新东西写出一个演示demo，也就是技术原型或架构原型，以验证这种技术方案的可行性。node.js这种使用日益广泛的技术比较适合互联网项目需求变化快的敏捷开发，node.js非常的小巧，相关插件众多（有些插件甚至可以在浏览器客户端和node.js服务器端都可运行），对于开发人员来说，只需要掌握javascript一门语言，就可以进行项目开发了，这种简化，对于前端开发人员来说是梦寐以求的。</p>
+
+<p>&emsp;&emsp;先来说说技术的选型吧。</p>
+
+<p>&emsp;&emsp;用node.js开发一个web应用，虽然我们可以从头开始自己去实现一个http服务器，但这有点重复发明轮子的嫌疑，因为已经能很多非常优秀的web服务器框架，比如：express就是其中的佼佼者。</p>
+
+<p>&emsp;&emsp;<strong>持久层</strong></p>
+
+<p>&emsp;&emsp;对于持久层，我的这个demo中使用mysql，从J2EE开发转型到node.js开发过程中，最自然的想法就是找一个node.js中的orm插件，这个我选择了非常流行了一个，orm2。但基于互联网项目更偏重于性能而业务相对并不复杂的情况，我建议在持久层不要用什么orm之类的插件，而采用直接手工书写sql的方式更为实用，因为orm2也有一些问题，后面我会说到。另外，在大数据量的应用中，一般还会使用nosql型数据库，比如mongodb，这个我会另外在给出demo。</p>
+
+<p>&emsp;&emsp;<strong>业务层</strong></p>
+
+<p>&emsp;&emsp;在标准的分层界构中，会有业务层的存在，在node.js中，如果仅仅是基于对数据的CRUD操作，我认为不需要加入业务层，因为这样只会增加代码的复杂性。如果你真的有一些并不仅仅是简单的CRUD核心的业务逻辑，倒是可以创建这样的一个目录，对这些纯业务逻辑进行封装。</p>
+
+<p>&emsp;&emsp;<strong>表现层</strong></p>
+
+<p>&emsp;&emsp;表现层可以使用restful风格的url，express对restful支持非常的简单而强大。而根据表现层的构建方式，又可分成两种方式：</p>
+
+<p>&emsp;&emsp;一种是服务器端生成页面，比如jade，ejs等，这种模板引擎技术相当于j2ee中的jsp,velocity,freemarker等。jade可以写出极简洁的页面，而又具有很好的标签元素封闭性，我这个demo中就使用jade。</p>
+
+<p>&emsp;&emsp;另一种是由客户端生成，即胖客户端的方式，比如：angular.js，有这种方式中，服务器仅仅需要提供api即可，向客户端返回的数据格式可以是json，xml等。</p>
+
+<p>&emsp;&emsp;我更偏向于第二种方式，虽然从传统的j2EE服务器生成页面的第一种方式转变为客户端负责界面的展示非常的不习惯，但这需要一个转变过程。</p>
+
+<p>&emsp;&emsp;言归正传，下面来看看demo的功能及界面截图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/1.jpg' width='' height='' title='登录界面原型参考图'><span class='caption-text'>登录界面原型参考图</span></span></p>
+
+<p>&emsp;&emsp;登录系统，登录失败给予提示，成功后，进入主页面。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/2.jpg' width='' height='' title='登录后的主界面原型参考图'><span class='caption-text'>登录后的主界面原型参考图</span></span></p>
+
+<p>主界面中，主要有以下功能：</p>
+
+<ul>
+<li><p>展示登录成功的用户信息。</p></li>
+<li><p>分页展示系统中的所有用户，可以按条件查询。</p></li>
+<li><p>可新增用户，批量删除用户。</p></li>
+<li><p>可查看，修改，删除用户。</p></li>
+<li><p>可退出系统。</p></li>
+<li><p>可对未登录用户，对url的访问权限控制。</p></li>
+</ul>
+
+
+<p>&emsp;&emsp;一些界面截图如下：</p>
+
+<p>&emsp;&emsp;查看用户</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/3.jpg' width='' height='' title='查看原型参考图'><span class='caption-text'>查看原型参考图</span></span></p>
+
+<p>&emsp;&emsp;修改用户</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/4.jpg' width='' height='' title='修改主界面原型参考图'><span class='caption-text'>修改主界面原型参考图</span></span></p>
+
+<p>&emsp;&emsp;新增用户</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/5.jpg' width='' height='' title='新增主界面原型参考图'><span class='caption-text'>新增主界面原型参考图</span></span></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/08/01/nodejs-login-sync/">Nodejs中的同步之&#8211;登录代码</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-01T15:18:00+08:00" pubdate data-updated="true">2013年08月01日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;在我们的业务代码实现中，总有那么一些存在同步操作的情况，为了让写出的代码具有更好的可读性（相对于function层层嵌套而言），我们还得借助一些同步框架来实现，下面以一个简单的登录代码来说明这个问题。现假设有多个相同用户名称密码的情况存在，我们只取一个人的信息完成登录，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'>     <span class="kd">var</span> <span class="nx">loginUser</span><span class="p">;</span>
+</span><span class='line'>     <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">({</span> <span class="nx">f_login_code</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">f_pwd</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">pwd</span> <span class="p">}).</span><span class="nx">run</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="nx">users</span><span class="p">){</span>
+</span><span class='line'>           <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">&lt;</span> <span class="nx">users</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="c1">//只处理一个</span>
+</span><span class='line'>                    <span class="nx">loginUser</span> <span class="o">=</span> <span class="nx">users</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
+</span><span class='line'>                    <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">loginUser</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>         <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">name</span><span class="o">:</span><span class="nx">loginUser</span><span class="p">.</span><span class="nx">f_name</span><span class="p">});</span>
+</span><span class='line'>     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>         <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;用户名或密码错误，请核对！&#39;</span><span class="p">});</span>
+</span><span class='line'>     <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面这段代码永远无法登录成功，loginUser总是undefined，因为在执行if (loginUser)检测时，for (var i = 0; i&lt; users.length; i++)这段代码还没有执行到，同步改造如下：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -159,121 +356,35 @@
 <span class='line-number'>23</span>
 <span class='line-number'>24</span>
 <span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Test</span> <span class="o">{</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">loginUser</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * @param args</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//        HashMap propertyMap = new HashMap();  </span>
-</span><span class='line'><span class="c1">//        propertyMap.put(&quot;MAX_COUNT&quot;, Class.forName(&quot;java.lang.String&quot;));</span>
-</span><span class='line'>        <span class="c1">// TODO Auto-generated method stub</span>
-</span><span class='line'>        <span class="n">Enhancer</span> <span class="n">eh</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Enhancer</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setSuperclass</span><span class="o">(</span><span class="n">MyService</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'>        <span class="c1">//eh.setCallback(new MyInterceptor());</span>
-</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setCallbacks</span><span class="o">(</span><span class="k">new</span> <span class="n">Callback</span><span class="o">[]{</span><span class="k">new</span> <span class="n">MyInterceptor</span><span class="o">(),</span> <span class="n">NoOp</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">});</span>
-</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setCallbackFilter</span><span class="o">(</span><span class="k">new</span> <span class="n">MyCallbackFilter</span><span class="o">());</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setInterfaces</span><span class="o">(</span><span class="k">new</span> <span class="n">Class</span><span class="o">[]{</span><span class="n">Set</span><span class="o">.</span><span class="na">class</span><span class="o">});</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">MyService</span> <span class="n">ms</span> <span class="o">=</span> <span class="o">(</span><span class="n">MyService</span><span class="o">)</span><span class="n">eh</span><span class="o">.</span><span class="na">create</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">ms</span><span class="o">.</span><span class="na">addUser</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">ms</span><span class="o">.</span><span class="na">queryUser</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">Set</span> <span class="n">s</span> <span class="o">=</span> <span class="o">(</span><span class="n">Set</span><span class="o">)</span><span class="n">ms</span><span class="o">;</span>
-</span><span class='line'><span class="c1">//        System.out.println(s.getClass());</span>
-</span><span class='line'><span class="c1">//        s.size();</span>
-</span><span class='line'><span class="c1">//        System.out.println(s.size());</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">//System.out.println(ms.getClass());</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="kd">class</span> <span class="nc">MyInterceptor</span> <span class="kd">implements</span> <span class="n">MethodInterceptor</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">intercept</span><span class="o">(</span><span class="n">Object</span> <span class="n">object</span><span class="o">,</span> <span class="n">Method</span> <span class="n">method</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">,</span>
-</span><span class='line'>            <span class="n">MethodProxy</span> <span class="n">methodProxy</span> <span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;before runing..&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">methodProxy</span><span class="o">.</span><span class="na">invokeSuper</span><span class="o">(</span><span class="n">object</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;end runing....&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">class</span> <span class="nc">MyCallbackFilter</span> <span class="kd">implements</span> <span class="n">CallbackFilter</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">int</span> <span class="nf">accept</span><span class="o">(</span><span class="n">Method</span> <span class="n">method</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="c1">// TODO Auto-generated method stub</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="s">&quot;queryUser&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()))</span> <span class="o">{</span>
-</span><span class='line'>            <span class="c1">//第二个Interceptor，在此例中将不执行操作</span>
-</span><span class='line'>            <span class="k">return</span> <span class="mi">1</span><span class="o">;</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
+</span><span class='line'>    <span class="nx">Seq</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>            <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">({</span> <span class="nx">f_login_code</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">f_pwd</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">pwd</span> <span class="p">}).</span><span class="nx">run</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}).</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">users</span><span class="p">){</span>
+</span><span class='line'>            <span class="c1">//在此仅假设用户登录编码和名称有重复的情况</span>
+</span><span class='line'>            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">&lt;</span> <span class="nx">users</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="c1">//只处理一个</span>
+</span><span class='line'>                    <span class="nx">loginUser</span> <span class="o">=</span> <span class="nx">users</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
+</span><span class='line'>                    <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}).</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">resultJson</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">loginUser</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">name</span><span class="o">:</span><span class="nx">loginUser</span><span class="p">.</span><span class="nx">f_name</span><span class="p">});</span>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;用户名或密码错误，请核对！&#39;</span><span class="p">});</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="c1">//发回登录json字串</span>
+</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nx">resultJson</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">});</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-
+<p>&emsp;&emsp;我们使用了seq同步框架，上面的代码可以保证程序执行的顺利，一切正常了。</p>
 </div>
   
   
@@ -286,7 +397,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012/08/10/art4/">习作- 眼前突然闪现的风景</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013/07/29/nodejs-sync/">node.js中的同步</a></h1>
     
     
       <p class="meta">
@@ -302,102 +413,14 @@
   
 
 
-<time datetime="2012-08-10T15:18:00+08:00" pubdate data-updated="true">2012年08月10日</time>
+<time datetime="2013-07-29T15:18:00+08:00" pubdate data-updated="true">2013年07月29日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;水粉作品，《眼前突然闪现的风景》。</p>
-
-<p>&emsp;&emsp;也许，一个人坐在火车上，静静地看着窗外的一切，突然，画面中的一切扑面而来，内心充满了喜悦、惊奇&hellip;&hellip;</p>
-
-<p><img src="/uploads/2012/08/art4.jpg" title="突然闪现的风景-纸本设色" alt="" /></p>
-
-<p>&emsp;&emsp;阳光穿过树梢，瞬间，让人张不开眼睛，列车没有停下，仍旧漠然向前&hellip;&hellip;</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/08/09/night-sky/">临摹习作-星空</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-08-09T15:18:00+08:00" pubdate data-updated="true">2012年08月09日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;此画为临摹印象派大帅梵高的作品《星空》，也是我非常喜欢的一幅作品，作品是抽象的，但极具形式美感，画中的小村庄，浸润在洁白的月光，教堂、房屋&hellip;..，一切都很安静，而左边高大的树木似乎又有风在吹动，一切都是那么的美好。</p>
-
-<p>&emsp;&emsp;而这又让我想起了我人童年，我和我的兄弟，我们曾经一起躺在收获的庄家上，看着深邃的夜空，小河沟边上有高大的白杨树，时而微风吹起，树叶沙沙作响，财众多小平房中闪烁的点点油灯，一切都是那么的熟悉&hellip;&hellip;</p>
-
-<p>&emsp;&emsp;我在google art中，找到了这张画的原作，下载了很多张局部放大图，在photoshop中拼接出了非常大的一张原图，这样，我就可以细致观察到原作的色彩及笔触`。</p>
-
-<p>&emsp;&emsp;临摹是一种非常有效果的学习方法，我这一张临摹习作，用的是水粉，因为感觉比较快捷。</p>
-
-<p><img src="/uploads/2012/08/art3.jpg" title="梵高星空-纸本设色" alt="" /></p>
-
-<p>&emsp;&emsp;某天抽点时间，用油画再将《星空》再临摹一遍，再次体验那种感受。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/08/08/good-hb/">良好的编码习惯</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-08-08T15:18:00+08:00" pubdate data-updated="true">2012年08月08日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;经常有人在修改一个对象时，出现hibernate的：a different object with the same identifier value was already associated with the session: [xx.xxx.xxxt#id]错误，请看下面的保存代码：</p>
+  <div class="entry-content"><p>&emsp;&emsp;nodejs的非阻塞，异步调用方式，给nodejs带来了非常好的性能，但这同时也给我们编程带来了复杂性，先来看来下面一个文件上传的代码：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -408,23 +431,126 @@
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
 <span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Student</span> <span class="n">s1</span> <span class="o">=</span> <span class="o">(</span><span class="n">Student</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Student</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">3</span><span class="o">);</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="c1">//用户注册，可上传照片</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">reg</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">files</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">files</span><span class="p">;</span>
 </span><span class='line'>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">dir</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;public&quot;</span><span class="p">,</span> <span class="s2">&quot;upload&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">filename</span> <span class="o">=</span> <span class="nx">uuid</span><span class="p">.</span><span class="nx">v4</span><span class="p">()</span><span class="o">+</span><span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">fs</span><span class="p">.</span><span class="nx">copy</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">path</span><span class="p">,</span> <span class="nx">dir</span> <span class="o">+</span> <span class="s1">&#39;\\&#39;</span> <span class="o">+</span> <span class="nx">filename</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;copy file success!&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/&#39;</span> <span class="o">+</span> <span class="nx">filename</span>  <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/default.jpeg&#39;</span>  <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span>
 </span><span class='line'>
-</span><span class='line'><span class="n">Student</span> <span class="n">s2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
-</span><span class='line'><span class="n">s2</span><span class="o">.</span><span class="na">setId</span><span class="o">(</span><span class="mi">3</span><span class="o">);</span>
-</span><span class='line'><span class="n">s2</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;xxx&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="n">session</span><span class="o">.</span><span class="na">update</span><span class="o">(</span><span class="n">s2</span><span class="o">);</span>
+</span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;这段代码会出现上面的错误，这就是对修改操作理解不到位造成的，你可以想想，修改一定是改一个已经存在的对象，new一个对象再去update就违背的这一原则，解决办法：</p>
+<p>&emsp;&emsp;这段代码，以我们传统的代码顺序执行思路来看，没有任何问题，但在nodejs中情况就不同了。请大家注意其中的fs.copy方法，文件的处理是在一个异步回调中完成的，因此，当我们给客户端发回响应的时候，fs.copy也许还没有执行完成，客户将看不到我们上传的文件。当然，这段代码改起来相对来说还是简单的，只需把res.render(&lsquo;reg/reg_success&rsquo;, { regName: req.body.uname,photo:&lsquo;upload/&rsquo; + filename  });这行代码，移到console.log(&ldquo;copy file success!&rdquo;);之前即可，但对于一些复杂的同步操作，就没有这么简单了。</p>
 
-<p>&emsp;&emsp;（1）查出要改的对象，再赋值，然后update。</p>
+<p>&emsp;&emsp;nodejs中也有很多同步的第三方插件，比如：step, async，seq我们先来看看seq插件的用法。</p>
 
-<p>&emsp;&emsp;（2）直接使用merge保存，不会出错。</p>
+<p>&emsp;&emsp;先在package.json中添加对seq的依赖：&#8221;seq&#8221;:&ldquo;*&#8221;，cmd下转至项目目录并运行npm install安装seq。</p>
+
+<p>&emsp;&emsp;假设我有三个函数，f1,f2,f3,代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">function</span> <span class="nx">f1</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function1 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'><span class="p">}</span>  <span class="p">;</span>
+</span><span class='line'><span class="kd">function</span> <span class="nx">f2</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">fs</span><span class="p">.</span><span class="nx">readFile</span><span class="p">(</span><span class="nx">__filename</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">text</span><span class="p">){</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">text</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function2 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'><span class="p">}</span> <span class="p">;</span>
+</span><span class='line'><span class="kd">function</span> <span class="nx">f3</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function3 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'><span class="p">}</span> <span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果我的调用代码是：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">f1</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">f2</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">f3</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;出现的结果是，f3已经执行完成，但f2中的文件内容输出还没有完成，最终文件内容的打印，将会出现在最后，这可能和我们的预期不相同，采用seq后的写法如下，我们将对f2方法进行拆分：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">Seq</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;seq&#39;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">Seq</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">f1</span><span class="p">();</span><span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();})</span>
+</span><span class='line'>    <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">fs</span><span class="p">.</span><span class="nx">readFile</span><span class="p">(</span><span class="nx">__filename</span><span class="p">,</span><span class="k">this</span><span class="p">)})</span>
+</span><span class='line'>    <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">text</span><span class="p">){</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;111=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">text</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;111=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function2 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">}).</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">f3</span><span class="p">();</span><span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();})</span> <span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码中，f3的执行将会在文件内容全部打印输出后，这就是seq同步的一个简单规例。</p>
 </div>
   
   
@@ -437,7 +563,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012/08/02/art2/">习作-梦境</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013/07/01/spring-aop/">Spring Aop实现机制</a></h1>
     
     
       <p class="meta">
@@ -453,20 +579,272 @@
   
 
 
-<time datetime="2012-08-02T15:18:00+08:00" pubdate data-updated="true">2012年08月02日</time>
+<time datetime="2013-07-01T15:18:00+08:00" pubdate data-updated="true">2013年07月01日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;每个人都会做梦，梦境是那么的美好，但醒来后，又是那么的现实，那么的残酷。</p>
+  <div class="entry-content"><p>&emsp;&emsp;spring对持久层的事务管理采用的aop实现，在spring底层，aop是使用的代理模式实现的，代理模式在java中一般有jdk 动态代理以及cglib实现的更为高效的代理，jdk动态代理采用的是标准代理模式（大家可以看看标准代理模式的uml图），被代理对象必须要实现接口，而cglib就没有这一强制性要求了。</p>
 
-<p>&emsp;&emsp;此水粉习作，描述了一种冷色调的梦境感觉，让人那么的着迷，而又是那么的平静，那么的虚幻&hellip;&hellip;</p>
+<p>&emsp;&emsp;下面，我要实现一个环绕通知，分别用jdk动态代理，cglib，以及在spring中的配置实现。</p>
 
-<p><img src="/uploads/2012/08/art2.jpg" title="梦境-纸本设色" alt="" /></p>
+<p>&emsp;&emsp;我有两个接口，IMyService1，IMyService2，实现类MyServiceImpl实现了这两个接口，另外，还写了一个没有实现任何接口的service ,NoInterfaceService。</p>
 
-<p>&emsp;&emsp;梦中，我似乎不想醒来，顺着河水漂向远方&hellip;&hellip;</p>
+<p>&emsp;&emsp;<strong>一、jdk动态代理</strong></p>
+
+<figure class='code'><figcaption><span>MyInvocationHandler.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//调用处理程序，相当于aop中的环绕通知</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyInvocationHandler</span> <span class="kd">implements</span> <span class="n">java</span><span class="o">.</span><span class="na">lang</span><span class="o">.</span><span class="na">reflect</span><span class="o">.</span><span class="na">InvocationHandler</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//被代理的对象</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Object</span> <span class="n">target</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//构造方法传入被代理的对象</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">MyInvocationHandler</span><span class="o">(</span><span class="n">Object</span> <span class="n">target</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">Object</span> <span class="n">proxy</span><span class="o">,</span> <span class="n">Method</span> <span class="n">method</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span>
+</span><span class='line'>            <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">//proxy就是$proxy0,里面包含一个target属性，为代理的目标对象</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;方法调用前！&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">target</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;方法调用后！&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;测试代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//目标对象</span>
+</span><span class='line'>        <span class="n">MyServiceImpl</span> <span class="n">ms</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyServiceImpl</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//创建代理对象，interface是代理要</span>
+</span><span class='line'>        <span class="n">IMyService1</span> <span class="n">ms1</span> <span class="o">=</span>
+</span><span class='line'>                <span class="o">(</span><span class="n">IMyService1</span><span class="o">)</span><span class="n">Proxy</span><span class="o">.</span><span class="na">newProxyInstance</span><span class="o">(</span><span class="n">ms</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getClassLoader</span><span class="o">(),</span>
+</span><span class='line'>                <span class="n">ms</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getInterfaces</span><span class="o">(),</span> <span class="k">new</span> <span class="n">MyInvocationHandler</span><span class="o">(</span><span class="n">ms</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ms1</span><span class="o">.</span><span class="na">biz1</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">IMyService2</span> <span class="n">ms2</span> <span class="o">=</span> <span class="o">(</span><span class="n">IMyService2</span><span class="o">)</span><span class="n">ms1</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">ms2</span><span class="o">.</span><span class="na">biz2</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;请大家注意，需要动态代理的接口，由上面ms.getClass().getInterfaces()的代码传入，并且，我们可以发现，代理产生的对象，可以强转为其中任意一个接口，但如果强转为MyServiceImpl会报错：$proxy0不能转换为MyServiceImpl。</p>
+
+<p>&emsp;&emsp;<strong>二、cglib实现</strong></p>
+
+<figure class='code'><figcaption><span>MyAdvice.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//这个是通知类</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">class</span> <span class="nc">MyAdvice</span> <span class="kd">implements</span> <span class="n">MethodInterceptor</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">intercept</span><span class="o">(</span><span class="n">Object</span> <span class="n">object</span><span class="o">,</span> <span class="n">Method</span> <span class="n">method</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">MethodProxy</span> <span class="n">methodProxy</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;执行之前..............&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">methodProxy</span><span class="o">.</span><span class="na">invokeSuper</span><span class="o">(</span><span class="n">object</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;执行之后..............&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;产生代理的测试类：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">Enhancer</span> <span class="n">eh</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Enhancer</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">eh</span><span class="o">.</span><span class="na">setSuperclass</span><span class="o">(</span><span class="n">NoInterfaceService</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>    <span class="c1">//如果不需要通知代码</span>
+</span><span class='line'>    <span class="c1">//eh.setCallback(NoOp.INSTANCE);</span>
+</span><span class='line'>    <span class="n">eh</span><span class="o">.</span><span class="na">setCallback</span><span class="o">(</span><span class="k">new</span> <span class="n">MyAdvice</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">NoInterfaceService</span> <span class="n">ns</span> <span class="o">=</span> <span class="o">(</span><span class="n">NoInterfaceService</span><span class="o">)</span><span class="n">eh</span><span class="o">.</span><span class="na">create</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">ns</span><span class="o">.</span><span class="na">hello</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代理，可以对无接口对象实现代理，有接口的当然也是不存在问题的。</p>
+
+<p>&emsp;&emsp;<strong>三、spring代理配置实现</strong></p>
+
+<figure class='code'><figcaption><span>LoggerAdvice.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LoggerAdvice</span> <span class="kd">implements</span> <span class="n">MethodInterceptor</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">MethodInvocation</span> <span class="n">mi</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">mi</span><span class="o">.</span><span class="na">getMethod</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;开始执行！！！&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">mi</span><span class="o">.</span><span class="na">proceed</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">mi</span><span class="o">.</span><span class="na">getMethod</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;执行完毕！！！&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;配置文件：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>    <span class="c">&lt;!-- 代理对象 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;myServiceProxy&quot;</span>
+</span><span class='line'>        <span class="na">class=</span><span class="s">&quot;org.springframework.aop.framework.ProxyFactoryBean&quot;</span>
+</span><span class='line'>    <span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;target&quot;</span> <span class="na">ref=</span><span class="s">&quot;myService&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;interceptorNames&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;value&gt;</span>loggerAdvice<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;测试代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">BeanFactory</span> <span class="n">bf</span>
+</span><span class='line'>        <span class="o">=</span> <span class="k">new</span> <span class="n">ClassPathXmlApplicationContext</span><span class="o">(</span><span class="s">&quot;beans.xml&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">IMyService1</span> <span class="n">ms1</span> <span class="o">=</span> <span class="o">(</span><span class="n">IMyService1</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myServiceProxy&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">ms1</span><span class="o">.</span><span class="na">biz1</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">IMyService2</span> <span class="n">ms2</span> <span class="o">=</span> <span class="o">(</span><span class="n">IMyService2</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myServiceProxy&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">ms2</span><span class="o">.</span><span class="na">biz2</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果被代理对象实现了接口，默认情况下spring会使用jdk动态代理，因此，如果代把上面取到的对象强转为MyServiceImpl会报错：$proxy0不能转换为MyServiceImpl，但转换为其它所实现的两个接口，都不会存在问题。</p>
+
+<p>&emsp;&emsp;我们也可以通过proxyInterfaces指定，代理哪个接口（默认情况下，会自动代理该类所实现的所有接口）。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;proxyInterfaces&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;value&gt;</span>com.my.service.IMyService1<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/property&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果被代理的类没有实现接口，spring会自动使用cblib作为底层代理实现，如果你的lib下没有该jar包，系统会报错。</p>
+
+<p>&emsp;&emsp;当然，在被代理的类有接口的情况下，你也可以通过配置，强制使用cglib代理，配置如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;proxyTargetClass&quot;</span> <span class="na">value=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;以下代码中可以看出，代理对象可直接强转为实现类：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">NoInterfaceService</span> <span class="n">is</span> <span class="o">=</span>  <span class="o">(</span><span class="n">NoInterfaceService</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myServiceProxy&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">is</span><span class="o">.</span><span class="na">hello</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
 </div>
   
   
@@ -491,23 +869,23 @@
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用&#8212;第四部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a>
       </li>
     
   </ul>
@@ -517,14 +895,31 @@
    <ul id="categories">
      
 		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
-		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
-		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
-		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
 	 
    </ul>
 </section>
 
-
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
 
 
 
@@ -537,6 +932,7 @@
   <footer role="contentinfo"><p>
   版权所有 &copy; 2013 - 冰雨 -
   <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>
 
 </footer>

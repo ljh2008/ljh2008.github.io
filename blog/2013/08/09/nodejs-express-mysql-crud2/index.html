@@ -1,0 +1,331 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>node.js中基本于expresss、mysql的CRUD之二（代码实现） - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;开发工具，可以选择免费的eclipse，并在上面安装express插件（或vjet插件）， &emsp;&emsp;插件地址：http://www.nodeclipse.org/updates/，最后使用Kepler Release版本，低版本可能安装不成功。 &emsp &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2013/08/09/nodejs-express-mysql-crud2">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">node.js中基本于expresss、mysql的CRUD之二（代码实现）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;开发工具，可以选择免费的eclipse，并在上面安装express插件（或vjet插件），</p>
+
+<p>&emsp;&emsp;插件地址：<a href="http://www.nodeclipse.org/updates/">http://www.nodeclipse.org/updates/</a>，最后使用Kepler Release版本，低版本可能安装不成功。</p>
+
+<p>&emsp;&emsp;nodeclipse中，请注意express的配置部分，一定要选择到bin下的express文件，如下图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/6.jpg' width='' height='' title='eclipse node.js express plugin setup'><span class='caption-text'>eclipse node.js express plugin setup</span></span></p>
+
+<p>&emsp;&emsp;当然，eclipse中的这个插件并不好用，配置不好的话智能提示出来来，但eclipse中的这个插件也有优势，比如运行npm非常的方便。</p>
+
+<p>&emsp;&emsp;下面我主要讲解使用webstorm中的开发，webstorm应该是最为强大的node.js及前端开发的利器。</p>
+
+<p>&emsp;&emsp;首先，利用项目向导生成的项目中，我们先要对目录结构进行规范：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/7.jpg' width='' height='' title='目录结构'><span class='caption-text'>目录结构</span></span></p>
+
+<p>&emsp;&emsp;根目录下的app.js，是程序入口，express之web框架的启动，就在这里；package.json，是本项目中需要的第三方依赖包，npm包管理器，会读取这个文件，完成依赖的下载及更新。</p>
+
+<p>&emsp;&emsp;views目录，是服务器端页面，你可以根据业务功能，在这个目录下再划分目录存放jade文件。</p>
+
+<p>&emsp;&emsp;routes为路由执行函数，可以理解为ssh中的action部分。</p>
+
+<p>&emsp;&emsp;public目录中存放所有前端的文件，html,js,css,image及上传的资源等等。</p>
+
+<p>&emsp;&emsp;node_models为项目依赖的第三方插件包，由npm管理。</p>
+
+<p>&emsp;&emsp;commons中，存放一些公共的或公用的东西。</p>
+
+<p>&emsp;&emsp;test目录，可以存入测试相关的文件。</p>
+
+<p>&emsp;&emsp;另外，你还可以建立biz,service之类的目录，用来存放复杂的业务逻辑。</p>
+
+<p>&emsp;&emsp;也许你还有疑问，ssh中的dao在哪去了？因为我们使用了orm，orm定义完对象后，可直接通过对象自身来完成crud操作，这有点类似于.net中的表数据模型。</p>
+
+<p>&emsp;&emsp;好了，下面来看看具体的代码吧。</p>
+
+<p>&emsp;&emsp;先来看package.json，此文件为本项目的依赖的所有第三方插件：</p>
+
+<figure class='code'><figcaption><span>package.json</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='json'><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;application-name&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.0.1&quot;</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;private&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+</span><span class='line'>  <span class="nt">&quot;scripts&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nt">&quot;start&quot;</span><span class="p">:</span> <span class="s2">&quot;node app.js&quot;</span>
+</span><span class='line'>  <span class="p">},</span>
+</span><span class='line'>  <span class="nt">&quot;dependencies&quot;</span><span class="p">:</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nt">&quot;express&quot;</span><span class="p">:</span> <span class="s2">&quot;3.3.4&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;jade&quot;</span><span class="p">:</span> <span class="s2">&quot;*&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;mysql&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;node-uuid&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;fs-extra&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span> <span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;orm&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nt">&quot;orm-transaction&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span><span class="p">,</span>
+</span><span class='line'>     <span class="nt">&quot;seq&quot;</span><span class="p">:</span><span class="s2">&quot;*&quot;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在webstorm中，我们需要到cmd命令行下，进入项目目录，然后运行npm install，安装或更新依赖包。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/nodejs/'>nodejs</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/08/09/nodejs-express-mysql-crud1/" title="上一篇文章: node.js中基本于expresss、mysql的CRUD之一（技术选择及需求）">&laquo;上一篇:&nbsp;&nbsp;node.js中基本于expresss、mysql的CRUD之一（技术选择及需求）</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/08/09/nodejs-express-mysql-crud3/" title="下一篇文章: node.js中基本于expresss、mysql的CRUD之三（代码实现）">下一篇: &nbsp;&nbsp;node.js中基本于expresss、mysql的CRUD之三（代码实现） &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用---第五部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用---第四部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用---第三部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用---第二部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用---第一部分</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

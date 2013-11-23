@@ -1,0 +1,310 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>node.js中基本于expresss、mysql的CRUD之一（技术选择及需求） - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;要在项目中使用一种新的技术，必须要用这种新东西写出一个演示demo，也就是技术原型或架构原型，以验证这种技术方案的可行性。node.js这种使用日益广泛的技术比较适合互联网项目需求变化快的敏捷开发，node.js非常的小巧，相关插件众多（ &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2013/08/09/nodejs-express-mysql-crud1">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">node.js中基本于expresss、mysql的CRUD之一（技术选择及需求）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;要在项目中使用一种新的技术，必须要用这种新东西写出一个演示demo，也就是技术原型或架构原型，以验证这种技术方案的可行性。node.js这种使用日益广泛的技术比较适合互联网项目需求变化快的敏捷开发，node.js非常的小巧，相关插件众多（有些插件甚至可以在浏览器客户端和node.js服务器端都可运行），对于开发人员来说，只需要掌握javascript一门语言，就可以进行项目开发了，这种简化，对于前端开发人员来说是梦寐以求的。</p>
+
+<p>&emsp;&emsp;先来说说技术的选型吧。</p>
+
+<p>&emsp;&emsp;用node.js开发一个web应用，虽然我们可以从头开始自己去实现一个http服务器，但这有点重复发明轮子的嫌疑，因为已经能很多非常优秀的web服务器框架，比如：express就是其中的佼佼者。</p>
+
+<p>&emsp;&emsp;<strong>持久层</strong></p>
+
+<p>&emsp;&emsp;对于持久层，我的这个demo中使用mysql，从J2EE开发转型到node.js开发过程中，最自然的想法就是找一个node.js中的orm插件，这个我选择了非常流行了一个，orm2。但基于互联网项目更偏重于性能而业务相对并不复杂的情况，我建议在持久层不要用什么orm之类的插件，而采用直接手工书写sql的方式更为实用，因为orm2也有一些问题，后面我会说到。另外，在大数据量的应用中，一般还会使用nosql型数据库，比如mongodb，这个我会另外在给出demo。</p>
+
+<p>&emsp;&emsp;<strong>业务层</strong></p>
+
+<p>&emsp;&emsp;在标准的分层界构中，会有业务层的存在，在node.js中，如果仅仅是基于对数据的CRUD操作，我认为不需要加入业务层，因为这样只会增加代码的复杂性。如果你真的有一些并不仅仅是简单的CRUD核心的业务逻辑，倒是可以创建这样的一个目录，对这些纯业务逻辑进行封装。</p>
+
+<p>&emsp;&emsp;<strong>表现层</strong></p>
+
+<p>&emsp;&emsp;表现层可以使用restful风格的url，express对restful支持非常的简单而强大。而根据表现层的构建方式，又可分成两种方式：</p>
+
+<p>&emsp;&emsp;一种是服务器端生成页面，比如jade，ejs等，这种模板引擎技术相当于j2ee中的jsp,velocity,freemarker等。jade可以写出极简洁的页面，而又具有很好的标签元素封闭性，我这个demo中就使用jade。</p>
+
+<p>&emsp;&emsp;另一种是由客户端生成，即胖客户端的方式，比如：angular.js，有这种方式中，服务器仅仅需要提供api即可，向客户端返回的数据格式可以是json，xml等。</p>
+
+<p>&emsp;&emsp;我更偏向于第二种方式，虽然从传统的j2EE服务器生成页面的第一种方式转变为客户端负责界面的展示非常的不习惯，但这需要一个转变过程。</p>
+
+<p>&emsp;&emsp;言归正传，下面来看看demo的功能及界面截图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/1.jpg' width='' height='' title='登录界面原型参考图'><span class='caption-text'>登录界面原型参考图</span></span></p>
+
+<p>&emsp;&emsp;登录系统，登录失败给予提示，成功后，进入主页面。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/2.jpg' width='' height='' title='登录后的主界面原型参考图'><span class='caption-text'>登录后的主界面原型参考图</span></span></p>
+
+<p>主界面中，主要有以下功能：</p>
+
+<ul>
+<li><p>展示登录成功的用户信息。</p></li>
+<li><p>分页展示系统中的所有用户，可以按条件查询。</p></li>
+<li><p>可新增用户，批量删除用户。</p></li>
+<li><p>可查看，修改，删除用户。</p></li>
+<li><p>可退出系统。</p></li>
+<li><p>可对未登录用户，对url的访问权限控制。</p></li>
+</ul>
+
+
+<p>&emsp;&emsp;一些界面截图如下：</p>
+
+<p>&emsp;&emsp;查看用户</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/3.jpg' width='' height='' title='查看原型参考图'><span class='caption-text'>查看原型参考图</span></span></p>
+
+<p>&emsp;&emsp;修改用户</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/4.jpg' width='' height='' title='修改主界面原型参考图'><span class='caption-text'>修改主界面原型参考图</span></span></p>
+
+<p>&emsp;&emsp;新增用户</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/5.jpg' width='' height='' title='新增主界面原型参考图'><span class='caption-text'>新增主界面原型参考图</span></span></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/nodejs/'>nodejs</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/08/01/nodejs-login-sync/" title="上一篇文章: nodejs中的同步之--登录代码">&laquo;上一篇:&nbsp;&nbsp;nodejs中的同步之--登录代码</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/08/09/nodejs-express-mysql-crud2/" title="下一篇文章: node.js中基本于expresss、mysql的CRUD之二（代码实现）">下一篇: &nbsp;&nbsp;node.js中基本于expresss、mysql的CRUD之二（代码实现） &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用---第五部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用---第四部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用---第三部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用---第二部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用---第一部分</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

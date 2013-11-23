@@ -9,7 +9,25 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;最后一篇是关于持久层的性能优化，和dba的关系比较密切，我认为持久层优化的主要原则是：减少表关联查询。即使必须要有关联查询，也要减少关联的表的个数。根据经验，大多数的应用，性能瓶颈都在数据库这边，我们围绕上面的原则，可有下面的一些办法来进行优化。 增加表冗余字段。 &hellip;">
+  <meta name="description" content="&emsp;&emsp;有人要用，写了一个演示代码，界面效果如下： struts2多文件上传界面 &emsp;&emsp;客户端代码，用jquery ui实现： 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+$( &quot;#myquery&quot &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -48,9 +66,9 @@
   
 <ul class="main-navigation">
   <li><a href="/">博客文章</a></li>
-  <li><a href="/blog/archives">所有文章</a></li>
-  <li><a href="/blog/archives">绘画作品</a></li>
-  <li><a href="/blog/archives">关于我</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
 </ul>
 
 </nav>
@@ -64,7 +82,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2010/11/09/prof-dao/">系统性能优化总结之持久层篇</a></h1>
+      <h1 class="entry-title"><a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a></h1>
     
     
       <p class="meta">
@@ -80,262 +98,579 @@
   
 
 
-<time datetime="2010-11-09T15:18:00+08:00" pubdate data-updated="true">2010年11月09日</time>
+<time datetime="2012-10-31T15:18:00+08:00" pubdate data-updated="true">2012年10月31日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;最后一篇是关于持久层的性能优化，和dba的关系比较密切，我认为持久层优化的主要原则是：<strong>减少表关联查询</strong>。即使必须要有关联查询，也要减少关联的表的个数。根据经验，大多数的应用，性能瓶颈都在数据库这边，我们围绕上面的原则，可有下面的一些办法来进行优化。</p>
+  <div class="entry-content"><p>&emsp;&emsp;有人要用，写了一个演示代码，界面效果如下：</p>
 
-<ul>
-<li><p>增加表冗余字段。这种方法会使你的表不符合范式要求，但是我们必须知道，范式仅仅是理论上的，也就是建议你的表设计的一个标准，恐怕严格符合第四范式的项目 不能满足非功能性需求。我们在进行er设计的时候，可根据项目实际需求，在某些表中加入冗余字段，前提是这些冗余字段不会经常变化，如果变化过快，将会给 数据同步更新带来麻烦。</p></li>
-<li><p>增加数据库索引。在对系统上线一段时间后跟踪的sql进行归类统计，按表、按where字段排序，找出一张表中最常做为查询条件的字段，在这些字段上建立索引，一般一张表可以建很多个索引，对查询性能的提升，效果是非常明显的。</p></li>
-<li><p>分表。设计前要预估算出一张表的最大记录行数，考虑是否要进行分表设计（我的其它文章中会专门讲到）。</p></li>
-<li><p>对表进行水平和垂直分区。设计前要预估算出一张表的最大记录行数，以决定是否会对该表数据分区。根据我的经验，一般一张表的数据量达到10万条以上，就可以 考虑分区了。分区类型有很多种，要根据项目情况考虑，mysql是在5.15中才加入分区功能的，使用mysql的同学要注意哦。</p></li>
-<li><p>数据文件物理存储问题。在进行建表或建分区时，都可以选择文件的物理存储路径，因为服务器一般都有多块磁盘，那我们就一定要注意，根据表的访问题情况，利用 单独磁盘的I/O，合理的分配到物理磁盘上去，提高效率。如果只有一块盘，可考虑将存储文件划分到不同逻辑分区上去，逻辑分区在物理扇区上是连续分配的， 对效率提升有好处。</p></li>
-<li><p>数据库集群。一般数据库都是支持集群功能的，配置集群，水平扩展数据库的性能。
-采用读写分离。我曾经帮朋友设计过的一个高并发系统，数据库采用mysql实现，就采用了读、写分离机制，这个也是许多高并发网站常用的方法。</p></li>
-<li><p>程序员写程序的时候要注意，可尽量使用一些特有数据库的专用语句，对性能提升是有好处的，缺点是不便于数据库的更改移植。</p></li>
-<li><p>程序员要尽量避免行级锁，程序中尽可能用乐观锁或离线锁。</p></li>
-<li><p>可将有些大数据量的sql操作写到存储过程中去，因为存储过程都是经过编译的，执行效率非常的高，我们的一些早期项目都用这个来做复杂的大数据量业务操作。 缺点也很明显，一是数据库平台更换与移植，另一个就是性能优化时无法水平提升系统性能，比如：应用服务器做了集群，但数据库这边的存储过程仍然是瓶颈。</p></li>
-<li><p>最后一点是设计上的，原理是数据库删除效率不高，那我们就少用删除。平进的删除，只是对数据库打上删除标志，在非系统高峰期，用定时任务真正删除打了标记的数据，这种做法在移动、电信的项目中比较常见。</p></li>
-</ul>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/10/2.jpg' width='' height='' title='struts2多文件上传界面'><span class='caption-text'>struts2多文件上传界面</span></span></p>
 
-
-<p>&emsp;&emsp;性能优化需要在实践中不断总结积累，上面的一些是我这些年来的实践所总结，谈不上全面与深刻，我也相信，每个人都有自己的一套独门绝技，欢迎补充完善。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/11/08/prof-service/">系统性能优化总结之业务层</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-11-08T15:18:00+08:00" pubdate data-updated="true">2010年11月08日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;业务层的性能优化，可能普通程序员更关注些，我总结了下面几点，仅当抛砖引玉吧。</p>
-
-<ul>
-<li><p>代码级别：变量的声明范围，for循环或while，++及移位操作等，这方面相当考究一个程序员的基础功力（尹哥在这块很牛的），我认 为对于企业级应用开发，这块应该不是重点，因为现在的服务器性能都非常好，代码写得烂一点，性能影响也不大。当然，项目不同，则要另当另论哦，比如嵌入 式、j2me等的开发要求就比较高，游戏服务器端的代码要求也很严格，甚至list类型集合都不让用，全部用array。</p></li>
-<li><p>针对特点框架的性能优化：在业务实现代码上，可考虑有针对性的优化。比如用hibernate做持久层实现吧，就得认识到load,get,iterator等方法的性能问题，批量sql操作及批量对象操作的性能影响，一级及二级缓存的应用等等。</p></li>
-<li><p>失血领域对象在各层中传递，减少不必要的dto或vo对象。失血模型的广泛应用，可能也和这个有关，简单、高效。</p></li>
-<li><p>合理的业务逻辑实现设计。这点是对设计人员提出的，合理的实现设计，可大幅提高业务执行性能。
-数据库连接池的使用。这点也许可以放到持久层去说合理些，但我觉得和业务的关系更紧密。数据库连接池可以使用容器低层的实现，这也是一种不错的选择，但我们 一般为了项目能够快速简单地布署，都在项目中直接实现。比如：直接将dbcp或proxool配置为spring的数据源（dbcp与proxool的选 择我将在另一文章中进行比较）。</p></li>
-<li><p>缓存的应用。缓存其实是架构级的提升性能之道，主要是对领域对象的缓存，因为一般的性能瓶颈都在数据 库，对域对象的缓存，可以减少和数据库的交互以提高性能。比如用hibernate做持久层实现，就存在一级缓存及二级缓存，一级的我们一般不管，基本是 透明的，二级存存就需要我们根据实际情况设定合理的缓存参数，而且要合理使用好查询缓存。常用的二级缓存有 c3p0，oscached，memcached等，个人偏向memcached。</p></li>
-<li><p>项目发布后，要对日志文件的级别，及sql的输入选择进行重新配置，以符合生产环境（本人曾有深刻教训的）。</p></li>
-<li><p>使用服务器集群（软件或硬件方式，我会在另一篇文章中详细说明），对服务器的性能进行水平扩展。</p></li>
-</ul>
-
-
-<p>&emsp;&emsp;最近一起非常关注周鸿伟与tx之间的战争，全力支持360。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/11/05/prof-web/">系统性能优化总结之表现层</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-11-05T15:18:00+08:00" pubdate data-updated="true">2010年11月05日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;对系统性能的考虑，是一个新手和老手的重要区别之一，面试的时候，问一些性能优化的问题，很容易判断应聘者的工作经验。下面是我对性能优化的考虑，将从表现层、业务层、技术层三个大的方面来阐述。本篇先介绍表现层性能优化要点。</p>
-
-<p>&emsp;&emsp;表现层优化的一个重要原则是<strong>减少向服务器发送请求的次数以及减少每次请求的数据传输量</strong>，围绕这一点，将会想到有很多的优化办法。</p>
-
-<ul>
-<li><p>ajax:大家都知道,ajax可以实现局部更新，显然减少了数据通讯量以及请求次数（全页面刷新，页面上的很多资源都要进行请求哦），而且ajax可以增强客户体验；</p></li>
-<li><p>减少图片文件大小，这个是减少数据通讯量的方法，可用png之类较小的文件存盘格式；</p></li>
-<li><p>使用css对图片分割，把多个地方的小图标集成到一张图片上来。比如：.zhu{background:url(“../img/shenxiao /sx.png”) no-repeat scroll 0 -528px transparent;}，注意其中的0 -528处，是关键；</p></li>
-<li><p>减少css与js文件的数据，最好不要按照页面逻辑将文件划分成多个，以减少请求次数；在同一个文件中，也要想法减少文件大小，多余的空格，回车，在项目上 线前都要去掉，我曾经见过一些网站，就一个css文件，打开，里面只有一行，这一行非常的长，可见，边回车换行都已经被删除了，呵呵。再有,js文件上线 前要找个工具压缩一下，文件大小一般会减少一半以上；</p></li>
-<li><p>从程序上，对页面进行静态化处理（页面静态化处理的详细内容我将在后面的博客中介绍）。</p></li>
-<li><p>对页面进行缓存，squid开源产品居多，oscache也是可以的。</p></li>
-<li><p>如果是jsp，可以考虑更换成其它的模板框架，比如：velocity，freemarker等，一来可以提高页面响应速度，还可以强制程序员按model2书写页面交互。</p></li>
-<li><p>根据实际情况选择合适的数据通讯方式，json,xml，或者是服务器拼好页面再发往客户端。</p></li>
-<li><p>合理利用好浏览器缓存。但有的时候，是禁止缓存的哦，比如一些ajax操作中。</p></li>
-<li><p>启用服务器gzip压缩。</p></li>
-</ul>
-
-
-<p>&emsp;&emsp;当然，条条大道通罗马，以“减少向服务器发送请求的次数以及减少每次请求的数据传输量”为优化核心，办法还是很多的。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/11/03/gui-prototype/">管理系统界面的十条潜规则</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-11-03T15:18:00+08:00" pubdate data-updated="true">2010年11月03日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;界面设计要根据你的用户群体来确定，其实，很多娃娃的界面丑陋不说，连一些基本的隐喻规则（潜规则）都没有遵守，那界面上有些什么潜规则呢？我总结了一下，大致有这么几点。</p>
-
-<p>&emsp;&emsp;一、界面风格要统一，小组中分成几个人去实现，最后的效果必须看似出自一人之手，包括整体颜色、按钮风格、iframe区大小等。这个可以用统一的模板解决。</p>
-
-<p>&emsp;&emsp;二、查询界面统一在界面顶端，最好用一个group之内的框起来，感觉比较集中。</p>
-
-<p>&emsp;&emsp;三、列表展示如果有checkbox，统一放到每一行的第一列。</p>
-
-<p>&emsp;&emsp;四、每一行应该有针对该行的一些操作，比如：删除，修改等等，操作列应该放在每一行的最后一列。</p>
-
-<p>&emsp;&emsp;五、如果有针对多行的批量操作按钮，当没有checkbox选中时，相应的批量操作应置为disabled。</p>
-
-<p>&emsp;&emsp;六、删除或其它一些不可恢复操作时，应该有提示对话框。</p>
-
-<p>&emsp;&emsp;七、新建或修改时，必填字段一定要用红色的*标出。一般要提供 查看 与 修改界面，最后不要图省事，用修改界面当查看界面使用。</p>
-
-<p>&emsp;&emsp;八、分页查询时，应回带顶部用户输入的查询条件，上一页、下一页等链接上也应用条件。</p>
-
-<p>&emsp;&emsp;九、在列表界面，修改、删除记录完成后，应该返回列表当初所在页上。</p>
-
-<p>&emsp;&emsp;十、提交数据未返回前，所点提交按钮应置为disabled。</p>
-
-<p>&emsp;&emsp;其实还有一些，我先暂时写上这十条吧。附贴图一张，供参考：</p>
-
-<p><img src="/uploads/2011/03/48.jpg" title="原型参考图" alt="" /></p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/11/02/seo2/">如何写页面代码（seo思考之二）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-11-02T15:18:00+08:00" pubdate data-updated="true">2010年11月02日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;做seo的人都知道，你的站点页面不仅是呈现出来给用户看的，还应该是提供给搜索引擎阅读的，那如何才能写好站点中的每一个页面呢？下面是我总结出来的经验，供参考：</p>
-
-<p>&emsp;&emsp;一、页面结构一定要清晰。老大的一句话“像写文章一样来写网页”，让我受益匪浅。一篇文章结构，我想大家都比较清楚，标题，开头，段落，结尾等，该加强的地方要加强，文章结构清晰，完整。</p>
-
-<p>&emsp;&emsp;二、页面中仅仅呈现主要内容，页面样式全部提取到外部css中，全面减少页面的大小。</p>
-
-<p>&emsp;&emsp;三、页面中的行为，也就是js，要全部提出来，以减少页面大小，并且一般放在页面尾部引入。</p>
-
-<p>&emsp;&emsp;四、重要的内容提前。越是重要的，就越要放到前面，越是更新频繁的，就要往前放。</p>
-
-<p>&emsp;&emsp;五、合理使用h,b等html标题，以突出重要内容。</p>
-
-<p>&emsp;&emsp;六、写好页面标题，以及描述信息，比如：</p>
+<p>&emsp;&emsp;客户端代码，用jquery ui实现：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;meta</span> <span class="na">name=</span><span class="s">”description”</span> <span class="na">content=</span><span class="s">”刘江华的博客”</span> <span class="nt">/&gt;</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span> <span class="s2">&quot;#myquery&quot;</span> <span class="p">).</span><span class="nx">autocomplete</span><span class="p">({</span>
+</span><span class='line'>               <span class="nx">source</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span> <span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">){</span>
+</span><span class='line'>                   <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>                       <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;news!autoComplete.do&quot;</span><span class="p">,</span>
+</span><span class='line'>                       <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+</span><span class='line'>                       <span class="nx">data</span><span class="o">:</span><span class="p">{</span><span class="nx">queryName</span><span class="o">:</span><span class="nx">request</span><span class="p">.</span><span class="nx">term</span><span class="p">},</span>
+</span><span class='line'>                       <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span class='line'>                       <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
+</span><span class='line'>                           <span class="nx">response</span><span class="p">(</span><span class="nx">$</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+</span><span class='line'>                               <span class="k">return</span> <span class="p">{</span>
+</span><span class='line'>                                   <span class="nx">label</span><span class="o">:</span><span class="nx">e</span><span class="p">.</span><span class="nx">title</span>
+</span><span class='line'>                               <span class="p">}</span>
+</span><span class='line'>                           <span class="p">}</span> <span class="p">));</span>
 </span><span class='line'>
-</span><span class='line'><span class="nt">&lt;meta</span> <span class="na">name=</span><span class="s">”keywords”</span> <span class="na">content=</span><span class="s">”博客”</span> <span class="nt">/&gt;</span>
+</span><span class='line'>                       <span class="p">}</span>
+</span><span class='line'>                   <span class="p">});</span>
+</span><span class='line'>               <span class="p">}</span>
+</span><span class='line'>           <span class="p">});</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;这里要注意一下，meta现在对百度已经没有用处了，但google似乎还有效果，所以，还是加上，使你的页面结构更严谨。</p>
+<p>&emsp;&emsp;网页上：</p>
 
-<p>&emsp;&emsp;七、命名要规范，包括css中的class及id，让搜索引擎能够读懂含义最好。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>输入查询条件：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;query&quot;</span> <span class="na">id=</span><span class="s">&quot;myquery&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>&emsp;&emsp;上面几点，是seo对页面源码书写方面的基本要求，大家写页面时应该养成这样的习惯。</p>
 
-<p>&emsp;&emsp;最后我说一个简单的方法，验证你的页面是否能达到上面的要求。把你页面中的css与js全部取消（只需在源文件的链接中改个名字）,再用浏览器打开看看，加强标签，段落标签，标题标签是否能够表达文章主题，你会发现，一目的然，这种方法非常的有效。</p>
+<p>&emsp;&emsp;后台：</p>
 
-<p>&emsp;&emsp;google在中国已经快死了，这段时间政府一直在墙它，访问10次可能有5次都打不开，google news更是永久无法打开，看来zf是想把google从中国彻底的消除了，现在的seo，重点当然是baidu。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//前端输入的查询参数</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">queryName</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 自动完成</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">autoComplete</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//得到响应</span>
+</span><span class='line'>        <span class="n">HttpServletResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">News</span><span class="o">&gt;</span> <span class="n">news</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="na">getNewsByTitle</span><span class="o">(</span><span class="n">queryName</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">json_str</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">news</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">println</span><span class="o">(</span><span class="n">json_str</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;业务层：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">List</span> <span class="nf">getNewsByTitle</span><span class="o">(</span><span class="n">String</span> <span class="n">title</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">baseDao</span><span class="o">.</span><span class="na">queryEntitys</span><span class="o">(</span><span class="s">&quot;from News n where n.title like ?&quot;</span><span class="o">,</span> <span class="k">new</span> <span class="n">Object</span><span class="o">[]{</span><span class="s">&quot;%&quot;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s">&quot;%&quot;</span><span class="o">});</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-31T15:18:00+08:00" pubdate data-updated="true">2012年10月31日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;纸本油画，塔公寺。</p>
+
+<p>&emsp;&emsp;十一期间出游，路线：泸定，丹巴，新都桥，康定，海螺沟，十分难忘的一次出行。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/10/3.jpg' width='' height='' title='纸本油画-塔公寺'><span class='caption-text'>纸本油画-塔公寺</span></span></p>
+
+<p>&emsp;&emsp;异常蓝的天空，美丽的草原，让人心旷神怡。</p>
+
+<p>&emsp;&emsp;虐诚的僧人们在朗诵经文，通往寺庙的小路边挂满了经幡，它们在柔和的风中传送着经文，相恋的一对马儿，悠闲地享受着这一切&hellip;&hellip;，一曲《天籁之爱》最能表现这个场景（我现在的手机铃声，仍旧是这个曲子）。</p>
+
+<p>&emsp;&emsp;画上的落款是孩他妈写的，显得有些生硬，有人说这是一败笔，当然，这也算是两人的一次小小合作吧。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/30/url-utf8/">超链接传递中文参数解决之法</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-30T15:18:00+08:00" pubdate data-updated="true">2012年10月30日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;办法很多，下面介绍一种更为通用，最有效的方式：</p>
+
+<p>&emsp;&emsp;示例页面，其中包含post与get方式的提交：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;need_change&quot;</span> <span class="na">href=</span><span class="s">&quot;myajax!getChineseWord.do?name=中文&quot;</span><span class="nt">&gt;</span>中文测试<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&quot;&lt;%=path%&gt;/myajax!getChineseWord.do&quot;</span> <span class="na">method=</span><span class="s">&quot;post&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        姓名：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">value=</span><span class="s">&quot;中文&quot;</span><span class="nt">&gt;&lt;br&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;post中文&quot;</span> <span class="na">id=</span><span class="s">&quot;login_btn&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/form&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;对于超链接中的中文，使用encodeURI编码，我们在jquery的ready中去做这件事：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>      <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.need_change&quot;</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>          <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">,</span> <span class="nb">encodeURI</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">)));</span>
+</span><span class='line'>      <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;服务器端action中，需要进行转码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="k">if</span> <span class="o">(</span><span class="s">&quot;ISO-8859-1&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">StringUtil</span><span class="o">.</span><span class="na">getEncoding</span><span class="o">(</span><span class="n">name</span><span class="o">)))</span> <span class="o">{</span>
+</span><span class='line'>         <span class="n">name</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">name</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="s">&quot;ISO-8859-1&quot;</span><span class="o">),</span><span class="s">&quot;UTF-8&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;注：StringUtil.getEncoding这个方法将返回字符串的编码集格式，代码是网上copy的，现贴出该方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 判断字符串的编码</span>
+</span><span class='line'><span class="cm">     * </span>
+</span><span class='line'><span class="cm">     * @param str</span>
+</span><span class='line'><span class="cm">     * @return</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">getEncoding</span><span class="o">(</span><span class="n">String</span> <span class="n">str</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;GB2312&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">String</span> <span class="n">s</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
+</span><span class='line'>                <span class="k">return</span> <span class="n">s</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;ISO-8859-1&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">String</span> <span class="n">s1</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
+</span><span class='line'>                <span class="k">return</span> <span class="n">s1</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;UTF-8&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">String</span> <span class="n">s2</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
+</span><span class='line'>                <span class="k">return</span> <span class="n">s2</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception2</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;GBK&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">String</span> <span class="n">s3</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
+</span><span class='line'>                <span class="k">return</span> <span class="n">s3</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception3</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="s">&quot;&quot;</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/30/poi-excel/">Excel文件导出代码</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-30T15:18:00+08:00" pubdate data-updated="true">2012年10月30日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;经常有人问excle文件导出代码实现，现贴出示例代码(struts2,poi)，想看的童鞋请参考：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="c1">//业务调用，得到要导出的数据</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Page</span> <span class="n">newsPage</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="na">getNewsByPage</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">10</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="s">&quot;readCount&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">News</span><span class="o">&gt;</span> <span class="n">news</span> <span class="o">=</span> <span class="n">newsPage</span><span class="o">.</span><span class="na">getData</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//内存中生成excle文件</span>
+</span><span class='line'>        <span class="n">HSSFWorkbook</span> <span class="n">wb</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HSSFWorkbook</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">HSSFSheet</span> <span class="n">sheet</span> <span class="o">=</span> <span class="n">wb</span><span class="o">.</span><span class="na">createSheet</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>       <span class="c1">//生成标题，当然，你可以设定格式</span>
+</span><span class='line'>        <span class="n">HSSFRow</span> <span class="n">header</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="na">createRow</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">header</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="s">&quot;新闻id&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">header</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="s">&quot;新闻标题&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">header</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="s">&quot;新闻内容&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//生成数据行</span>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">news</span><span class="o">.</span><span class="na">size</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">News</span> <span class="n">temp_news</span> <span class="o">=</span> <span class="n">news</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">HSSFRow</span> <span class="n">row</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="na">createRow</span><span class="o">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">row</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="n">temp_news</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>            <span class="n">row</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="n">temp_news</span><span class="o">.</span><span class="na">getTitle</span><span class="o">());</span>
+</span><span class='line'>            <span class="n">row</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="n">temp_news</span><span class="o">.</span><span class="na">getContent</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="c1">//得到响应</span>
+</span><span class='line'>        <span class="n">HttpServletResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setHeader</span><span class="o">(</span><span class="s">&quot;Content-Disposition&quot;</span><span class="o">,</span><span class="s">&quot;attachment; filename=&quot;</span>
+</span><span class='line'>                <span class="o">+</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="s">&quot;我的新闻列表.xls&quot;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="s">&quot;GB2312&quot;</span><span class="o">),</span><span class="s">&quot;iso-8859-1&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">OutputStream</span> <span class="n">os</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">();</span>
+</span><span class='line'>        <span class="c1">//发回响应</span>
+</span><span class='line'>        <span class="n">wb</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">os</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/24/jaskson-json/">使用jackson对json的操作</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-24T15:18:00+08:00" pubdate data-updated="true">2012年10月24日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;jackson是一个开源的处理json的工具包，spring mvc中的json类型响应就是用这个东西实现的，性能比较优异。我以前最早的项目用的是json-lib，后来因效率问题改为gson，现在看来可以换成jackson了。</p>
+
+<p>&emsp;&emsp;下面给大家讲讲jackson的使用：</p>
+
+<p>&emsp;&emsp;<strong>一、简单对象转为json</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">StringWriter</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringWriter</span><span class="o">();</span>
+</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">result</span><span class="o">,</span> <span class="err">【这个参数是你要转换的东西，对象或集合都是可以的】</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，如果你不想用StringWriter的话，你可以直接用om.writeValueAsString(obj)直接输出字符串。</p>
+
+<p>&emsp;&emsp;<strong>二、日期的处理</strong></p>
+
+<p>&emsp;&emsp;默认情况下，jackson会把日期处理为毫秒，如果你想处理成字符串，可以：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">setDateFormat</span><span class="o">(</span><span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>三、排除不想要的属性</strong></p>
+
+<p>&emsp;&emsp;这个主要是用来解决对象间循环关联的情况的，使用如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SimpleBeanPropertyFilter</span> <span class="n">filter</span> <span class="o">=</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">serializeAllExcept</span><span class="o">(</span><span class="s">&quot;不要的属性名&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">SimpleFilterProvider</span> <span class="n">fp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">();</span>
+</span><span class='line'><span class="n">fp</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;user_json&quot;</span><span class="o">,</span> <span class="n">filter</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">fp</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，这个设置将对全局的ObjectMapper都起作用，我们也可以使用下面这种：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">writer</span><span class="o">(</span><span class="n">fp</span><span class="o">).</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">obj</span><span class="o">)</span><span class="err">；</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;每次使用前再设置，这个也是全局作用域。</p>
+
+<p>&emsp;&emsp;如果仅仅想要自己需要的属性，如下写法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span> <span class="s">&quot;title&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;注意：addFilter的第一个参数，要用注解指写，比如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@JsonFilter</span><span class="o">(</span><span class="s">&quot;user_json&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">User</span> <span class="o">{}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果持久层使用的是hibernate，需要将hibernateLazyInitializer属性也排除。</p>
+
+<p>&emsp;&emsp;<strong>四、反序列化</strong></p>
+
+<p>&emsp;&emsp;反序列化用的没有序列化多。我们先看普通对象的处理：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">json_str</span><span class="o">,</span> <span class="n">User</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;集合对象，处理方式不同，请看list的处理方式：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span> <span class="n">uss</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">json_str</span><span class="o">,</span> <span class="k">new</span> <span class="n">TypeReference</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;&gt;()</span> <span class="o">{});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>五、图片等二进制类型的json转换</strong></p>
+
+<p>&emsp;&emsp;这个不用担心，jackson可直接完成转换，前提是：</p>
+
+<p>&emsp;&emsp;你要用byte[]类型表示二进制数据，比如：private byte[] photo ;</p>
+
+<p>&emsp;&emsp;当然，上面的的代码都是在线手工操作下的示例，jackson也是支持注解的，比如：排除属性，日期格式的定义等，都可以用注解的方式去实现，请大家自己so一下吧。</p>
 </div>
   
   
@@ -360,23 +695,23 @@
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用&#8212;第四部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a>
       </li>
     
   </ul>
@@ -386,14 +721,31 @@
    <ul id="categories">
      
 		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
-		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
-		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
-		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
 	 
    </ul>
 </section>
 
-
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
 
 
 
@@ -406,6 +758,7 @@
   <footer role="contentinfo"><p>
   版权所有 &copy; 2013 - 冰雨 -
   <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>
 
 </footer>

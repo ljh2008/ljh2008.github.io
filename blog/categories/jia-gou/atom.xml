@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Category: 架构 | 刘江华的博客]]></title>
+  <title><![CDATA[☺分类☺：架构 | 刘江华的博客]]></title>
   <link href="http://yoursite.com/blog/categories/jia-gou/atom.xml" rel="self"/>
   <link href="http://yoursite.com/"/>
-  <updated>2013-11-16T08:42:11+08:00</updated>
+  <updated>2013-11-23T16:00:19+08:00</updated>
   <id>http://yoursite.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -14,488 +14,844 @@
 
   
   <entry>
-    <title type="html"><![CDATA[一种报表实现设计方案]]></title>
-    <link href="http://yoursite.com/blog/2011/09/15/report/"/>
-    <updated>2011-09-15T15:18:00+08:00</updated>
-    <id>http://yoursite.com/blog/2011/09/15/report</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;报表是每一个MIS系统中的必有功能，我们可以通过一个软件产品中查询统计、报表功能是否丰富来评判一个软件产品的成熟度。报表数据对于客户的日常工作、决策有非常重要的作用，报表也是我们程序员必定要遇到的问题。</p>
+    <title type="html"><![CDATA[事务中的并发处理]]></title>
+    <link href="http://yoursite.com/blog/2013/06/27/hibernate-transaction/"/>
+    <updated>2013-06-27T15:18:00+08:00</updated>
+    <id>http://yoursite.com/blog/2013/06/27/hibernate-transaction</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;在项目中，事务是不可缺少的，但是如何在一个业务事务中正确的处理并发，确不是一件容易的事。下面，我通过一个简单的例子来说明这个问题，并给出一些解决办法。</p>
 
-<p>&emsp;&emsp;中国式的报表样式复杂，实现起来难度也比较大，而对于系统设计者来说，客户的某些特殊报表可能会影响到我们的系统设计（说具体点就是表结构、加余字段等方面）。</p>
+<p>&emsp;&emsp;这个例子也许并不恰当，但足够简单：宠物&mdash;&ndash;>宠物日记，一对多双向关联，持久层使用hibernate框架实现。</p>
 
-<p>&emsp;&emsp;请看下面的这张报表，这张表的特点是表头、数据行全部是动态生成。表头是一个嵌套结构，由树状考评类别组成（动态生成），而第一列的单位也由参与本考评方案的单位得分生成，每一个类别的得分，是由该类别下所有的考评项最终得分累积得到（当然，上面的是我描述的一个简化流程，具体业务打分过程比这个要复杂）。</p>
+<p>``` java Epet.java
+public class Epet{</p>
 
-<p><img src="/uploads/2011/09/1.jpg" title="系统报表样式一" alt="" /></p>
+<pre><code>private int id;
+private String name;
+private String password;
 
-<p>&emsp;&emsp;上面这种类型的报表，相信很多人都碰到过，如何快捷地实现它呢？最常用的办法就是拼装出符合样式要求的html表格，比如说表头的生成，我们先调用业务方法，生成符合表头的数据结构（自关联的树状结构），使用页面语言（如JSTL，EL）生成出来，最终显示给用户，但问题在于每一行数据体要和表头上的每一列对应起来的代码实现比较复杂，这个过程相当考究一个程序员的逻辑思维能力，特别是跨行、跨列、以及行、列数据对应问题。</p>
+//日记集合
+private Set&lt;Diary&gt; diarys = new HashSet&lt;Diary&gt;();
+//日记的总积分，为了提高效率而设置的冗余字段
+private int integralCount;
+</code></pre>
 
-<p>&emsp;&emsp;上面我所描述的实现方案是可行的，很多人也是这么在做，但存在的问题也是非常明显：报表的实现代码不好维护，页面上的展示更是复杂，如果要实现另一张样式差不多的报表，我们又得copy头一张报表的代码，进行相应的调整、修改，很多人也是这么在做。</p>
+<p>}
+```</p>
 
-<p>&emsp;&emsp;一种改进的设计是以面向对象的思想来进行封装，比如下面的这张类图，就是上面这种类型报表的一种设计方案：我们将报表拆分成了表头与表行，表头由表头项组成，表行由数据单元格组成，我们把这些抽象成接口，并提供HTML版本的实现类。我们抽取出来的表格、表头、行对象都具有生成自身html代码的功能，并且还有很多辅助方法，这使得最终的代码很容易理解。</p>
+<p>``` java Diary.java
+public class Diary{</p>
 
-<p><img src="/uploads/2011/09/2.jpg" title="报表类图设计" alt="" /></p>
+<pre><code>private int id;
+private String title;
+private Date publishDate;
+//日记积分
+private int integral;
+//日记所属宠物
+private Epet epet;
+</code></pre>
 
-<p>&emsp;&emsp;我们接下来的工作就是在service中，查询相应的业务数据来生成这个Report对象，你会发现生成Report的代码非常清晰、好理解。而façade中，页面中的实现就变得非常的简单，只需要调用service中的方法得到Report对象，之后通过generateReportCode()方法就得到了页面要显示的html代码。</p>
+<p>}
+```</p>
 
-<p>&emsp;&emsp;分析上面的类图我们可以发现，报表对象就是一个聚合根（当然也是值对象），而下面的每一个子对象负责自身显示代码的生成，通过service，业务逻辑也得到了很好封装，这就是面向对象带来的好处。只不过，我们要设计很多的小对象来承担各自的职责。这让我想到delphi，pb中报表的超强设计能力，也不禁有些怀念那个年代。</p>
+<p>&emsp;&emsp;假设为了提高效率，我们在epet对象中，添加了该宠物所有日记的总积分，我们现在需要一个业务方法，用来计算宠物的总积分，并持久化到数据库中。</p>
 
-<p>&emsp;&emsp;当然，不同的报表风格会有不同的设计对象设计方案，不同的报表框加也会有不同的设计方案（比如：jFreeChart，jsperReport这种服务器端的报表生成框架，Highcharts、fusioncharts这类客户端报表框架户端的报表生成框架在设计上都会有所不同）。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[谈谈富血模型]]></title>
-    <link href="http://yoursite.com/blog/2011/08/31/domain/"/>
-    <updated>2011-08-31T15:18:00+08:00</updated>
-    <id>http://yoursite.com/blog/2011/08/31/domain</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;省质监局考评系统二期工程已经启动，当前处于编码实现阶段，预计在一个半月内完成核心功能。</p>
-
-<p>&emsp;&emsp;相对一期项目比较而言，二期业务需求比一期项目要复杂，因此，在概要设计阶段我就决定按照领域模型方式来实现代码。本文将对富血领域模型的设计、实现谈谈我个人的理解与看法，实际开发中出现的问题及经验，我会在二期工程结束后进行总结。</p>
-
-<p>&emsp;&emsp;综观当前软件开发的潮流，失血模型仍是主流，至少90%以上的公司都采用失血模型。有句话叫“存在即是合理”，采用失血模型进行项目开发，有下面的一些好处：</p>
-
-<p>&emsp;&emsp;1、项目的设计要求大大降低，只要找出实体对象就可以了（更有甚者直接将表结构拿来当对象用，对象中充斥着很多int型外键，这个有点太极端了）；</p>
-
-<p>&emsp;&emsp;2、项目按照service，domain value object，dao分层，出service接口中的操作方法可以依照界面原型直接映射得到，设计变得很简单（更有甚者不进行这块的设计，由程序员在实现时自行添加，这种方式也未尝不可）；</p>
-
-<p>&emsp;&emsp;3、 代码实现人员容易理解，上面提到的分层方式已经被大家所熟悉。新员工入职后，只需要讲明白ER模型、表结构，再结合界面、需求文档就可以立即投入开发，培训投入少，上手很快。</p>
-
-<p>&emsp;&emsp;失血模型可以减少项目在设计阶段所花费的时间，降低开发难度及风险，缩短开发周期，失血模型似乎有很多优点，被业界广泛使用也不足为奇了。</p>
-
-<p>&emsp;&emsp;但是，如果你做过项目的维护，你一定会深刻体会到这种方式带来的苦恼，毕竟一个项目80~90%时间都是在进行后期维护，最吃成本、最耗精力的也是维护。维护期可以把“曾经”的盈利“吃”回去，也可以把一个公司拖死。</p>
-
-<p>&emsp;&emsp;因此，失血模型的缺点会在软件维护期暴露出来，越是业务复杂的项目越明显，其根本在于业务逻辑的封装上，主要有下面几点，看你是否有同感：</p>
-
-<p>&emsp;&emsp;1、  没有一个更好的业务逻辑封装地点。业务可以封装到service中，也可以在controller中实现部分业务逻辑（如果项目是按模块分配给程序员实现，还没法约束程序员把业务逻辑代码写在什么地方）。业务逻辑“散落”在各个分层中，存在于代码中的各个脚落，自然是不好维护了。</p>
-
-<p>&emsp;&emsp;2、  业务逻辑是采用面向过程的方式来实现。面向过程方式实现的程序代码不利于阅读和理解（当然可以通过重构出更小的方法缓解，但这不能从根本上解决问题），自然是代码后期不好维护了。</p>
-
-<p>&emsp;&emsp;业务逻辑的面向过程化实现、业务职责不在相应的领域对象中，而软件在维护期又要反复阅读以前的代码以添加、修改功能，代码的可读性、可理解性不高，封装度不也不高，维护会变得非常的困难了。我曾经经过过一些这样的项目，后期的需求修改、功能添加，我只能硬着头皮理解前人的代码，在copy以前代码的基础上修改，吃尽了苦头，用“每天都在救火”来形容非常合适，我也在不断的思考：是否有一种更好的解决方案？</p>
-
-<p>&emsp;&emsp;2004年前后，我在jdon上闲逛，看到“板桥里人”极力推荐的《领域驱动设计.软件核心复杂性应对之道》（简称DDD）一书，当时网上只有英文版本，迫不及待地download下来后读了几个章节，由于理论性太强，当时无法理解书中的内容。后来我又买了中文版的书，还是没能悟出更多的东西，这本书扔在角落里两年，最后将该书给了刘宁。</p>
-
-<p>&emsp;&emsp;近两年来，我静下心来梳理以前的项目经验，使我的技术得到了很好的沉淀，再次翻开DDD电子版本，这次阅读的体会已经截然不同，很多地方深有同感。后来看了老大强力推荐的《pojo in action》一书，我的疑问都得到了解决，有种“豁然开朗”的感觉，也坚定了我以前的一些想法：领域驱动方式确实是一种非常好的项目开发方式（注：我现在还看到一些初学都跟风看《DDD》，《pojo in action》，我敢断言，收获甚微），业务逻辑写在领域对象中是最好、最自然的地方。</p>
-
-<p>&emsp;&emsp;我画了一个简单的示意图，供大家参考：</p>
-
-<p><img src="/uploads/2011/08/1.jpg" title="富血模型实现示意图" alt="" /></p>
-
-<p>&emsp;&emsp;当然，使用DDD富血模型方式开发，会面临一些挑战，我们不可回避下面的一些问题，这许从失血、贫血模型的转给转型，这些问题会给你带来的不适应感：</p>
-
-<p>&emsp;&emsp;1、  按DDD开发，首先是要根据对客户的需求、业务的了解，提炼并不断修正领域对象。对于每一个对象的取名，都要反复斟酌，努力做到和业务保持一致，并且通俗易懂（特别是在详细设计阶段翻译成英文时更是要注意，多查询英汉字典，选择最合适的翻译，当然，属性的取名也是一样）。</p>
-
-<p>&emsp;&emsp;2、  根据对业务的理解，正确分配领域对象职责。每个对象做自己分内的工作，有些行为无法明确地分配到对象中时，就建立服务(service)对象，这点是和失血模型的本质区别，这里的service类不是失血模型中的service接口哦，大家要注意。</p>
-
-<p>&emsp;&emsp;3、  仓储对象是用来分担领域对象的持久化职责的，是根据面向对象职责单一原则产生。仓储对象就是DAO对象，如果使用用通用DAO的话，会省去仓储设计的过程（但这样会在领域逻辑实现代码中暴露SQL相关的东西）。</p>
-
-<p>&emsp;&emsp;4、  富血模型中事务边界的确定比较麻烦，我们引入了façade外观，调用者（比如：controller或远程客户）一律通过façade门面完成业务调用，事务边界就在façade中控制。Façade在这里有两个非常重要的作用：</p>
-
-<p>&emsp;&emsp;一是事务边界就是这里，具体代码实现时通过spring aop管理事务，二是处理领域对象与持久层脱钩。如果领域对象不与持久层脱钩，调用者得到的是带有行为的对象，可能会误调用了里面的行为，脱钩后就不存在这个问题，因为调用行为已经无法持久化到数据库中（这似乎和我们在失血模型中广泛使用的openSessionInView有冲突哈）。</p>
-
-<p>&emsp;&emsp;6、领域逻辑实现过程中需要使用仓储对象，因为我们使用了通用dao，所以可以声明一个领域对象超类，其中包含通用dao对象，通过spring的ApplicationContextAware接口完成注入，这样，无论是从数据库中实例化出来的对象，还是程序员new的领域对象，都可以访问仓储对象（如果是每个领域实体对象都有自己的仓储对象，则需要在每一个领域方法中传入仓储对象，设计起来有些麻烦，POJO In Action中就是采用的这种做法）。</p>
-
-<p>&emsp;&emsp;7、想办法简化对象之间的关系，对象关系越简单越有利于系统的理解和实现，可以通过约束和抽取领域service方法来简化一对多、多对多关系。</p>
-
-<p>&emsp;&emsp;8、用聚合根减少系统的复杂性，将领域对象划分到合适的逻辑包中，进一步增强系统的表达力，因些，在包的结构划分上，也和贫血模型有所不同，它不再是贫血模型中的service,vo,dao这样的扁平结构。下面是质监局二期中核心领域对象部分设计图，每个对象都有自己的行为职责，并建立了良好的包结构：</p>
-
-<p><img src="/uploads/2011/08/2.jpg" title="质监局二期项目核心域对象分包图" alt="" /></p>
-
-<p>&emsp;&emsp;9、DDD对设计人员和开发人员都有较高要求，如果设计人员没有理解到需求的核心、本质，将很难做出好的设计方案；如果开发人员没有理解领域对象，也无法进行开发。</p>
-
-<p>&emsp;&emsp;DDD的设计与开发远远不止上面我提到的这些，并且这一块的水很“深”，我们只有通过在不同的项目中实践，把理论恰当地应用在合适的项目当中，切实为项目带来好处，这个是我们追求的终极目标。</p>
-
-<p>&emsp;&emsp;“会道者一缕发丝牵大象，盲修者千钧铁棒打苍蝇”，应对软件核心复杂性之“道”，DDD是不二的选择。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[不得不说spring事务管理的几个问题]]></title>
-    <link href="http://yoursite.com/blog/2011/06/09/spring-tx/"/>
-    <updated>2011-06-09T15:18:00+08:00</updated>
-    <id>http://yoursite.com/blog/2011/06/09/spring-tx</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;首先说明，不是spring的问题，是程序员编程时要注意的问题，不要被标题误导了哈。
-spring通过aop机制为项目的事务管理带来了极大的方便，有了事务切面，我们的代码中再也看到commit、rollback之类的语句，我们要做的仅仅是在需要事务的地方声明事务的一些属性，spring给我们的项目带来了实实在在的好处。</p>
-
-<h2>一、事务声明位置</h2>
-
-<p>我们先来看事务声明的位置，事务声明的位置无外乎在表现层，业务层，持久层这三个地方。
-如果将事务声明在持久层，粒度会显得过细，因为持久层一般都是些普通的CRUD操作，大多方法中仅仅一条sql语句而已；事务可以放在业务层，一个业务方法一般情况下会作为一个完整的事务，所以，事务控制在业务层是一种通用的做法；也可以将事务放在表现层的请求执行的方法上，当然这种情况并不多见。</p>
-
-<h2>二、事务属性</h2>
-
-<p>spring事务属性配置项包括：事务传播属性，事务隔离级别，只读提示以及事务超时时间属性，这四种属性中，我们关注最多的是事务隔离级别和只读提示，其它两种直接使用系统默认值即可。这些所有的可配置项，可以在spring的org.springframework.transaction. TransactionDefinition源码中看到，源码节选如下，英文好的可以研究一下里面的说明：</p>
+<p>&emsp;&emsp;实现代码如下：</p>
 
 <p>``` java</p>
 
-<pre><code>    public interface TransactionDefinition {
-/**
- * Support a current transaction; create a new one if none exists.
- * Analogous to the EJB transaction attribute of the same name.
- * &lt;p&gt;This is typically the default setting of a transaction definition,
- * and typically defines a transaction synchronization scope.
- */
-int PROPAGATION_REQUIRED = 0;
-/**
- * Support a current transaction; execute non-transactionally if none exists.
- * Analogous to the EJB transaction attribute of the same name.
- * &lt;p&gt;&lt;b&gt;NOTE:&lt;/b&gt; For transaction managers with transaction synchronization,
- * &lt;code&gt;PROPAGATION_SUPPORTS&lt;/code&gt; is slightly different from no transaction
- * at all, as it defines a transaction scope that synchronization might apply to.
- * As a consequence, the same resources (a JDBC &lt;code&gt;Connection&lt;/code&gt;, a
- * Hibernate &lt;code&gt;Session&lt;/code&gt;, etc) will be shared for the entire specified
- * scope. Note that the exact behavior depends on the actual synchronization
- * configuration of the transaction manager!
- * &lt;p&gt;In general, use &lt;code&gt;PROPAGATION_SUPPORTS&lt;/code&gt; with care! In particular, do
- * not rely on &lt;code&gt;PROPAGATION_REQUIRED&lt;/code&gt; or &lt;code&gt;PROPAGATION_REQUIRES_NEW&lt;/code&gt;
- * &lt;i&gt;within&lt;/i&gt; a &lt;code&gt;PROPAGATION_SUPPORTS&lt;/code&gt; scope (which may lead to
- * synchronization conflicts at runtime). If such nesting is unavoidable, make sure
- * to configure your transaction manager appropriately (typically switching to
- * "synchronization on actual transaction").
- * @see org.springframework.transaction.support.AbstractPlatformTransactionManager#setTransactionSynchronization
- * @see org.springframework.transaction.support.AbstractPlatformTransactionManager#SYNCHRONIZATION_ON_ACTUAL_TRANSACTION
- */
-int PROPAGATION_SUPPORTS = 1;
-/**
- * Support a current transaction; throw an exception if no current transaction
- * exists. Analogous to the EJB transaction attribute of the same name.
- * &lt;p&gt;Note that transaction synchronization within a &lt;code&gt;PROPAGATION_MANDATORY&lt;/code&gt;
- * scope will always be driven by the surrounding transaction.
- */
-int PROPAGATION_MANDATORY = 2;
-/**
- * Create a new transaction, suspending the current transaction if one exists.
- * Analogous to the EJB transaction attribute of the same name.
- * &lt;p&gt;&lt;b&gt;NOTE:&lt;/b&gt; Actual transaction suspension will not work out-of-the-box
- * on all transaction managers. This in particular applies to
- * {@link org.springframework.transaction.jta.JtaTransactionManager},
- * which requires the &lt;code&gt;javax.transaction.TransactionManager&lt;/code&gt;
- * to be made available it to it (which is server-specific in standard J2EE).
- * &lt;p&gt;A &lt;code&gt;PROPAGATION_REQUIRES_NEW&lt;/code&gt; scope always defines its own
- * transaction synchronizations. Existing synchronizations will be suspended
- * and resumed appropriately.
- * @see org.springframework.transaction.jta.JtaTransactionManager#setTransactionManager
- */
-int PROPAGATION_REQUIRES_NEW = 3;
-/**
- * Do not support a current transaction; rather always execute non-transactionally.
- * Analogous to the EJB transaction attribute of the same name.
- * &lt;p&gt;&lt;b&gt;NOTE:&lt;/b&gt; Actual transaction suspension will not work out-of-the-box
- * on all transaction managers. This in particular applies to
- * {@link org.springframework.transaction.jta.JtaTransactionManager},
- * which requires the &lt;code&gt;javax.transaction.TransactionManager&lt;/code&gt;
- * to be made available it to it (which is server-specific in standard J2EE).
- * &lt;p&gt;Note that transaction synchronization is &lt;i&gt;not&lt;/i&gt; available within a
- * &lt;code&gt;PROPAGATION_NOT_SUPPORTED&lt;/code&gt; scope. Existing synchronizations
- * will be suspended and resumed appropriately.
- * @see org.springframework.transaction.jta.JtaTransactionManager#setTransactionManager
- */
-int PROPAGATION_NOT_SUPPORTED = 4;
-/**
- * Do not support a current transaction; throw an exception if a current transaction
- * exists. Analogous to the EJB transaction attribute of the same name.
- * &lt;p&gt;Note that transaction synchronization is &lt;i&gt;not&lt;/i&gt; available within a
- * &lt;code&gt;PROPAGATION_NEVER&lt;/code&gt; scope.
- */
-int PROPAGATION_NEVER = 5;
-/**
- * Execute within a nested transaction if a current transaction exists,
- * behave like {@link #PROPAGATION_REQUIRED} else. There is no analogous
- * feature in EJB.
- * &lt;p&gt;&lt;b&gt;NOTE:&lt;/b&gt; Actual creation of a nested transaction will only work on specific
- * transaction managers. Out of the box, this only applies to the JDBC
- * {@link org.springframework.jdbc.datasource.DataSourceTransactionManager}
- * when working on a JDBC 3.0 driver. Some JTA providers might support
- * nested transactions as well.
- * @see org.springframework.jdbc.datasource.DataSourceTransactionManager
- */
-int PROPAGATION_NESTED = 6;
-/**
- * Use the default isolation level of the underlying datastore.
- * All other levels correspond to the JDBC isolation levels.
- * @see java.sql.Connection
- */
-int ISOLATION_DEFAULT = -1;
-/**
- * Indicates that dirty reads, non-repeatable reads and phantom reads
- * can occur.
- * &lt;p&gt;This level allows a row changed by one transaction to be read by
- * another transaction before any changes in that row have been committed
- * (a "dirty read"). If any of the changes are rolled back, the second
- * transaction will have retrieved an invalid row.
- * @see java.sql.Connection#TRANSACTION_READ_UNCOMMITTED
- */
-int ISOLATION_READ_UNCOMMITTED = Connection.TRANSACTION_READ_UNCOMMITTED;
-/**
- * Indicates that dirty reads are prevented; non-repeatable reads and
- * phantom reads can occur.
- * &lt;p&gt;This level only prohibits a transaction from reading a row
- * with uncommitted changes in it.
- * @see java.sql.Connection#TRANSACTION_READ_COMMITTED
- */
-int ISOLATION_READ_COMMITTED = Connection.TRANSACTION_READ_COMMITTED;
-/**
- * Indicates that dirty reads and non-repeatable reads are prevented;
- * phantom reads can occur.
- * &lt;p&gt;This level prohibits a transaction from reading a row with
- * uncommitted changes in it, and it also prohibits the situation
- * where one transaction reads a row, a second transaction alters
- * the row, and the first transaction rereads the row, getting
- * different values the second time (a "non-repeatable read").
- * @see java.sql.Connection#TRANSACTION_REPEATABLE_READ
- */
-int ISOLATION_REPEATABLE_READ = Connection.TRANSACTION_REPEATABLE_READ;
-/**
- * Indicates that dirty reads, non-repeatable reads and phantom reads
- * are prevented.
- * &lt;p&gt;This level includes the prohibitions in
- * {@link #ISOLATION_REPEATABLE_READ} and further prohibits the
- * situation where one transaction reads all rows that satisfy a
- * &lt;code&gt;WHERE&lt;/code&gt; condition, a second transaction inserts a
- * row that satisfies that &lt;code&gt;WHERE&lt;/code&gt; condition, and the
- * first transaction rereads for the same condition, retrieving
- * the additional "phantom" row in the second read.
- * @see java.sql.Connection#TRANSACTION_SERIALIZABLE
- */
-int ISOLATION_SERIALIZABLE = Connection.TRANSACTION_SERIALIZABLE;
-/**
- * Use the default timeout of the underlying transaction system,
- * or none if timeouts are not supported.
- */
-int TIMEOUT_DEFAULT = -1;
+<pre><code>    Epet e = (Epet)ht.get(Epet.class, epetId, LockMode.UPGRADE);
+    int count = 0;
+    for (Iterator&lt;Diary&gt; its = e.getDiarys().iterator();its.hasNext();) {
+        count = count + its.next().getIntegral();
+    }
+    e.setIntegralCount(count);
+
+    epetDao.updateEpet(e);
 </code></pre>
 
 <p>```</p>
 
-<p>&emsp;&emsp;事务传播属性，一般选用PROPAGATION_REQUIRED，表示此方法的运行需要运行在一个事务环境中，如果没有就创建一个新的，这种方式适合大多数业务情况。如果你不向让被调用的方法事务失败影响到本方法的事务，可选用PROPAGATION_REQUIRES_NEW。</p>
+<p>&emsp;&emsp;上面的代码，考虑到要修改总积分，首先对读取的epet加锁，然后取出每一篇日记，累加积分，最后更新宠物对象，通过观察输出的sql语句，我们会发现这段代码有问题，并不能保存业务约束的完整性。系统对日记的查询，并没有加锁，也就是说，这段时间内，完全有可能存在其它事务修改日志积分，或添加、删除日记的情况。</p>
 
-<p>&emsp;&emsp;我要强调的是，事务传播属性用于不同的类之间的业务方法调用中的事务的控制，一定要注意是不同类中不同业务方法，同一个类中不同方法可能不起作用，这是由spring aop方法切入实现有关(同一个类中不同方法之间的调用将不被拦截)。</p>
+<p>&emsp;&emsp;也许你会说，把该方法的数据库隔离级别设置为ISOLATION_REPEATABLE_READ，但经过我的测试，这个级别在mysql,orcle中也是存在问题的，原因是：mysql的可重复读是通过内部缓存实现，也说是说，你在事务中查完的数据，它会缓存起来，事务中再说，返回的是缓存中的数据，在这个过程中，其它事务是可以成功修改数据的；oracle是不支持可重复读的，所以，设置隔离级别不靠谱。</p>
 
-<p>&emsp;&emsp;事务只读提示readOnly属性，标明了该事务不可修改数据，一般查询方法都标成readOnly，可以提高系统性能。</p>
-
-<p>&emsp;&emsp;事务隔级别是本方法执行过程中，数据库在事务方面应采用的级别，一般采用默认值ISOLATION_READ_COMMITTED即可满足要求，因此，该属性我们一般不设置。</p>
-
-<p>&emsp;&emsp;事务超时属性一般不设置，用默认值(不限制)即可。</p>
-
-<h2>三、事务的提交与回滚</h2>
-
-<p>&emsp;&emsp;spring通过业务方法执行过程是否抛出了异常来判断是回滚还是提交事务，看似简单的一句话，却被很多人忽视了一个非常重要的一点。那就是spring只检测RuntimeException及其子类，对检测到的Exception将不回滚，因些，在事务属性配置中有一个rollbackFor属性，用来指定哪种异常回滚。对这点理解不清会得到惨重的教训的，呵呵。</p>
-
-<h2>四、编程式事务、配置式事务，xml or annotation?</h2>
-
-<p>&emsp;&emsp;编程式事务可以在小型项目中使用，可以使用TransactionTemplate的doInTransaction回调实现，要回滚事务需要设置transactionStatus.的setRollbackOnly来设置事务状态；也可以得到一个PlatformTransactionManager实例才操作，具体请参阅Spring参考手册9.6.2节内容。</p>
-
-<p>&emsp;&emsp;配置式事务是强烈推荐的一种方式，但是配置式事务的属性可以写到xml文件中，这种方式对业务方法（假设事务控制在业务层）的命名有所限制，也就是要求业务方法命名要有规律可循。如果你采用annotation来配置，则没了这个约束，这也更加有利于业务方法的设计（业务方法命名一般更具有业务含义，天马行空也许更适合些）。</p>
-
-<p>&emsp;&emsp;总之，事务管理是做软件系统的程序要不可回避的问题，用spring帮助我们来管理事务是明智之举，上面的这些问题希望对你处理好项目中的事务有所帮助。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[jta事务在轻量级框架中的实现]]></title>
-    <link href="http://yoursite.com/blog/2011/06/08/jta/"/>
-    <updated>2011-06-08T15:18:00+08:00</updated>
-    <id>http://yoursite.com/blog/2011/06/08/jta</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;JTA（Java Transaction API）一般由之容器提供，而由容器提供的东西都会对我们的测试工作带来不便。</p>
-
-<p>&emsp;&emsp;JTA事务在一次操作中，可以跨越多个数据库、打开不同的数据库连接进行数据库操作，而这一系列的操作将做为一个整体，具有原子性。说简单些，在JTA事务中需要一个“事务仲裁”，这个仲裁者会确保一系列数据库操作都成功后，再通知事务的各个参与方（参与者）进行提交。
-下面是jboss中进行jta事务提交的伪代码（容器为jboss）：</p>
+<p>&emsp;&emsp;那我们把代码改进一下，自己来加锁，代码如下：</p>
 
 <p>``` java</p>
 
-<pre><code>    javax.transaction.UserTransaction tx = null;
-    try {
-        tx = (javax.transaction.UserTransaction) context.lookup("java:comp/UserTransaction");
+<pre><code>    ht.execute(new HibernateCallback() {    
+        @Override
+        public Object doInHibernate(Session session) throws HibernateException,
+                SQLException {
 
-        //get jdbc connection or hibernate session(hibernate session其实就是对connection的封装)
+            Epet e = (Epet)ht.get(Epet.class, epetid);
 
-            //进行业务操作
+            List&lt;Diary&gt; ds = session.createQuery("from Diary d where d.epet.id = ?")
+            .setParameter(0, 1).setLockMode("d", LockMode.UPGRADE)
+            .list();
+            int count = 0;
+            for (Diary d : ds) {
+                count = count + d.getIntegral();
+            }
+            e.setIntegralCount(count);
+            epetDao.updateEpet(e);
 
-        //要注意此时的事务提交，不再由connection或者hibernate session 的transaction负责
+            return null;
+        }
+    });
+</code></pre>
 
-            tx.commit();
-    } catch (someException e) {
-        tx.roolback();
+<p>```</p>
+
+<p>&emsp;&emsp;注意setLockMode(&ldquo;d&rdquo;, LockMode.UPGRADE)部分的代码，这段代码可以保证在事务期间，没有人修改日记积分，因此，从业务上说，在事务执行这段期间，统计的总积分是正确的。</p>
+
+<p>&emsp;&emsp;用悲观锁把部分数据锁定，在项目中并不建议使用，因为这样会在并发环境中带来性能问题。</p>
+
+<p>&emsp;&emsp;再次改进，在Epet对象和Diary对象中，都加上version字段，使用乐观锁控制事务，代码如下：</p>
+
+<p>``` java</p>
+
+<pre><code>    Epet e = (Epet)ht.get(Epet.class, epetId);
+    int count = 0;
+    for (Iterator&lt;Diary&gt; its = e.getDiarys().iterator();its.hasNext();) {
+        count = count + its.next().getIntegral();
+    }
+    e.setIntegralCount(count);
+
+    epetDao.updateEpet(e);
+
+    //再次查询状态每个diary的状态，看是否被它人修改过
+    for (Iterator&lt;Diary&gt; its = e.getDiarys().iterator();its.hasNext();) {
+        Diary d = its.next();
+        int ver = d.getVersion();
+        //注意，在mysql中，要想成功refresh得到最新数据，必须设置隔离级别是ISOLATION_READ_COMMITTED
+        ht.refresh(d);
+        if (d.getVersion() != ver) {
+            throw new RuntimeException("订单状态已被改变！");
+        }
     }
 </code></pre>
 
 <p>```</p>
 
-<p>&emsp;&emsp;当然，上面的代码必须运行在提供JTA事务支持的容器环境中，如果你的程序是一个普通的java swing程序，或者tomcat之类的服务器上的程序（当然，tomcat中可以配置第三方的JTA UserTransaction），就不能依赖于容器了。从另一个方面来说，代码依赖之容器对开发者来说不是一个好事。</p>
+<p>&emsp;&emsp;上面的这段代码在最后再次检查是否有人修改了日记，如果日记版本号与之前一致，则提交事务，但是，这段代码也并非没有问题，因为在事务最后提交的过程中，还是会存在并发修改日记的情况，所以，业务事务的处理非常麻烦，要考虑到业务规则的满足，并不是我们想像的那么简单。</p>
 
-<p>&emsp;&emsp;还好，有JOTM这么一个开源的JTA实现，支持分布式事务，有了这个东西，我们就可以不依赖于容器而进行JTA事务的操作了，请看我在SSH环境中的一个JOTM事务配置代码。</p>
+<p>&emsp;&emsp;从业务上来讲，我们只关心在我的事务中，日记的积分不被它人修改，因此，上面的代码还可以再次修改，只关注积分值，减少并发冲突问题，代码如下：</p>
 
-<p>``` xml</p>
+<p>``` java</p>
 
-<pre><code>&lt;bean id="jotm" class="org.springframework.transaction.jta.JotmFactoryBean" /&gt;
+<pre><code>     //再次查询状态每个diary的状态，看是否被它人修改过
+    for (Iterator&lt;Diary&gt; its = e.getDiarys().iterator();its.hasNext();) {
+        Diary d = its.next();
+        int integral = d.getIntegral();
+        //注意，在mysql中，要想成功refresh得到最新数据，必须设置隔离级别是ISOLATION_READ_COMMITTED
+        ht.refresh(d);
+        if (d.getIntegral() != integral) {
+            throw new RuntimeException("订单状态已被改变！");
+        }
+</code></pre>
 
-&lt;bean id="transactionManager"
-    class="org.springframework.transaction.jta.JtaTransactionManager"&gt;
-    &lt;property name="userTransaction" ref="jotm" /&gt;
-&lt;/bean&gt;
+<p>```</p>
 
-&lt;bean id="innerDataSource1" class="org.enhydra.jdbc.standard.StandardXADataSource"
-    destroy-method="shutdown"&gt;
-    &lt;property name="transactionManager" ref="jotm" /&gt;
-    &lt;property name="driverName" value="com.mysql.jdbc.Driver" /&gt;
-    &lt;property name="url" value="jdbc:mysql://localhost:3306/database1" /&gt;
-    &lt;property name="user" value="root" /&gt;
-    &lt;property name="password" value="" /&gt;
-&lt;/bean&gt;
+<p>&emsp;&emsp;红色字体部分，取日记的积分，只是为了减少并发冲突出现的可能性，但依然没办法保证业务约束完整，要想保存业务约束及规则的满足，最好的办法是使用富血模型去做，对日记的任何操作，都必须通过它的聚合根，也就是epet对象去实现，示例代码如下：</p>
 
-&lt;bean id="dataSourceJTA1" class="org.enhydra.jdbc.pool.StandardXAPoolDataSource"
-    destroy-method="shutdown"&gt;
-    &lt;property name="dataSource" ref="innerDataSource1" /&gt;
-    &lt;property name="user" value="root" /&gt;
-    &lt;property name="password" value="" /&gt;
-    &lt;property name="maxSize" value="5" /&gt;
-&lt;/bean&gt;
+<p>&emsp;&emsp;以下方法都是写在Epet对象中的：</p>
 
-&lt;bean id="innerDataSource2" class="org.enhydra.jdbc.standard.StandardXADataSource"
-    destroy-method="shutdown"&gt;
-    &lt;property name="transactionManager" ref="jotm" /&gt;
-    &lt;property name="driverName" value="com.mysql.jdbc.Driver" /&gt;
-    &lt;property name="url" value="jdbc:mysql://localhost:3306/database2" /&gt;
-    &lt;property name="user" value="root" /&gt;
-    &lt;property name="password" value="" /&gt;
-&lt;/bean&gt;
+<p>``` java</p>
 
-&lt;bean id="dataSourceJTA2" class="org.enhydra.jdbc.pool.StandardXAPoolDataSource"
-    destroy-method="shutdown"&gt;
-    &lt;property name="dataSource" ref="innerDataSource2" /&gt;
-    &lt;property name="user" value="root" /&gt;
-    &lt;property name="password" value="" /&gt;
-    &lt;property name="maxSize" value="5" /&gt;
-&lt;/bean&gt;
+<pre><code>/**
+ * 重新计算积分
+ */
+public void reCalculateIntegral() {
+    int count = 0;
+    for (Iterator&lt;Diary&gt; its = this.getDiarys().iterator();its.hasNext();) {
+        count = count + its.next().getIntegral();
+    }
+    this.setIntegralCount(count);
+}
 
-&lt;bean id="sessionFactory1"
-    class="org.springframework.orm.hibernate3.LocalSessionFactoryBean"&gt;
-    &lt;property name="dataSource" ref="dataSourceJTA1"&gt;&lt;/property&gt;
-    &lt;property name="mappingDirectoryLocations"&gt;
+/**
+ * 添加日记
+ */  
+
+ public void addDiary(Diary d) {
+    this.getBaseDao().save(d);
+    this.getDiarys().add(d);
+    d.setEpet(this);
+    reCalculateIntegral();
+    this.getBaseDao().update(this);
+}
+
+/**
+ * 修改日记
+ */
+public void updateDiary(Diary d) {
+    this.getBaseDao().update(d);
+    reCalculateIntegral();
+    this.getBaseDao().update(this);
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;而对应的facade中的代码如下（注意：事务是控制在facade上的哦）：</p>
+
+<p>``` java</p>
+
+<p>  //增删改日记(事务控制在此，乐观锁保证业务约束的完整性)</p>
+
+<pre><code>public void addDiary(int petId, Diary d) {
+    Epet e = (Epet)ht.get(Epet.class, petId);
+    e.addDiary(d); 
+}
+
+public void updateDiary(Diary d){
+    //这里再次按id查询epet，无性能损耗，因为有缓存
+    Epet e = (Epet)ht.get(Epet.class, d.getEpet().getId());
+    e.updateDiary(d);
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;从上面的代码可以看到，所有对日记的修改，都必须通过聚合根epet对象，而epet上是有基于version的乐观锁的，因些，最后的这部分代码基本满足了我们的业务约束及事务的并发控制。</p>
+
+<p>&emsp;&emsp;还有一种情况，如果在我们这个场景中，如果事务的失败对用户来说是不能容忍的，比如：添加一篇宠物日记会花费用户30分钟的录入时间，如果最终事务失败，用户无疑非常的沮丧，这种情况该如何应对了？接下来，我给大家继续讲解离线事务锁的示例。</p>
+
+<p>&emsp;&emsp;先看乐观离线事务锁，这种锁不是用来解决事务失败而用户不能接受的情况，而是一个超长的业务事务，比如30分钟，而在最终提交事务时，系统要检测到这种冲突，下面是乐观离线锁的实现示例代码：</p>
+
+<p>``` java</p>
+
+<pre><code>    //长事务，离线乐观锁
+    Epet e = ss.getEpetById(1);
+    Map&lt;String, Epet&gt; session = new HashMap&lt;String, Epet&gt;();
+
+    session.put("epet_in_http_session", e);
+    //给用户发回响应resopnse
+
+    //长时间的编辑
+    Thread.sleep(10000);
+
+    //最后一步，提交
+    //这里不要从数据库中重查，而是直接使用先前保存的那个，可能是httpsession，也可能是序列化至外部
+    Epet e2 = session.get("epet_in_http_session");
+    e2.setName("小强22");
+    //重新保存，version乐观锁会保证并发冲突，如果出现冲突，你会得到类似org.hibernate.StaleObjectStateException: Row was updated or deleted by another transaction (or unsaved-value mapping was incorrect)的错误信息。
+    ss.updateEpet(e2);
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;如果用户对事务冲突不可容忍，我们就只能使用悲观离线锁，本质上来就，就是用户自己去实现对象的锁定，代码如下：</p>
+
+<p> &emsp;&emsp;先在epet中加上这三个新的属性：</p>
+
+<p>``` java</p>
+
+<pre><code>//锁定标示： true已锁定，false:未锁定
+private boolean locked;
+//锁定者
+private String locker;
+//锁定时间
+private Date lockedTime;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;epet中再加上和悲观锁相关的几个方法：</p>
+
+<p>``` java</p>
+
+<p>   /**</p>
+
+<pre><code> * 锁定对象
+ * @param locker
+ */
+public void lockEpet(String locker) {
+    if (this.isLockedBy(locker)) {
+        return;
+    }
+    if (this.isLocked()) {
+        throw new RuntimeException("该对象已被"+this.getLocker()+"被锁定！");
+    }
+    this.setLocked(true);
+    this.setLocker(locker);
+    this.setLockedTime(new Date());
+    getBaseDao().update(this);
+}
+
+/**
+ * 解锁对象
+ * @param locker
+ */
+public void unLockEpet(String locker) {
+    if (!this.getLocker().equals(locker)) {
+        throw new RuntimeException("解锁失败：解铃还需系铃人！");
+    }
+    this.setLocked(false);
+    getBaseDao().update(this);
+}
+/**
+ * 检测对象是否被某人锁定
+ * @param locker
+ * @return
+ */
+public boolean isLockedBy(String locker) {
+    if (locker.equals(this.getLocker())  &amp;&amp;  this.isLocked()) {
+        return true;
+    }
+    return false;
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;在业务类中，我们也需要加上几个类似的方法实现，事务也控制在这个上面：</p>
+
+<p>``` java</p>
+
+<pre><code>public void lockEpet(int epetid, String locker) {
+    Epet e = (Epet)ht.get(Epet.class, epetid, LockMode.UPGRADE);
+    e.lockEpet(locker);
+}
+
+public void unLockEpet(int epetid, String locker) {
+    Epet e = (Epet)ht.get(Epet.class, epetid, LockMode.UPGRADE);
+    e.unLockEpet(locker);    
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;在悲观离线锁的使用过程中要特别小心，做某些业务操作时，一定要确保已经成功获得了锁，写相关功能的程序员必须要清楚地知道这一点，因为，这种锁是程序员自己去实现的。</p>
+
+<p>&emsp;&emsp;这种悲观锁的实现中，还需要防止死锁，比如：对多个对象的锁定，还有就是，需要某种检测机制，把超过某个业务时间的锁释放。</p>
+
+<p>&emsp;&emsp;要想解决好事务的并发处理非常的不容易，因为这个问题本来就是和业务领域密切相关的一个问题，需要我们从业务方面去分析解决。转换为一对多，关系越简单越好。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[cas与shiro集成]]></title>
+    <link href="http://yoursite.com/blog/2013/05/13/shiro-cas/"/>
+    <updated>2013-05-13T15:18:00+08:00</updated>
+    <id>http://yoursite.com/blog/2013/05/13/shiro-cas</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;cas与shiro的集成思路是：子系统的登录入口定位到cas，将用户名与密码的验证交由cas服务器去做，在服务器端登录成功后，重定向到子系统，再由子系统验证凭证号，如果通过，则初始化子系统的会话中的内容及权限等。大家要明白这样两点思想：</p>
+
+<p>&emsp;&emsp;一、子系统不需要再做用户名及密码的验证。</p>
+
+<p>&emsp;&emsp;二、子系统需要查询cas服务器，以确保该用户已经成功登录，凭证有效。</p>
+
+<p>&emsp;&emsp;三、子系统去实现原有的会话管理及权限验证。</p>
+
+<p>&emsp;&emsp;好了，下面看看配置上的代码：</p>
+
+<p>&emsp;&emsp;重写cas验证过滤器，请注意，doGetAuthenticationInfo方法中的红色代码部分，是我在原有CasRealm的源码中新加的，而doGetAuthorizationInfo授权代码，将是你原来的授权代码：</p>
+
+<p>``` java CasAuthRealm.java
+/<em>*
+ * cas认证类信息
+ * @author ljh
+ *
+ </em>/
+public class CasAuthRealm extends CasRealm  {</p>
+
+<pre><code>private static Logger log = LoggerFactory.getLogger(CasAuthRealm.class);
+
+@Resource(name = "studentService")
+private IStudentService studentService;
+
+// 认证
+@Override
+protected AuthenticationInfo doGetAuthenticationInfo(
+        AuthenticationToken token) throws AuthenticationException {
+
+    System.out.println("进入登录认证方法doGetAuthenticationInfo");
+
+    CasToken casToken = (CasToken) token;
+    if (token == null) {
+        return null;
+    }
+
+    String ticket = (String)casToken.getCredentials();
+    if (!StringUtils.hasText(ticket)) {
+        return null;
+    }
+
+    TicketValidator ticketValidator = ensureTicketValidator();
+
+    try {
+        // contact CAS server to validate service ticket
+        Assertion casAssertion = ticketValidator.validate(ticket, getCasService());
+        // get principal, user id and attributes
+        AttributePrincipal casPrincipal = casAssertion.getPrincipal();
+        String userId = casPrincipal.getName();
+        log.debug("Validate ticket : {} in CAS server : {} to retrieve user : {}", new Object[]{
+                ticket, getCasServerUrlPrefix(), userId
+        });
+
+        Map&lt;String, Object&gt; attributes = casPrincipal.getAttributes();
+        // refresh authentication token (user id + remember me)
+        casToken.setUserId(userId);
+        String rememberMeAttributeName = getRememberMeAttributeName();
+        String rememberMeStringValue = (String)attributes.get(rememberMeAttributeName);
+        boolean isRemembered = rememberMeStringValue != null &amp;&amp; Boolean.parseBoolean(rememberMeStringValue);
+        if (isRemembered) {
+            casToken.setRememberMe(true);
+        }
+        // create simple authentication info
+        List&lt;Object&gt; principals = CollectionUtils.asList(userId, attributes);
+        PrincipalCollection principalCollection = new SimplePrincipalCollection(principals, getName());
+
+
+        //*************************自定义处理
+        User user = studentService.getStudentById(Long.parseLong(userId));
+        if (user != null) {
+            //要放在作用域中的东西，请在这里进行操作
+            SecurityUtils.getSubject().getSession().setAttribute("c_user", user);
+
+            return new SimpleAuthenticationInfo(principalCollection, ticket);
+        }
+
+        //认证没有通过
+        return null;
+
+
+    } catch (TicketValidationException e) { 
+        throw new CasAuthenticationException("Unable to validate ticket [" + ticket + "]", e);
+    }
+
+}
+
+// 授权
+@Override
+protected AuthorizationInfo doGetAuthorizationInfo(
+        PrincipalCollection principalCollection) {
+
+    Long loginId = Long.parseLong((String)principalCollection.fromRealm(getName()).iterator().next());
+    System.out.println("doGetAuthorizationInfo: 进行授权，登录id是：" + loginId);
+    //取当前用户
+    User student = studentService.getStudentById(loginId);
+    System.out.println("角色标识是：" + student.getRolesAsString());
+    System.out.println("权限标识是：" + student.getOperationPermissionsAsString());
+    //System.out.println("用户可操作的菜单：" + student.getMenus());
+
+    //添加角色及权限信息
+    SimpleAuthorizationInfo sazi = new SimpleAuthorizationInfo();
+    sazi.addRoles(student.getRolesAsString());
+    sazi.addStringPermissions(student.getPermissionsAsString());
+
+    return sazi;
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;在spring配置文件中，配置上面的cas过滤器，其中需要大家注意的地方，是“自定义处理“部分，源代码中我有标注，https : / /localhost:8444/cas 是cas服务器地址，http : / / localhost:8080/shiro_demo 是子系统的项目路径：</p>
+
+<p>``` xml
+<bean id="myCasRealm" class="com.my.service.impl.CasAuthRealm"></p>
+
+<pre><code>    &lt;property name="casServerUrlPrefix" value="https://localhost:8444/cas"/&gt;
+    &lt;property name="casService" value="http://localhost:8080/shiro_demo/login"/&gt;
+</code></pre>
+
+<p></bean></p>
+
+<!-- 权限管理器 -->
+
+
+<pre><code>&lt;bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager"&gt;
+    &lt;property name="realms"&gt;
         &lt;list&gt;
-            &lt;value&gt;hbm/&lt;/value&gt;
+            &lt;ref bean="myCasRealm" /&gt;
         &lt;/list&gt;
     &lt;/property&gt;
-    &lt;property name="hibernateProperties"&gt;
-        &lt;props&gt;
-            &lt;prop key="hibernate.dialect"&gt;
-                org.hibernate.dialect.MySQLDialect
-            &lt;/prop&gt;
-            &lt;prop key="hibernate.show_sql"&gt;true&lt;/prop&gt;
-            &lt;prop key="hibernate.format_sql"&gt;true&lt;/prop&gt;
-        &lt;/props&gt;
+&lt;/bean&gt;
+</code></pre>
+
+<p> <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean" depends-on="roleOrFilter"></p>
+
+<pre><code>    &lt;property name="securityManager" ref="securityManager" /&gt;
+
+    &lt;property name="loginUrl" value="https://localhost:8444/cas/login?service=http://localhost:8080/shiro_demo/login" /&gt;
+    &lt;property name="successUrl" value="/main" /&gt;
+    &lt;property name="unauthorizedUrl" value="/commons/unauth.jsp" /&gt;
+
+&lt;property name="filters"&gt;
+        &lt;map&gt;
+            &lt;entry key="cas" value-ref="myCasFilter"/&gt; 
+            &lt;entry key="roleOrFilter" value-ref="roleOrFilter"&gt;
+            &lt;/entry&gt;
+        &lt;/map&gt;
     &lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;bean id="sessionFactory2"
-    class="org.springframework.orm.hibernate3.LocalSessionFactoryBean"&gt;
-    &lt;property name="dataSource" ref="dataSourceJTA2"&gt;&lt;/property&gt;
-    &lt;property name="mappingDirectoryLocations"&gt;
-        &lt;list&gt;
-            &lt;value&gt;hbm/&lt;/value&gt;
-        &lt;/list&gt;
-    &lt;/property&gt;
-    &lt;property name="hibernateProperties"&gt;
-        &lt;props&gt;
-            &lt;prop key="hibernate.dialect"&gt;
-                org.hibernate.dialect.MySQLDialect
-            &lt;/prop&gt;
-            &lt;prop key="hibernate.show_sql"&gt;true&lt;/prop&gt;
-            &lt;prop key="hibernate.format_sql"&gt;true&lt;/prop&gt;
-        &lt;/props&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;bean id="userService" class="com.my.service.UserServiceImpl"&gt;
-    &lt;property name="userDao1" ref="userDao1"&gt;&lt;/property&gt;
-    &lt;property name="userDao2" ref="userDao2"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;bean id="userServiceProxy"
-    class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean"&gt;
-    &lt;property name="transactionManager" ref="transactionManager"&gt;&lt;/property&gt;
-    &lt;property name="transactionAttributes"&gt;
-        &lt;props&gt;
-            &lt;prop key="get*"&gt;PROPAGATION_REQUIRED,readOnly&lt;/prop&gt;
-            &lt;prop key="*"&gt;PROPAGATION_REQUIRED&lt;/prop&gt;
-        &lt;/props&gt;
-    &lt;/property&gt;
-    &lt;property name="target" ref="userService"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;bean id="userDao1" class="com.my.dao.UserDaoImpl"&gt;
-    &lt;property name="sessionFactory" ref="sessionFactory1"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;bean id="userDao2" class="com.my.dao.UserDaoImpl"&gt;
-    &lt;property name="sessionFactory" ref="sessionFactory2"&gt;&lt;/property&gt;
 &lt;/bean&gt;
 </code></pre>
 
 <p>```</p>
 
-<p>&emsp;&emsp;上面的配置文件中，你要看得明白以下几点：</p>
+<p>&emsp;&emsp;最后，在配置文件中，配置子系统登录入口至cas</p>
 
-<p>&emsp;&emsp;1、 我们连接了两个不同的数据库，DataBase1以及DataBase2。</p>
+<p>```</p>
 
-<p>&emsp;&emsp;2、 要注意所数据源必须配置为XA类型的，这个直接使用JOTM提供的一个类，我们需要配置两个支持JTA事务的数据源。</p>
+<p>/js/<strong> = anon
+/css/</strong> = anon
+/logout = anon</p>
 
-<p>&emsp;&emsp;3、 配置了两个hibernate的sessionFactory，把支持JTA事务的数据源注入。</p>
+<p>/error.jsp = anon</p>
 
-<p>&emsp;&emsp;4、 事务管理器不能用hibernate的那个，而必须用JTA事务管理器。</p>
+<p>/login.jsp = cas  <br/>
+/login = cas</p>
 
-<p>&emsp;&emsp;5、 两个DAO实现，分别完成对两个数库的操作。</p>
+<p>```</p>
 
-<p>&emsp;&emsp;6、 将两个DAO实现注入service中，事务控制在service类的方法上（事务脚本模式）。</p>
+<p>&emsp;&emsp;当然，在进入主页面的时候，要访问session中的对象，如果hibernate的连接已经关闭，你可以重新将session中的对象与新的连接进行绑定，类似代码如下：</p>
 
-<p>&emsp;&emsp;业务类的的操作，已经屏蔽了底层事务这一块的内容，全部交给了底层的事务管理器去做，因此，程序员可以向操作普通JDBC事务一样来完成JTA事务程序逻辑代码实现，这都得益于spring的PlatformTransactionManager。</p>
+<p>``` java</p>
+
+<p>User u = (User)currentUser.getSession().getAttribute(&ldquo;c_user&rdquo;);</p>
+
+<p>getHibernateTemplate().refresh(u);</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;再说一下子系统的退出，如果子系统退出，也要退出cas服务器，可以写如下代码：</p>
+
+<p>``` java
+@RequestMapping(value=&ldquo;/logout&rdquo;)</p>
+
+<pre><code>public void logout(HttpServletResponse resp) throws IOException {
+    Subject currentUser = SecurityUtils.getSubject();
+    currentUser.logout(); 
+    resp.sendRedirect("https://localhost:8444/cas/logout");
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;文章内容虽少，但调试成功确需要花费大量的时候，网上很多人写资料的都不能运行，有需要源代码的同鞋，请发消息与我。</p>
 ]]></content>
   </entry>
   
   <entry>
-    <title type="html"><![CDATA[你一定要知道的几种项目间数据交互方式]]></title>
-    <link href="http://yoursite.com/blog/2011/04/15/project-effect/"/>
-    <updated>2011-04-15T15:18:00+08:00</updated>
-    <id>http://yoursite.com/blog/2011/04/15/project-effect</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;不同的系统之间进行数据交互是可避免的，总的说来，可以总结为向第三方系统推送数据或从服务器拉回数据两种，下面我列举几种常见的系统间数据交互方式，并给出架构设计时应考虑的因素。</p>
+    <title type="html"><![CDATA[cas单点登录实现]]></title>
+    <link href="http://yoursite.com/blog/2013/05/06/cas1/"/>
+    <updated>2013-05-06T15:18:00+08:00</updated>
+    <id>http://yoursite.com/blog/2013/05/06/cas1</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;企业经过多年的发展，在运行的系统可能有多套并存，而这个时候，一个员工往往会有多个系统的账号，用不同的账号、密码登录不同的系统，获得不同系统的权限并进行操作，这样的场景将加大员工记忆每个系统账号、密码的难度和操作上的繁琐，因此，不少企业提出只需要一次登录，就可访问各种系统的思路，这就是间点登录，即在一个地方登录即可。</p>
 
-<h2>一、ftp服务器共享方式</h2>
+<p>&emsp;&emsp;要实现单点登录，各个子系统一定要进行某些改造，否则，实现难度将很大。我考虑了一上，一般会有这样的两种改造方案。</p>
 
-<p>&emsp;&emsp;即建立一个ftp服务器，为不同的系统分配账号、密码、目录的操作权限等，要交换数据的两个系统要约定好数据格式（比如：xml文件，excel文件，csv文件等）、文件命名方式、存放路径等规则等。交互时，一个系统按约定的时间将数据写入ftp目录中，另一个系统定期取走并进行相应的业务操作。这种方式在电信、移动中项目用得比较多，特别是sp。交互示意图如下：</p>
+<h2>方案一</h2>
 
-<p><img src="/uploads/2011/04/5.jpg" title="ftp数据交换示意图" alt="" /></p>
+<p>&emsp;&emsp;建立统一的账户密码数据库，做为单点登录认证的数据来源，而其它子系统，也将每个用户在自身系统中的登录账号与单点登录数据库中的账号相统一。在这种方案中，用户首先要登录单点认证服务器，在成功登录后，会得到一个ticket，而在访问子系统时入口时，必须同时携带该ticket，子系统得到ticket后立即向单点登录服务器发出查询请求，服务器会返回持有该ticket是否有效，如果有效，就可得到登录者的账号，子系统根据该账号，即可进行类似原来的登录后业务逻辑处理（注：密码的验证子系统不再需要做），比如：初始化session中的东西，进行用户授权权等。</p>
 
-<h2>二、socket通讯服务器方式</h2>
+<p>&emsp;&emsp;当然，这种方式对于子系统的改造并不大，当然，如果子系统采用的是 登录编码 业务主键 做数据库主键，改造难度会大很多。</p>
 
-<p>&emsp;&emsp;要传送数据的双方建立socket连接后再传送数据，数据格式自行约定，并对传输的数据进行加密，这种方式在银行系统中用得比较多（c、c++写的核心）。交互示意图如下：</p>
+<h2>方案二</h2>
 
-<p><img src="/uploads/2011/04/7.jpg" title="socket数据交换示意图" alt="" /></p>
+<p>&emsp;&emsp;各个子系统提供登录调用接口，比如webservice接口，当用户在单点服务器登录时，同时调用子系统登录接口完成登录。</p>
 
-<h2>三、    webservice方式</h2>
+<p>&emsp;&emsp;在下，我主要给大家介绍第一种方案。我们使用开源的cas服务器做为单点登录服务器。</p>
 
-<p>&emsp;&emsp;这种方式不再做过多描述，具体请参阅我的《<a href="/blog/2011/04/06/webservice-cxf/">webservice之cxf实现</a>》，《<a href="/blog/2011/04/11/webservice-architect/">webservice架构设计</a>》博文。这种方式在互联网上用得多一些。</p>
+<p>&emsp;&emsp;一、下载服务器端软件，是一个war包，部署到tomcat中。</p>
 
-<p><img src="/uploads/2011/04/8.jpg" title="webservice数据交换示意图" alt="" /></p>
+<p>&emsp;&emsp;二、运行cas服务器，运行前，请先配置https协议所需要的证书，我把windows下的证书配置代码写到了一个windows批处理文件中。</p>
 
-<h2>四、远程rmi（如OMG CORBA）方式</h2>
+<p>&emsp;&emsp;以下内容写到一个bat文件中，运行即可，如果是linux服务器，自己需要做些小改动即可，比如rem改为echo。我的例子中，JAVA_HOME位置是：C:/Program Files/Java/jdk1.6.0_31/</p>
 
-<p>以前我在delphi中实现过（怀念李维的时代，呵呵），j2se中也有相应的支持，这种方式相对来说比较复杂。如果同为java系统可用jndi方式，ejb也是一种方式。</p>
+<p>``` bat
+rem 清除系统中可能存在的名字为tomcatsso 的同名证书
+cls
+rem please set the env JAVA_HOME before run this bat file
+rem delete alia tomcat if it is existed
+keytool -delete -alias tomcatsso -keystore &ldquo;%JAVA_HOME%/jre/lib/security/cacerts&rdquo; -storepass changeit
+keytool -delete -alias tomcatsso -storepass changeit</p>
 
-<h2>五、远程url地址方式</h2>
+<p>rem  列出系统证书仓库中存在证书名称列表
+rem list all alias in the cacerts
+keytool -list -keystore &ldquo;%JAVA_HOME%/jre/lib/security/cacerts&rdquo; -storepass changeit</p>
 
-<p>这种方式在互联网上用得很多，比如：facebook，豆瓣的api，支付宝在线支持数据交互等等，早期DWR的web远程调用本质上也属于这种。当然，webservice说到底也是这种方式，只不过数据的xml打包和解包过程由程序按照规范自动完成。交互示意图如下：</p>
+<p>rem 指定使用RSA算法，生成别名为tomcatsso的证书，存贮口令为changeit
+rem generator a key
+keytool -genkey -keyalg RSA -alias tomcatsso -dname &ldquo;cn=localhost&rdquo; -storepass changeit</p>
 
-<p><img src="/uploads/2011/04/9.jpg" title="url调用方式数据交换示意图" alt="" /></p>
+<p>rem 从keystore中导出别名为tomcatsso的证书，生成文件tomcatsso.crt
+keytool -export -alias tomcatsso -file &ldquo;%JAVA_HOME%/jre/lib/security/tomcatsso.crt&rdquo; -storepass changeit</p>
 
-<p>&emsp;&emsp;这种暴露url地址方式的数据传输格式可以是xml、json或自定义text格式，也可以在请求参数中直接协带一个一个需要的数据。要注意的是，如果在客户浏览器中解析第三方服务器的json数据会有跨域安全访问问题（无论js还是fash、flex都一样），还好，jQuery中有相应的函数封装。</p>
+<p>rem 将tomcatsso.crt导入jre的可信任证书仓库
+rem import into trust cacerts
+keytool -import -alias tomcatsso -file &ldquo;%JAVA_HOME%/jre/lib/security/tomcatsso.crt&rdquo; -keystore &ldquo;%JAVA_HOME%/jre/lib/security/cacerts&rdquo; -storepass changeit
+rem 列出jre可信任证书仓库中证书名单
+rem list all alias in the cacerts
+keytool -list -keystore &ldquo;%JAVA_HOME%/jre/lib/security/cacerts&rdquo; -storepass changeit
+```</p>
 
-<p>&emsp;&emsp;总之，无论采用哪种方式，你在为实际项目做架构原型的时候，下面几个因素都要考虑周全。</p>
+<p>&emsp;&emsp;运行上面的bat文件，即可建立好信任证书。</p>
 
-<p>&emsp;&emsp;一、    简单。交互的设计要简单，这对调用双方都有好处。</p>
+<p>&emsp;&emsp;三、修改cas服务器的tomcat配置， server.xml</p>
 
-<p>&emsp;&emsp;二、    安全性。如何保证数据在交互过程中的安全性是一个点。</p>
+<p>&emsp;&emsp;ssl部分修改如下：</p>
 
-<p>&emsp;&emsp;三、    性能。在选择的时候，要考虑数据量的大小，以决定一种合适的方式（比如：一次调用请求的数据量，请求调用的频率）。</p>
+<p>``` xml server.xml</p>
 
-<p>&emsp;&emsp;四、    最后，要考虑重复数据的处理，特别是在其它系统将数据推入的情况，对于推入的数据，要做好处理日志，以备后查。</p>
+<p> &lt;Connector port=&ldquo;8443&rdquo; protocol=&ldquo;HTTP/1.1&rdquo; SSLEnabled=&ldquo;true&rdquo;</p>
+
+<pre><code>           maxThreads="150" scheme="https" secure="true"
+           clientAuth="false" sslProtocol="TLS" 
+           keystoreFile="C:/Documents and Settings/Administrator/.keystore" 
+           keystorePass="changeit"
+           truststoreFile="C:/Program Files/Java/jdk1.6.0_31/jre/lib/security/cacerts" 
+           truststorePass="changeit"
+           /&gt;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;四、客户端配置</p>
+
+<p>&emsp;&emsp;在子系统中，需要加入cas客户端，其实主要是添加过过滤器，将对子系统入口拦截到cas服务器，并会对302回转的ticket进行验证。</p>
+
+<p>&emsp;&emsp;添加cas-client-core-3.2.1.jar支持包，在cas服务器的lib下有。</p>
+
+<p>&emsp;&emsp;如果你的客户端是运行在另外一个tomcat的，还需要加入信任证书，可以在自己的项目中写一个ServletContextListener，在 contextInitialized中添加如下代码，路径你根据你的环境配置。
+<code>java
+ System.setProperty("javax.net.ssl.trustStore", "C:/Program Files/Java/jdk1.6.0_31/jre/lib/security/cacerts");
+ System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
+</code></p>
+
+<p>&emsp;&emsp;五、密码加密方案</p>
+
+<p>&emsp;&emsp;配置服务器，从数据库中取用户名和密码信息，并实现自定义的密码加密处理。我们重写密码处理类，导出jar包，并copy至cas服务器的lib目录下：</p>
+
+<p>``` java MyCasPasswordEncoder.java</p>
+
+<p>import org.apache.commons.codec.digest.DigestUtils;
+import org.jasig.cas.authentication.handler.PasswordEncoder;</p>
+
+<p>public class MyCasPasswordEncoder implements PasswordEncoder {</p>
+
+<pre><code>@Override
+public String encode(String pwd) {
+
+    return DigestUtils.md5Hex(pwd);
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;修改cas服务器上的deployerConfigContext.xml文件，添加数据源等、密码加密类等信息，配置代码如下：</p>
+
+<p>``` xml deployerConfigContext.xml
+&lt;bean id=&ldquo;dataSource&rdquo;</p>
+
+<pre><code>    class="org.apache.commons.dbcp.BasicDataSource"
+&gt;
+    &lt;property name="driverClassName"&gt;
+        &lt;value&gt;com.mysql.jdbc.Driver&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property name="url"&gt;
+        &lt;value&gt;jdbc:mysql://localhost:3306/cas?setUnicode=true&amp;amp;characterEncoding=utf8&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property name="username"&gt;
+        &lt;value&gt;root&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property name="password"&gt;
+        &lt;value&gt;&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property name="defaultAutoCommit"&gt;
+        &lt;value&gt;false&lt;/value&gt;
+    &lt;/property&gt;
+&lt;/bean&gt;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;authenticationManager配置部分，<property name="authenticationHandlers">中的list中，添加</p>
+
+<p>``` xml deployerConfigContext.xml
+<bean class="org.jasig.cas.adaptors.jdbc.QueryDatabaseAuthenticationHandler"></p>
+
+<pre><code>                  &lt;property name="dataSource" ref="dataSource" /&gt;
+                  &lt;property name="sql" value="select f_password from t_user where lower(f_code) = lower(?)" /&gt;
+                  &lt;property name="passwordEncoder"&gt;
+                    &lt;bean class="com.my.commons.MyCasPasswordEncoder"/&gt;
+                  &lt;/property&gt;
+</code></pre>
+
+<p> </bean>
+```</p>
+
+<p>&emsp;&emsp;当然，如果你的f_code不是字符类型，请删除sql中的lower。</p>
+
+<p>&emsp;&emsp;注意要将原配置中的SimpleTestUsernamePasswordAuthenticationHandler验证处理类屏蔽。</p>
+
+<p>&emsp;&emsp;上面的代码要成功运行，还需要建立cas数据库，新建表t_user,包含pk_id,f_code,f_password字段，其中后两个字段用于登录。另外，还需要加入cas-server-jdbc-3.0.5-rc3.jar以及mysql驱动包、dbcp驱动包等。</p>
+
+<p>&emsp;&emsp;下篇给大家介绍cas与shiro的整合。</p>
+
+<p>&emsp;&emsp;附：子系统中web.xml中的配置</p>
+
+<p>``` xml web.xml</p>
+
+<p>  <filter></p>
+
+<pre><code>&lt;filter-name&gt;CasSingleSignOutFilter&lt;/filter-name&gt;
+&lt;filter-class&gt;org.jasig.cas.client.session.SingleSignOutFilter&lt;/filter-class&gt;
+</code></pre>
+
+<p>  </filter>
+  <filter></p>
+
+<pre><code>&lt;filter-name&gt;CasAuthenticationFilter&lt;/filter-name&gt;
+&lt;filter-class&gt;org.jasig.cas.client.authentication.AuthenticationFilter&lt;/filter-class&gt;
+&lt;init-param&gt;
+  &lt;param-name&gt;casServerLoginUrl&lt;/param-name&gt;
+  &lt;param-value&gt;https://localhost:8443/cas/login&lt;/param-value&gt;
+&lt;/init-param&gt;
+&lt;init-param&gt;
+  &lt;param-name&gt;serverName&lt;/param-name&gt;
+  &lt;param-value&gt;http://localhost:8081&lt;/param-value&gt;
+&lt;/init-param&gt;
+</code></pre>
+
+<p>  </filter>
+  <filter></p>
+
+<pre><code>&lt;filter-name&gt;CasValidationFilter&lt;/filter-name&gt;
+&lt;filter-class&gt;org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter&lt;/filter-class&gt;
+&lt;init-param&gt;
+  &lt;param-name&gt;casServerUrlPrefix&lt;/param-name&gt;
+  &lt;param-value&gt;https://localhost:8443/cas&lt;/param-value&gt;
+&lt;/init-param&gt;
+&lt;init-param&gt;
+  &lt;param-name&gt;serverName&lt;/param-name&gt;
+  &lt;param-value&gt;http://localhost:8081&lt;/param-value&gt;
+&lt;/init-param&gt;
+&lt;init-param&gt;
+  &lt;param-name&gt;redirectAfterValidation&lt;/param-name&gt;
+  &lt;param-value&gt;true&lt;/param-value&gt;
+&lt;/init-param&gt;
+</code></pre>
+
+<p>  </filter>
+  &lt;filter-mapping></p>
+
+<pre><code>&lt;filter-name&gt;CasSingleSignOutFilter&lt;/filter-name&gt;
+&lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+</code></pre>
+
+<p>  &lt;/filter-mapping>
+  &lt;filter-mapping></p>
+
+<pre><code>&lt;filter-name&gt;CasValidationFilter&lt;/filter-name&gt;
+&lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+</code></pre>
+
+<p>  &lt;/filter-mapping>
+  &lt;filter-mapping></p>
+
+<pre><code>&lt;filter-name&gt;CasAuthenticationFilter&lt;/filter-name&gt;
+&lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+</code></pre>
+
+<p>  &lt;/filter-mapping>
+  <listener></p>
+
+<pre><code>&lt;listener-class&gt;org.jasig.cas.client.session.SingleSignOutHttpSessionListener&lt;/listener-class&gt;
+</code></pre>
+
+<p>  </listener>
+```</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[教你一步步做 restful程序（6）---总结]]></title>
+    <link href="http://yoursite.com/blog/2012/12/28/restful6/"/>
+    <updated>2012-12-28T15:22:00+08:00</updated>
+    <id>http://yoursite.com/blog/2012/12/28/restful6</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;上面的程序非常简单，仅供大家参考，如要运用到生产环境，有些细节问题并没有考虑到，请大家自己完善。</p>
+
+<p>&emsp;&emsp;上面的示例中，状态的控制还是放在服务器端管理的，这和restful理论上有所冲突，另外，提交方式也并没有严格按照标准来做，主要原因是中文参数的处理不方便。</p>
+
+<p>&emsp;&emsp;总之，restful架构将服务端和客户端解耦，确实对现在多客户端的系统来说，服务器的处理更加的方便。但restful在实际生产环境中的使用还得根据项目的需求来具体情况具体再说，比如：</p>
+
+<p>&emsp;&emsp;1、所有的功能都要提供电脑版、其它终端及客户端版吗？</p>
+
+<p>&emsp;&emsp;2、不同客户端，对返回的数据格式要求都一样吗？（比如：一个列表，移动终端可能需要显示的数据量要少得多）</p>
+
+<p>&emsp;&emsp;3、前端开发人员对纯js的操作是否熟悉?(因为页面的生成，跳转都在客户端完成哦)</p>
+
+<p>&emsp;&emsp;4、是否有些业务复杂、严谨到不适合这种模式。</p>
+
+<p>&emsp;&emsp;大家从这，返回我的第一篇关于restful的文章《<a href="/blog/2012/12/28/restful1/">教你一步步做 restful程序（1）为什么要用restful</a>》</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[教你一步步做 restful程序（5）]]></title>
+    <link href="http://yoursite.com/blog/2012/12/28/restful5/"/>
+    <updated>2012-12-28T15:21:00+08:00</updated>
+    <id>http://yoursite.com/blog/2012/12/28/restful5</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;加入简单的安全控制：</p>
+
+<p>&emsp;&emsp;写一个过滤器，对非法用户进行过滤</p>
+
+<p>``` java
+/**</p>
+
+<pre><code> * @see Filter#doFilter(ServletRequest, ServletResponse, FilterChain)
+ */
+public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+
+    HttpServletRequest req = (HttpServletRequest)request;
+    String path = req.getRequestURI();
+
+    System.out.println("你访问的资源路径是：" + req.getRequestURI());
+
+    if (req.getSession().getAttribute("session_key") != null) {
+        chain.doFilter(request, response);
+        return;
+    } else {
+
+        if (path.indexOf("/userManager/") != -1) {
+            HttpServletResponse resp = (HttpServletResponse)response;
+            resp.sendRedirect(req.getContextPath() + "/error.html");
+            return;
+        }
+
+        chain.doFilter(request, response);
+    }
+
+
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;并在web.xml中添加：</p>
+
+<p>``` xml web.xml
+ <filter></p>
+
+<pre><code>&lt;display-name&gt;AuthFilter&lt;/display-name&gt;
+&lt;filter-name&gt;AuthFilter&lt;/filter-name&gt;
+&lt;filter-class&gt;com.my.jxc.filter.AuthFilter&lt;/filter-class&gt;
+</code></pre>
+
+<p>  </filter>
+  &lt;filter-mapping></p>
+
+<pre><code>&lt;filter-name&gt;AuthFilter&lt;/filter-name&gt;
+&lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+</code></pre>
+
+<p>  &lt;/filter-mapping>
+```</p>
 ]]></content>
   </entry>
   

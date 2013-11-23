@@ -1,0 +1,444 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>node.js中基本于expresss、mysql的CRUD之六（过滤器及分页代码） - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;定义一个登录验证函数： 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+/** * Created with JetBrains WebStorm. * User: ljh * Date: 13-8-9 * Time: 上午9:06 * 登录验证过滤器 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2013/08/09/nodejs-express-mysql-crud6">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">node.js中基本于expresss、mysql的CRUD之六（过滤器及分页代码）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;定义一个登录验证函数：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * Created with JetBrains WebStorm.</span>
+</span><span class='line'><span class="cm"> * User: ljh</span>
+</span><span class='line'><span class="cm"> * Date: 13-8-9</span>
+</span><span class='line'><span class="cm"> * Time: 上午9:06</span>
+</span><span class='line'><span class="cm"> * 登录验证过滤器</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">authorize</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span> <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">redirect</span><span class="p">(</span><span class="s2">&quot;to_login&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">next</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在需求登录验证的url中，调用些函数，例如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="s1">&#39;/main/user&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">addUser</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，贴出一个通用的分页对象,page.js</p>
+
+<figure class='code'><figcaption><span>page.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 分页对象</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="nx">global</span><span class="p">.</span><span class="nx">Page</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">pno</span><span class="p">,</span> <span class="nx">pageSize</span><span class="p">,</span> <span class="nx">rows</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">pno</span> <span class="o">=</span> <span class="nx">pno</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">pageSize</span> <span class="o">=</span> <span class="nx">pageSize</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">rows</span> <span class="o">=</span> <span class="nx">rows</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">data</span> <span class="o">=</span> <span class="nx">data</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//首页页号</span>
+</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">f_no</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">//上一页页号</span>
+</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">p_no</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">pno</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">p_no</span> <span class="o">=</span> <span class="nx">pno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//末页页号</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">rows</span> <span class="o">%</span> <span class="nx">pageSize</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span>
+</span><span class='line'>        <span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">l_no</span> <span class="o">=</span> <span class="nx">rows</span> <span class="o">/</span> <span class="nx">pageSize</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>        <span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">l_no</span> <span class="o">=</span> <span class="nb">parseInt</span><span class="p">(</span><span class="nx">rows</span> <span class="o">/</span> <span class="nx">pageSize</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//下一页页号</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="nb">parseInt</span><span class="p">(</span><span class="nx">pno</span><span class="p">)</span> <span class="o">+</span> <span class="nb">parseInt</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&gt;=</span> <span class="k">this</span><span class="p">.</span><span class="nx">l_no</span><span class="p">)</span>  <span class="p">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="nx">n_no</span> <span class="o">=</span>  <span class="k">this</span><span class="p">.</span><span class="nx">l_no</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="nx">n_no</span> <span class="o">=</span>  <span class="nb">parseInt</span><span class="p">(</span><span class="nx">pno</span><span class="p">)</span> <span class="o">+</span> <span class="nb">parseInt</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">pages</span> <span class="o">=</span>  <span class="k">this</span><span class="p">.</span><span class="nx">l_no</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;使用这个对象的参考代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="c1">//显示用户列表</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">user_list</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">pno</span> <span class="o">=</span>  <span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">pno</span><span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">queryName</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">q_name</span><span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">pageSize</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">queryParm</span> <span class="o">=</span> <span class="p">{};</span>
+</span><span class='line'>    <span class="c1">//进行多条件的拼装</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">queryName</span> <span class="o">&amp;&amp;</span> <span class="nx">queryName</span><span class="p">.</span><span class="nx">trim</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>         <span class="c1">//如果用户输入了姓名</span>
+</span><span class='line'>        <span class="nx">queryParm</span><span class="p">.</span><span class="nx">f_name</span> <span class="o">=</span> <span class="nx">orm</span><span class="p">.</span><span class="nx">like</span><span class="p">(</span><span class="s2">&quot;%&quot;</span> <span class="o">+</span> <span class="nx">queryName</span> <span class="o">+</span> <span class="s2">&quot;%&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>     <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">queryParm</span><span class="p">)</span>
+</span><span class='line'>         <span class="p">.</span><span class="nx">limit</span><span class="p">(</span><span class="nx">pageSize</span><span class="p">)</span>
+</span><span class='line'>         <span class="p">.</span><span class="nx">offset</span><span class="p">((</span><span class="nx">pno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="nx">pageSize</span><span class="p">)</span>
+</span><span class='line'>        <span class="c1">// .only(&quot;pk_id&quot;,&quot;f_name&quot;,&quot;f_login_code&quot;,&quot;f_birthday&quot;)   //不需要密码字段</span>
+</span><span class='line'>         <span class="p">.</span><span class="nx">run</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">users</span><span class="p">){</span>
+</span><span class='line'>         <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>             <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+</span><span class='line'>             <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;取用户分页数据失败！&#39;</span><span class="p">});</span>
+</span><span class='line'>         <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>             <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">queryParm</span><span class="p">).</span><span class="nx">count</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">userCount</span><span class="p">){</span>
+</span><span class='line'>                 <span class="kd">var</span> <span class="nx">p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Page</span><span class="p">(</span><span class="nx">pno</span><span class="p">,</span> <span class="nx">pageSize</span><span class="p">,</span> <span class="nx">userCount</span><span class="p">,</span> <span class="nx">users</span><span class="p">);</span>
+</span><span class='line'>                 <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;page&#39;</span><span class="o">:</span><span class="nx">p</span><span class="p">};</span>
+</span><span class='line'>                 <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>             <span class="p">});</span>
+</span><span class='line'>         <span class="p">}</span>
+</span><span class='line'>     <span class="p">});</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这版crud演示就介绍到这，下一版本，将把前端全部替换为angular.js，再下一版本将把数据库更换为mongodb。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/nodejs/'>nodejs</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/08/09/nodejs-express-mysql-crud5/" title="上一篇文章: node.js中基本于expresss、mysql的CRUD之五（代码实现）">&laquo;上一篇:&nbsp;&nbsp;node.js中基本于expresss、mysql的CRUD之五（代码实现）</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/08/15/nodejs-express-mongodb-crud/" title="下一篇文章: node.js中基本于express、mongodb的CRUD">下一篇: &nbsp;&nbsp;node.js中基本于express、mongodb的CRUD &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用---第五部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用---第四部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用---第三部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用---第二部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用---第一部分</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

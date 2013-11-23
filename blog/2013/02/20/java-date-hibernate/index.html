@@ -1,0 +1,292 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>java日期类型在Hibernate中的处理 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;java中的表示日期时间的类型很多，主要有下面一些： 1
+2
+3
+4
+5
+6
+7
+8
+9
+java.util.Calendar（和区域有关，可表示年，月，日，时，分，秒） java.util.Date（可表示年，月，日，时，分，秒） java.sql.Date（可表示年，月 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2013/02/20/java-date-hibernate">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">java日期类型在Hibernate中的处理</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-20T15:18:00+08:00" pubdate data-updated="true">2013年02月20日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;java中的表示日期时间的类型很多，主要有下面一些：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Calendar</span><span class="err">（和区域有关，可表示年，月，日，时，分，秒）</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Date</span><span class="err">（可表示年，月，日，时，分，秒）</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Date</span><span class="err">（可表示年，月，日）</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Time</span> <span class="err">（可表示时，分，秒）</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Timestamp</span><span class="err">（可表示年，月，日，时，分，秒，纳秒）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在对象定义时，究竟定义为哪种类型，我们得要求项目需求来选择不同精度的类型。</p>
+
+<p>&emsp;&emsp;Hibernate对上面的时间类型都有很好的支持，但是，不同的类型，数据库中的字段也得选择相应的类型，以mysql为例，就存在date,time,datetime,timestamp等几种。</p>
+
+<p>&emsp;&emsp;hibernate的映射书写时要注意，日期类型一般都要明确予以指定。如果你使用的是注解映射配置，类型选择的又是java.util.Calendar，java.util.Date，此时需要使用@Temporal 明确指定具体类型，对应的取值有TemporalType.DATE,TemporalType.TIME,TemporalType.TIMESTAMP几种。</p>
+
+<p>&emsp;&emsp;最后，hibernate中以时间作为查询条件时，也需要明确指定传入参数类型，大家要选择带有3个参数的那个setParameter方法。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-20T15:18:00+08:00" pubdate data-updated="true">2013年02月20日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/01/31/hibernate-anntation/" title="上一篇文章: hibernate关系注解映射">&laquo;上一篇:&nbsp;&nbsp;hibernate关系注解映射</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/02/20/struts2-velocity/" title="下一篇文章: 在struts2中使用velocity展示数据">下一篇: &nbsp;&nbsp;在struts2中使用velocity展示数据 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用---第五部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用---第四部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用---第三部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用---第二部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用---第一部分</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,660 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;首先说一下为什么要把apache换成nginx。 &emsp;&emsp;在目前的web服务器市场，apache的市场占有率应该在70%左右，可见其应用之广泛。apache有不错的性能及强大的模块配置功能，安全性也不 错。后来发现，很多访问量比较大的网站，都换成了nginx &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/page/28">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/27/nginx/">Nginx转换手记</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-27T15:18:00+08:00" pubdate data-updated="true">2010年10月27日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;首先说一下为什么要把apache换成nginx。</p>
+
+<p>&emsp;&emsp;在目前的web服务器市场，apache的市场占有率应该在70%左右，可见其应用之广泛。apache有不错的性能及强大的模块配置功能，安全性也不 错。后来发现，很多访问量比较大的网站，都换成了nginx，一个由俄罗斯人开发的开源项目，就下载下为研究了一下，发现其配置上比apache更加简 洁，且可控制项也非常丰富，就决定采用nginx了。至于效率是否会比apache高10倍，本人没有测试过，没有发言权。</p>
+
+<p>&emsp;&emsp;首先安装，sudo apt-get install ngnix，版本是0.6.02，应该是一个比较稳定的版本。</p>
+
+<p>&emsp;&emsp;其次，安装与php5-cgispawn-fcgi，php5服务器上本来就有，所以不必再安装一次。（前段时候nginx报重大安全漏洞，其实并不是ngnix的漏洞，而是spawn-fcgi上的问题，怎么修改以避免该漏同，大家google一下哈）。</p>
+
+<p>&emsp;&emsp;经过上面的操作，就完成了安装，ngnix已经加入到自动启动配置中，接下来，我们要做的，就是修改配置文件，建立虚拟主机。</p>
+
+<p>&emsp;&emsp;ubuntu集成nginx与apache后的目录结构非常的相似，在/etc/nginx目录下就是所有需要的东西了。nginx.conf是主配置文 件，一般不用改动，sites-available目录下，是站点虚拟主机配置文件，sites-enabled下是生效的配置（直接建立起sites- available目录下文件的软链接，软链接是我发现的linux下最强大、最有效的功能，如果换为win 平台，我不晓得该怎么做，呵呵）。
+下面是一个主机配置示例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='nginx'><span class='line'><span class="k">server</span> <span class="p">{</span>
+</span><span class='line'><span class="kn">listen</span>   <span class="mi">80</span><span class="p">;</span>
+</span><span class='line'><span class="kn">server_name</span>  <span class="s">yourdomain.com</span><span class="p">;</span>
+</span><span class='line'><span class="kn">root</span> <span class="s">/var/www/yousite_doc_root</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">access_log</span>  <span class="s">/var/log/nginx/localhost.access.log</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span><span class='line'>  <span class="kn">root</span> <span class="s">/var/www/yousite_doc_root</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">index</span> <span class="s">index.html</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kn">location</span> <span class="p">~</span> <span class="sr">\.(jsp|htm|do)$</span> <span class="p">{</span>
+</span><span class='line'>  <span class="kn">proxy_pass</span> <span class="s">http://youdomain.com</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">proxy_set_header</span> <span class="s">X-Real-IP</span> <span class="nv">$remote_addr</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">proxy_read_timeout</span> <span class="mi">480</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">proxy_send_timeout</span> <span class="mi">480</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kn">location</span> <span class="p">~</span><span class="sr">*</span> <span class="s">\.(mp3|wmv|png|jpg|gif|swf)</span>$ <span class="p">{</span>
+</span><span class='line'>  <span class="kn">valid_referers</span>  <span class="s">none</span>  <span class="s">blocked</span> <span class="s">server_names</span> <span class="s">*.yourdomain.com</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">if</span> <span class="s">(</span><span class="nv">$invalid_referer</span><span class="s">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="kn">rewrite</span> <span class="s">^/</span> <span class="s">http://image.yourdomain.com/dl.jpg</span><span class="p">;</span>
+</span><span class='line'>      <span class="c1">#return 403;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;ubuntu在上面的配置中，要注意的是：</p>
+
+<p>&emsp;&emsp;1、location / {}中，请配置上root，虽然上面已经配置过一次。如果不配置，资源访盗链将无法实现，网上的很多配置都是误人子弟的，请大家一定要小心。</p>
+
+<p>&emsp;&emsp;2、 proxy_pass <a href="http://youdomain.com">http://youdomain.com</a> 是到jsp和*.do的，转到一个后台tomcat集群配置中，效率可能会比apache的ajp13低一些，我会在另一篇文章中介绍。</p>
+
+<p>&emsp;&emsp;3、proxy_read_timeout 480;与 proxy_send_timeout 480配置，有助于解决业务执行过程较长的长请求。</p>
+
+<p>&emsp;&emsp;4、 proxy_set_header X-Real-IP $remote_addr用于在程序中获得客户真实的ip，当然切换成nginx后，你程序中取ip的代码也得改。</p>
+
+<p>php站点的一个配置实例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='nginx'><span class='line'><span class="k">server</span> <span class="p">{</span>
+</span><span class='line'>  <span class="kn">listen</span> <span class="mi">80</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">server_name</span> <span class="s">yourdomain.com</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">access_log</span>  <span class="s">/var/log/nginx/localhost.access.log</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span><span class='line'>      <span class="kn">root</span>   <span class="s">/var/www/bbs_doc_root/subdir</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">index</span>  <span class="s">index.html</span> <span class="s">index.php</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kn">location</span> <span class="p">~</span> <span class="sr">\.php$</span> <span class="p">{</span>
+</span><span class='line'>      <span class="kn">fastcgi_pass</span>   <span class="n">127.0.0.1</span><span class="p">:</span><span class="mi">9000</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">fastcgi_index</span>  <span class="s">index.php</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">fastcgi_param</span>  <span class="s">SCRIPT_FILENAME</span>  <span class="s">/var/www/bbs_yousitedomain/ucenter</span><span class="nv">$fastcgi_script_name</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">include</span> <span class="s">fastcgi_params</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，还需要修改nginx配置文件，将nginx版本号隐藏起来，以访止自动扫描软件发现特定版本的安全露洞。</p>
+
+<p>&emsp;&emsp;如有问题，请与我讨论。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/26/task/">项目中定时任务实现方式比较</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-26T15:18:00+08:00" pubdate data-updated="true">2010年10月26日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;定时任务在项目中使用非常普遍，比如说：每天晚上3：00开始执行数据真删除，每个月第四周星期三晚上1：00开始执行报表统计任务等，我们在项目中，可以通过下面三种方式来实现：</p>
+
+<p><strong>一、利用j2se的timer类来实现</strong>，非常简单，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">java.util.Timer</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.TimerTask</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">FuduTest</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)...{</span>
+</span><span class='line'>  <span class="n">Timer</span> <span class="n">timer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Timer</span><span class="o">();</span>
+</span><span class='line'>  <span class="n">timer</span><span class="o">.</span><span class="na">schedule</span><span class="o">(</span><span class="k">new</span> <span class="n">FuduTask</span><span class="o">(),</span> <span class="mi">1000</span><span class="o">,</span> <span class="mi">2000</span><span class="o">);</span><span class="c1">//在1秒后执行此任务,每次间隔2秒</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">static</span> <span class="kd">class</span> <span class="nc">FuduTask</span> <span class="kd">extends</span> <span class="n">TimerTask</span><span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="nd">@Override</span>
+</span><span class='line'>      <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">(){</span>
+</span><span class='line'>          <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;开始执行定时任务......&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这种方式可以实现一些简单的定时任务，如果任务的启动条件复杂，就要借助于框架来实现了。</p>
+
+<p><strong>二、使用定时器框架</strong>，我在这仅介绍广泛使用的Quartz框架结合spring的使用。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;mainScheduler&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.SchedulerFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;triggers&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;cronReportTrigger&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c">&lt;!--实际的工作Bean--&gt;</span>
+</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;myService&quot;</span> <span class="na">class=</span><span class="s">&quot;com.spring.helloworld.CourseService&quot;</span><span class="nt">&gt;&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c">&lt;!--jobBean用于设定启动时运用的Bean与方法--&gt;</span>
+</span><span class='line'><span class="nt">&lt;bean</span>  <span class="na">id=</span><span class="s">&quot;scheduledReportJobDetail&quot;</span>  <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;targetObject&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;myService&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;targetMethod&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;value&gt;</span>sendMail2BrithdayCustomer<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c">&lt;!--定时器设定起动表达式，比如下面的是：每5秒起动一次 (0 0 5 * * ?每日五点起动)--&gt;</span>
+</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;cronReportTrigger&quot;</span>
+</span><span class='line'><span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.CronTriggerBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;jobDetail&quot;</span><span class="nt">&gt;&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;scheduledReportJobDetail&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;cronExpression&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;value&gt;</span>10,15,20,25,30,35,40,45,50,55 * * * * ?<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在spring中的配置可谓是相当的简单，你要写的仅仅是一个业务类而已。使用在项目中集成框架的缺点是：和项目服务器的耦合度太高，项目服务器当机，定时任务也就over了，定时任务执行异常，也会影响到服务器的项目，因此，最好的办法，还是采用下面的第三种方式。</p>
+
+<p>&emsp;&emsp;<strong>三、利用操作系统的定时任务</strong></p>
+
+<p>&emsp;&emsp;windows操作系统：在控制面板中的计划任务，按提示一步一步就可以完成，但是前提是你得写好一个批处理文件（.bat的），并确保该批处理可以运行。</p>
+
+<p>&emsp;&emsp;该脚本中，一般是调用java的一个main方法，在main方法中，用代码的方式启动spring容器，得到业务对象引用，调用业务方法即可。</p>
+
+<p>&emsp;&emsp;linux操作系统：
+&emsp;&emsp;使用crontab，一般的linux系统中都有集成，你只需:vim /etc/crontab即可，根据该文件中的example，添加你的任务命令行。</p>
+
+<p>&emsp;&emsp;下面是我的一行配置命令：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="c"># m h dom mon dow user  command</span>
+</span><span class='line'>30 5 * * * root /home/server/run/translate.sh &gt;&gt; /var/log/fudu365/auto_run/tranlate.log
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;加入你的任务行后，crontab会自动生效，不用你重启。</p>
+
+<p>&emsp;&emsp;注意：crontab可，最前面一位不是秒哦，也就是，它只能在0秒开始运行。</p>
+
+<p>&emsp;&emsp;无论你是用框架，还是crontab，有一个东西非常重要，那就是cronExpression，cronExpression怎么写，自己到网上查，<a href="http://en.wikipedia.org/wiki/CRON_expression">http://en.wikipedia.org/wiki/CRON_expression</a>也有一篇，你可以去看看。</p>
+
+<p>&emsp;&emsp;总之，项目中的定时任务，你得根据项目的实际情况进行选择，如果你想要一个稳定、强大的定时任务，还是采用第三种方式吧。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/25/old-new/">网站新旧版替换注意事项</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-25T15:18:00+08:00" pubdate data-updated="true">2010年10月25日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;网站建成后，根据用户体验及外部竟争条件的变化，网站少不更改，小的更改问题不是很大，如果是大的改动，也就是意味着网站要来个彻底的大换血，改版，那么，网站改版本在技术上应注意些什么呢？我在这里总结几点（当然，我的总结中，并不包括UI体验内容）。</p>
+
+<p>&emsp;&emsp;1、网站新版开发完成后，要上线测试，如果发现问题，立即进行修改。这个时候，老版的系统一定是同步运行的。你可以建一个二级域名指向新系统进行测试，也可以在老系统中发布通知，链接上新系统地址，让更多的老系统用户参与试用。</p>
+
+<p>&emsp;&emsp;2、请注意将新系统站点根目录下的robots.txt改为拒绝所有搜索引擎扫描收录，原因很简单：新系统的测试域名以后会更改，并且很多页面seo可能没有考虑到位。</p>
+
+<p>&emsp;&emsp;3、保持新系统与旧系统的url地址上的统一，特别是老版已经被收录的页面，如果不一致，将会造成新版上线后流量的大幅减少（我用urlReWrite可最大限度达到统一）。</p>
+
+<p>&emsp;&emsp;4、新旧系统切换前，必须要做好网站地图，并要仔细检查页面中是否有死链。</p>
+
+<p>&emsp;&emsp;5、发一份站点通告或帮助，向用户说明老系统中的功能，在新系统中怎样才能找到。</p>
+
+<p>&emsp;&emsp;6、在新旧系统并行运行一段时间后，你可以确信新系统已经比较完美后，请找一个在线用户最少的时候，完成系统的切换（改虚拟主机映射即可，我在后面的文章中会介绍）。</p>
+
+<p>&emsp;&emsp;7、在技术实现上，还有一个非常重要的问题，就是将新旧站点的域名信息，写到一个配置文件中，新系统中所用用到的地址信息，都从配置文件中读取，在新旧系统切换的时候，你将会发现这么做的好处是多么的有用。</p>
+
+<p>&emsp;&emsp;8、最后，新系统成功切换替代老系统后，请给系统的每一个老用户发一封邮件，告诉他们站点已经更新，更新的亮点也要说明，“喊他们回家吃饭了”，呵呵。</p>
+
+<p>&emsp;&emsp;以上是本人过去的一些站点改版经历中的深刻体会，希望对大家有所帮助。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/22/discuz/">Discuz、uchome与jquery冲突问题</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-22T15:18:00+08:00" pubdate data-updated="true">2010年10月22日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;20日，discuz报重大安全露洞，到官网上下载补丁文件更新后，悬着的心来才放下来。
+接下来，我发现discuz用户激活验证码不显示了，“看不清，换一张”点了也没有任何反映，改用用ie6再次打开页面，发现居然是js在报错，怎么会出现这种情况呢？郁闷！</p>
+
+<p>&emsp;&emsp;想起以前在做uchome及jquery整合过程中，也出现相册、博客操作方面的异常，网上查了一下，说是jquery的js加载顺序与uchome的产生了冲突，将jquery的js放到最前面加载，就没有问题，改过后，果然恢复正常。</p>
+
+<p>&emsp;&emsp;难道这回discuz也是这个原因引起的？</p>
+
+<p>&emsp;&emsp;找到discuz的默认模板文件，将jquery及juqey ui的相关文件统统放到head后面一行马上加载，问题解决。看来不同的客户端的js框架都会有冲突发生的，记得以前jquery与dwr混用，也出现过$冲突问题。</p>
+
+<p>&emsp;&emsp;自从康盛被tencent收购后，康盛加大了x-space的推广力度，并到QQ登录也集成了进来，本人测试过，发现目前还不太稳定，登录速度非常缓慢， 看来还得等一段时间。如果qq的集成登录技术成熟后，那么康盛的sns产品一定会变得非常强大，phpWin将无法与之竟争。
+最后补充一点：冲突后，以前jQuery的$简写，也都要写成全称的jQuery。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/21/960/">页面工业化生产（960的思考）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-21T15:18:00+08:00" pubdate data-updated="true">2010年10月21日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;本人曾经不重视页面工作，而将精力放在系统的业务实现上，做出的界面不尽人意。06年我负责的一个产品，在全国有近30家客户，每个客户的项目，一般 仅在首页上不同，登录后，功能界面完相同，用户操作及界面的可用性，现在想想，可以说是非常的差，很多操作都是从程序员角度去设计的（软件产品销售得还是 很不错，当时的老板还是非常有眼光的，虽然很久没联系过了，但至今对他比较敬佩）。</p>
+
+<p>&emsp;&emsp;我们当时每谈成一家客户，都会请外面的美工，用ps做一张首页（当时价格2000元左右），经过客户多次确认后，再由我们对html页面熟悉些的开发人员 照界面切图，实现设计效果。当然
+这块工作不是我做的，我对html元素了解甚少。近两年，带娃娃们做的一些项目，让我深刻认识到，页面这块的学问还非常的 深，怪不得大公司都有UI工程师这一角色呢。页面的规范，页面的批量批生产与维护等方面，我着实还有些想法。下面主要谈谈一个css框架在项目中的应用。</p>
+
+<p>&emsp;&emsp;做过互联网项目的人应该都知道，前端页面的的效果、用户体验及后期维护在当的重要，这往往会决定一个互联网项目的成败。那么，做为美工人员，做好页面效果 图后，页面实现人员如何才能照葫芦画瓢，实现最初的设计效果呢？美工和页面实现人员之间是否有某种约定或规范以协调二者顺畅地工作？对，960 css框架可以解决这个问题。</p>
+
+<p>&emsp;&emsp;到网上搜一下，你会找到很多960相关的文章，记得有一篇 960的秘密，推荐大家去看看。960 css框架下载地址在：<a href="http://960.gs/">http://960.gs/</a>，很小的一个压缩包，解压后，就可以开始工作了：</p>
+
+<p>&emsp;&emsp;1、代码包中的code目录。该目录中存放的是演示源代码，有12栅格与24栅格的两种示例（我一般用24栅格的，有利于精细控制），有默认从左到右布局排列的，也有从右到左排列的示例，请大家结合界面显示及网页源代码，很快就知道怎么用的了。</p>
+
+<p>&emsp;&emsp;2、该框架有如下几个css文件，使用时需要引入到你的页面中：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='css'><span class='line'><span class="o">&lt;</span><span class="nt">link</span> <span class="nt">rel</span><span class="o">=</span><span class="err">”</span><span class="nt">stylesheet</span><span class="err">”</span> <span class="nt">href</span><span class="o">=</span><span class="err">”</span><span class="nt">css</span><span class="o">/</span><span class="nt">reset</span><span class="nc">.css</span><span class="err">”</span> <span class="o">/&gt;</span>
+</span><span class='line'><span class="o">&lt;</span><span class="nt">link</span> <span class="nt">rel</span><span class="o">=</span><span class="err">”</span><span class="nt">stylesheet</span><span class="err">”</span> <span class="nt">href</span><span class="o">=</span><span class="err">”</span><span class="nt">css</span><span class="o">/</span><span class="nt">text</span><span class="nc">.css</span><span class="err">”</span> <span class="o">/&gt;</span>
+</span><span class='line'><span class="o">&lt;</span><span class="nt">link</span> <span class="nt">rel</span><span class="o">=</span><span class="err">”</span><span class="nt">stylesheet</span><span class="err">”</span> <span class="nt">href</span><span class="o">=</span><span class="err">”</span><span class="nt">css</span><span class="o">/</span><span class="nt">960_24_col</span><span class="nc">.css</span><span class="err">”</span> <span class="o">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;前两个css文件不是必须引入的，它们的作用是为很多html元素设计默认的样式，如果你的站点中英文据多，建议你使用。</p>
+
+<p>&emsp;&emsp;960_24_col.css是24栅格，从左到右排版的文件，当然，你也可以选择其它的几种（我相信阿拉伯国家的人会选择从右至左的css文件），12或24栅，请根据你的站点类型选择，个人主面，12足够，门户站，24可能都少了。</p>
+
+<p>&emsp;&emsp;3、960框架中的的css样式：</p>
+
+<ul>
+<li>container_x， 顶层大容器样式，x是栅格数。</li>
+<li>grid_x,  x是数据栅格数，你可以向小孩做算术一样来决定某个版块的宽度。</li>
+<li>prefix_x， 从什么格处开始显示。</li>
+<li>alpha 取消栅格间左间距，一般是5px</li>
+<li>omega取消栅格间右间距</li>
+</ul>
+
+
+<p>&emsp;&emsp;4、templates目录中的模板文件。
+该文件由美工人员使用，有ps、corel_draw、flash等多种设计工具的模板文件，美工在设计时，将这些文件设置为底图，在进行模块定位时，与底图上的栅格对齐，这样，就可以和页面实现人员达到设计与实现的统一。
+最后一个思考？960 css只定义了宽度的栅格，为什么没有高度呢？本人也想了很长时间，经过实践发现，网站项目的版块高度一般都是根据内容自动适应的，所以，定义高度的意义不是很大，呵呵。
+960框架很适合网站类产品，可以实现页面批量化、工业化生产与维护，但它对mis类型的管理系统，个人觉得用处不大，如果你有什么不同想法，欢迎给我留言。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+      <a class="prev" href="/blog/page/29/">&larr; 更多早期老文章</a>
+    
+    <a href="/blog/archives">所有文章</a>
+    
+    <a class="next" href="/blog/page/27/">更多近期文章 &rarr;</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用&#8212;第四部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

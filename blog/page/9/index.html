@@ -9,7 +9,13 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;近些天，网站流量消耗巨大，通过查看nginx访问日志发现，有众多的ip频繁下载网站上的一些固定资源文件，而且每次访问的时间间隔非常近，很显示是非正确访问，进一步观察发现，这些ip并不是固定的，每天都不相同（估计是“肉机”），有些下载ip访问达到100次以上，有的20次， &hellip;">
+  <meta name="description" content="&emsp;&emsp;计算机自身的硬件特性，决定了对小数计算的不精确性，请看java中的以下代码： 1
+2
+3
+4
+System.out.println(0.05+0.01);
+System.out.println(1.0 - 0.58);
+System.out.println(4.015 * &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -48,9 +54,9 @@
   
 <ul class="main-navigation">
   <li><a href="/">博客文章</a></li>
-  <li><a href="/blog/archives">所有文章</a></li>
-  <li><a href="/blog/archives">绘画作品</a></li>
-  <li><a href="/blog/archives">关于我</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
 </ul>
 
 </nav>
@@ -64,7 +70,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2011/04/05/block/">屏蔽站点非法流量下载</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013/02/26/java-number/">Java中的数值处理</a></h1>
     
     
       <p class="meta">
@@ -80,31 +86,342 @@
   
 
 
-<time datetime="2011-04-05T15:18:00+08:00" pubdate data-updated="true">2011年04月05日</time>
+<time datetime="2013-02-26T15:18:00+08:00" pubdate data-updated="true">2013年02月26日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;近些天，网站流量消耗巨大，通过查看nginx访问日志发现，有众多的ip频繁下载网站上的一些固定资源文件，而且每次访问的时间间隔非常近，很显示是非正确访问，进一步观察发现，这些ip并不是固定的，每天都不相同（估计是“肉机”），有些下载ip访问达到100次以上，有的20次，10次的都有，甚是烦人。</p>
+  <div class="entry-content"><p>&emsp;&emsp;计算机自身的硬件特性，决定了对小数计算的不精确性，请看java中的以下代码：</p>
 
-<p>&emsp;&emsp;解决方法是，写一定时脚本，对nginx日志进行统计，对这些访问有异常的ip，用iptables进行屏蔽，具体做法如下：</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">0.05</span><span class="o">+</span><span class="mf">0.01</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="mf">0.58</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">4.015</span> <span class="o">*</span> <span class="mi">100</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">123.3</span><span class="o">/</span><span class="mi">100</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的计算结果，可能和你想像中的有些不一样：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="mf">0.060000000000000005</span>
+</span><span class='line'><span class="mf">0.42000000000000004</span>
+</span><span class='line'><span class="mf">401.49999999999994</span>
+</span><span class='line'><span class="mf">1.2329999999999999</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果上面的计算，针对的金钱货币的计算，结果将是不正确的。</p>
+
+<p>&emsp;&emsp;那么，在具体的项目中，我们怎么来解决这个问题呢？</p>
+
+<p>&emsp;&emsp;<strong>可选方案一：</strong></p>
+
+<p>&emsp;&emsp;将数值放大处理保存，比如放大100倍，放大1000部，如果是人民币，就已经到了分，粒的精度。</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>grep  <span class="s1">&#39;资源条件&#39;</span> /var/log/nginx/youwebsite.access.log|sort | awk <span class="s1">&#39;{print $1}&#39;</span>|uniq -c|sort |awk <span class="s1">&#39;{if ($1 &gt; 5)print $2}&#39;</span>&gt;/root/temp/block_ip.txt
-</span><span class='line'><span class="k">while </span><span class="nb">read </span>line
-</span><span class='line'><span class="k">do</span>
-</span><span class='line'>iptables -I INPUT -p tcp --dport 80 -s  <span class="nv">$line</span>  -j DROP
-</span><span class='line'><span class="k">done</span>&lt; /root/temp/block_ip.txt
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">5</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">50</span> <span class="o">+</span> <span class="mi">10</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">100</span> <span class="o">-</span> <span class="mi">58</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">1000</span> <span class="o">-</span> <span class="mi">580</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mf">401.5</span> <span class="o">*</span> <span class="mi">100</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">4015</span> <span class="o">*</span> <span class="mi">100</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">12330</span><span class="o">/</span><span class="mi">100</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">123300</span><span class="o">/</span><span class="mi">100</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;上述shell脚本对某一资源访问达到5次以上的ip，将被加入屏蔽列表中。最后将脚本加入crontab，问题得到解决。</p>
+<p>&emsp;&emsp;上面的代码是将计算的数值放大100或1000倍后的处理，结果如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="mf">0.06</span>
+</span><span class='line'><span class="mf">0.06</span>
+</span><span class='line'><span class="mf">0.42</span>
+</span><span class='line'><span class="mf">0.42</span>
+</span><span class='line'><span class="mf">401.5</span>
+</span><span class='line'><span class="mf">401.5</span>
+</span><span class='line'><span class="mf">1.23</span>
+</span><span class='line'><span class="mf">1.233</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，我们可以看到，放大1000倍后，我们是可以应对金额精确到粒的精度的计算。</p>
+
+<p>&emsp;&emsp;<strong>可选方案二：</strong></p>
+
+<p>&emsp;&emsp;使用BigDecimal进行计算，上面的计算，可写成：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">BigDecimal</span> <span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">0.05</span><span class="o">);</span>
+</span><span class='line'><span class="n">BigDecimal</span> <span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">0.01</span><span class="o">);</span>
+</span><span class='line'> <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">1.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">0.58</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">subtract</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">4.015</span><span class="o">);</span>
+</span><span class='line'><span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">100</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">multiply</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">123.3</span><span class="o">);</span>
+</span><span class='line'><span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">100</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">divide</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;我们得到了最终的正确运行结果：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="mf">0.06</span>
+</span><span class='line'><span class="mf">0.42</span>
+</span><span class='line'><span class="mf">401.5</span>
+</span><span class='line'><span class="mf">1.233</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;因此，很多人封装了对小数类型操作的方法到一个类中，这样就方便了我们的计算，下面是代码节选：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="mf">0.05</span><span class="o">,</span><span class="mf">0.01</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">sub</span><span class="o">(</span><span class="mf">1.0</span> <span class="o">,</span> <span class="mf">0.58</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">mul</span><span class="o">(</span><span class="mf">4.015</span> <span class="o">,</span> <span class="mi">100</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">div</span><span class="o">(</span><span class="mf">123.3</span><span class="o">,</span><span class="mi">100</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;计算结果也是正确的。</p>
+
+<p>&emsp;&emsp;Money类的代码：</p>
+
+<figure class='code'><figcaption><span>Money.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Money</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//默认除法运算精度</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">DEF_DIV_SCALE</span> <span class="o">=</span> <span class="mi">10</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">//这个类不能实例化</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="nf">Money</span><span class="o">(){</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的加法运算。</span>
+</span><span class='line'><span class="cm">     * @param v1 被加数</span>
+</span><span class='line'><span class="cm">     * @param v2 加数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的和</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">add</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">b2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的减法运算。</span>
+</span><span class='line'><span class="cm">     * @param v1 被减数</span>
+</span><span class='line'><span class="cm">     * @param v2 减数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的差</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">sub</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">subtract</span><span class="o">(</span><span class="n">b2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的乘法运算。</span>
+</span><span class='line'><span class="cm">     * @param v1 被乘数</span>
+</span><span class='line'><span class="cm">     * @param v2 乘数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的积</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">mul</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">multiply</span><span class="o">(</span><span class="n">b2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供（相对）精确的除法运算，当发生除不尽的情况时，精确到</span>
+</span><span class='line'><span class="cm">     * 小数点以后10位，以后的数字四舍五入。</span>
+</span><span class='line'><span class="cm">     * @param v1 被除数</span>
+</span><span class='line'><span class="cm">     * @param v2 除数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的商</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">div</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nf">div</span><span class="o">(</span><span class="n">v1</span><span class="o">,</span><span class="n">v2</span><span class="o">,</span><span class="n">DEF_DIV_SCALE</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供（相对）精确的除法运算。当发生除不尽的情况时，由scale参数指</span>
+</span><span class='line'><span class="cm">     * 定精度，以后的数字四舍五入。</span>
+</span><span class='line'><span class="cm">     * @param v1 被除数</span>
+</span><span class='line'><span class="cm">     * @param v2 除数</span>
+</span><span class='line'><span class="cm">     * @param scale 表示表示需要精确到小数点以后几位。</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的商</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">div</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">,</span><span class="kt">int</span> <span class="n">scale</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">scale</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">){</span>
+</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span>
+</span><span class='line'>                <span class="s">&quot;The scale must be a positive integer or zero&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">divide</span><span class="o">(</span><span class="n">b2</span><span class="o">,</span><span class="n">scale</span><span class="o">,</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_HALF_UP</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的小数位四舍五入处理。</span>
+</span><span class='line'><span class="cm">     * @param v 需要四舍五入的数字</span>
+</span><span class='line'><span class="cm">     * @param scale 小数点后保留几位</span>
+</span><span class='line'><span class="cm">     * @return 四舍五入后的结果</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">round</span><span class="o">(</span><span class="kt">double</span> <span class="n">v</span><span class="o">,</span><span class="kt">int</span> <span class="n">scale</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">scale</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">){</span>
+</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span>
+</span><span class='line'>                <span class="s">&quot;The scale must be a positive integer or zero&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">one</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="s">&quot;1&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b</span><span class="o">.</span><span class="na">divide</span><span class="o">(</span><span class="n">one</span><span class="o">,</span><span class="n">scale</span><span class="o">,</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_HALF_UP</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，数据库中对数值的型的保存，可以采用数值类型，也可以使用字符类型，也就是说，我们在进行商业计算的时候，要使用上面的方法来进行处理，以便得到正确的结果。</p>
 </div>
   
   
@@ -117,7 +434,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2011/03/22/cy/">艰难的互联网创业</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013/02/25/ibatis-dyna-sql/">Ibatis动态sql示例</a></h1>
     
     
       <p class="meta">
@@ -133,44 +450,591 @@
   
 
 
-<time datetime="2011-03-22T15:18:00+08:00" pubdate data-updated="true">2011年03月22日</time>
+<time datetime="2013-02-25T15:18:00+08:00" pubdate data-updated="true">2013年02月25日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;中国的互联网已经进行几大巨头独霸的局面，中小创业者在夹缝中艰难地生存着，创新很容易被模仿，即时有创新，凭自己的力量实现并推广也是比较困难的。总体来说，中国互联网缺少法律保护，抄袭、同质化问题比较严重。下面说说我身边发生的一些事情，有些是几年前的。从这些事情中，你也许可以读到想要做好一件事，哪些因素比较关键。</p>
+  <div class="entry-content"><p>&emsp;&emsp;动态sql是ibatis中非常强大而实用的功能，下面贴出一段分页功能的实现代码，供大家参考：</p>
 
-<p>&emsp;&emsp;先说老彭，老彭的思路非常灵活，而且很多东西有自己的想法，但由于种种原因，这些创意都没能实现。他先是提出要做一个站点实时监控网站，专门为中国互联网的广大站长提供站点实时监测，比如：每日浏览，故障次数，平均响应时间等，这些信息会通过手机短信的方式发送给付费站长，普通用户仅有邮件通知。这个想法提出来时，最大的问题如何采集到不同操作系统服务器上的数据，以及如何开发更深层次的扩展应用，比如：站点流量，新增注册用户数等插件开发。想法是好，经过网上查询，当时admin5已经有一个类似的项目，也应该有不错的用户数量，再做一个同类的项目，可以说无法和admin5竞争，我们都知道，“先入为主”这句话在互联网来说非常合适，别人即使比你先推出来一天，效果都是非常不一样的，这个想法就这样被否定。现在，“监控宝”是这类站点中的佼佼者，admin5的监控已经落败，监控宝是有的强大的后台财力支撑，而且做了很多创新，以当时老彭的实力，实现也比较困难。后来，老彭提出做一个saas类的项目，专门供美容美发店使用（会员卡、每日运营情况等），按店收取年费，我都见他设计完了整个项目，包括领域，er，详细设计，后面不知什么原因放弃了，也许问题在推广上。再后来，想做艺术品交易网站，连盈利模式这些都已经想得比较清楚了，但后来也放弃了，原因在于网上有同质化的网站，你想嘛，如果淘宝也开一个这样的版块，那我们就没得搞头了。再后来，想做一个星巴克的网上门店，这个想法因盈利模式有问题放弃。再后来，计划做一个gay交流网站，兼gay物品交易，这个想法应该是做过前期调查的，不知什么原因没了消息。再后来，想做客运站的一个物流系统，也没听到有消息。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Page</span> <span class="nf">getEpetByPage</span><span class="o">(</span><span class="kd">final</span> <span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">,</span> <span class="kd">final</span> <span class="n">Map</span> <span class="n">queryParam</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="o">(</span><span class="n">Page</span><span class="o">)</span><span class="k">this</span><span class="o">.</span><span class="na">getSqlMapClientTemplate</span><span class="o">().</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">SqlMapClientCallback</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nd">@Override</span>
+</span><span class='line'>            <span class="kd">public</span> <span class="n">Object</span> <span class="nf">doInSqlMapClient</span><span class="o">(</span><span class="n">SqlMapExecutor</span> <span class="n">sc</span><span class="o">)</span>
+</span><span class='line'>                    <span class="kd">throws</span> <span class="n">SQLException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">Page</span> <span class="n">p</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Page</span><span class="o">();</span>
+</span><span class='line'>                <span class="c1">//构造分页参数</span>
+</span><span class='line'>                <span class="n">Map</span> <span class="n">param</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;start&quot;</span><span class="o">,</span> <span class="o">(</span><span class="n">pageNo</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)*</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;end&quot;</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">putAll</span><span class="o">(</span><span class="n">queryParam</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="c1">//查询当前页数据</span>
+</span><span class='line'>                <span class="n">List</span> <span class="n">data</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="na">queryForList</span><span class="o">(</span><span class="s">&quot;epet.selectEpetsByPage&quot;</span><span class="o">,</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">p</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>                <span class="c1">//查询满足条件的记录数</span>
+</span><span class='line'>                <span class="n">Number</span> <span class="n">count</span> <span class="o">=</span> <span class="o">(</span><span class="n">Number</span><span class="o">)</span><span class="n">sc</span><span class="o">.</span><span class="na">queryForObject</span><span class="o">(</span><span class="s">&quot;epet.selectEpetsCounts&quot;</span><span class="o">,</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">p</span><span class="o">.</span><span class="na">setRowcount</span><span class="o">(</span><span class="n">count</span><span class="o">.</span><span class="na">intValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="k">return</span> <span class="n">p</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>&emsp;&emsp;老杨，先是做团购网站，但线下营销能力不足，效果不好，最后网站因备案问题进入电信机房黑白名单过滤而关闭。后来想做外包网站，我说已经有这样的网站了，但他说在很多地方可以改进及创新，当时考虑到开发效率，用php实现，最后也没听到他的这个网站的消息了。看来做技术的人大多都是重技术而不精营销的。前段时间，我还听说某些软件公司的技术人员想用业余时间做团购网站，也许他们真的不知道什么是线下营销，我们要知道，挣钱的网站，大多是用站点做门户辅助配合线下营销，一个团购网，技术上应该是很容易实现的。</p>
 
-<p>&emsp;&emsp;我们老大，有很多不错的创意。首先是小孩防疫情况通知的这个系统，全国有小孩的家庭应该还是很多的，这个项目要是做成并成功推广，应该是非常不错的。网络智能发贴跟贴（自动注册，发贴，跟贴，而且要有一定的人工智能性），这个做好了也会有收不错收入。电子书平台，进行在线学习，可以将各种格式文档转换为网站内部统一格式，实现在线教育培训，这个项目好像进行了一段时间就终止了，有点可惜。</p>
+<p>&emsp;&emsp;配置中的写法是：</p>
 
-<p>&emsp;&emsp;肖老二写了一个“烂笔头”，收取注册费，也似乎在互联网上推广过一段时间，最后没了消息。其实，这类软件一定要有功能亮点，否则无法盈利。还有一点，中国网民已经习惯了免费，不想掏钱（玩游戏除外哈），这点根深蒂固。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;sql</span> <span class="na">id=</span><span class="s">&quot;epets_where&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;dynamic</span> <span class="na">prepend=</span><span class="s">&quot;where&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;isNotEmpty</span> <span class="na">property=</span><span class="s">&quot;nickName&quot;</span> <span class="na">prepend=</span><span class="s">&quot;and&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                f_nickname = #nickName#
+</span><span class='line'>            <span class="nt">&lt;/isNotEmpty&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;isNotEmpty</span> <span class="na">property=</span><span class="s">&quot;password&quot;</span> <span class="na">prepend=</span><span class="s">&quot;and&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                f_password = #password#
+</span><span class='line'>            <span class="nt">&lt;/isNotEmpty&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/dynamic&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/sql&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectEpetsByPage&quot;</span>
+</span><span class='line'>    <span class="na">resultMap=</span><span class="s">&quot;epetResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        select *
+</span><span class='line'>        from t_epet
+</span><span class='line'>        <span class="nt">&lt;include</span> <span class="na">refid=</span><span class="s">&quot;epets_where&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>        limit #start#, #end#
+</span><span class='line'>    <span class="nt">&lt;/select&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectEpetsCounts&quot;</span>
+</span><span class='line'>    <span class="na">resultClass=</span><span class="s">&quot;int&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        select count(*)
+</span><span class='line'>        from t_epet
+</span><span class='line'>        <span class="nt">&lt;include</span> <span class="na">refid=</span><span class="s">&quot;epets_where&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/select&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>&emsp;&emsp;军哥，技术牛人，狂人，本人很佩服他，也有一些不错的想法，最后都未能被实现，我们也知道，人家的主业可是专业炒股，专业做投资的哦。我身边有投资意识的人，目前仅此一人，我遇到一些问题，都还得向他咨询。</p>
 
-<p>我的一个做互联网的朋友，也比较有想法。一年前申请了一个域名（墓地网），准备做网上墓地销售，不知什么原因，该域名如今还空着的。后来还做过一个比较有前途的“二手工程机械交易网”，但由于线下营销能力跟不上来，最后没了消息。</p>
+<p>&emsp;&emsp;调用者在调用getEpetByPage(final int pageNo, final int pageSize, final Map queryParam)方法时，传入queryParam,iibatis将根据传入的参数，拼装最终sql语语。</p>
 
-<p>&emsp;&emsp;我的另一个朋友，非常精于运营和营销，自己带团队做过网页游戏，最终失败于技术。此人的运营营销能力非常强，就像天生是为这行而生的，我从那里学到了很多的东西，也深刻地意识到，技术如何快速适应需求，为需求服务，如果按“软件工程”思想按部就班地做互联网项目，只有死路一条。</p>
+<p>&emsp;&emsp;另附pet对象crud操作全部代码：</p>
 
-<p>&emsp;&emsp;最近一同事向我提起曾今想做一个旅游网站，专为外国人提供散客或组团导游服务，我觉得这里面很多事情没有考虑清楚，盈利方式不明确。我还有一个新疆的同学，上回QQ上给我说想做一个闭路电视在线交费系统，要和广电上做接口什么的，说了很多，感觉信心很大，但我认为这个项目对现在的广电来说基本上没有什么利益和好处，也行无法推广，这个想法也是“虎头蛇尾”，没了下文。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+<span class='line-number'>170</span>
+<span class='line-number'>171</span>
+<span class='line-number'>172</span>
+<span class='line-number'>173</span>
+<span class='line-number'>174</span>
+<span class='line-number'>175</span>
+<span class='line-number'>176</span>
+<span class='line-number'>177</span>
+<span class='line-number'>178</span>
+<span class='line-number'>179</span>
+<span class='line-number'>180</span>
+<span class='line-number'>181</span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+<span class='line-number'>194</span>
+<span class='line-number'>195</span>
+<span class='line-number'>196</span>
+<span class='line-number'>197</span>
+<span class='line-number'>198</span>
+<span class='line-number'>199</span>
+<span class='line-number'>200</span>
+<span class='line-number'>201</span>
+<span class='line-number'>202</span>
+<span class='line-number'>203</span>
+<span class='line-number'>204</span>
+<span class='line-number'>205</span>
+<span class='line-number'>206</span>
+<span class='line-number'>207</span>
+<span class='line-number'>208</span>
+<span class='line-number'>209</span>
+<span class='line-number'>210</span>
+<span class='line-number'>211</span>
+<span class='line-number'>212</span>
+<span class='line-number'>213</span>
+<span class='line-number'>214</span>
+<span class='line-number'>215</span>
+<span class='line-number'>216</span>
+<span class='line-number'>217</span>
+<span class='line-number'>218</span>
+<span class='line-number'>219</span>
+<span class='line-number'>220</span>
+<span class='line-number'>221</span>
+<span class='line-number'>222</span>
+<span class='line-number'>223</span>
+<span class='line-number'>224</span>
+<span class='line-number'>225</span>
+<span class='line-number'>226</span>
+<span class='line-number'>227</span>
+<span class='line-number'>228</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">EpetDaoImpl</span> <span class="kd">extends</span> <span class="n">SqlMapClientDaoSupport</span> <span class="kd">implements</span> <span class="n">IEpetDao</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//    // ibatis核心对象</span>
+</span><span class='line'><span class="c1">//    private SqlMapClient sc;</span>
+</span><span class='line'><span class="c1">//</span>
+</span><span class='line'><span class="c1">//    public void setSc(SqlMapClient sc) {</span>
+</span><span class='line'><span class="c1">//        this.sc = sc;</span>
+</span><span class='line'><span class="c1">//    }</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">EpetDaoImpl</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'><span class="c1">//        // 读取配置文件</span>
+</span><span class='line'><span class="c1">//        Reader conf;</span>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            conf = Resources.getResourceAsReader(&quot;SqlMapConfig.xml&quot;);</span>
+</span><span class='line'><span class="c1">//            // 得到核心对象</span>
+</span><span class='line'><span class="c1">//            sc = SqlMapClientBuilder.buildSqlMapClient(conf);</span>
+</span><span class='line'><span class="c1">//        } catch (IOException e) {</span>
+</span><span class='line'><span class="c1">//            // TODO Auto-generated catch block</span>
+</span><span class='line'><span class="c1">//            e.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Epet</span> <span class="nf">getEpetById</span><span class="o">(</span><span class="kt">int</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="o">(</span><span class="n">Epet</span><span class="o">)</span><span class="k">this</span><span class="o">.</span><span class="na">getSqlMapClientTemplate</span><span class="o">()</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">queryForObject</span><span class="o">(</span><span class="s">&quot;epet.selectEpetById&quot;</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            return (Epet)sc.queryForObject(&quot;epet.selectEpetById&quot;, id);</span>
+</span><span class='line'><span class="c1">//        } catch (SQLException e) {</span>
+</span><span class='line'><span class="c1">//            e.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'><span class="c1">//        return null;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Epet</span> <span class="nf">getEpetByNickname</span><span class="o">(</span><span class="n">String</span> <span class="n">nickName</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="o">(</span><span class="n">Epet</span><span class="o">)</span><span class="k">this</span><span class="o">.</span><span class="na">getSqlMapClientTemplate</span><span class="o">()</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">queryForObject</span><span class="o">(</span><span class="s">&quot;epet.selectEpetsByNickname&quot;</span><span class="o">,</span> <span class="n">nickName</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            return (Epet)sc.queryForObject(&quot;epet.selectEpetsByNickname&quot;, nickName);</span>
+</span><span class='line'><span class="c1">//        } catch (SQLException e) {</span>
+</span><span class='line'><span class="c1">//            e.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'><span class="c1">//        return null;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Page</span> <span class="nf">getEpetByPage</span><span class="o">(</span><span class="kd">final</span> <span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">,</span> <span class="kd">final</span> <span class="n">Map</span> <span class="n">queryParam</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="o">(</span><span class="n">Page</span><span class="o">)</span><span class="k">this</span><span class="o">.</span><span class="na">getSqlMapClientTemplate</span><span class="o">().</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">SqlMapClientCallback</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nd">@Override</span>
+</span><span class='line'>            <span class="kd">public</span> <span class="n">Object</span> <span class="nf">doInSqlMapClient</span><span class="o">(</span><span class="n">SqlMapExecutor</span> <span class="n">sc</span><span class="o">)</span>
+</span><span class='line'>                    <span class="kd">throws</span> <span class="n">SQLException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">Page</span> <span class="n">p</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Page</span><span class="o">();</span>
+</span><span class='line'>                <span class="c1">//构造分页参数</span>
+</span><span class='line'>                <span class="n">Map</span> <span class="n">param</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;start&quot;</span><span class="o">,</span> <span class="o">(</span><span class="n">pageNo</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)*</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;end&quot;</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">putAll</span><span class="o">(</span><span class="n">queryParam</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="c1">//查询当前页数据</span>
+</span><span class='line'>                <span class="n">List</span> <span class="n">data</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="na">queryForList</span><span class="o">(</span><span class="s">&quot;epet.selectEpetsByPage&quot;</span><span class="o">,</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">p</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>                <span class="c1">//查询满足条件的记录数</span>
+</span><span class='line'>                <span class="n">Number</span> <span class="n">count</span> <span class="o">=</span> <span class="o">(</span><span class="n">Number</span><span class="o">)</span><span class="n">sc</span><span class="o">.</span><span class="na">queryForObject</span><span class="o">(</span><span class="s">&quot;epet.selectEpetsCounts&quot;</span><span class="o">,</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">p</span><span class="o">.</span><span class="na">setRowcount</span><span class="o">(</span><span class="n">count</span><span class="o">.</span><span class="na">intValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="k">return</span> <span class="n">p</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addEpet</span><span class="o">(</span><span class="n">Epet</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">getSqlMapClientTemplate</span><span class="o">()</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">insert</span><span class="o">(</span><span class="s">&quot;epet.addEpet&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            sc.insert(&quot;epet.addEpet&quot;, e);</span>
+</span><span class='line'><span class="c1">//        } catch (SQLException ex) {</span>
+</span><span class='line'><span class="c1">//            ex.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deleteEpetById</span><span class="o">(</span><span class="kt">int</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">getSqlMapClientTemplate</span><span class="o">()</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">delete</span><span class="o">(</span><span class="s">&quot;epet.deleteEpetById&quot;</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            sc.insert(&quot;epet.deleteEpetById&quot;, id);</span>
+</span><span class='line'><span class="c1">//        } catch (SQLException ex) {</span>
+</span><span class='line'><span class="c1">//            ex.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">updateEpet</span><span class="o">(</span><span class="n">Epet</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">getSqlMapClientTemplate</span><span class="o">()</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">update</span><span class="o">(</span><span class="s">&quot;epet.updateEpet&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            sc.insert(&quot;epet.updateEpet&quot;, e);</span>
+</span><span class='line'><span class="c1">//        } catch (SQLException ex) {</span>
+</span><span class='line'><span class="c1">//            ex.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="err">配置文件：</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">sqlMap</span> <span class="n">namespace</span><span class="o">=</span><span class="s">&quot;epet&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">typeAlias</span> <span class="n">alias</span><span class="o">=</span><span class="s">&quot;mypet&quot;</span> <span class="n">type</span><span class="o">=</span><span class="s">&quot;com.my.demo.model.Epet&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">resultMap</span>  <span class="n">id</span><span class="o">=</span><span class="s">&quot;epetResult&quot;</span> <span class="n">class</span><span class="o">=</span><span class="s">&quot;mypet&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">result</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;id&quot;</span> <span class="n">column</span><span class="o">=</span><span class="s">&quot;pk_id&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">result</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;nickName&quot;</span> <span class="n">column</span><span class="o">=</span><span class="s">&quot;f_nickname&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">result</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="n">column</span><span class="o">=</span><span class="s">&quot;f_password&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">result</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;gender&quot;</span> <span class="n">column</span><span class="o">=</span><span class="s">&quot;f_gender&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">resultMap</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">select</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;selectEpetsByNickname&quot;</span>
+</span><span class='line'>    <span class="n">resultMap</span><span class="o">=</span><span class="s">&quot;epetResult&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>     <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>        <span class="n">select</span> <span class="o">*</span>
+</span><span class='line'>        <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>        <span class="n">where</span> <span class="n">f_nickname</span> <span class="n">like</span> <span class="err">#</span><span class="n">nickName</span><span class="err">#</span>
+</span><span class='line'>        <span class="n">and</span> <span class="n">f_gender</span> <span class="o">=</span> <span class="n">$gender$</span>
+</span><span class='line'>        <span class="n">order</span> <span class="n">by</span> <span class="n">$order_field$</span>
+</span><span class='line'>        <span class="n">desc</span>
+</span><span class='line'>     <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">select</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">sql</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;epets_where&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">dynamic</span> <span class="n">prepend</span><span class="o">=</span><span class="s">&quot;where&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>            <span class="o">&lt;</span><span class="n">isNotEmpty</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;nickName&quot;</span> <span class="n">prepend</span><span class="o">=</span><span class="s">&quot;and&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>                <span class="n">f_nickname</span> <span class="o">=</span> <span class="err">#</span><span class="n">nickName</span><span class="err">#</span>
+</span><span class='line'>            <span class="o">&lt;/</span><span class="n">isNotEmpty</span><span class="o">&gt;</span>
+</span><span class='line'>            <span class="o">&lt;</span><span class="n">isNotEmpty</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="n">prepend</span><span class="o">=</span><span class="s">&quot;and&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>                <span class="n">f_password</span> <span class="o">=</span> <span class="err">#</span><span class="n">password</span><span class="err">#</span>
+</span><span class='line'>            <span class="o">&lt;/</span><span class="n">isNotEmpty</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;/</span><span class="n">dynamic</span><span class="o">&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">sql</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">select</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;selectEpetsByPage&quot;</span>
+</span><span class='line'>    <span class="n">resultMap</span><span class="o">=</span><span class="s">&quot;epetResult&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">select</span> <span class="o">*</span>
+</span><span class='line'>        <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">include</span> <span class="n">refid</span><span class="o">=</span><span class="s">&quot;epets_where&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">limit</span> <span class="err">#</span><span class="n">start</span><span class="err">#</span><span class="o">,</span> <span class="err">#</span><span class="n">end</span><span class="err">#</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">select</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">select</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;selectEpetsCounts&quot;</span>
+</span><span class='line'>    <span class="n">resultClass</span><span class="o">=</span><span class="s">&quot;int&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">select</span> <span class="nf">count</span><span class="o">(*)</span>
+</span><span class='line'>        <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">include</span> <span class="n">refid</span><span class="o">=</span><span class="s">&quot;epets_where&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">select</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">select</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;selectEpets&quot;</span>
+</span><span class='line'>    <span class="n">resultMap</span><span class="o">=</span><span class="s">&quot;epetResult&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>     <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>        <span class="n">select</span> <span class="o">*</span>
+</span><span class='line'>        <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>     <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">select</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">select</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;selectEpetById&quot;</span>
+</span><span class='line'>    <span class="n">parameterClass</span><span class="o">=</span><span class="s">&quot;int&quot;</span>
+</span><span class='line'>    <span class="n">resultMap</span><span class="o">=</span><span class="s">&quot;epetResult&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>     <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>        <span class="n">select</span> <span class="o">*</span>
+</span><span class='line'>        <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>        <span class="n">where</span> <span class="n">pk_id</span> <span class="o">=</span> <span class="err">#</span><span class="n">id</span><span class="err">#</span>
+</span><span class='line'>     <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">select</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">insert</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;addEpet&quot;</span> <span class="n">parameterClass</span><span class="o">=</span><span class="s">&quot;mypet&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>            <span class="n">insert</span> <span class="n">into</span> <span class="nf">t_epet</span>
+</span><span class='line'>            <span class="o">(</span><span class="n">f_nickname</span><span class="o">,</span><span class="n">f_password</span><span class="o">,</span><span class="n">f_gender</span><span class="o">)</span>
+</span><span class='line'>            <span class="n">values</span>
+</span><span class='line'>            <span class="o">(</span><span class="err">#</span><span class="n">nickName</span><span class="err">#</span><span class="o">,</span><span class="err">#</span><span class="n">password</span><span class="err">#</span><span class="o">,</span><span class="err">#</span><span class="n">gender</span><span class="err">#</span><span class="o">)</span>
+</span><span class='line'>        <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">insert</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">update</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;updateEpet&quot;</span> <span class="n">parameterClass</span><span class="o">=</span><span class="s">&quot;mypet&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>            <span class="n">update</span>  <span class="n">t_epet</span>
+</span><span class='line'>            <span class="n">set</span> <span class="n">f_nickname</span> <span class="o">=</span> <span class="err">#</span><span class="n">nickName</span><span class="err">#</span> <span class="o">,</span>
+</span><span class='line'>            <span class="n">f_password</span> <span class="o">=</span> <span class="err">#</span><span class="n">password</span><span class="err">#</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">f_gender</span> <span class="o">=</span> <span class="err">#</span><span class="n">gender</span><span class="err">#</span>
+</span><span class='line'>            <span class="n">where</span>
+</span><span class='line'>            <span class="n">pk_id</span> <span class="o">=</span> <span class="err">#</span><span class="n">id</span><span class="err">#</span>
+</span><span class='line'>        <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">update</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">delete</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;deleteEpetById&quot;</span> <span class="n">parameterClass</span><span class="o">=</span><span class="s">&quot;int&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>        <span class="n">delete</span> <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>        <span class="n">where</span>
+</span><span class='line'>            <span class="n">pk_id</span> <span class="o">=</span> <span class="err">#</span><span class="n">id</span><span class="err">#</span>
+</span><span class='line'>        <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">delete</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>&emsp;&emsp;我也有很多想法，但实现的不多，我对互联网本来就缺乏敏锐性，但我认为互联网上创业的机会还是有的，在互联网上做事情，可能比现实社会中做事要单纯得多，更适合技术人员一些，但是要做强做大，技术人员就不适合了。我认为要将自己的创意变为现实，要注意下面几点。</p>
 
-<p>&emsp;&emsp;1、想好盈利模式；</p>
 
-<p>&emsp;&emsp;2、务实，脚踏实地，避免不必要的投入（比如计算后期用户量有多大，流量有多大，等等，），避免好高骛远；</p>
-
-<p>&emsp;&emsp;3、有想法，要有实现的动力，要用恒心；</p>
-
-<p>&emsp;&emsp;4、如果有团队，一定要统一每个人的预期目标，这点很重要；</p>
-
-<p>&emsp;&emsp;5、要有合作精神，靠一个人的力量很难做成大事；</p>
-
-<p>&emsp;&emsp;6、坚持，坚持，再坚持。在目标没有达到之前，请不要轻言放弃。</p>
 </div>
   
   
@@ -183,7 +1047,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2011/03/17/seo/">SEO的形像比喻</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013/02/21/svn/">Svn版本控制服务器主干、分支的使用详解</a></h1>
     
     
       <p class="meta">
@@ -199,30 +1063,72 @@
   
 
 
-<time datetime="2011-03-17T15:18:00+08:00" pubdate data-updated="true">2011年03月17日</time>
+<time datetime="2013-02-21T15:18:00+08:00" pubdate data-updated="true">2013年02月21日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;搜索引擎如何决定众多站点的权重及页面的排名？搞计算机的都知道，搜索引擎本质上是一个程序，是开发人员将算法规则用程序来进行模拟。我们可以把的网站比做社会中一个一个的人，搜索引擎要做的，就是要识别这些人，并按照要求，快速地找到你需要的人。</p>
+  <div class="entry-content"><p>&emsp;&emsp;首先在服务器上把目录结构搭建出来，如下图：</p>
 
-<p>&emsp;&emsp;我们知道，很多站点下都有友情链接，这个将被视为站外导出，如果一个站被其它站在友情链接中引用较多，权重就会高一些。就好比一个人被其它人提及得越多，就说明这个人社会关系网越广泛，社交能力强，受到大家的欢迎。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/1.jpg' width='' height='' title='svn项目结构'><span class='caption-text'>svn项目结构</span></span></p>
 
-<p>&emsp;&emsp;当然，如果你被一些“垃圾”站点大量引用，可能会降低你的权重。就好比一个人的朋友都是些臭名昭著的人，也就说明这个人不是什么好人，中国有句话叫“近朱者赤，近墨者黑”。反之，如果你被一些大人物、名人时常提起，那么你的地位也一定很高。</p>
+<p>&emsp;&emsp;runk为项目主干，也就是主线，branches中存放分支，tags中为标志（标签），这个对于大、中型项目，需要建立这样的结构，如果是一个小项目，就不必这么兴师动众了。</p>
 
-<p>&emsp;&emsp;站点的外链也和上面讲的同理，如果有很多站都引用你的站点或站内页面地址，也将证明这个站点或站内页面权重高。你可以看看开心网，虽然只有一个简单的首页，但权重很高，还有一个例子，工信部的网站是中国惟一一个google pr达到9的站点，原因也在于众多的网站都有这个站的外链。当然，搜索引擎也会判断是哪些类型的网站引用了你，就好比你是搞IT的，但是被一些搞艺术的人经常提起，这就说明有问题，网站排名会受到影响。“物以类聚，人以群分”就是这个道理。</p>
+<p>&emsp;&emsp;项目主干trunk上的代码，一般来说要保证其基本的完整性及可运行，特别是在敏捷开发中更是如此，它是项目的主线。</p>
 
-<p>&emsp;&emsp;说完了一个人的社会关系，再来看看一个人自身的人品。首先是一个网站的结构要清晰，重点突出，让人一目了然，这就好比一个人，要把自己推销出去，自身的素质要提高 ，要有良好的表达，着装工整，要有亲和力。站内的内部链接要做好，这个是结构的问题，但可以提高与搜索引擎的亲和力。站点的美化要做好，也就是美工、用户体验，现在搜索引擎越来越重视这个了，google即然有自己的浏览器，也一定可以评测出站点在浏览器中的显示效果，最近baidu也出浏览器了，搜索引擎从技术上已经可以给页面的美观评级了。</p>
+<p>&emsp;&emsp;branches的存在，有很多的原因，比如：模块间存在并发开发情况，而且模块完成周期较长，如果把没有完成的东西提交到主干上，会影响项目运行；还有可能，程序员可以随时提交自己的东西到自己的分支，而不会对它人产生影响。</p>
 
-<p>&emsp;&emsp;网站内容原创最好，不要从其它网站抄过来再改改（伪原创），也就是一个人，要有自己的性格和魅力，要有自己的特点、气质，如果硬是从其它地方搬过来一些东西再包装一下，但这些东西终究不属于自己，骗得了一时骗不了一世。抄袭，也证明了这个人的人品有问题，如果人品出现问题，这个人将很难在社会中立足。</p>
+<p>&emsp;&emsp;tags是为软件项目打一个标记，比如：1.0稳定版本，建行v1.2发布版，等等，这个标记具有更好的可读性，也是软件周期中的阶段性发布。</p>
 
-<p>&emsp;&emsp;站点要经常更新（更新频率），如果一个人“顽固不化，一成不变”，自然得不到其它人的关注。“喜新厌旧”的道理大家都应该明白。</p>
+<p>&emsp;&emsp;目录结构建立好后，就要准备开发了，首先要将项目上传到trunk中，如图：</p>
 
-<p>&emsp;&emsp;搜索引擎就好像根据这些规则去相识、相知一个人，直至建立起信任关系，只不过这一切是程序自动做的，当你要找某人时，搜索引擎将尽可能找到最符合条件的人给你，这也就是搜索引擎公平、公正的原则。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/2.jpg' width='' height='' title='上传到svn后的项目结构'><span class='caption-text'>上传到svn后的项目结构</span></span></p>
 
-<p>&emsp;&emsp;暂时先写上面几条，以后想起了，再补充上去。</p>
+<p>&emsp;&emsp;好了，下面我给大家讲解具体开发中的操作，比如，我现在要进行一个为期一周的模块开发，我要建立自己的分支，在trunk点右键，选择【分支/标记】，选择branches目录，并手工输入分支名称，比如我输入的是mybc1.0。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/3.jpg' width='' height='' title='在svn中建立分支'><span class='caption-text'>在svn中建立分支</span></span></p>
+
+<p>&emsp;&emsp;再回到你检出的主干项目，右键，切换到分支上去，如图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/4.jpg' width='' height='' title='在svn中切换到分支'><span class='caption-text'>在svn中切换到分支</span></span></p>
+
+<p>&emsp;&emsp;这样，你就可以在分支上做功能模块的开发了。</p>
+
+<p>&emsp;&emsp;当然，在分支上提交的历史，在主干上是看不到的，同理，主干上做的提交版本，分支上也是不可见的，既然不可见的话，在分支上做完的东西，就需要合并到主干上去，同理，主干上所做的修改，也应该更新到分支上去，这就是合并。</p>
+
+<p>&emsp;&emsp;下面，我讲一下把分支合并到主干上去的过程，而把主干代码更新到分支的过程，与此类似。从分支&mdash;&ndash;>主干，需要你把当前工程切换到主干，在项目上点右键，选择合并，如图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/5.jpg' width='' height='' title='在svn中分支的合并步骤1'><span class='caption-text'>在svn中分支的合并步骤1</span></span></p>
+
+<p>&emsp;&emsp;接着，在下一步中选择合并模式，我们要选择第二项，如图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/6.jpg' width='' height='' title='在svn中分支的合并步骤2'><span class='caption-text'>在svn中分支的合并步骤2</span></span></p>
+
+<p>&emsp;&emsp;接下来，选择从哪个分支合并过来（eclipse中的svn插件功能没有TortoiseSVN强大，TortoiseSVN可以选择合并的版本范围的哦）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/7.jpg' width='' height='' title='在svn中分支的合并步骤3'><span class='caption-text'>在svn中分支的合并步骤3</span></span></p>
+
+<p>&emsp;&emsp;点完成后，系统会显示合并结果，如图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/8.jpg' width='' height='' title='在svn中分支的合并步骤4之合并结果'><span class='caption-text'>在svn中分支的合并步骤4之合并结果</span></span></p>
+
+<p>&emsp;&emsp;如果没有冲突，你就可以提交主干代码了（如果发现现在还不想合并，可以点 还原 ，退回到合并前状态，当然，前提是还没有提交），这样，分支中所做的工作，已经合并到了主干上。</p>
+
+<p>&emsp;&emsp;如果你是将主干上的代码更新到分支上，过程与之类似，这时，你需要切换到分支上去，然后按提示一步步来做即可。</p>
+
+<p>&emsp;&emsp;再来说一下标签，标签本质上和分支并不区别，只是给版本号取了一个更好理解的名称而已，当然，你也可以切换到 标签下去工作，标签的建立和分支相同（注意：我们一般不会切换到标签工作，因为标签，仅作为有含义的目录更为确切）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/9.jpg' width='' height='' title='svn的最后结构图'><span class='caption-text'>svn的最后结构图</span></span></p>
+
+<p>&emsp;&emsp;好了，基本的操作就讲了这。</p>
+
+<p>&emsp;&emsp;总的来说，版本、分支、标记，就是一棵巨大的历史版本树，这棵树记录了系统代码的一个发展、变迁历程，各个树支干间是不可见的，并且都有自己的一个完整可追朔历史，要实现不同分支之间的数据合并，只好merge了。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/10.jpg' width='' height='' title='svn历史'><span class='caption-text'>svn历史</span></span></p>
+
+<p>&emsp;&emsp;最后说一下另一个实际应用情况，比如，我们在写一个产品，同时销售给了很多个客户，每个客户在某些方面又有自己特定的需求，这个时候，我们可以把通用版本上传到主干上，然后建立每个不同客户的分支，如果发现某个客户的某个特有功能具有共性，可以将这个分支上的这部分功能提交到主干，而其它分支，也需要将主干上的新功能再更新下去，操作还有点繁琐哈，当然，要TortoiseSVN可按版本号范围的合并，肯定更有意义些。</p>
 </div>
   
   
@@ -235,7 +1141,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2011/03/13/flower/">植物园春暖花开</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013/02/20/struts2-velocity/">在struts2中使用velocity展示数据</a></h1>
     
     
       <p class="meta">
@@ -251,34 +1157,41 @@
   
 
 
-<time datetime="2011-03-13T15:18:00+08:00" pubdate data-updated="true">2011年03月13日</time>
+<time datetime="2013-02-20T15:18:00+08:00" pubdate data-updated="true">2013年02月20日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;06年和老婆去过一次植物园，时隔5年后的2011，我们又去了植物园，其实主要是去看一个老朋友，下午顺便去的植物园。朋友虽都在成都，但我们平日里也疏于来往，偶尔会有电话、QQ联系，也许城市大了就是这样，只适合于工作。</p>
+  <div class="entry-content"><p>&emsp;&emsp;Velocity是一种基于JAVA的模板引擎，开发人员使用简单的模板语言就可以快速开发显示层，它使得显示层与程序代码分离，struts2自身提供了对velocity的支持，下面讲一下使用上的一些注意事项。</p>
 
-<p>&emsp;&emsp;朋友家就在植物园对面的小区，中间仅隔一条马路，在楼上就可以看到403路公交车摆放在植物园门口。这次去，梨花已经开过了，但海棠花开得正艳。</p>
+<p>&emsp;&emsp;<strong>一、支持包</strong></p>
 
-<p>&emsp;&emsp;5年前时候，还只有我和老婆（那个时候是GF）两个人，现在可是多了个言言娃了，变化真的很大，朋友家的女儿也出生了，比我们家的这个小1个月。。</p>
+<p>&emsp;&emsp;velocity-1.6.3.jar，velocity-tools-1.3.jar，commons-collections-3.1.jar，avalon-logkit-2.1.jar，版本号视具体情况，可能不同。</p>
 
-<p><img src="/uploads/2011/03/21.jpg" title="朋友女儿" alt="" /></p>
+<p>&emsp;&emsp;二、你可以改变<strong>velocity的一些默认参数值</strong>，但需要你在struts.xml中加入配置</p>
 
-<p><img src="/uploads/2011/03/10.jpg" title="言言" alt="" /></p>
+<p><constant name="struts.velocity.configfile" value="myvelocity.properties"></constant></p>
 
-<p><img src="/uploads/2011/03/35.jpg" title="海棠1" alt="" /></p>
+<p>myvelocity.properties要放在工程的src下</p>
 
-<p><img src="/uploads/2011/03/36.jpg" title="海棠2" alt="" /></p>
+<p>&emsp;&emsp;<strong>三、对session,request中的变量访问</strong></p>
 
-<p><img src="/uploads/2011/03/37.jpg" title="海棠1" alt="" /></p>
+<p>&emsp;&emsp;a、直接显示，示例：#sproperty(&ldquo;value=#request.user&rdquo;)</p>
 
-<p><img src="/uploads/2011/03/11.jpg" title="言娃娃想睡觉了" alt="" /></p>
+<p>&emsp;&emsp;b、做为变量使用，示例：</p>
 
-<p><img src="/uploads/2011/03/30.jpg" title="粉色花" alt="" /></p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='jsp'><span class='line'>#foreach( $info in $session.getAttribute(&#39;mylist&#39;))
+</span><span class='line'>变量值是：$info
+</span><span class='line'>#end
+</span></code></pre></td></tr></table></div></figure>
 
-<p><img src="/uploads/2011/03/34.jpg" title="路边小黄花" alt="" /></p>
+
+<p>&emsp;&emsp;当然，对action中的属性值的访问，直接按照velocity语法书写即可，示例：${userName}或$userName</p>
 </div>
   
   
@@ -291,7 +1204,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2011/03/09/server-comeback/">服务器回来了</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013/02/20/java-date-hibernate/">java日期类型在Hibernate中的处理</a></h1>
     
     
       <p class="meta">
@@ -307,22 +1220,43 @@
   
 
 
-<time datetime="2011-03-09T15:18:00+08:00" pubdate data-updated="true">2011年03月09日</time>
+<time datetime="2013-02-20T15:18:00+08:00" pubdate data-updated="true">2013年02月20日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;电信又开始严查了，先前托管的一台服务器被“赶”出了机房。一年后又见到了服务器，最近要开始准备数据迁移了。</p>
+  <div class="entry-content"><p>&emsp;&emsp;java中的表示日期时间的类型很多，主要有下面一些：</p>
 
-<p>&emsp;&emsp;由于托管的服务器机房较远，在平日的操作中都极为谨慎，生怕将系统搞瘫惹出多的事情，感觉就像发射出去的一颗卫星，要是出现故障维护可就难了，呵呵。不过，现在这颗“卫星”已经收回来了。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Calendar</span><span class="err">（和区域有关，可表示年，月，日，时，分，秒）</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Date</span><span class="err">（可表示年，月，日，时，分，秒）</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Date</span><span class="err">（可表示年，月，日）</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Time</span> <span class="err">（可表示时，分，秒）</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Timestamp</span><span class="err">（可表示年，月，日，时，分，秒，纳秒）</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>&emsp;&emsp;打开箱子取出服务器，居然发现服务器非常的干净，透过机箱缝隙可以看到内部电路元件上几乎无灰尘，就像新购置的一样，不禁感叹电信机房的环境（看来真的是无尘），你要想想，服务器是24小时不间断工作了一年多哈，发张照片上来，呵呵。</p>
 
-<p><img src="/uploads/2011/03/9.jpg" title="我的服务器" alt="" /></p>
+<p>&emsp;&emsp;在对象定义时，究竟定义为哪种类型，我们得要求项目需求来选择不同精度的类型。</p>
 
-<p>&emsp;&emsp;数据转移时遇到当初系统一个设计上的问题，当初上传图片、音频、视频等资源的存放目录没有做规划，导致现在将资源重新上传到新的服务器上时，无法挑出几年前的老资料做特殊处理，这点，请大家一定要注意，在进行系统设计时，资源一定要归好类，一般按资源类、年、月建目录存放就非常不错了，比如：/var/data/projectname/video/2011/03/，用来存放2011年3月份的视频资源。</p>
+<p>&emsp;&emsp;Hibernate对上面的时间类型都有很好的支持，但是，不同的类型，数据库中的字段也得选择相应的类型，以mysql为例，就存在date,time,datetime,timestamp等几种。</p>
+
+<p>&emsp;&emsp;hibernate的映射书写时要注意，日期类型一般都要明确予以指定。如果你使用的是注解映射配置，类型选择的又是java.util.Calendar，java.util.Date，此时需要使用@Temporal 明确指定具体类型，对应的取值有TemporalType.DATE,TemporalType.TIME,TemporalType.TIMESTAMP几种。</p>
+
+<p>&emsp;&emsp;最后，hibernate中以时间作为查询条件时，也需要明确指定传入参数类型，大家要选择带有3个参数的那个setParameter方法。</p>
 </div>
   
   
@@ -347,23 +1281,23 @@
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a>
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a>
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用&#8212;第四部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a>
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a>
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a>
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a>
       </li>
     
   </ul>
@@ -373,14 +1307,31 @@
    <ul id="categories">
      
 		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
-		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/css">架构</a></li>
-		<li><a href="/blog/categories/css">java</a><a href="/blog/categories/css">javaEE</a></li>
-		<li><a href="/blog/categories/css">其它技术</a><a href="/blog/categories/css">新技术学习</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
 	 
    </ul>
 </section>
 
-
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
 
 
 
@@ -393,6 +1344,7 @@
   <footer role="contentinfo"><p>
   版权所有 &copy; 2013 - 冰雨 -
   <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>
 
 </footer>

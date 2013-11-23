@@ -1,0 +1,655 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>node.js中基本于expresss、mysql的CRUD之五（代码实现） - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;页面的展示，jade做为高性能的一个动态页面引擎，在代码的简洁性上也有很大的优势： &emsp;&emsp;先来看user_list.jade的代码： user_list.jade1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2013/08/09/nodejs-express-mysql-crud5">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">node.js中基本于expresss、mysql的CRUD之五（代码实现）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;页面的展示，jade做为高性能的一个动态页面引擎，在代码的简洁性上也有很大的优势：</p>
+
+<p>&emsp;&emsp;先来看user_list.jade的代码：</p>
+
+<figure class='code'><figcaption><span>user_list.jade</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>doctype 5
+</span><span class='line'>html
+</span><span class='line'>    head
+</span><span class='line'>        title= title
+</span><span class='line'>        link(rel=&#39;stylesheet&#39;, href=&#39;../css/bootstrap.min.css&#39;)
+</span><span class='line'>        script(src=&#39;../js/jquery-1.7.2.min.js&#39;)
+</span><span class='line'>        script(src=&#39;../js/user.js&#39;)
+</span><span class='line'>        style
+</span><span class='line'>         #welcome{color:green}
+</span><span class='line'>         #who{color:gold}
+</span><span class='line'>         .row_op a{margin-left: 20px;cursor:pointer}
+</span><span class='line'>         .page a {margin-left: 15px;cursor:pointer}
+</span><span class='line'>    body
+</span><span class='line'>        div.container
+</span><span class='line'>            #welcome
+</span><span class='line'>             h3 欢迎
+</span><span class='line'>              span(id=&#39;who&#39;)
+</span><span class='line'>              登录成功！
+</span><span class='line'>              span
+</span><span class='line'>               a(href=&#39;../logout&#39;)退出系统
+</span><span class='line'>            div.row
+</span><span class='line'>             span 用户名称：
+</span><span class='line'>             input(type=&#39;text&#39;,id=&#39;queryWhat&#39;,class=&#39;input-medium search-query&#39;)
+</span><span class='line'>             button(class=&#39;btn&#39;,id=&#39;btn_query&#39;)搜索
+</span><span class='line'>            div(class=&#39;row&#39;,style=&#39;margin-top: 15px;&#39;)
+</span><span class='line'>             input(type=&#39;button&#39;,value=&#39;新增&#39;,class=&#39;btn&#39;,id=&#39;btn_to_add&#39;)
+</span><span class='line'>             input(type=&#39;button&#39;,value=&#39;批量删除&#39;,class=&#39;btn&#39;,id=&#39;btn_deletes&#39;)
+</span><span class='line'>            div.row
+</span><span class='line'>             div.span8
+</span><span class='line'>              table.table
+</span><span class='line'>               <span class="nt">&lt;tr&gt;&lt;th&gt;</span>选择<span class="nt">&lt;/th&gt;&lt;th&gt;</span>用户id<span class="nt">&lt;/th&gt;&lt;th&gt;</span>登录名<span class="nt">&lt;/th&gt;&lt;th&gt;</span>姓名<span class="nt">&lt;/th&gt;&lt;th&gt;</span>出生日期<span class="nt">&lt;/th&gt;&lt;th&gt;</span>操作<span class="nt">&lt;/th&gt;&lt;/tr&gt;</span>
+</span><span class='line'>               tbody(id=&#39;users&#39;)
+</span><span class='line'>            div(class=&#39;row&#39;,style=&#39;margin-top: 15px;&#39;)
+</span><span class='line'>             div#page_info.span4
+</span><span class='line'>             div.span8.page
+</span><span class='line'>              a.fp 首页
+</span><span class='line'>              a.pp 上一页
+</span><span class='line'>              a.np 下一页
+</span><span class='line'>              a.lp 末页
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码只需要写标签的开始部分，结尾的配对将由服务器自动完成，标签的嵌套包含，用空格缩进完成（一定要注意是空格而不是tab）。</p>
+
+<p>&emsp;&emsp;再来看login.jade，同样的比较简单，但建立大家在书与的时候，还是把js文件单独提取到外部文件中。</p>
+
+<figure class='code'><figcaption><span>login.jade</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>doctype 5
+</span><span class='line'>html
+</span><span class='line'>  head
+</span><span class='line'>    title= title
+</span><span class='line'>    link(rel=&#39;stylesheet&#39;, href=&#39;/css/bootstrap.min.css&#39;)
+</span><span class='line'>    script(src=&#39;js/jquery-1.7.2.min.js&#39;)
+</span><span class='line'>    script
+</span><span class='line'>      $(function(){
+</span><span class='line'>       $(&#39;#btn_login&#39;).click(function(){
+</span><span class='line'>        $.ajax({
+</span><span class='line'>         url:&#39;login&#39;,
+</span><span class='line'>         type:&#39;get&#39;,
+</span><span class='line'>         data:{uname:$(&#39;input[name=uname]&#39;).val(),pwd:$(&#39;input[name=pwd]&#39;).val()},
+</span><span class='line'>         cache:false,
+</span><span class='line'>         dataType:&#39;json&#39;,
+</span><span class='line'>         success:function(data){
+</span><span class='line'>          if (data.code==0){
+</span><span class='line'>           alert(&#39;登录失败，原因：&#39; + data.msg);
+</span><span class='line'>          }else{
+</span><span class='line'>           alert(data.name + &#39;登录成功！&#39;);
+</span><span class='line'>           window.location.href=&#39;main/to_user_list&#39;;
+</span><span class='line'>          }
+</span><span class='line'>         }
+</span><span class='line'>        });
+</span><span class='line'>       });
+</span><span class='line'>      });
+</span><span class='line'>  body
+</span><span class='line'>   div.container
+</span><span class='line'>    label 用户名：
+</span><span class='line'>    input(name=&#39;uname&#39;,type=&#39;text&#39;,value=&#39;001&#39;).input-xlarge
+</span><span class='line'>    <span class="nt">&lt;br/&gt;</span>
+</span><span class='line'>    label 密码：
+</span><span class='line'>    input(name=&#39;pwd&#39;,type=&#39;password&#39;,value=&#39;123&#39;).input-xlarge
+</span><span class='line'>    <span class="nt">&lt;br/&gt;</span>
+</span><span class='line'>    input(type=&#39;button&#39;,value=&#39;登录系统&#39;).btn#btn_login
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>&emsp;&emsp;user.js，前台ajax操作部分的核心代码：</p>
+
+<figure class='code'><figcaption><span>user.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">url</span><span class="o">:</span><span class="s1">&#39;../getState&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">type</span><span class="o">:</span><span class="s1">&#39;get&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">dataType</span><span class="o">:</span><span class="s1">&#39;json&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">){</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#who&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
+</span><span class='line'>                <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="o">=</span><span class="s1">&#39;../to_login&#39;</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">getUserByPage</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.page a&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nx">getUserByPage</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">));</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_query&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nx">getUserByPage</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_to_add&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="s1">&#39;add_user.html&#39;</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.del_user&quot;</span><span class="p">).</span><span class="nx">live</span><span class="p">(</span><span class="s2">&quot;click&quot;</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">confirm</span><span class="p">(</span><span class="s1">&#39;您确定要删除所选择的记录吗？&#39;</span><span class="p">))</span>  <span class="p">{</span>
+</span><span class='line'>            <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>                <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;../main/user/&quot;</span> <span class="o">+</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;uid&#39;</span><span class="p">),</span>
+</span><span class='line'>                <span class="nx">type</span><span class="o">:</span><span class="s1">&#39;delete&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">dataType</span><span class="o">:</span><span class="s1">&#39;json&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">cache</span><span class="o">:</span><span class="kc">false</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
+</span><span class='line'>                    <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                        <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="s2">&quot;to_user_list&quot;</span><span class="p">;</span>
+</span><span class='line'>                    <span class="p">}</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">});</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_deletes&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="kd">var</span> <span class="nx">selectedUser</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.uid_c:checked&#39;</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">selectedUser</span><span class="p">.</span><span class="nx">size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;请选择要删除的用户!&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">confirm</span><span class="p">(</span><span class="s2">&quot;您确定要删除所选择的用户数据吗?&quot;</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>                <span class="c1">//获取选中的id</span>
+</span><span class='line'>                <span class="kd">var</span> <span class="nx">ids</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</span><span class='line'>                <span class="nx">selectedUser</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">i</span><span class="p">){</span>
+</span><span class='line'>                    <span class="k">if</span> <span class="p">(</span><span class="nx">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                        <span class="nx">ids</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">val</span><span class="p">();</span>
+</span><span class='line'>                    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                        <span class="nx">ids</span> <span class="o">=</span> <span class="nx">ids</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">+</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">val</span><span class="p">();</span>
+</span><span class='line'>                    <span class="p">}</span>
+</span><span class='line'>                <span class="p">});</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>                    <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;../main/users/&quot;</span> <span class="o">+</span> <span class="nx">ids</span><span class="p">,</span>
+</span><span class='line'>                    <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="c1">//data:{&#39;ids&#39;:ids},</span>
+</span><span class='line'>                    <span class="nx">dataType</span><span class="o">:</span><span class="s1">&#39;json&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">){</span>
+</span><span class='line'>                        <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                            <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;批量删除成功&quot;</span><span class="p">);</span>
+</span><span class='line'>                            <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="s2">&quot;to_user_list&quot;</span><span class="p">;</span>
+</span><span class='line'>                        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                            <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;批量删失败！&quot;</span><span class="p">);</span>
+</span><span class='line'>                        <span class="p">}</span>
+</span><span class='line'>                    <span class="p">}</span>
+</span><span class='line'>                <span class="p">});</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'><span class="kd">function</span> <span class="nx">getUserByPage</span><span class="p">(</span><span class="nx">pno</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">url</span><span class="o">:</span><span class="s1">&#39;users/&#39;</span><span class="o">+</span> <span class="nx">pno</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">type</span><span class="o">:</span><span class="s1">&#39;get&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">data</span><span class="o">:</span><span class="p">{</span><span class="nx">q_name</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#queryWhat&#39;</span><span class="p">).</span><span class="nx">val</span><span class="p">()},</span>
+</span><span class='line'>        <span class="nx">dataType</span><span class="o">:</span><span class="s1">&#39;json&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">){</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="kd">var</span> <span class="nx">html</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">data</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>                    <span class="nx">html</span> <span class="o">=</span> <span class="nx">html</span> <span class="o">+</span> <span class="s2">&quot;&lt;tr&gt;&lt;td&gt;&lt;input type=&#39;checkbox&#39; value=&#39;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">pk_id</span><span class="o">+</span><span class="s2">&quot;&#39; class=&#39;uid_c&#39; /&gt;&lt;/td&gt;&lt;td&gt;&quot;</span>
+</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">pk_id</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">f_login_code</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">f_name</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span>
+</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">f_birthday</span><span class="p">.</span><span class="nx">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td class=&#39;row_op&#39;&gt;&lt;a href=&#39;view_user.html?uid=&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">pk_id</span>
+</span><span class='line'>                        <span class="o">+</span><span class="s2">&quot;&#39; &gt;查看&lt;/a&gt;&lt;a href=&#39;modify_user.html?uid=&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">pk_id</span><span class="o">+</span><span class="s2">&quot;&#39; &gt;修改&lt;/a&gt;&lt;a href=&#39;&#39; uid=&#39;&quot;</span>
+</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">pk_id</span><span class="o">+</span><span class="s2">&quot;&#39; class=&#39;del_user&#39;&gt;删除&lt;/a&gt;&lt;/tr&gt;&quot;</span>
+</span><span class='line'>                <span class="p">});</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#users&quot;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="nx">html</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#page_info&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">pno</span><span class="o">+</span><span class="s2">&quot;/&quot;</span><span class="o">+</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">pages</span><span class="o">+</span><span class="s2">&quot;,共&quot;</span><span class="o">+</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">rows</span><span class="o">+</span><span class="s2">&quot;条记录&quot;</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.fp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">f_no</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.pp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">p_no</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.np&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">n_no</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.lp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">l_no</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果上面的代码换成AngularJS，一定会简单很多，当然，这是我的其它博文中要给大家讲解的内容。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/nodejs/'>nodejs</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/08/09/nodejs-express-mysql-crud4/" title="上一篇文章: node.js中基本于expresss、mysql的CRUD之四（代码实现）">&laquo;上一篇:&nbsp;&nbsp;node.js中基本于expresss、mysql的CRUD之四（代码实现）</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/08/09/nodejs-express-mysql-crud6/" title="下一篇文章: node.js中基本于expresss、mysql的CRUD之六（过滤器及分页代码）">下一篇: &nbsp;&nbsp;node.js中基本于expresss、mysql的CRUD之六（过滤器及分页代码） &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用---第五部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用---第四部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用---第三部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用---第二部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用---第一部分</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

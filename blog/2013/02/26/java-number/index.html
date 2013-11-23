@@ -1,0 +1,588 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>java中的数值处理 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;计算机自身的硬件特性，决定了对小数计算的不精确性，请看java中的以下代码： 1
+2
+3
+4
+System.out.println(0.05+0.01);
+System.out.println(1.0 - 0.58);
+System.out.println(4.015 * &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2013/02/26/java-number">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Java中的数值处理</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-26T15:18:00+08:00" pubdate data-updated="true">2013年02月26日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;计算机自身的硬件特性，决定了对小数计算的不精确性，请看java中的以下代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">0.05</span><span class="o">+</span><span class="mf">0.01</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="mf">0.58</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">4.015</span> <span class="o">*</span> <span class="mi">100</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">123.3</span><span class="o">/</span><span class="mi">100</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的计算结果，可能和你想像中的有些不一样：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="mf">0.060000000000000005</span>
+</span><span class='line'><span class="mf">0.42000000000000004</span>
+</span><span class='line'><span class="mf">401.49999999999994</span>
+</span><span class='line'><span class="mf">1.2329999999999999</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果上面的计算，针对的金钱货币的计算，结果将是不正确的。</p>
+
+<p>&emsp;&emsp;那么，在具体的项目中，我们怎么来解决这个问题呢？</p>
+
+<p>&emsp;&emsp;<strong>可选方案一：</strong></p>
+
+<p>&emsp;&emsp;将数值放大处理保存，比如放大100倍，放大1000部，如果是人民币，就已经到了分，粒的精度。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">5</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">50</span> <span class="o">+</span> <span class="mi">10</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">100</span> <span class="o">-</span> <span class="mi">58</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">1000</span> <span class="o">-</span> <span class="mi">580</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mf">401.5</span> <span class="o">*</span> <span class="mi">100</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">4015</span> <span class="o">*</span> <span class="mi">100</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">12330</span><span class="o">/</span><span class="mi">100</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">123300</span><span class="o">/</span><span class="mi">100</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码是将计算的数值放大100或1000倍后的处理，结果如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="mf">0.06</span>
+</span><span class='line'><span class="mf">0.06</span>
+</span><span class='line'><span class="mf">0.42</span>
+</span><span class='line'><span class="mf">0.42</span>
+</span><span class='line'><span class="mf">401.5</span>
+</span><span class='line'><span class="mf">401.5</span>
+</span><span class='line'><span class="mf">1.23</span>
+</span><span class='line'><span class="mf">1.233</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，我们可以看到，放大1000倍后，我们是可以应对金额精确到粒的精度的计算。</p>
+
+<p>&emsp;&emsp;<strong>可选方案二：</strong></p>
+
+<p>&emsp;&emsp;使用BigDecimal进行计算，上面的计算，可写成：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">BigDecimal</span> <span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">0.05</span><span class="o">);</span>
+</span><span class='line'><span class="n">BigDecimal</span> <span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">0.01</span><span class="o">);</span>
+</span><span class='line'> <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">1.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">0.58</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">subtract</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">4.015</span><span class="o">);</span>
+</span><span class='line'><span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">100</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">multiply</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">123.3</span><span class="o">);</span>
+</span><span class='line'><span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">100</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">divide</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;我们得到了最终的正确运行结果：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="mf">0.06</span>
+</span><span class='line'><span class="mf">0.42</span>
+</span><span class='line'><span class="mf">401.5</span>
+</span><span class='line'><span class="mf">1.233</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;因此，很多人封装了对小数类型操作的方法到一个类中，这样就方便了我们的计算，下面是代码节选：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="mf">0.05</span><span class="o">,</span><span class="mf">0.01</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">sub</span><span class="o">(</span><span class="mf">1.0</span> <span class="o">,</span> <span class="mf">0.58</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">mul</span><span class="o">(</span><span class="mf">4.015</span> <span class="o">,</span> <span class="mi">100</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">div</span><span class="o">(</span><span class="mf">123.3</span><span class="o">,</span><span class="mi">100</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;计算结果也是正确的。</p>
+
+<p>&emsp;&emsp;Money类的代码：</p>
+
+<figure class='code'><figcaption><span>Money.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Money</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//默认除法运算精度</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">DEF_DIV_SCALE</span> <span class="o">=</span> <span class="mi">10</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">//这个类不能实例化</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="nf">Money</span><span class="o">(){</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的加法运算。</span>
+</span><span class='line'><span class="cm">     * @param v1 被加数</span>
+</span><span class='line'><span class="cm">     * @param v2 加数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的和</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">add</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">b2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的减法运算。</span>
+</span><span class='line'><span class="cm">     * @param v1 被减数</span>
+</span><span class='line'><span class="cm">     * @param v2 减数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的差</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">sub</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">subtract</span><span class="o">(</span><span class="n">b2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的乘法运算。</span>
+</span><span class='line'><span class="cm">     * @param v1 被乘数</span>
+</span><span class='line'><span class="cm">     * @param v2 乘数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的积</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">mul</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">multiply</span><span class="o">(</span><span class="n">b2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供（相对）精确的除法运算，当发生除不尽的情况时，精确到</span>
+</span><span class='line'><span class="cm">     * 小数点以后10位，以后的数字四舍五入。</span>
+</span><span class='line'><span class="cm">     * @param v1 被除数</span>
+</span><span class='line'><span class="cm">     * @param v2 除数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的商</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">div</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nf">div</span><span class="o">(</span><span class="n">v1</span><span class="o">,</span><span class="n">v2</span><span class="o">,</span><span class="n">DEF_DIV_SCALE</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供（相对）精确的除法运算。当发生除不尽的情况时，由scale参数指</span>
+</span><span class='line'><span class="cm">     * 定精度，以后的数字四舍五入。</span>
+</span><span class='line'><span class="cm">     * @param v1 被除数</span>
+</span><span class='line'><span class="cm">     * @param v2 除数</span>
+</span><span class='line'><span class="cm">     * @param scale 表示表示需要精确到小数点以后几位。</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的商</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">div</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">,</span><span class="kt">int</span> <span class="n">scale</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">scale</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">){</span>
+</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span>
+</span><span class='line'>                <span class="s">&quot;The scale must be a positive integer or zero&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">divide</span><span class="o">(</span><span class="n">b2</span><span class="o">,</span><span class="n">scale</span><span class="o">,</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_HALF_UP</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的小数位四舍五入处理。</span>
+</span><span class='line'><span class="cm">     * @param v 需要四舍五入的数字</span>
+</span><span class='line'><span class="cm">     * @param scale 小数点后保留几位</span>
+</span><span class='line'><span class="cm">     * @return 四舍五入后的结果</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">round</span><span class="o">(</span><span class="kt">double</span> <span class="n">v</span><span class="o">,</span><span class="kt">int</span> <span class="n">scale</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">scale</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">){</span>
+</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span>
+</span><span class='line'>                <span class="s">&quot;The scale must be a positive integer or zero&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">one</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="s">&quot;1&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b</span><span class="o">.</span><span class="na">divide</span><span class="o">(</span><span class="n">one</span><span class="o">,</span><span class="n">scale</span><span class="o">,</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_HALF_UP</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，数据库中对数值的型的保存，可以采用数值类型，也可以使用字符类型，也就是说，我们在进行商业计算的时候，要使用上面的方法来进行处理，以便得到正确的结果。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-26T15:18:00+08:00" pubdate data-updated="true">2013年02月26日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/02/25/ibatis-dyna-sql/" title="上一篇文章: ibatis动态sql示例">&laquo;上一篇:&nbsp;&nbsp;ibatis动态sql示例</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/03/05/ztree-jquery/" title="下一篇文章: z-tree动态节点生成">下一篇: &nbsp;&nbsp;z-tree动态节点生成 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用---第五部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用---第四部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用---第三部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用---第二部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用---第一部分</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

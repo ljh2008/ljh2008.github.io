@@ -1,0 +1,486 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>compass全文检索 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;compass提供了更为简洁易用的全文检索接口，并且和spring、hibernate结合更为紧密，底层可使用lucene实现，请看下面的demo。 &emsp;&emsp;我们用两个对象需要加入全文索引，Customer,Student，所以，要在这两个对象中，要求需求， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2013/01/04/compass-search">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Compass全文检索</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-04T15:22:00+08:00" pubdate data-updated="true">2013年01月04日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;compass提供了更为简洁易用的全文检索接口，并且和spring、hibernate结合更为紧密，底层可使用lucene实现，请看下面的demo。</p>
+
+<p>&emsp;&emsp;我们用两个对象需要加入全文索引，Customer,Student，所以，要在这两个对象中，要求需求，加入全文索引注解。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Searchable</span><span class="o">(</span><span class="n">alias</span><span class="o">=</span><span class="s">&quot;customer&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Customer</span> <span class="kd">implements</span> <span class="n">Serializable</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@SearchableId</span><span class="o">(</span><span class="n">index</span><span class="o">=</span><span class="n">Index</span><span class="o">.</span><span class="na">NOT_ANALYZED</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="nd">@SearchableProperty</span><span class="o">(</span><span class="n">index</span><span class="o">=</span><span class="n">Index</span><span class="o">.</span><span class="na">TOKENIZED</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="nd">@SearchableProperty</span><span class="o">(</span><span class="n">index</span><span class="o">=</span><span class="n">Index</span><span class="o">.</span><span class="na">NOT_ANALYZED</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">comment</span><span class="o">;</span>
+</span><span class='line'>    <span class="nd">@SearchableProperty</span><span class="o">(</span><span class="n">format</span><span class="o">=</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">createDate</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Searchable</span><span class="o">(</span><span class="n">alias</span><span class="o">=</span><span class="s">&quot;student&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Student</span> <span class="kd">implements</span> <span class="n">Serializable</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@SearchableId</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Long</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//姓名</span>
+</span><span class='line'>    <span class="nd">@SearchableProperty</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//出生日期</span>
+</span><span class='line'>    <span class="nd">@SearchableProperty</span><span class="o">(</span><span class="n">format</span><span class="o">=</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;spring文件配置中加入如下配置项：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>    <span class="c">&lt;!-- 对全文搜索注解的支持 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;annotationConfiguration&quot;</span> <span class="na">class=</span><span class="s">&quot;org.compass.annotations.config.CompassAnnotationsConfiguration&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c">&lt;!-- 索引核心对象 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;compass&quot;</span> <span class="na">class=</span><span class="s">&quot;org.compass.spring.LocalCompassBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;classMappings&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;value&gt;</span>com.yourcompany.yourproject.model.Customer<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;value&gt;</span>com.yourcompany.yourproject.model.Student<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;compassConfiguration&quot;</span> <span class="na">ref=</span><span class="s">&quot;annotationConfiguration&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;compassSettings&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;props&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;prop</span> <span class="na">key=</span><span class="s">&quot;compass.engine.connection&quot;</span><span class="nt">&gt;</span>d:/compass<span class="nt">&lt;/prop&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;prop</span> <span class="na">key=</span><span class="s">&quot;compass.transaction.factory&quot;</span><span class="nt">&gt;</span>org.compass.spring.transaction.SpringSyncTransactionFactory<span class="nt">&lt;/prop&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;prop</span> <span class="na">key=</span><span class="s">&quot;compass.engine.analyzer.default.type&quot;</span><span class="nt">&gt;</span>org.apache.lucene.analysis.cn.ChineseAnalyzer<span class="nt">&lt;/prop&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;prop</span> <span class="na">key=</span><span class="s">&quot;compass.engine.highlighter.default.formatter.simple.pre&quot;</span><span class="nt">&gt;</span><span class="cp">&lt;![CDATA[&lt;font color=&quot;red&quot;&gt;&lt;b&gt;]]&gt;</span><span class="nt">&lt;/prop&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;prop</span> <span class="na">key=</span><span class="s">&quot;compass.engine.highlighter.default.formatter.simple.post&quot;</span><span class="nt">&gt;</span><span class="cp">&lt;![CDATA[&lt;b&gt;&lt;/font&gt;]]&gt;</span><span class="nt">&lt;/prop&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/props&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;transactionManager&quot;</span> <span class="na">ref=</span><span class="s">&quot;transactionManager&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c">&lt;!-- 与hibernate操作同步 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;hibernateGpsDevice&quot;</span> <span class="na">class=</span><span class="s">&quot;org.compass.gps.device.hibernate.HibernateGpsDevice&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;value&gt;</span>hibernateDevice<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;sessionFactory&quot;</span> <span class="na">ref=</span><span class="s">&quot;sessionFactory&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;nativeExtractor&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.compass.spring.device.hibernate.SpringNativeHibernateExtractor&quot;</span><span class="nt">&gt;&lt;/bean&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c">&lt;!-- 定位器 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;compassGps&quot;</span> <span class="na">class=</span><span class="s">&quot;org.compass.gps.impl.SingleCompassGps&quot;</span> <span class="na">init-method=</span><span class="s">&quot;start&quot;</span> <span class="na">destroy-method=</span><span class="s">&quot;stop&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;compass&quot;</span> <span class="na">ref=</span><span class="s">&quot;compass&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;gpsDevices&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.compass.spring.device.SpringSyncTransactionGpsDeviceWrapper&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;gpsDevice&quot;</span> <span class="na">ref=</span><span class="s">&quot;hibernateGpsDevice&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;测试代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">CompassSession</span> <span class="n">session</span> <span class="o">=</span>   <span class="n">compass</span><span class="o">.</span><span class="na">openSession</span><span class="o">();</span>
+</span><span class='line'><span class="n">CompassHits</span> <span class="n">hits</span> <span class="o">=</span>  <span class="n">session</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="s">&quot;张  刘&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">hits</span><span class="o">.</span><span class="na">length</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">Object</span> <span class="n">o</span> <span class="o">=</span> <span class="n">hits</span><span class="o">.</span><span class="na">data</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;查询到：&quot;</span> <span class="o">+</span> <span class="n">o</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;应用系统中，hibernate对这两个对象的操作，都会同步到索引库中，非常的方便。</p>
+
+<p>&emsp;&emsp;附：</p>
+
+<p>&emsp;&emsp;查询表达式：</p>
+
+<p><a href="http://lucene.apache.org/core/old_versioned_docs/versions/3_0_0/queryparsersyntax.html">http://lucene.apache.org/core/old_versioned_docs/versions/3_0_0/queryparsersyntax.html</a></p>
+
+<p>&emsp;&emsp;cimpass查询api示例：</p>
+
+<p><a href="http://static.compassframework.org/docs/latest/core-workingwithobjects.html">http://static.compassframework.org/docs/latest/core-workingwithobjects.html</a></p>
+
+<p>&emsp;&emsp;当然，如果要做更复杂的操作，需要大家自己去研究，比如：</p>
+
+<p>&emsp;&emsp;<strong>一、重建索引：</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">CompassGps</span> <span class="n">gps</span> <span class="o">=</span> <span class="err">由容器注入</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;begin re index....&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">gps</span><span class="o">.</span><span class="na">index</span><span class="o">();</span>
+</span><span class='line'> <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;end re index....&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>二、关键字高亮</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">hits</span><span class="o">.</span><span class="na">highlighter</span><span class="o">(</span><span class="n">i</span><span class="o">).</span><span class="na">fragment</span><span class="o">(</span><span class="s">&quot;高亮html代码&quot;</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>三、排序</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">CompassHits</span> <span class="n">hits</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">queryBuilder</span><span class="o">().</span><span class="na">queryString</span><span class="o">(</span><span class="s">&quot;刘 OR 1988-09-09&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="o">.</span><span class="na">toQuery</span><span class="o">().</span><span class="na">addSort</span><span class="o">(</span><span class="s">&quot;customer.comment&quot;</span><span class="o">,</span> <span class="n">SortPropertyType</span><span class="o">.</span><span class="na">STRING</span><span class="o">).</span><span class="na">hits</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;四、中文分词，数据分页（要自己进行内存分页），大家自己去查哈&hellip;&hellip;..</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-04T15:22:00+08:00" pubdate data-updated="true">2013年01月04日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/12/28/restful6/" title="上一篇文章: 教你一步步做 restful程序（6）---总结">&laquo;上一篇:&nbsp;&nbsp;教你一步步做 restful程序（6）---总结</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/01/04/mysql-resotre/" title="下一篇文章: mysql数据恢复">下一篇: &nbsp;&nbsp;mysql数据恢复 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用---第五部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用---第四部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用---第三部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用---第二部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用---第一部分</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

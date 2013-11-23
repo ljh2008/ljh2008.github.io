@@ -1,0 +1,626 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>使用Spring jdbc完成持久层编码 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;如果你的项目使用了spring，又由于某种原因持久层用的是纯jdbc 方式，那么，你可以考虑一下使用spring对jdbc的封装，来简化持久层的编码。 &emsp;&emsp;下面我通过一个示例来给大家讲解： &emsp;&emsp;表t_user结构如下： &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yoursite.com/blog/2013/05/16/spring-jdbc">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>空山不见人，但闻人语响.</h2>
+  
+</hgroup>
+
+</header>
+  <div id="banner_img"></div>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">使用Spring Jdbc完成持久层编码</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-16T15:18:00+08:00" pubdate data-updated="true">2013年05月16日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;如果你的项目使用了spring，又由于某种原因持久层用的是纯jdbc 方式，那么，你可以考虑一下使用spring对jdbc的封装，来简化持久层的编码。</p>
+
+<p>&emsp;&emsp;下面我通过一个示例来给大家讲解：</p>
+
+<p>&emsp;&emsp;表t_user结构如下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/05/1.jpg' width='' height='' title='表结构及数据示例'><span class='caption-text'>表结构及数据示例</span></span></p>
+
+<p>&emsp;&emsp;业务对象：</p>
+
+<figure class='code'><figcaption><span>User.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">User</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">loginCode</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">password</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//..................</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;持久层接口，共定义了三个方法：</p>
+
+<figure class='code'><figcaption><span>IUserDao.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">IUserDao</span><span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">User</span> <span class="nf">getUserById</span><span class="o">(</span><span class="n">intid</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addUser</span><span class="o">(</span><span class="n">User</span> <span class="n">u</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span> <span class="nf">getAllUsers</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;spring配置文件：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="c">&lt;!-- 读取配置参数--&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.springframework.beans.factory.config.PropertyPlaceholderConfigurer&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>       <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;location&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>           <span class="nt">&lt;value&gt;</span>classpath:database-config.properties<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>       <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c">&lt;!-- 配置数据源--&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;dataSource&quot;</span> <span class="na">class=</span><span class="s">&quot;org.apache.commons.dbcp.BasicDataSource&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;driverClassName&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>           <span class="nt">&lt;value&gt;</span>${driverClass}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>       <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;url&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>           <span class="nt">&lt;value&gt;</span>${url}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>       <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;username&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>           <span class="nt">&lt;value&gt;</span>${username}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>       <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;password&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>           <span class="nt">&lt;value&gt;</span>${password}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>       <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;defaultAutoCommit&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>           <span class="nt">&lt;value&gt;</span>false<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>       <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="c">&lt;!-- 数据源事务管理器--&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;transactionManager&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.jdbc.datasource.DataSourceTransactionManager&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;dataSource&quot;</span> <span class="na">ref=</span><span class="s">&quot;dataSource&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c">&lt;!-- 对注解事务的支持--&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;tx:annotation-driven</span> <span class="na">transaction-manager=</span><span class="s">&quot;transactionManager&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;userDao&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.dao.UserDaoImpl&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>       <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;dataSource&quot;</span> <span class="na">ref=</span><span class="s">&quot;dataSource&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;实现类，是比较关键的地方：</p>
+
+<figure class='code'><figcaption><span>UserDaoImpl.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span><span class="o">=</span><span class="kc">false</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserDaoImpl</span> <span class="kd">extends</span> <span class="n">JdbcDaoSupport</span> <span class="kd">implements</span> <span class="n">IUserDao</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">User</span> <span class="nf">getUserById</span><span class="o">(</span><span class="n">intid</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="k">return</span> <span class="nf">getJdbcTemplate</span><span class="o">().</span><span class="na">queryForObject</span><span class="o">(</span><span class="s">&quot;select * from t_user where pk_id = ?&quot;</span><span class="o">,</span>
+</span><span class='line'>              <span class="k">new</span> <span class="n">Object</span><span class="o">[]{</span><span class="n">id</span><span class="o">},</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Types</span><span class="o">.</span><span class="na">INTEGER</span><span class="o">},</span>
+</span><span class='line'>              <span class="k">new</span> <span class="nf">UserRowMapper</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span> <span class="nf">getAllUsers</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>       <span class="k">return</span> <span class="nf">getJdbcTemplate</span><span class="o">().</span><span class="na">query</span><span class="o">(</span><span class="s">&quot;select * from t_user&quot;</span><span class="o">,</span> <span class="k">new</span> <span class="n">UserRowMapper</span><span class="o">());</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addUser</span><span class="o">(</span><span class="n">finalUser</span> <span class="n">u</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="n">getJdbcTemplate</span><span class="o">().</span><span class="na">update</span><span class="o">(</span><span class="s">&quot;insert into t_user(f_login_code,f_name,f_pwd,f_birthday) &quot;</span><span class="o">+</span>
+</span><span class='line'>
+</span><span class='line'>              <span class="s">&quot;values(?,?,?,?);&quot;</span><span class="o">,</span>
+</span><span class='line'>
+</span><span class='line'>              <span class="k">new</span> <span class="n">Object</span><span class="o">[]{</span><span class="n">u</span><span class="o">.</span><span class="na">getLoginCode</span><span class="o">(),</span><span class="n">u</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span><span class="n">u</span><span class="o">.</span><span class="na">getPassword</span><span class="o">(),</span><span class="n">u</span><span class="o">.</span><span class="na">getBirthday</span><span class="o">()},</span>
+</span><span class='line'>
+</span><span class='line'>              <span class="k">new</span> <span class="kt">int</span><span class="o">[]{</span><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Types</span><span class="o">.</span><span class="na">VARCHAR</span><span class="o">,</span><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Types</span><span class="o">.</span><span class="na">VARCHAR</span><span class="o">,</span><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Types</span><span class="o">.</span><span class="na">VARCHAR</span><span class="o">,</span><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Types</span><span class="o">.</span><span class="na">DATE</span><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>              <span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//  public void addUser(final User u) {</span>
+</span><span class='line'><span class="c1">//     KeyHolder keyHolder = new GeneratedKeyHolder();</span>
+</span><span class='line'><span class="c1">//     getJdbcTemplate().update(new PreparedStatementCreator() {</span>
+</span><span class='line'><span class="c1">//         @Override</span>
+</span><span class='line'><span class="c1">//         public PreparedStatement createPreparedStatement(Connection con)</span>
+</span><span class='line'><span class="c1">//                throws SQLException {</span>
+</span><span class='line'><span class="c1">//            </span>
+</span><span class='line'><span class="c1">//            PreparedStatement ps=  con.prepareStatement(&quot;insert intot_user(f_login_code,f_name,f_pwd,f_birthday) &quot; +</span>
+</span><span class='line'><span class="c1">//            &quot;values(?,?,?,?);&quot;);</span>
+</span><span class='line'><span class="c1">//            ps.setString(1, u.getLoginCode());</span>
+</span><span class='line'><span class="c1">//            ps.setString(2, u.getName());</span>
+</span><span class='line'><span class="c1">//            ps.setString(3, u.getPassword());</span>
+</span><span class='line'><span class="c1">//            ps.setDate(4, u.getBirthday());</span>
+</span><span class='line'><span class="c1">//            return ps;</span>
+</span><span class='line'><span class="c1">//         }</span>
+</span><span class='line'><span class="c1">//     }, keyHolder</span>
+</span><span class='line'><span class="c1">//     );</span>
+</span><span class='line'><span class="c1">//     u.setId(keyHolder.getKey().intValue());</span>
+</span><span class='line'><span class="c1">//  }</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//  public void addUser(final User u) {</span>
+</span><span class='line'><span class="c1">//     getJdbcTemplate().update(&quot;insert intot_user(f_login_code,f_name,f_pwd,f_birthday) &quot; +</span>
+</span><span class='line'><span class="c1">//            &quot;values(?,?,?,?);&quot;, new PreparedStatementSetter(){</span>
+</span><span class='line'><span class="c1">//</span>
+</span><span class='line'><span class="c1">//                @Override</span>
+</span><span class='line'><span class="c1">//                public void setValues(PreparedStatement ps)</span>
+</span><span class='line'><span class="c1">//                       throws SQLException {</span>
+</span><span class='line'><span class="c1">//                          ps.setString(1, u.getLoginCode());</span>
+</span><span class='line'><span class="c1">//                          ps.setString(2, u.getName());</span>
+</span><span class='line'><span class="c1">//                          ps.setString(3, u.getPassword());</span>
+</span><span class='line'><span class="c1">//                          ps.setDate(4, u.getBirthday());</span>
+</span><span class='line'><span class="c1">//                   </span>
+</span><span class='line'><span class="c1">//                }</span>
+</span><span class='line'><span class="c1">//         </span>
+</span><span class='line'><span class="c1">//     });</span>
+</span><span class='line'><span class="c1">//  }</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">class</span> <span class="nc">UserRowMapper</span> <span class="kd">implements</span> <span class="n">RowMapper</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">User</span> <span class="nf">mapRow</span><span class="o">(</span><span class="n">ResultSet</span> <span class="n">rs</span><span class="o">,</span> <span class="n">intindex</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">SQLException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="k">new</span> <span class="n">User</span><span class="o">();</span>
+</span><span class='line'>       <span class="n">u</span><span class="o">.</span><span class="na">setId</span><span class="o">(</span><span class="n">rs</span><span class="o">.</span><span class="na">getInt</span><span class="o">(</span><span class="s">&quot;pk_id&quot;</span><span class="o">));</span>
+</span><span class='line'>       <span class="n">u</span><span class="o">.</span><span class="na">setLoginCode</span><span class="o">(</span><span class="n">rs</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">&quot;f_login_code&quot;</span><span class="o">));</span>
+</span><span class='line'>       <span class="n">u</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">rs</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">&quot;f_name&quot;</span><span class="o">));</span>
+</span><span class='line'>       <span class="n">u</span><span class="o">.</span><span class="na">setPassword</span><span class="o">(</span><span class="n">rs</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">&quot;f_pwd&quot;</span><span class="o">));</span>
+</span><span class='line'>       <span class="n">u</span><span class="o">.</span><span class="na">setBirthday</span><span class="o">(</span><span class="n">rs</span><span class="o">.</span><span class="na">getDate</span><span class="o">(</span><span class="s">&quot;f_birthday&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="k">return</span> <span class="n">u</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;其中，addUser方法，我写了三种不同api的实现。</p>
+
+<p>&emsp;&emsp;第一种，依次设定属性，并接定属性类型；</p>
+
+<p>&emsp;&emsp;第二种，使用KeyHolder这种，可以在新增完后直接得到自动增长类型的主键（其底层使用preparedStatement.getGeneratedKeys()实现）</p>
+
+<p>&emsp;&emsp;第三种，使用PreparedStatementSetter方式实现。</p>
+
+<p>&emsp;&emsp;另外，在查询时，可以利用RowMapper，以达到映射重用的目的。</p>
+
+<p>&emsp;&emsp;事务委托spring去实现，要注意的是我们得用DataSourceTransactionManager事务管理器。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-16T15:18:00+08:00" pubdate data-updated="true">2013年05月16日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/05/13/shiro-cas/" title="上一篇文章: cas与shiro集成">&laquo;上一篇:&nbsp;&nbsp;cas与shiro集成</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/06/05/highcharts-pie-column/" title="下一篇文章: highcharts生成pie及bar图">下一篇: &nbsp;&nbsp;highcharts生成pie及bar图 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用---第五部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用---第四部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用---第三部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用---第二部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用---第一部分</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

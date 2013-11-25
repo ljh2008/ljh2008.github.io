@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;Restful中的put请求，一般表示对原有对象的修改，但是在spring mvc中，通过@RequestParam、@ModelAttribute注解均不能得到请求数据（虽然可以通过@RequestBody得到请求字符串，但必须要自己在spring mvc中解析封装， &hellip;">
+  <meta name="description" content="&emsp;&emsp;Shiro是一个功能强大的轻量级权限框架，相对其它权限框架（比如spring security）来说，要易用得很，下面，我给大家讲讲如何在一个项目中简单整合shiro。 &emsp;&emsp;我们通常所说的权限，就是要判断某个操作者是否有操作某个资源的权限，而资源， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://yoursite.com/blog/page/7">
+  <link rel="canonical" href="http://ljh2008.github.io/blog/page/7">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
@@ -38,7 +38,7 @@
   <header role="banner"><hgroup>
   <h1><a href="/">刘江华的博客</a></h1>
   
-    <h2>空山不见人，但闻人语响.</h2>
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
   
 </hgroup>
 
@@ -58,6 +58,92 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/04/26/shiro1/">在项目中集成shiro权限框架(1)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-26T15:18:00+08:00" pubdate data-updated="true">2013年04月26日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;Shiro是一个功能强大的轻量级权限框架，相对其它权限框架（比如spring security）来说，要易用得很，下面，我给大家讲讲如何在一个项目中简单整合shiro。</p>
+
+<p>&emsp;&emsp;我们通常所说的权限，就是要判断某个操作者是否有操作某个资源的权限，而资源，可以是菜单、链接、功能按钮、业务方法、某类型的数据等等，根据需求，每个项目的权限可能都有所不同，通用万能权限系统是不存在的。</p>
+
+<p>&emsp;&emsp;Shrio的权限包括认证、授权、密码管理、会话管理等四个部分，每一个部分，shrio都进行了抽象，以做到和具体应用平台、环境的无关。关于shiro的基础了解，大家可到这里去看看：<a href="http://www.infoq.com/cn/articles/apache-shiro">http://www.infoq.com/cn/articles/apache-shiro</a></p>
+
+<p>&emsp;&emsp;权限系统的设计，根据不同的权限粒度，会用所不同，比如：有的系统到菜单级，而有的到每一个功能按钮级，有的到方法级，有的到业务数据级，我在这仅仅讨论前两类。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/1.jpg' width='' height='' title='权限类图设计1'><span class='caption-text'>权限类图设计1</span></span></p>
+
+<p>&emsp;&emsp;上面是一个对象关系图，模块在此处仅仅为菜单进行逻辑归类，当然，也可以建立菜单和功能的一对多关系，为功能进行逻辑归类。当然，菜单也可以建成关联的树状结构，以更好扩展。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/2.jpg' width='' height='' title='权限类图设计2'><span class='caption-text'>权限类图设计2</span></span></p>
+
+<p>&emsp;&emsp;根据对象关系，可以设计出表结构，我直接贴出数据截图：</p>
+
+<p>&emsp;&emsp;<strong>模块表</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/3.jpg' width='' height='' title='模块表结构'><span class='caption-text'>模块表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>菜单表</strong>：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/8.jpg' width='' height='' title='菜单表结构'><span class='caption-text'>菜单表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>操作表</strong>，一般对应页面中的按钮，其中f_action_flag对应于restful中的增、删、查、改：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/4.jpg' width='' height='' title='操作表结构'><span class='caption-text'>操作表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>角色表：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/9.jpg' width='' height='' title='角色表结构'><span class='caption-text'>角色表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>角色-菜单关系表</strong>：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/5.jpg' width='' height='' title='角色-菜单关系表结构'><span class='caption-text'>角色-菜单关系表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>角色-功能表：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/6.jpg' width='' height='' title='角色-功能表结构'><span class='caption-text'>角色-功能表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>用户表：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/10.jpg' width='' height='' title='用户表结构'><span class='caption-text'>用户表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>用户-角色关系表：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/7.jpg' width='' height='' title='用户-角色关系表结构'><span class='caption-text'>用户-角色关系表结构</span></span></p>
+
+<p>&emsp;&emsp;上面截图中，真正有效的表7张，权限控制到页面及功能上。</p>
+
+<p>&emsp;&emsp;下篇，贴出上面的类代码及class映射文件。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -500,7 +586,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013/03/29/restful-gui/">Restful复杂界面参数的接收设计</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013/04/08/art1/">油画-合江亭.安顺廊桥</a></h1>
     
     
       <p class="meta">
@@ -516,254 +602,24 @@
   
 
 
-<time datetime="2013-03-29T15:18:00+08:00" pubdate data-updated="true">2013年03月29日</time>
+<time datetime="2013-04-08T15:18:00+08:00" pubdate data-updated="true">2013年04月08日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;请看下面的演示界面：</p>
+  <div class="entry-content"><p>&emsp;&emsp;断桥借伞，白蛇痴情，危桥抱柱，尾生殉情！最使古代伉俪动情者，鹊桥，最使当代恋人钟情者，当属廊桥！。</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/03/4.jpg' width='' height='' title='多行restful界面原型'><span class='caption-text'>多行restful界面原型</span></span></p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/14.jpg' width='' height='' title='油画-合江亭.安顺廊桥50×60CM'><span class='caption-text'>油画-合江亭.安顺廊桥50×60CM</span></span></p>
 
-<p>&emsp;&emsp;用户可以动态添加数据行，在输入值后，一次提交至服务器，这么多的参数，该如何设计呢？</p>
+<p>&emsp;&emsp;每次经过廊桥，都会被它的古朴、秀美气质感染而驻足许久，也为桥头沧桑的兽形石雕而感到岁月无情。</p>
 
-<p>&emsp;&emsp;服务器上有如下对象来接收前端数据：</p>
+<p>&emsp;&emsp;听说很多人的婚宴选择在此，亦是希望两情长久。</p>
 
-<figure class='code'><figcaption><span>User.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//用户 </span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">class</span> <span class="nc">User</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Dog</span> <span class="n">dog</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
+<p>&emsp;&emsp;我把廊桥放在一片夕阳中、完全理想化的色彩光影之下。夕阳虽好，已近黄昏，也许一切终属廊桥遗梦。</p>
 
-
-<figure class='code'><figcaption><span>Dog.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//宠物</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">class</span> <span class="nc">Dog</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">nickName</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;也就是说，界面上的每一行，将映射到一个复合对象中，而且是采用restful方式提交。</p>
-
-<p>&emsp;&emsp;<strong>解决方案一：</strong></p>
-
-<p>&emsp;&emsp;手工得到每一行中每一列数据，使用特殊字符串加以拼接，再把拼接好的字串作为参数上传。这种方案不建议采用，主要原因是拼接太为繁烦，再一个是服务器端解析也非常麻烦。</p>
-
-<p>&emsp;&emsp;<strong>解决方案二：</strong></p>
-
-<p>&emsp;&emsp;使用json2.js帮助我们完成对象自动转换为js字串，再上传，服务器上用第三方josn处理工具，反序列化生成对象。</p>
-
-<p>&emsp;&emsp;如下代码JSON.stringify(obj)即可生成对象的json字符串。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/03/5.jpg' width='' height='' title='json格式'><span class='caption-text'>json格式</span></span></p>
-
-<p>&emsp;&emsp;上面示例中的<strong>客户端代码</strong>是：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;js/jquery-1.6.2.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;js/json2.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#add_row&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;&lt;tr class=&#39;user_row&#39;&gt;&lt;td&gt;&lt;input type=&#39;text&#39; class=&#39;c_id&#39;/&gt;&lt;/td&gt;&lt;td&gt;&lt;input type=&#39;text&#39; class=&#39;c_name&#39;/&gt;&lt;/td&gt;&lt;td&gt;&lt;input type=&#39;text&#39; class=&#39;c_birthday&#39;/&gt;&lt;/td&gt;&lt;td&gt;&lt;input type=&#39;text&#39; class=&#39;c_nickname&#39;/&gt;&lt;/td&gt;&lt;/tr&gt;&quot;</span><span class="p">)</span>
-</span><span class='line'>        <span class="p">.</span><span class="nx">appendTo</span><span class="p">(</span><span class="s2">&quot;#my_user_list&quot;</span><span class="p">);</span>
-</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_save&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>        <span class="kd">var</span> <span class="nx">users</span> <span class="o">=</span> <span class="p">[];</span>
-</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.user_row&quot;</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>            <span class="kd">var</span> <span class="nx">user</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Object</span><span class="p">();</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">id</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.c_id&quot;</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">)).</span><span class="nx">val</span><span class="p">();</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.c_name&quot;</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">)).</span><span class="nx">val</span><span class="p">();</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">birthday</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.c_birthday&quot;</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">)).</span><span class="nx">val</span><span class="p">();</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">dog</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Object</span><span class="p">();</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">dog</span><span class="p">.</span><span class="nx">nickName</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.c_nickname&quot;</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">)).</span><span class="nx">val</span><span class="p">();</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="nx">users</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">user</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">//alert(JSON.stringify(users));</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
-</span><span class='line'>            <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">data</span><span class="o">:</span><span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">users</span><span class="p">),</span>
-</span><span class='line'>            <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
-</span><span class='line'>                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;恭喜&quot;</span> <span class="o">+</span> <span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;登录成功！&quot;</span><span class="p">);</span>
-</span><span class='line'>                    <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="s2">&quot;userManager/main.html&quot;</span><span class="p">;</span>
-</span><span class='line'>                <span class="p">}</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="p">});</span>
-</span><span class='line'><span class="nt">&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;/head&gt;</span>
-</span><span class='line'><span class="nt">&lt;body&gt;</span>
-</span><span class='line'><span class="nt">&lt;h1&gt;</span>批量添加<span class="nt">&lt;/h1&gt;</span>
-</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">id=</span><span class="s">&quot;add_row&quot;</span><span class="nt">&gt;</span>新增一行<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'><span class="nt">&lt;table&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;tr&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;th&gt;</span>id<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;th&gt;</span>姓名<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;th&gt;</span>出生日期<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;th&gt;</span>宠物性名<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/tr&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;tbody</span> <span class="na">id=</span><span class="s">&quot;my_user_list&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;tr</span> <span class="na">class=</span><span class="s">&quot;user_row&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">class=</span><span class="s">&quot;c_id&quot;</span><span class="nt">/&gt;&lt;/td&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">class=</span><span class="s">&quot;c_name&quot;</span><span class="nt">/&gt;&lt;/td&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">class=</span><span class="s">&quot;c_birthday&quot;</span><span class="nt">/&gt;&lt;/td&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">class=</span><span class="s">&quot;c_nickname&quot;</span><span class="nt">/&gt;&lt;/td&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/tr&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/tbody&gt;</span>
-</span><span class='line'><span class="nt">&lt;/table&gt;</span>
-</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;保存&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_save&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;/body&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;请注意 data:JSON.stringify(users)部分的转换。</p>
-
-<p>&emsp;&emsp;<strong>服务器端代码：</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;json&quot;</span><span class="o">,</span><span class="n">method</span><span class="o">=</span><span class="n">RequestMethod</span><span class="o">.</span><span class="na">POST</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getJson</span><span class="o">(</span>
-</span><span class='line'>            <span class="nd">@RequestBody</span> <span class="n">String</span> <span class="n">json</span><span class="o">,</span>
-</span><span class='line'>            <span class="n">HttpServletResponse</span> <span class="n">response</span><span class="o">,</span>
-</span><span class='line'>            <span class="n">HttpSession</span> <span class="n">session</span>
-</span><span class='line'>            <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">om</span><span class="o">.</span><span class="na">setDateFormat</span><span class="o">(</span><span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">));</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">User</span><span class="o">[]</span> <span class="n">users</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">URLDecoder</span><span class="o">.</span><span class="na">decode</span><span class="o">(</span><span class="n">json</span><span class="o">,</span><span class="s">&quot;utf-8&quot;</span><span class="o">),</span> <span class="n">User</span><span class="o">[].</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">users</span><span class="o">));</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;其中URLDecoder.decode是解决ie下会将字符串encoder的问题。</p>
-
-<p>&emsp;&emsp;项目中建议使用第二种方案，它将使restful接口更加的规范化，也简化了编码量。</p>
+<p>更多细节请阅《<a href="/blog/2013/04/08/art-step/">合江亭.安顺廊桥-步骤解析</a>》</p>
 </div>
   
   
@@ -776,7 +632,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013/03/26/logger/">一种日志记录解决方案</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013/04/08/art-step/">合江亭.安顺廊桥-步骤解析</a></h1>
     
     
       <p class="meta">
@@ -792,350 +648,30 @@
   
 
 
-<time datetime="2013-03-26T15:18:00+08:00" pubdate data-updated="true">2013年03月26日</time>
+<time datetime="2013-04-08T15:18:00+08:00" pubdate data-updated="true">2013年04月08日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;日志，记录了用户在系统中的操作情况，对于某些系统来说非常的重要，我们系统的很多功能都要记录用户的操作，请看下面日志表截图：</p>
+  <div class="entry-content"><p>&emsp;&emsp;一真想画一张安顺廊桥的作品，虽然第一次看到它，还不知道它的名字，但还是被它深深吸引。</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/03/3.jpg' width='' height='' title='日志表结构'><span class='caption-text'>日志表结构</span></span></p>
+<p>&emsp;&emsp;首先是画出建筑的大体结构，要注意透视关系的正确。</p>
 
-<p>&emsp;&emsp;显然，日志的处理可以通过aop来解决。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/11.jpg' width='' height='' title='起稿'><span class='caption-text'>起稿</span></span></p>
 
-<p>&emsp;&emsp;<strong>一、先定义一个around通知</strong>，代码如下：</p>
+<p>&emsp;&emsp;思考良久后，突然闪现这样一种色调，迅速完成画面铺色。</p>
 
-<figure class='code'><figcaption><span>LoggerIntercepter.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Component</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;loggerIntercepter&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LoggerIntercepter</span> <span class="kd">implements</span> <span class="n">MethodInterceptor</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Resource</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">ILoggerService</span> <span class="n">loggerService</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Properties</span> <span class="n">operation_mapping</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="nf">LoggerIntercepter</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">org</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">core</span><span class="o">.</span><span class="na">io</span><span class="o">.</span><span class="na">Resource</span> <span class="n">res</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ClassPathResource</span><span class="o">(</span><span class="s">&quot;operation_desc.properties&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">operation_mapping</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Properties</span><span class="o">();</span>
-</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">operation_mapping</span><span class="o">.</span><span class="na">load</span><span class="o">(</span><span class="n">res</span><span class="o">.</span><span class="na">getInputStream</span><span class="o">());</span>
-</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">IOException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="n">SUCCESS_DESC</span> <span class="o">=</span> <span class="s">&quot;成功&quot;</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="n">FAIL_DESC</span> <span class="o">=</span> <span class="s">&quot;失败&quot;</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">MethodInvocation</span> <span class="n">mi</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">String</span> <span class="n">methodName</span> <span class="o">=</span> <span class="n">mi</span><span class="o">.</span><span class="na">getMethod</span><span class="o">().</span><span class="na">getName</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">StringBuffer</span> <span class="n">sb</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuffer</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">+</span><span class="n">MyThreadLocal</span><span class="o">.</span><span class="na">getLoginUserName</span><span class="o">());</span>
-</span><span class='line'>        <span class="n">Object</span> <span class="n">o</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
-</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">o</span> <span class="o">=</span> <span class="n">mi</span><span class="o">.</span><span class="na">proceed</span><span class="o">();</span>
-</span><span class='line'>            <span class="n">sb</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">operation_mapping</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="n">methodName</span><span class="o">)).</span><span class="na">append</span><span class="o">(</span><span class="n">SUCCESS_DESC</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">sb</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">operation_mapping</span><span class="o">.</span><span class="na">getProperty</span><span class="o">(</span><span class="n">methodName</span><span class="o">)).</span><span class="na">append</span><span class="o">(</span><span class="n">FAIL_DESC</span><span class="o">);</span>
-</span><span class='line'>            <span class="k">throw</span> <span class="n">e</span><span class="o">;</span>
-</span><span class='line'>        <span class="o">}</span> <span class="k">finally</span> <span class="o">{</span>
-</span><span class='line'>            <span class="c1">//添加日志</span>
-</span><span class='line'>            <span class="n">Logger</span> <span class="n">log</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Logger</span><span class="o">();</span>
-</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">setDesc</span><span class="o">(</span><span class="n">sb</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">setCreateDate</span><span class="o">(</span><span class="k">new</span> <span class="n">Date</span><span class="o">());</span>
-</span><span class='line'>            <span class="n">loggerService</span><span class="o">.</span><span class="na">addLogger</span><span class="o">(</span><span class="n">log</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">o</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/12.jpg' width='' height='' title='铺大的色彩，明确整体感受'><span class='caption-text'>铺大的色彩，明确整体感受</span></span></p>
 
+<p>&emsp;&emsp;仔细刻画了水中的波纹在桥的阴影与夕阳下的效果。</p>
 
-<p>&emsp;&emsp;注意，在该拦截器中，我们要把拦截到的方法名转换为友好的操作描述，这个对应关系，我们保存到了properties文件中，该文件中有类似下面的key-value:</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/13.jpg' width='' height='' title='完善细节'><span class='caption-text'>完善细节</span></span></p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='properties'><span class='line'><span class="na">login</span><span class="o">=</span><span class="s">\u767B\u5F55\u7CFB\u7EDF</span>
-</span><span class='line'><span class="na">addUser</span><span class="o">=</span><span class="s">\u6DFB\u52A0\u7528\u6237</span>
-</span><span class='line'><span class="na">updateUser</span><span class="o">=</span><span class="s">\u4FEE\u6539\u7528\u6237</span>
-</span><span class='line'><span class="na">deleteUser</span><span class="o">=</span><span class="s">\u5220\u9664\u7528\u6237</span>
-</span><span class='line'><span class="na">getUserById</span><span class="o">=</span><span class="s">\u6839\u636Eid\u5F97\u5230\u7528\u6237</span>
-</span><span class='line'><span class="na">getAllUser</span><span class="o">=</span><span class="s">\u5F97\u5230\u6240\u6709\u7528\u6237</span>
-</span><span class='line'><span class="na">getUserByPage</span><span class="o">=</span><span class="s">\u5206\u9875\u67E5\u8BE2\u7528\u6237</span>
-</span></code></pre></td></tr></table></div></figure>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/14.jpg' width='' height='' title='最终效果'><span class='caption-text'>最终效果</span></span></p>
 
-
-<p>&emsp;&emsp;在这个拦截通知中，解决了日志中的操作描述，及操作成功与否的生成，还有一个问题，操作者如何传递过来。</p>
-
-<p>&emsp;&emsp;<strong>二、定义threadlocal对象</strong>，比如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyThreadLocal</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="n">ThreadLocal</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">tl</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ThreadLocal</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;();</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">getLoginUserName</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">tl</span><span class="o">.</span><span class="na">get</span><span class="o">();</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">setLoginUserName</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">tl</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;仅做演示，代码简化过的哦。</p>
-
-<p>&emsp;&emsp;<strong>三、在过滤器中，最好是权限过渡器中，放入操作者信息</strong>：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getSession</span><span class="o">().</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;session_key&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="c1">//这只放了一个名字，你可以传递更复杂的一些对象</span>
-</span><span class='line'>            <span class="n">MyThreadLocal</span><span class="o">.</span><span class="na">setLoginUserName</span><span class="o">(((</span><span class="n">User</span><span class="o">)</span><span class="n">req</span><span class="o">.</span><span class="na">getSession</span><span class="o">().</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;session_key&quot;</span><span class="o">)).</span><span class="na">getLoginCode</span><span class="o">());</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">chain</span><span class="o">.</span><span class="na">doFilter</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//.....</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;当然，有些操作没有登录者信息，比如：登录，但要记录失败的情况，这时需要在login的方法中预先放入,比如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">MyThreadLocal</span><span class="o">.</span><span class="na">setLoginUserName</span><span class="o">(</span><span class="n">loginCode</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>四、配置自动代理</strong>，添加日志拦截通知到service类上：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>         <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;beanNames&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>             <span class="nt">&lt;list&gt;</span>
-</span><span class='line'>                 <span class="nt">&lt;value&gt;</span>*Service<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>             <span class="nt">&lt;/list&gt;</span>
-</span><span class='line'>         <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>         <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;interceptorNames&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>             <span class="nt">&lt;list&gt;</span>
-</span><span class='line'>                 <span class="nt">&lt;value&gt;</span>loggerIntercepter<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>             <span class="nt">&lt;/list&gt;</span>
-</span><span class='line'>         <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>     <span class="nt">&lt;/bean&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>五、最后，帖出日志类代码：</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Entity</span>
-</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_logger&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Logger</span> <span class="kd">implements</span> <span class="n">Serializable</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Id</span>
-</span><span class='line'>    <span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="na">IDENTITY</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;pk_id&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_desc&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">desc</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Temporal</span><span class="o">(</span><span class="n">TemporalType</span><span class="o">.</span><span class="na">TIMESTAMP</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_date&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">createDate</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;至此，完成。具体项目中，需要在此基础上进一步完善。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/03/25/jbpm3/">Jbpm简单使用（3）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-03-25T15:18:00+08:00" pubdate data-updated="true">2013年03月25日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;<strong>总结：</strong></p>
-
-<p>&emsp;&emsp;一、业务对象的设计，可以包含对jbpm中流程定义，流程实例的引用。</p>
-
-<p>&emsp;&emsp;二、jbmp中，可以通过map参数，保存业务方面的东西。</p>
-
-<p>&emsp;&emsp;三、业务对象可以设计流程状态字段，比如：</p>
-
-<p>&emsp;&emsp;0、草稿   1、提交审核   2、一审核通过（部门） ，3、二审通过（部门经理）      4、完成付款（财务）      5、驳回</p>
-
-<p>&emsp;&emsp;业务系统根据这个字段，就可了解到本单据的流程状态。</p>
-
-<p>&emsp;&emsp;三、流程细节，都交给jbpm，比如，要查询某人的任务：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">List</span><span class="o">&lt;</span><span class="n">Task</span><span class="o">&gt;</span> <span class="n">tasks</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="na">createTaskQuery</span><span class="o">().</span><span class="na">activityName</span><span class="o">(</span><span class="s">&quot;inputLoan&quot;</span><span class="o">)</span>
-</span><span class='line'>                <span class="o">.</span><span class="na">assignee</span><span class="o">(</span><span class="s">&quot;ljh&quot;</span><span class="o">).</span><span class="na">processDefinitionId</span><span class="o">(</span><span class="s">&quot;loan-1&quot;</span><span class="o">)</span>
-</span><span class='line'>                <span class="o">.</span><span class="na">processInstanceId</span><span class="o">(</span><span class="s">&quot;loan.7&quot;</span><span class="o">)</span>
-</span><span class='line'>                <span class="o">.</span><span class="na">executionId</span><span class="o">(</span><span class="s">&quot;loan.7&quot;</span><span class="o">)</span>
-</span><span class='line'>                <span class="o">.</span><span class="na">orderDesc</span><span class="o">(</span><span class="s">&quot;createTime&quot;</span><span class="o">)</span>
-</span><span class='line'>                <span class="o">.</span><span class="na">page</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">10</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
-</span><span class='line'> <span class="k">for</span> <span class="o">(</span><span class="n">Task</span> <span class="n">t</span> <span class="o">:</span> <span class="n">tasks</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>     <span class="c1">//取业务参数</span>
-</span><span class='line'>     <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">ts</span><span class="o">.</span><span class="na">getVariable</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="s">&quot;biz_id&quot;</span><span class="o">));</span>
-</span><span class='line'> <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="n">tasks</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="na">createTaskQuery</span><span class="o">().</span><span class="na">activityName</span><span class="o">(</span><span class="s">&quot;managerCheck&quot;</span><span class="o">)</span>
-</span><span class='line'>                <span class="o">.</span><span class="na">list</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;查询条件可以自由设定，相当的灵活，当查到某人的task后，就可在业务系统中得到对应的biz_id，再通过biz_id，可得到业务系统中的对象。</p>
-
-<p>&emsp;&emsp;四、jbpm中，先有流程定义，再有流程实例，再有任务，任务可分配给某个指定的人，也可以分配给某个具有相关标识的组、团体等。</p>
-
-<p>&emsp;&emsp;五、jpdl为流程描述语言，里面的东西，大家自己上网查询即可。</p>
-
-<p>&emsp;&emsp;六、流程简单、稳定的项目中，建议自定义类实现，不要引及jbpm之类的流程框架。</p>
+<p>&emsp;&emsp;有人说这张画比较萌，也有人说是 水淹天安门，我无所谓，只要作品可以给你带来思考、感动，足矣。</p>
 </div>
   
   
@@ -1160,6 +696,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
@@ -1173,10 +713,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a>
       </li>
     
   </ul>
@@ -1222,7 +758,7 @@ ds.charset = 'UTF-8';
   </div>
   <footer role="contentinfo"><p>
   版权所有 &copy; 2013 - 冰雨 -
-  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <span class="credit">Powered by <a href="http://ljh2008.github.io">刘江华的博客</a></span>
   <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>
 

@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;有人要用，写了一个演示代码，界面效果如下： struts2多文件上传界面 &emsp;&emsp;客户端代码，用jquery ui实现： 1
+  <meta name="description" content="&emsp;&emsp;要让spring mvc支持json，需要在配置文件中加下面的代码： 1
 2
 3
 4
@@ -19,15 +19,7 @@
 8
 9
 10
-11
-12
-13
-14
-15
-16
-17
-18
-$( &quot;#myquery&quot &hellip;">
+&lt;bean name=&quot;messageConverters&quot; class=&quot;org.springframework.web. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -36,7 +28,7 @@ $( &quot;#myquery&quot &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://yoursite.com/blog/page/14">
+  <link rel="canonical" href="http://ljh2008.github.io/blog/page/14">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
@@ -56,7 +48,7 @@ $( &quot;#myquery&quot &hellip;">
   <header role="banner"><hgroup>
   <h1><a href="/">刘江华的博客</a></h1>
   
-    <h2>空山不见人，但闻人语响.</h2>
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
   
 </hgroup>
 
@@ -82,7 +74,7 @@ $( &quot;#myquery&quot &hellip;">
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a></h1>
+      <h1 class="entry-title"><a href="/blog/2012/11/21/spring-json/">Spring Mvc的json</a></h1>
     
     
       <p class="meta">
@@ -98,18 +90,113 @@ $( &quot;#myquery&quot &hellip;">
   
 
 
-<time datetime="2012-10-31T15:18:00+08:00" pubdate data-updated="true">2012年10月31日</time>
+<time datetime="2012-11-21T15:18:00+08:00" pubdate data-updated="true">2012年11月21日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;有人要用，写了一个演示代码，界面效果如下：</p>
+  <div class="entry-content"><p>&emsp;&emsp;要让spring mvc支持json，需要在配置文件中加下面的代码：</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/10/2.jpg' width='' height='' title='struts2多文件上传界面'><span class='caption-text'>struts2多文件上传界面</span></span></p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">name=</span><span class="s">&quot;messageConverters&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;messageConverters&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;mappingJacksonHttpMessageConverter&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;mappingJacksonHttpMessageConverter&quot;</span>
+</span><span class='line'>    <span class="na">class=</span><span class="s">&quot;org.springframework.http.converter.json.MappingJacksonHttpMessageConverter&quot;</span><span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>&emsp;&emsp;客户端代码，用jquery ui实现：</p>
+
+<p>&emsp;&emsp;另外，要注意的是，jackson的包需要2.0以下的，即1.x，否则，spring 3.x暂时还不支持最新的jsckson2.x。</p>
+
+<p>&emsp;&emsp;在action中，你要写上如下代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="nd">@Resource</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">IStudentService</span> <span class="n">studentService</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;student/{id}&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@ResponseBody</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Student</span> <span class="nf">getStudentById</span><span class="o">(</span><span class="nd">@PathVariable</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">)</span> <span class="kt">long</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Student</span> <span class="n">s</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">s</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;其中@ResponseBody是关键，spring mvc会自动将对象以json的形式返回，非常的方法。</p>
+
+<p>&emsp;&emsp;当然，这种方式没有以手动方式生成json字串再返回灵活，因为实际项目中通常要设计日期格式、排除某些属属的操作(你也可以通过org.codehaus.jackson.annotate中的注解去解决这个问题，但无法灵活应对不同表现层对同对象要求有不同属性的情况)，所以，还是建议用手动的方法去生成吧。</p>
+
+<p>&emsp;&emsp;如果你一定要用@ResponseBody，可考虑按照客户端所要求的形式，创建并填充特定的dto对象，再让spring mvc去完成自动化的转换。</p>
+
+<p>&emsp;&emsp;spring mvc也支持接收json类型的请求并直接生成对象，形如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">addStudent</span><span class="o">(</span><span class="nd">@RequestBody</span> <span class="n">Student</span> <span class="n">student</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/08/spring-test/">基于junit4下的spring测试</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-08T15:18:00+08:00" pubdate data-updated="true">2012年11月08日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>基于junit4下的spring测试:</h2>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -129,35 +216,30 @@ $( &quot;#myquery&quot &hellip;">
 <span class='line-number'>16</span>
 <span class='line-number'>17</span>
 <span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span> <span class="s2">&quot;#myquery&quot;</span> <span class="p">).</span><span class="nx">autocomplete</span><span class="p">({</span>
-</span><span class='line'>               <span class="nx">source</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span> <span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">){</span>
-</span><span class='line'>                   <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
-</span><span class='line'>                       <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;news!autoComplete.do&quot;</span><span class="p">,</span>
-</span><span class='line'>                       <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span>
-</span><span class='line'>                       <span class="nx">data</span><span class="o">:</span><span class="p">{</span><span class="nx">queryName</span><span class="o">:</span><span class="nx">request</span><span class="p">.</span><span class="nx">term</span><span class="p">},</span>
-</span><span class='line'>                       <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span class='line'>                       <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
-</span><span class='line'>                           <span class="nx">response</span><span class="p">(</span><span class="nx">$</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
-</span><span class='line'>                               <span class="k">return</span> <span class="p">{</span>
-</span><span class='line'>                                   <span class="nx">label</span><span class="o">:</span><span class="nx">e</span><span class="p">.</span><span class="nx">title</span>
-</span><span class='line'>                               <span class="p">}</span>
-</span><span class='line'>                           <span class="p">}</span> <span class="p">));</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Transactional</span>
+</span><span class='line'><span class="nd">@RunWith</span><span class="o">(</span><span class="n">SpringJUnit4ClassRunner</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+</span><span class='line'><span class="nd">@ContextConfiguration</span><span class="o">(</span><span class="n">locations</span><span class="o">={</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">})</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BizServiceTest</span> <span class="o">{</span>
 </span><span class='line'>
-</span><span class='line'>                       <span class="p">}</span>
-</span><span class='line'>                   <span class="p">});</span>
-</span><span class='line'>               <span class="p">}</span>
-</span><span class='line'>           <span class="p">});</span>
+</span><span class='line'>    <span class="nd">@Resource</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;bizService&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">IIBizService</span> <span class="n">ss</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Test</span>
+</span><span class='line'>    <span class="nd">@Rollback</span><span class="o">(</span><span class="kc">false</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">yourTestMethod</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1">//test code here</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">Assert</span><span class="o">.</span><span class="na">assertEquals</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;网页上：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'>输入查询条件：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;query&quot;</span> <span class="na">id=</span><span class="s">&quot;myquery&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;后台：</p>
+<h2>而基于junit3下的测试是这样的：</h2>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -179,39 +261,36 @@ $( &quot;#myquery&quot &hellip;">
 <span class='line-number'>18</span>
 <span class='line-number'>19</span>
 <span class='line-number'>20</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//前端输入的查询参数</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">queryName</span><span class="o">;</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BizServiceInSpringTest</span> <span class="kd">extends</span>
+</span><span class='line'>        <span class="n">AbstractTransactionalSpringContextTests</span> <span class="o">{</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * 自动完成</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">autoComplete</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="c1">//得到响应</span>
-</span><span class='line'>        <span class="n">HttpServletResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">IBizService</span> <span class="n">sts</span><span class="o">;</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">News</span><span class="o">&gt;</span> <span class="n">news</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="na">getNewsByTitle</span><span class="o">(</span><span class="n">queryName</span><span class="o">);</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testMethod</span><span class="o">()</span> <span class="o">{</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">String</span> <span class="n">json_str</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">news</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">assertEquals</span><span class="o">(</span><span class="s">&quot;yanwawa&quot;</span><span class="o">,</span> <span class="n">somevalue</span><span class="o">);</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">println</span><span class="o">(</span><span class="n">json_str</span><span class="o">);</span>
-</span><span class='line'>
+</span><span class='line'>            <span class="c1">//this.setComplete();</span>
 </span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;业务层：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">List</span> <span class="nf">getNewsByTitle</span><span class="o">(</span><span class="n">String</span> <span class="n">title</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">baseDao</span><span class="o">.</span><span class="na">queryEntitys</span><span class="o">(</span><span class="s">&quot;from News n where n.title like ?&quot;</span><span class="o">,</span> <span class="k">new</span> <span class="n">Object</span><span class="o">[]{</span><span class="s">&quot;%&quot;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s">&quot;%&quot;</span><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="n">String</span><span class="o">[]</span> <span class="nf">getConfigLocations</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">};</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setSts</span><span class="o">(</span><span class="n">IBizService</span> <span class="n">sts</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">sts</span> <span class="o">=</span> <span class="n">sts</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
 </span><span class='line'><span class="o">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
+
+<p>&emsp;&emsp;在这两种测试中，注解方式来得很简洁和灵活，建议大家使用。</p>
 </div>
   
   
@@ -224,7 +303,7 @@ $( &quot;#myquery&quot &hellip;">
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a></h1>
+      <h1 class="entry-title"><a href="/blog/2012/11/07/spring-annotation/">Spring全注解配置</a></h1>
     
     
       <p class="meta">
@@ -240,77 +319,87 @@ $( &quot;#myquery&quot &hellip;">
   
 
 
-<time datetime="2012-10-31T15:18:00+08:00" pubdate data-updated="true">2012年10月31日</time>
+<time datetime="2012-11-07T15:18:00+08:00" pubdate data-updated="true">2012年11月07日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;纸本油画，塔公寺。</p>
+  <div class="entry-content"><p>&emsp;&emsp;可用注解有：</p>
 
-<p>&emsp;&emsp;十一期间出游，路线：泸定，丹巴，新都桥，康定，海螺沟，十分难忘的一次出行。</p>
+<h2>有用于声明bean的Annotation：</h2>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/10/3.jpg' width='' height='' title='纸本油画-塔公寺'><span class='caption-text'>纸本油画-塔公寺</span></span></p>
+<p>@Component</p>
 
-<p>&emsp;&emsp;异常蓝的天空，美丽的草原，让人心旷神怡。</p>
+<p>@Controller（建议使用）</p>
 
-<p>&emsp;&emsp;虐诚的僧人们在朗诵经文，通往寺庙的小路边挂满了经幡，它们在柔和的风中传送着经文，相恋的一对马儿，悠闲地享受着这一切&hellip;&hellip;，一曲《天籁之爱》最能表现这个场景（我现在的手机铃声，仍旧是这个曲子）。</p>
+<p>@Repository（建议使用）</p>
 
-<p>&emsp;&emsp;画上的落款是孩他妈写的，显得有些生硬，有人说这是一败笔，当然，这也算是两人的一次小小合作吧。</p>
-</div>
-  
-  
+<p>@Service（建议使用）</p>
 
+<h2>有用于注入bean的Annotation：</h2>
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/10/30/url-utf8/">超链接传递中文参数解决之法</a></h1>
-    
-    
-      <p class="meta">
-        
+<p>@Autowired</p>
 
+<p>@Qualifier</p>
 
+<p>@Required</p>
 
+<p>@Resource（建议使用）这是对jsr-250标准的实现</p>
 
+<p>上面虽然很多注解都可以实现相同的功能，但我标注了建议使用的一些注解。</p>
 
-
-
-
-  
-
-
-<time datetime="2012-10-30T15:18:00+08:00" pubdate data-updated="true">2012年10月30日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;办法很多，下面介绍一种更为通用，最有效的方式：</p>
-
-<p>&emsp;&emsp;示例页面，其中包含post与get方式的提交：</p>
+<p>xml中要加上以下代码以支持注解功能：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;need_change&quot;</span> <span class="na">href=</span><span class="s">&quot;myajax!getChineseWord.do?name=中文&quot;</span><span class="nt">&gt;</span>中文测试<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&quot;&lt;%=path%&gt;/myajax!getChineseWord.do&quot;</span> <span class="na">method=</span><span class="s">&quot;post&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        姓名：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">value=</span><span class="s">&quot;中文&quot;</span><span class="nt">&gt;&lt;br&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;post中文&quot;</span> <span class="na">id=</span><span class="s">&quot;login_btn&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/form&gt;</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="c">&lt;!-- 对注解事务的支持 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;tx:annotation-driven</span> <span class="na">transaction-manager=</span><span class="s">&quot;transactionManager&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'><span class="c">&lt;!-- 注解驱动 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;context:component-scan</span> <span class="na">base-package=</span><span class="s">&quot;*.*&quot;</span> <span class="nt">/&gt;</span>
 </span></code></pre></td></tr></table></div></figure>
 
+</div>
+  
+  
 
-<p>&emsp;&emsp;对于超链接中的中文，使用encodeURI编码，我们在jquery的ready中去做这件事：</p>
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-07T15:18:00+08:00" pubdate data-updated="true">2012年11月07日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;有些命令时间长了不用，会突然想不起来，现记录一下，以备后查：</p>
+
+<h2>工作相关：</h2>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -318,27 +407,293 @@ $( &quot;#myquery&quot &hellip;">
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>      <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.need_change&quot;</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>          <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">,</span> <span class="nb">encodeURI</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">)));</span>
-</span><span class='line'>      <span class="p">});</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nb">jobs</span>，查看后台的工作，-l 参数，可看到pid
 </span><span class='line'>
-</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nb">fg</span> ,将某个pid转前台，也可用： %工作序号
+</span><span class='line'>
+</span><span class='line'><span class="nb">bg</span>，将某个pid转后台。
+</span><span class='line'>
+</span><span class='line'>ctrl + z:将某个工作转后台，并且stop
+</span><span class='line'>
+</span><span class='line'>ctrl + c:将结束当前进程
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;服务器端action中，需要进行转码：</p>
+<p>&emsp;&emsp;如果在启动某个程序，想让它直接转至后台，请在命令最后加上  &amp;。</p>
+
+<h2>网络：</h2>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="k">if</span> <span class="o">(</span><span class="s">&quot;ISO-8859-1&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">StringUtil</span><span class="o">.</span><span class="na">getEncoding</span><span class="o">(</span><span class="n">name</span><span class="o">)))</span> <span class="o">{</span>
-</span><span class='line'>         <span class="n">name</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">name</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="s">&quot;ISO-8859-1&quot;</span><span class="o">),</span><span class="s">&quot;UTF-8&quot;</span><span class="o">);</span>
-</span><span class='line'><span class="o">}</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>netstat -lnpt，查看网络连接，还可以看到程序的pid
+</span><span class='line'>
+</span><span class='line'>wget url，可下载资源，当服务器与外网连通的情况下，安装jdk，tomcat等很有用。
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;注：StringUtil.getEncoding这个方法将返回字符串的编码集格式，代码是网上copy的，现贴出该方法：</p>
+<h2>进程，cpu使用率等：</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>ps -aux,很详细，其中会有cpu使用率
+</span><span class='line'>
+</span><span class='line'>top，这个可以看到动态的cpu使用率，ctrl + c终止
+</span><span class='line'>
+</span><span class='line'><span class="nb">kill</span> -9 pid，强行结束，一般用这个以防止某些进程无法 <span class="nb">kill</span>死的情况
+</span><span class='line'>
+</span><span class='line'>pstree，树结构显示，可寻找进程间依赖关系
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>磁盘：</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>df 查看每个挂载区使用大小，在磁盘空间不够时，请运行
+</span><span class='line'>
+</span><span class='line'>du -ssh，查看当前目录所占用空间
+</span><span class='line'>
+</span><span class='line'>ls -l，查看到文件的更多详情
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>ssh连接：</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>ssh -q 用户名@主机ip
+</span><span class='line'>
+</span><span class='line'>rz -y ，可上传文件，并直接覆盖原文件
+</span><span class='line'>
+</span><span class='line'>sz 文件名，可下载服务串上的文件
+</span><span class='line'>
+</span><span class='line'>sudo  su - 用户名，可进行操作用的的切换
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>文件压缩</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>tar –zxvf filename.tar.gz 解压到当前目录，你也可以指定新的位置
+</span><span class='line'>
+</span><span class='line'>tar -zcvf 压缩文件名.tar.gz  目录或文件，注意z参数，指明要用gzip压缩，一般都要加上。
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>其它常见操作命令</h2>
+
+<p>我就不再解释：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>ls -l
+</span><span class='line'>
+</span><span class='line'><span class="nb">cd</span>
+</span><span class='line'>
+</span><span class='line'>mkdir
+</span><span class='line'>
+</span><span class='line'>rm
+</span><span class='line'>
+</span><span class='line'>rm -r
+</span><span class='line'>
+</span><span class='line'>cp file1, file2
+</span><span class='line'>
+</span><span class='line'>mv file1, file2
+</span><span class='line'>
+</span><span class='line'>ln -s file  link-name
+</span><span class='line'>
+</span><span class='line'>vim filename
+</span><span class='line'>
+</span><span class='line'>cat filename
+</span><span class='line'>
+</span><span class='line'><span class="nb">logout</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">exit</span>
+</span><span class='line'>
+</span><span class='line'>chmod
+</span><span class='line'>
+</span><span class='line'>chown
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>java下的一些常见命令：</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>catalina.sh start
+</span><span class='line'>
+</span><span class='line'>catalina.sh stop
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>java –cp .:/home/user_00/soft_setup/dev/romanticroom/WEB-INF/lib/* : /home/user_00/mysoft/tomcat6-1/lib/* com.maxsoft.app.romanticroom.facade.impl.AutoRun
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>mysql:</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>mysql -h10.181.48.24 -P3335 -u root
+</span><span class='line'>
+</span><span class='line'>mysqldump -h10.182.50.24 -P3335 -u root -p room &gt; room_server.sql
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;注意，这个sql导出后，要压缩打包后再传回备份。</p>
+
+<h2>memcached:</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>/home/user_00/mysoft/memcached/bin/memcached -d -m 1024 -u user_00 -l 16.124.49.121 -p 9584
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>jdk环境变量配置：</h2>
+
+<p>&emsp;&emsp;JDK安装：</p>
+
+<p>&emsp;&emsp;安装完成jdk后，在home/user001/执行，vim .bashrc</p>
+
+<p>&emsp;&emsp;直接./xxxxx.bin解压jdk</p>
+
+<p>&emsp;&emsp;java环境变量配置：</p>
+
+<p>&emsp;&emsp;到usr_00的home下,vim .bashrc，在最后加入：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">exportJAVA_HOME</span><span class="o">=</span>/usr/local/services/java/jdk1.6.0_31
+</span><span class='line'>
+</span><span class='line'><span class="nv">exportCLASSPATH</span><span class="o">=</span>.:<span class="nv">$JAVA_HOME</span>/jre/lib:<span class="nv">$JAVA_HOME</span>/lib/tools.jar
+</span><span class='line'>
+</span><span class='line'><span class="nb">export </span><span class="nv">JRE_HOME</span><span class="o">=</span><span class="nv">$JAVA_HOME</span>/jre
+</span><span class='line'>
+</span><span class='line'><span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$JAVA_HOME</span>/bin:<span class="nv">$PATH</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;为了让配置立即生效：source.bashrc</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-05T15:18:00+08:00" pubdate data-updated="true">2012年11月05日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;在线编辑器在网站后台管理系统中比较常见，特别是内容发布系统，下面贴出一个简单demo大家参考，先看界面：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/10/4.jpg' width='' height='' title='在线编辑界面'><span class='caption-text'>在线编辑界面</span></span></p>
+
+<p>&emsp;&emsp;前端代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href=</span><span class="s">&quot;&lt;%=path%&gt;/css/skins/default.css&quot;</span> <span class="na">type=</span><span class="s">&quot;text/css&quot;</span> <span class="na">media=</span><span class="s">&quot;screen&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;&lt;%=path%&gt;/js/jquery-1.8.2.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;&lt;%=path%&gt;/js/kindeditor-min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>$(function(){
+</span><span class='line'>    KE.show({
+</span><span class='line'>        id : &#39;content&#39;,
+</span><span class='line'>        imageUploadJson:&quot;<span class="err">&lt;</span>%=path%&gt;/news!uploadImg.do&quot;,
+</span><span class='line'>        cssPath : &#39;./index.css&#39;
+</span><span class='line'>    });
+</span><span class='line'>});
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;后台服务器处理代码（struts2代码）：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -376,301 +731,50 @@ $( &quot;#myquery&quot &hellip;">
 <span class='line-number'>34</span>
 <span class='line-number'>35</span>
 <span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
 </pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * 判断字符串的编码</span>
-</span><span class='line'><span class="cm">     * </span>
-</span><span class='line'><span class="cm">     * @param str</span>
-</span><span class='line'><span class="cm">     * @return</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">getEncoding</span><span class="o">(</span><span class="n">String</span> <span class="n">str</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">String</span> <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;GB2312&quot;</span><span class="o">;</span>
-</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">String</span> <span class="n">s</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
-</span><span class='line'>                <span class="k">return</span> <span class="n">s</span><span class="o">;</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;ISO-8859-1&quot;</span><span class="o">;</span>
-</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">String</span> <span class="n">s1</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
-</span><span class='line'>                <span class="k">return</span> <span class="n">s1</span><span class="o">;</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception1</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;UTF-8&quot;</span><span class="o">;</span>
-</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">String</span> <span class="n">s2</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
-</span><span class='line'>                <span class="k">return</span> <span class="n">s2</span><span class="o">;</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception2</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;GBK&quot;</span><span class="o">;</span>
-</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">String</span> <span class="n">s3</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
-</span><span class='line'>                <span class="k">return</span> <span class="n">s3</span><span class="o">;</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception3</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="k">return</span> <span class="s">&quot;&quot;</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/10/30/poi-excel/">Excel文件导出代码</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-30T15:18:00+08:00" pubdate data-updated="true">2012年10月30日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;经常有人问excle文件导出代码实现，现贴出示例代码(struts2,poi)，想看的童鞋请参考：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="c1">//业务调用，得到要导出的数据</span>
+</span><span class='line'><span class="cm"> * 上传的文件</span>
+</span><span class='line'><span class="cm"> */</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="n">Page</span> <span class="n">newsPage</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="na">getNewsByPage</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">10</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="s">&quot;readCount&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">News</span><span class="o">&gt;</span> <span class="n">news</span> <span class="o">=</span> <span class="n">newsPage</span><span class="o">.</span><span class="na">getData</span><span class="o">();</span>
+</span><span class='line'> <span class="kd">private</span> <span class="n">File</span> <span class="n">imgFile</span><span class="o">;</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 文件名称</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">private</span> <span class="n">String</span> <span class="n">imgFileFileName</span><span class="o">;</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="c1">//内存中生成excle文件</span>
-</span><span class='line'>        <span class="n">HSSFWorkbook</span> <span class="n">wb</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HSSFWorkbook</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">HSSFSheet</span> <span class="n">sheet</span> <span class="o">=</span> <span class="n">wb</span><span class="o">.</span><span class="na">createSheet</span><span class="o">();</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">uploadImg</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
 </span><span class='line'>
+</span><span class='line'>    <span class="c1">// 对上传的文件进行处理（重命名，保存到合适的位置）</span>
+</span><span class='line'>    <span class="c1">// 假如我们要存放在项目中的soft_upload目录下，那么，我们要先取得这个目录在实际服务器上的位置</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">upload_dir</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getRequest</span><span class="o">().</span><span class="na">getSession</span><span class="o">()</span>
+</span><span class='line'>            <span class="o">.</span><span class="na">getServletContext</span><span class="o">().</span><span class="na">getRealPath</span><span class="o">(</span><span class="s">&quot;soft_upload&quot;</span><span class="o">);</span>
 </span><span class='line'>
-</span><span class='line'>       <span class="c1">//生成标题，当然，你可以设定格式</span>
-</span><span class='line'>        <span class="n">HSSFRow</span> <span class="n">header</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="na">createRow</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">header</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="s">&quot;新闻id&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">header</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="s">&quot;新闻标题&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">header</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="s">&quot;新闻内容&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="c1">// 取文件扩展名</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">extName</span> <span class="o">=</span> <span class="n">imgFileFileName</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="n">imgFileFileName</span>
+</span><span class='line'>            <span class="o">.</span><span class="na">lastIndexOf</span><span class="o">(</span><span class="s">&quot;.&quot;</span><span class="o">));</span>
+</span><span class='line'>    <span class="c1">// 随机生成新的文件名</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">newFileName</span> <span class="o">=</span> <span class="n">UUID</span><span class="o">.</span><span class="na">randomUUID</span><span class="o">().</span><span class="na">toString</span><span class="o">()</span> <span class="o">+</span> <span class="n">extName</span><span class="o">;</span>
 </span><span class='line'>
+</span><span class='line'>    <span class="n">FileUtils</span><span class="o">.</span><span class="na">copyFile</span><span class="o">(</span><span class="n">imgFile</span><span class="o">,</span> <span class="k">new</span> <span class="n">File</span><span class="o">(</span><span class="n">upload_dir</span> <span class="o">+</span> <span class="n">File</span><span class="o">.</span><span class="na">separator</span>
+</span><span class='line'>            <span class="o">+</span> <span class="n">newFileName</span><span class="o">));</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="c1">//生成数据行</span>
-</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">news</span><span class="o">.</span><span class="na">size</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">Map</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">result</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error&quot;</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">result</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;url&quot;</span><span class="o">,</span> <span class="s">&quot;soft_upload/&quot;</span> <span class="o">+</span> <span class="n">newFileName</span><span class="o">);</span>
 </span><span class='line'>
-</span><span class='line'>            <span class="n">News</span> <span class="n">temp_news</span> <span class="o">=</span> <span class="n">news</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">HttpServletResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
 </span><span class='line'>
-</span><span class='line'>            <span class="n">HSSFRow</span> <span class="n">row</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="na">createRow</span><span class="o">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">resp</span><span class="o">.</span><span class="na">getWriter</span><span class="o">(),</span> <span class="n">result</span><span class="o">);</span>
 </span><span class='line'>
-</span><span class='line'>            <span class="n">row</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="n">temp_news</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
-</span><span class='line'>            <span class="n">row</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="n">temp_news</span><span class="o">.</span><span class="na">getTitle</span><span class="o">());</span>
-</span><span class='line'>            <span class="n">row</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="n">temp_news</span><span class="o">.</span><span class="na">getContent</span><span class="o">());</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="c1">//得到响应</span>
-</span><span class='line'>        <span class="n">HttpServletResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setHeader</span><span class="o">(</span><span class="s">&quot;Content-Disposition&quot;</span><span class="o">,</span><span class="s">&quot;attachment; filename=&quot;</span>
-</span><span class='line'>                <span class="o">+</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="s">&quot;我的新闻列表.xls&quot;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="s">&quot;GB2312&quot;</span><span class="o">),</span><span class="s">&quot;iso-8859-1&quot;</span><span class="o">));</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">OutputStream</span> <span class="n">os</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">();</span>
-</span><span class='line'>        <span class="c1">//发回响应</span>
-</span><span class='line'>        <span class="n">wb</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">os</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/10/24/jaskson-json/">使用jackson对json的操作</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-24T15:18:00+08:00" pubdate data-updated="true">2012年10月24日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;jackson是一个开源的处理json的工具包，spring mvc中的json类型响应就是用这个东西实现的，性能比较优异。我以前最早的项目用的是json-lib，后来因效率问题改为gson，现在看来可以换成jackson了。</p>
-
-<p>&emsp;&emsp;下面给大家讲讲jackson的使用：</p>
-
-<p>&emsp;&emsp;<strong>一、简单对象转为json</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">StringWriter</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringWriter</span><span class="o">();</span>
-</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">result</span><span class="o">,</span> <span class="err">【这个参数是你要转换的东西，对象或集合都是可以的】</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;当然，如果你不想用StringWriter的话，你可以直接用om.writeValueAsString(obj)直接输出字符串。</p>
+<p>&emsp;&emsp;其中有些参数是kindeditor约定的：</p>
 
-<p>&emsp;&emsp;<strong>二、日期的处理</strong></p>
+<p>&emsp;&emsp;如：imgFile是上传文件的控件名称</p>
 
-<p>&emsp;&emsp;默认情况下，jackson会把日期处理为毫秒，如果你想处理成字符串，可以：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">setDateFormat</span><span class="o">(</span><span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">));</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>三、排除不想要的属性</strong></p>
-
-<p>&emsp;&emsp;这个主要是用来解决对象间循环关联的情况的，使用如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SimpleBeanPropertyFilter</span> <span class="n">filter</span> <span class="o">=</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">serializeAllExcept</span><span class="o">(</span><span class="s">&quot;不要的属性名&quot;</span><span class="o">);</span>
-</span><span class='line'><span class="n">SimpleFilterProvider</span> <span class="n">fp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">();</span>
-</span><span class='line'><span class="n">fp</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;user_json&quot;</span><span class="o">,</span> <span class="n">filter</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">fp</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;当然，这个设置将对全局的ObjectMapper都起作用，我们也可以使用下面这种：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">writer</span><span class="o">(</span><span class="n">fp</span><span class="o">).</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">obj</span><span class="o">)</span><span class="err">；</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;每次使用前再设置，这个也是全局作用域。</p>
-
-<p>&emsp;&emsp;如果仅仅想要自己需要的属性，如下写法：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span> <span class="s">&quot;title&quot;</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;注意：addFilter的第一个参数，要用注解指写，比如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@JsonFilter</span><span class="o">(</span><span class="s">&quot;user_json&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">User</span> <span class="o">{}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果持久层使用的是hibernate，需要将hibernateLazyInitializer属性也排除。</p>
-
-<p>&emsp;&emsp;<strong>四、反序列化</strong></p>
-
-<p>&emsp;&emsp;反序列化用的没有序列化多。我们先看普通对象的处理：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">json_str</span><span class="o">,</span> <span class="n">User</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;集合对象，处理方式不同，请看list的处理方式：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span> <span class="n">uss</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">json_str</span><span class="o">,</span> <span class="k">new</span> <span class="n">TypeReference</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;&gt;()</span> <span class="o">{});</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>五、图片等二进制类型的json转换</strong></p>
-
-<p>&emsp;&emsp;这个不用担心，jackson可直接完成转换，前提是：</p>
-
-<p>&emsp;&emsp;你要用byte[]类型表示二进制数据，比如：private byte[] photo ;</p>
-
-<p>&emsp;&emsp;当然，上面的的代码都是在线手工操作下的示例，jackson也是支持注解的，比如：排除属性，日期格式的定义等，都可以用注解的方式去实现，请大家自己so一下吧。</p>
+<p>&emsp;&emsp;error是json返回的错误状态码，url是服务器上的文件名称等。</p>
 </div>
   
   
@@ -695,6 +799,10 @@ $( &quot;#myquery&quot &hellip;">
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
@@ -708,10 +816,6 @@ $( &quot;#myquery&quot &hellip;">
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a>
       </li>
     
   </ul>
@@ -757,7 +861,7 @@ ds.charset = 'UTF-8';
   </div>
   <footer role="contentinfo"><p>
   版权所有 &copy; 2013 - 冰雨 -
-  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <span class="credit">Powered by <a href="http://ljh2008.github.io">刘江华的博客</a></span>
   <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>
 

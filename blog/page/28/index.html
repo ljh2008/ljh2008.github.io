@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;首先说一下为什么要把apache换成nginx。 &emsp;&emsp;在目前的web服务器市场，apache的市场占有率应该在70%左右，可见其应用之广泛。apache有不错的性能及强大的模块配置功能，安全性也不 错。后来发现，很多访问量比较大的网站，都换成了nginx &hellip;">
+  <meta name="description" content="&emsp;&emsp;对系统性能的考虑，是一个新手和老手的重要区别之一，面试的时候，问一些性能优化的问题，很容易判断应聘者的工作经验。下面是我对性能优化的考虑，将从表现层、业务层、技术层三个大的方面来阐述。本篇先介绍表现层性能优化要点。 &emsp;&emsp; &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://yoursite.com/blog/page/28">
+  <link rel="canonical" href="http://ljh2008.github.io/blog/page/28">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
@@ -38,7 +38,7 @@
   <header role="banner"><hgroup>
   <h1><a href="/">刘江华的博客</a></h1>
   
-    <h2>空山不见人，但闻人语响.</h2>
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
   
 </hgroup>
 
@@ -64,7 +64,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2010/10/27/nginx/">Nginx转换手记</a></h1>
+      <h1 class="entry-title"><a href="/blog/2010/11/05/prof-web/">系统性能优化总结之表现层</a></h1>
     
     
       <p class="meta">
@@ -80,479 +80,307 @@
   
 
 
-<time datetime="2010-10-27T15:18:00+08:00" pubdate data-updated="true">2010年10月27日</time>
+<time datetime="2010-11-05T15:18:00+08:00" pubdate data-updated="true">2010年11月05日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;首先说一下为什么要把apache换成nginx。</p>
+  <div class="entry-content"><p>&emsp;&emsp;对系统性能的考虑，是一个新手和老手的重要区别之一，面试的时候，问一些性能优化的问题，很容易判断应聘者的工作经验。下面是我对性能优化的考虑，将从表现层、业务层、技术层三个大的方面来阐述。本篇先介绍表现层性能优化要点。</p>
 
-<p>&emsp;&emsp;在目前的web服务器市场，apache的市场占有率应该在70%左右，可见其应用之广泛。apache有不错的性能及强大的模块配置功能，安全性也不 错。后来发现，很多访问量比较大的网站，都换成了nginx，一个由俄罗斯人开发的开源项目，就下载下为研究了一下，发现其配置上比apache更加简 洁，且可控制项也非常丰富，就决定采用nginx了。至于效率是否会比apache高10倍，本人没有测试过，没有发言权。</p>
-
-<p>&emsp;&emsp;首先安装，sudo apt-get install ngnix，版本是0.6.02，应该是一个比较稳定的版本。</p>
-
-<p>&emsp;&emsp;其次，安装与php5-cgispawn-fcgi，php5服务器上本来就有，所以不必再安装一次。（前段时候nginx报重大安全漏洞，其实并不是ngnix的漏洞，而是spawn-fcgi上的问题，怎么修改以避免该漏同，大家google一下哈）。</p>
-
-<p>&emsp;&emsp;经过上面的操作，就完成了安装，ngnix已经加入到自动启动配置中，接下来，我们要做的，就是修改配置文件，建立虚拟主机。</p>
-
-<p>&emsp;&emsp;ubuntu集成nginx与apache后的目录结构非常的相似，在/etc/nginx目录下就是所有需要的东西了。nginx.conf是主配置文 件，一般不用改动，sites-available目录下，是站点虚拟主机配置文件，sites-enabled下是生效的配置（直接建立起sites- available目录下文件的软链接，软链接是我发现的linux下最强大、最有效的功能，如果换为win 平台，我不晓得该怎么做，呵呵）。
-下面是一个主机配置示例：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='nginx'><span class='line'><span class="k">server</span> <span class="p">{</span>
-</span><span class='line'><span class="kn">listen</span>   <span class="mi">80</span><span class="p">;</span>
-</span><span class='line'><span class="kn">server_name</span>  <span class="s">yourdomain.com</span><span class="p">;</span>
-</span><span class='line'><span class="kn">root</span> <span class="s">/var/www/yousite_doc_root</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="kn">access_log</span>  <span class="s">/var/log/nginx/localhost.access.log</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
-</span><span class='line'>  <span class="kn">root</span> <span class="s">/var/www/yousite_doc_root</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">index</span> <span class="s">index.html</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="kn">location</span> <span class="p">~</span> <span class="sr">\.(jsp|htm|do)$</span> <span class="p">{</span>
-</span><span class='line'>  <span class="kn">proxy_pass</span> <span class="s">http://youdomain.com</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">proxy_set_header</span> <span class="s">X-Real-IP</span> <span class="nv">$remote_addr</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">proxy_read_timeout</span> <span class="mi">480</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">proxy_send_timeout</span> <span class="mi">480</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="kn">location</span> <span class="p">~</span><span class="sr">*</span> <span class="s">\.(mp3|wmv|png|jpg|gif|swf)</span>$ <span class="p">{</span>
-</span><span class='line'>  <span class="kn">valid_referers</span>  <span class="s">none</span>  <span class="s">blocked</span> <span class="s">server_names</span> <span class="s">*.yourdomain.com</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">if</span> <span class="s">(</span><span class="nv">$invalid_referer</span><span class="s">)</span> <span class="p">{</span>
-</span><span class='line'>      <span class="kn">rewrite</span> <span class="s">^/</span> <span class="s">http://image.yourdomain.com/dl.jpg</span><span class="p">;</span>
-</span><span class='line'>      <span class="c1">#return 403;</span>
-</span><span class='line'>  <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;ubuntu在上面的配置中，要注意的是：</p>
-
-<p>&emsp;&emsp;1、location / {}中，请配置上root，虽然上面已经配置过一次。如果不配置，资源访盗链将无法实现，网上的很多配置都是误人子弟的，请大家一定要小心。</p>
-
-<p>&emsp;&emsp;2、 proxy_pass <a href="http://youdomain.com">http://youdomain.com</a> 是到jsp和*.do的，转到一个后台tomcat集群配置中，效率可能会比apache的ajp13低一些，我会在另一篇文章中介绍。</p>
-
-<p>&emsp;&emsp;3、proxy_read_timeout 480;与 proxy_send_timeout 480配置，有助于解决业务执行过程较长的长请求。</p>
-
-<p>&emsp;&emsp;4、 proxy_set_header X-Real-IP $remote_addr用于在程序中获得客户真实的ip，当然切换成nginx后，你程序中取ip的代码也得改。</p>
-
-<p>php站点的一个配置实例：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='nginx'><span class='line'><span class="k">server</span> <span class="p">{</span>
-</span><span class='line'>  <span class="kn">listen</span> <span class="mi">80</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">server_name</span> <span class="s">yourdomain.com</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">access_log</span>  <span class="s">/var/log/nginx/localhost.access.log</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
-</span><span class='line'>      <span class="kn">root</span>   <span class="s">/var/www/bbs_doc_root/subdir</span><span class="p">;</span>
-</span><span class='line'>      <span class="kn">index</span>  <span class="s">index.html</span> <span class="s">index.php</span><span class="p">;</span>
-</span><span class='line'>  <span class="p">}</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="kn">location</span> <span class="p">~</span> <span class="sr">\.php$</span> <span class="p">{</span>
-</span><span class='line'>      <span class="kn">fastcgi_pass</span>   <span class="n">127.0.0.1</span><span class="p">:</span><span class="mi">9000</span><span class="p">;</span>
-</span><span class='line'>      <span class="kn">fastcgi_index</span>  <span class="s">index.php</span><span class="p">;</span>
-</span><span class='line'>      <span class="kn">fastcgi_param</span>  <span class="s">SCRIPT_FILENAME</span>  <span class="s">/var/www/bbs_yousitedomain/ucenter</span><span class="nv">$fastcgi_script_name</span><span class="p">;</span>
-</span><span class='line'>      <span class="kn">include</span> <span class="s">fastcgi_params</span><span class="p">;</span>
-</span><span class='line'>  <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;最后，还需要修改nginx配置文件，将nginx版本号隐藏起来，以访止自动扫描软件发现特定版本的安全露洞。</p>
-
-<p>&emsp;&emsp;如有问题，请与我讨论。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/10/26/task/">项目中定时任务实现方式比较</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-10-26T15:18:00+08:00" pubdate data-updated="true">2010年10月26日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;定时任务在项目中使用非常普遍，比如说：每天晚上3：00开始执行数据真删除，每个月第四周星期三晚上1：00开始执行报表统计任务等，我们在项目中，可以通过下面三种方式来实现：</p>
-
-<p><strong>一、利用j2se的timer类来实现</strong>，非常简单，代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">java.util.Timer</span><span class="o">;</span>
-</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.TimerTask</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">FuduTest</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)...{</span>
-</span><span class='line'>  <span class="n">Timer</span> <span class="n">timer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Timer</span><span class="o">();</span>
-</span><span class='line'>  <span class="n">timer</span><span class="o">.</span><span class="na">schedule</span><span class="o">(</span><span class="k">new</span> <span class="n">FuduTask</span><span class="o">(),</span> <span class="mi">1000</span><span class="o">,</span> <span class="mi">2000</span><span class="o">);</span><span class="c1">//在1秒后执行此任务,每次间隔2秒</span>
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">static</span> <span class="kd">class</span> <span class="nc">FuduTask</span> <span class="kd">extends</span> <span class="n">TimerTask</span><span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="nd">@Override</span>
-</span><span class='line'>      <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">(){</span>
-</span><span class='line'>          <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;开始执行定时任务......&quot;</span><span class="o">);</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这种方式可以实现一些简单的定时任务，如果任务的启动条件复杂，就要借助于框架来实现了。</p>
-
-<p><strong>二、使用定时器框架</strong>，我在这仅介绍广泛使用的Quartz框架结合spring的使用。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;mainScheduler&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.SchedulerFactoryBean&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;triggers&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;list&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;cronReportTrigger&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/list&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c">&lt;!--实际的工作Bean--&gt;</span>
-</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;myService&quot;</span> <span class="na">class=</span><span class="s">&quot;com.spring.helloworld.CourseService&quot;</span><span class="nt">&gt;&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c">&lt;!--jobBean用于设定启动时运用的Bean与方法--&gt;</span>
-</span><span class='line'><span class="nt">&lt;bean</span>  <span class="na">id=</span><span class="s">&quot;scheduledReportJobDetail&quot;</span>  <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;targetObject&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;myService&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;targetMethod&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;value&gt;</span>sendMail2BrithdayCustomer<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c">&lt;!--定时器设定起动表达式，比如下面的是：每5秒起动一次 (0 0 5 * * ?每日五点起动)--&gt;</span>
-</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;cronReportTrigger&quot;</span>
-</span><span class='line'><span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.CronTriggerBean&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;jobDetail&quot;</span><span class="nt">&gt;&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;scheduledReportJobDetail&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;cronExpression&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;value&gt;</span>10,15,20,25,30,35,40,45,50,55 * * * * ?<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在spring中的配置可谓是相当的简单，你要写的仅仅是一个业务类而已。使用在项目中集成框架的缺点是：和项目服务器的耦合度太高，项目服务器当机，定时任务也就over了，定时任务执行异常，也会影响到服务器的项目，因此，最好的办法，还是采用下面的第三种方式。</p>
-
-<p>&emsp;&emsp;<strong>三、利用操作系统的定时任务</strong></p>
-
-<p>&emsp;&emsp;windows操作系统：在控制面板中的计划任务，按提示一步一步就可以完成，但是前提是你得写好一个批处理文件（.bat的），并确保该批处理可以运行。</p>
-
-<p>&emsp;&emsp;该脚本中，一般是调用java的一个main方法，在main方法中，用代码的方式启动spring容器，得到业务对象引用，调用业务方法即可。</p>
-
-<p>&emsp;&emsp;linux操作系统：
-&emsp;&emsp;使用crontab，一般的linux系统中都有集成，你只需:vim /etc/crontab即可，根据该文件中的example，添加你的任务命令行。</p>
-
-<p>&emsp;&emsp;下面是我的一行配置命令：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="c"># m h dom mon dow user  command</span>
-</span><span class='line'>30 5 * * * root /home/server/run/translate.sh &gt;&gt; /var/log/fudu365/auto_run/tranlate.log
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;加入你的任务行后，crontab会自动生效，不用你重启。</p>
-
-<p>&emsp;&emsp;注意：crontab可，最前面一位不是秒哦，也就是，它只能在0秒开始运行。</p>
-
-<p>&emsp;&emsp;无论你是用框架，还是crontab，有一个东西非常重要，那就是cronExpression，cronExpression怎么写，自己到网上查，<a href="http://en.wikipedia.org/wiki/CRON_expression">http://en.wikipedia.org/wiki/CRON_expression</a>也有一篇，你可以去看看。</p>
-
-<p>&emsp;&emsp;总之，项目中的定时任务，你得根据项目的实际情况进行选择，如果你想要一个稳定、强大的定时任务，还是采用第三种方式吧。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/10/25/old-new/">网站新旧版替换注意事项</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-10-25T15:18:00+08:00" pubdate data-updated="true">2010年10月25日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;网站建成后，根据用户体验及外部竟争条件的变化，网站少不更改，小的更改问题不是很大，如果是大的改动，也就是意味着网站要来个彻底的大换血，改版，那么，网站改版本在技术上应注意些什么呢？我在这里总结几点（当然，我的总结中，并不包括UI体验内容）。</p>
-
-<p>&emsp;&emsp;1、网站新版开发完成后，要上线测试，如果发现问题，立即进行修改。这个时候，老版的系统一定是同步运行的。你可以建一个二级域名指向新系统进行测试，也可以在老系统中发布通知，链接上新系统地址，让更多的老系统用户参与试用。</p>
-
-<p>&emsp;&emsp;2、请注意将新系统站点根目录下的robots.txt改为拒绝所有搜索引擎扫描收录，原因很简单：新系统的测试域名以后会更改，并且很多页面seo可能没有考虑到位。</p>
-
-<p>&emsp;&emsp;3、保持新系统与旧系统的url地址上的统一，特别是老版已经被收录的页面，如果不一致，将会造成新版上线后流量的大幅减少（我用urlReWrite可最大限度达到统一）。</p>
-
-<p>&emsp;&emsp;4、新旧系统切换前，必须要做好网站地图，并要仔细检查页面中是否有死链。</p>
-
-<p>&emsp;&emsp;5、发一份站点通告或帮助，向用户说明老系统中的功能，在新系统中怎样才能找到。</p>
-
-<p>&emsp;&emsp;6、在新旧系统并行运行一段时间后，你可以确信新系统已经比较完美后，请找一个在线用户最少的时候，完成系统的切换（改虚拟主机映射即可，我在后面的文章中会介绍）。</p>
-
-<p>&emsp;&emsp;7、在技术实现上，还有一个非常重要的问题，就是将新旧站点的域名信息，写到一个配置文件中，新系统中所用用到的地址信息，都从配置文件中读取，在新旧系统切换的时候，你将会发现这么做的好处是多么的有用。</p>
-
-<p>&emsp;&emsp;8、最后，新系统成功切换替代老系统后，请给系统的每一个老用户发一封邮件，告诉他们站点已经更新，更新的亮点也要说明，“喊他们回家吃饭了”，呵呵。</p>
-
-<p>&emsp;&emsp;以上是本人过去的一些站点改版经历中的深刻体会，希望对大家有所帮助。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/10/22/discuz/">Discuz、uchome与jquery冲突问题</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-10-22T15:18:00+08:00" pubdate data-updated="true">2010年10月22日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;20日，discuz报重大安全露洞，到官网上下载补丁文件更新后，悬着的心来才放下来。
-接下来，我发现discuz用户激活验证码不显示了，“看不清，换一张”点了也没有任何反映，改用用ie6再次打开页面，发现居然是js在报错，怎么会出现这种情况呢？郁闷！</p>
-
-<p>&emsp;&emsp;想起以前在做uchome及jquery整合过程中，也出现相册、博客操作方面的异常，网上查了一下，说是jquery的js加载顺序与uchome的产生了冲突，将jquery的js放到最前面加载，就没有问题，改过后，果然恢复正常。</p>
-
-<p>&emsp;&emsp;难道这回discuz也是这个原因引起的？</p>
-
-<p>&emsp;&emsp;找到discuz的默认模板文件，将jquery及juqey ui的相关文件统统放到head后面一行马上加载，问题解决。看来不同的客户端的js框架都会有冲突发生的，记得以前jquery与dwr混用，也出现过$冲突问题。</p>
-
-<p>&emsp;&emsp;自从康盛被tencent收购后，康盛加大了x-space的推广力度，并到QQ登录也集成了进来，本人测试过，发现目前还不太稳定，登录速度非常缓慢， 看来还得等一段时间。如果qq的集成登录技术成熟后，那么康盛的sns产品一定会变得非常强大，phpWin将无法与之竟争。
-最后补充一点：冲突后，以前jQuery的$简写，也都要写成全称的jQuery。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/10/21/960/">页面工业化生产（960的思考）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-10-21T15:18:00+08:00" pubdate data-updated="true">2010年10月21日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;本人曾经不重视页面工作，而将精力放在系统的业务实现上，做出的界面不尽人意。06年我负责的一个产品，在全国有近30家客户，每个客户的项目，一般 仅在首页上不同，登录后，功能界面完相同，用户操作及界面的可用性，现在想想，可以说是非常的差，很多操作都是从程序员角度去设计的（软件产品销售得还是 很不错，当时的老板还是非常有眼光的，虽然很久没联系过了，但至今对他比较敬佩）。</p>
-
-<p>&emsp;&emsp;我们当时每谈成一家客户，都会请外面的美工，用ps做一张首页（当时价格2000元左右），经过客户多次确认后，再由我们对html页面熟悉些的开发人员 照界面切图，实现设计效果。当然
-这块工作不是我做的，我对html元素了解甚少。近两年，带娃娃们做的一些项目，让我深刻认识到，页面这块的学问还非常的 深，怪不得大公司都有UI工程师这一角色呢。页面的规范，页面的批量批生产与维护等方面，我着实还有些想法。下面主要谈谈一个css框架在项目中的应用。</p>
-
-<p>&emsp;&emsp;做过互联网项目的人应该都知道，前端页面的的效果、用户体验及后期维护在当的重要，这往往会决定一个互联网项目的成败。那么，做为美工人员，做好页面效果 图后，页面实现人员如何才能照葫芦画瓢，实现最初的设计效果呢？美工和页面实现人员之间是否有某种约定或规范以协调二者顺畅地工作？对，960 css框架可以解决这个问题。</p>
-
-<p>&emsp;&emsp;到网上搜一下，你会找到很多960相关的文章，记得有一篇 960的秘密，推荐大家去看看。960 css框架下载地址在：<a href="http://960.gs/">http://960.gs/</a>，很小的一个压缩包，解压后，就可以开始工作了：</p>
-
-<p>&emsp;&emsp;1、代码包中的code目录。该目录中存放的是演示源代码，有12栅格与24栅格的两种示例（我一般用24栅格的，有利于精细控制），有默认从左到右布局排列的，也有从右到左排列的示例，请大家结合界面显示及网页源代码，很快就知道怎么用的了。</p>
-
-<p>&emsp;&emsp;2、该框架有如下几个css文件，使用时需要引入到你的页面中：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='css'><span class='line'><span class="o">&lt;</span><span class="nt">link</span> <span class="nt">rel</span><span class="o">=</span><span class="err">”</span><span class="nt">stylesheet</span><span class="err">”</span> <span class="nt">href</span><span class="o">=</span><span class="err">”</span><span class="nt">css</span><span class="o">/</span><span class="nt">reset</span><span class="nc">.css</span><span class="err">”</span> <span class="o">/&gt;</span>
-</span><span class='line'><span class="o">&lt;</span><span class="nt">link</span> <span class="nt">rel</span><span class="o">=</span><span class="err">”</span><span class="nt">stylesheet</span><span class="err">”</span> <span class="nt">href</span><span class="o">=</span><span class="err">”</span><span class="nt">css</span><span class="o">/</span><span class="nt">text</span><span class="nc">.css</span><span class="err">”</span> <span class="o">/&gt;</span>
-</span><span class='line'><span class="o">&lt;</span><span class="nt">link</span> <span class="nt">rel</span><span class="o">=</span><span class="err">”</span><span class="nt">stylesheet</span><span class="err">”</span> <span class="nt">href</span><span class="o">=</span><span class="err">”</span><span class="nt">css</span><span class="o">/</span><span class="nt">960_24_col</span><span class="nc">.css</span><span class="err">”</span> <span class="o">/&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;前两个css文件不是必须引入的，它们的作用是为很多html元素设计默认的样式，如果你的站点中英文据多，建议你使用。</p>
-
-<p>&emsp;&emsp;960_24_col.css是24栅格，从左到右排版的文件，当然，你也可以选择其它的几种（我相信阿拉伯国家的人会选择从右至左的css文件），12或24栅，请根据你的站点类型选择，个人主面，12足够，门户站，24可能都少了。</p>
-
-<p>&emsp;&emsp;3、960框架中的的css样式：</p>
+<p>&emsp;&emsp;表现层优化的一个重要原则是<strong>减少向服务器发送请求的次数以及减少每次请求的数据传输量</strong>，围绕这一点，将会想到有很多的优化办法。</p>
 
 <ul>
-<li>container_x， 顶层大容器样式，x是栅格数。</li>
-<li>grid_x,  x是数据栅格数，你可以向小孩做算术一样来决定某个版块的宽度。</li>
-<li>prefix_x， 从什么格处开始显示。</li>
-<li>alpha 取消栅格间左间距，一般是5px</li>
-<li>omega取消栅格间右间距</li>
+<li><p>ajax:大家都知道,ajax可以实现局部更新，显然减少了数据通讯量以及请求次数（全页面刷新，页面上的很多资源都要进行请求哦），而且ajax可以增强客户体验；</p></li>
+<li><p>减少图片文件大小，这个是减少数据通讯量的方法，可用png之类较小的文件存盘格式；</p></li>
+<li><p>使用css对图片分割，把多个地方的小图标集成到一张图片上来。比如：.zhu{background:url(“../img/shenxiao /sx.png”) no-repeat scroll 0 -528px transparent;}，注意其中的0 -528处，是关键；</p></li>
+<li><p>减少css与js文件的数据，最好不要按照页面逻辑将文件划分成多个，以减少请求次数；在同一个文件中，也要想法减少文件大小，多余的空格，回车，在项目上 线前都要去掉，我曾经见过一些网站，就一个css文件，打开，里面只有一行，这一行非常的长，可见，边回车换行都已经被删除了，呵呵。再有,js文件上线 前要找个工具压缩一下，文件大小一般会减少一半以上；</p></li>
+<li><p>从程序上，对页面进行静态化处理（页面静态化处理的详细内容我将在后面的博客中介绍）。</p></li>
+<li><p>对页面进行缓存，squid开源产品居多，oscache也是可以的。</p></li>
+<li><p>如果是jsp，可以考虑更换成其它的模板框架，比如：velocity，freemarker等，一来可以提高页面响应速度，还可以强制程序员按model2书写页面交互。</p></li>
+<li><p>根据实际情况选择合适的数据通讯方式，json,xml，或者是服务器拼好页面再发往客户端。</p></li>
+<li><p>合理利用好浏览器缓存。但有的时候，是禁止缓存的哦，比如一些ajax操作中。</p></li>
+<li><p>启用服务器gzip压缩。</p></li>
 </ul>
 
 
-<p>&emsp;&emsp;4、templates目录中的模板文件。
-该文件由美工人员使用，有ps、corel_draw、flash等多种设计工具的模板文件，美工在设计时，将这些文件设置为底图，在进行模块定位时，与底图上的栅格对齐，这样，就可以和页面实现人员达到设计与实现的统一。
-最后一个思考？960 css只定义了宽度的栅格，为什么没有高度呢？本人也想了很长时间，经过实践发现，网站项目的版块高度一般都是根据内容自动适应的，所以，定义高度的意义不是很大，呵呵。
-960框架很适合网站类产品，可以实现页面批量化、工业化生产与维护，但它对mis类型的管理系统，个人觉得用处不大，如果你有什么不同想法，欢迎给我留言。</p>
+<p>&emsp;&emsp;当然，条条大道通罗马，以“减少向服务器发送请求的次数以及减少每次请求的数据传输量”为优化核心，办法还是很多的。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/11/03/gui-prototype/">管理系统界面的十条潜规则</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-03T15:18:00+08:00" pubdate data-updated="true">2010年11月03日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;界面设计要根据你的用户群体来确定，其实，很多娃娃的界面丑陋不说，连一些基本的隐喻规则（潜规则）都没有遵守，那界面上有些什么潜规则呢？我总结了一下，大致有这么几点。</p>
+
+<p>&emsp;&emsp;一、界面风格要统一，小组中分成几个人去实现，最后的效果必须看似出自一人之手，包括整体颜色、按钮风格、iframe区大小等。这个可以用统一的模板解决。</p>
+
+<p>&emsp;&emsp;二、查询界面统一在界面顶端，最好用一个group之内的框起来，感觉比较集中。</p>
+
+<p>&emsp;&emsp;三、列表展示如果有checkbox，统一放到每一行的第一列。</p>
+
+<p>&emsp;&emsp;四、每一行应该有针对该行的一些操作，比如：删除，修改等等，操作列应该放在每一行的最后一列。</p>
+
+<p>&emsp;&emsp;五、如果有针对多行的批量操作按钮，当没有checkbox选中时，相应的批量操作应置为disabled。</p>
+
+<p>&emsp;&emsp;六、删除或其它一些不可恢复操作时，应该有提示对话框。</p>
+
+<p>&emsp;&emsp;七、新建或修改时，必填字段一定要用红色的*标出。一般要提供 查看 与 修改界面，最后不要图省事，用修改界面当查看界面使用。</p>
+
+<p>&emsp;&emsp;八、分页查询时，应回带顶部用户输入的查询条件，上一页、下一页等链接上也应用条件。</p>
+
+<p>&emsp;&emsp;九、在列表界面，修改、删除记录完成后，应该返回列表当初所在页上。</p>
+
+<p>&emsp;&emsp;十、提交数据未返回前，所点提交按钮应置为disabled。</p>
+
+<p>&emsp;&emsp;其实还有一些，我先暂时写上这十条吧。附贴图一张，供参考：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/48.jpg' width='' height='' title='原型参考图'><span class='caption-text'>原型参考图</span></span></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/11/02/seo2/">如何写页面代码（seo思考之二）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-02T15:18:00+08:00" pubdate data-updated="true">2010年11月02日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;做seo的人都知道，你的站点页面不仅是呈现出来给用户看的，还应该是提供给搜索引擎阅读的，那如何才能写好站点中的每一个页面呢？下面是我总结出来的经验，供参考：</p>
+
+<p>&emsp;&emsp;一、页面结构一定要清晰。老大的一句话“像写文章一样来写网页”，让我受益匪浅。一篇文章结构，我想大家都比较清楚，标题，开头，段落，结尾等，该加强的地方要加强，文章结构清晰，完整。</p>
+
+<p>&emsp;&emsp;二、页面中仅仅呈现主要内容，页面样式全部提取到外部css中，全面减少页面的大小。</p>
+
+<p>&emsp;&emsp;三、页面中的行为，也就是js，要全部提出来，以减少页面大小，并且一般放在页面尾部引入。</p>
+
+<p>&emsp;&emsp;四、重要的内容提前。越是重要的，就越要放到前面，越是更新频繁的，就要往前放。</p>
+
+<p>&emsp;&emsp;五、合理使用h,b等html标题，以突出重要内容。</p>
+
+<p>&emsp;&emsp;六、写好页面标题，以及描述信息，比如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;meta</span> <span class="na">name=</span><span class="s">”description”</span> <span class="na">content=</span><span class="s">”刘江华的博客”</span> <span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;meta</span> <span class="na">name=</span><span class="s">”keywords”</span> <span class="na">content=</span><span class="s">”博客”</span> <span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这里要注意一下，meta现在对百度已经没有用处了，但google似乎还有效果，所以，还是加上，使你的页面结构更严谨。</p>
+
+<p>&emsp;&emsp;七、命名要规范，包括css中的class及id，让搜索引擎能够读懂含义最好。</p>
+
+<p>&emsp;&emsp;上面几点，是seo对页面源码书写方面的基本要求，大家写页面时应该养成这样的习惯。</p>
+
+<p>&emsp;&emsp;最后我说一个简单的方法，验证你的页面是否能达到上面的要求。把你页面中的css与js全部取消（只需在源文件的链接中改个名字）,再用浏览器打开看看，加强标签，段落标签，标题标签是否能够表达文章主题，你会发现，一目的然，这种方法非常的有效。</p>
+
+<p>&emsp;&emsp;google在中国已经快死了，这段时间政府一直在墙它，访问10次可能有5次都打不开，google news更是永久无法打开，看来zf是想把google从中国彻底的消除了，现在的seo，重点当然是baidu。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/11/01/p4/">四种持久层设计方案比较</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-01T15:18:00+08:00" pubdate data-updated="true">2010年11月01日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;一个软件项目，少不了数据的持久化，那么，怎么设计才能让系统代码具有更好的可维护性，让程序员更高效地进行核心业务的开发呢？下面是笔者在一些项目中使用过的持久层设计方案。</p>
+
+<p>&emsp;&emsp;我们现在假设要写一个在线书店项目，用户要登录系统，并对图书进行管理，我们可以看到下面的几种持久层设计方案在这个项目中的优劣。</p>
+
+<p>&emsp;&emsp;<strong>方案一：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/1.png' width='' height='' title='持久层设计方案一'><span class='caption-text'>持久层设计方案一</span></span></p>
+
+<p>&emsp;&emsp;设计图中有些方法笔者进行了简化，本文的重点在于方案比较。上面的这种设计方案应该是非普通的一种做法，它有如下的一些优点：</p>
+
+<p>&emsp;&emsp;1、业务层只负责实现业务，与持久层相关的所有东西（sql、hql等），全部放到dao实现类中去做。</p>
+
+<p>&emsp;&emsp;2、方便数据库性能优化，所有数据库职责以按实体对象为粒度进行分配，所有的sql指令均由dao这里发出。</p>
+
+<p>&emsp;&emsp;3、结构清晰，dao就是ddd中的仓储对象。</p>
+
+<p>&emsp;&emsp;<strong>缺点：</strong></p>
+
+<p>&emsp;&emsp;不利于系统后期维护。后期一但要加功能，工作量比较大，首先你得加业务层的方法，很有可能也要为实体dao添加方法，这样一来，一处业务修改，就会动到dao接口及期实现类，加上业务层接口、实现类，修改达4处，对于新手来说，很容易迷糊。</p>
+
+<p>&emsp;&emsp;<strong>方案二：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='//uploads/2011/03/2.png' width='' height='' title='持久层设计方案二'><span class='caption-text'>持久层设计方案二</span></span></p>
+
+<p>&emsp;&emsp;方案二采用通用dao，实现所有的CRUD操作，在业务实现类中注入通用dao完成业务对持久层的操作，该方案的优点是简单，添加业务实现类或修改业务实现 类时，非常的方便，一个地方搞定；当然，很多好的东西都是双刃剑，该方案必然会在业务实现代码中出现sql、hql等持久层与数据库相关的逻辑，很多人认 为这种做法不OO，职责划分不分明。但是这种方案在项目中也是很有用的，谁说sql就一定是数据库的东西，多年前我可是擅长用存储过程来实现业务 哈，sql本身就和业务密不可分哦。</p>
+
+<p>&emsp;&emsp;<strong>方案三：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/3.jpg' width='' height='' title='持久层设计方案三'><span class='caption-text'>持久层设计方案三</span></span></p>
+
+<p>&emsp;&emsp;方案三也采用的是通用Dao实现。该方案根据OOD的开闭原则，将持久层中的增、删、改三种不变化的操作封装到CRU_DAO中，而将查询封装到 IFinder中，实现类中封装的也是通用持久化方法。但这种设计中，要求业务接口必须继承通用接口，业务实现类也要继承通用实现dao实现以获得持久化能力。</p>
+
+<p>&emsp;&emsp;该方案的优点是让程序员感觉只有业务层的存在，似乎更加容易理解，但该框架让业务实现类通过继承获得持久化功能，违背了“组合聚合优于继承”的设计原则。</p>
+
+<p>&emsp;&emsp;我用这种方案做过一些项目，感觉不是太方便，但中国移动的大部分系统都是用这种持久层设计方案实现的，用得倒也挺好的。</p>
+
+<p>&emsp;&emsp;<strong>方案四：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/4.jpg' width='' height='' title='持久层设计方案四'><span class='caption-text'>持久层设计方案四</span></span></p>
+
+<p>&emsp;&emsp;这种方案是我在HP中国的一些项目中看到的，自己也曾在多个项目中实践，应该是一种非常不错的设计方案，虽然在图上看起来有些杂乱，但该方案确实能大幅提升开发效率。</p>
+
+<p>&emsp;&emsp;该方案中，有通用的dao接口，所有crud与通用分页的方法都加入通用dao接口中，该接口有一个具体的实现。在业务层与持久层的设计上，我们还是采用方 案1的做法，相关实体都有自己的持久化接口，但实体的持久化接口都从通用dao接口继承，持久化实现类在实现自有接口的同时，继承通用dao实现类，这 样，每个实体持久化类就有了全部的通用化持久层方法，如果你的实体持久化需要什么特殊的持久化方法，只需添加这些特殊的持久化方法（一般是查询方法）即可，非常的方便。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/29/gui-prototype/">浅谈原型法</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-29T15:18:00+08:00" pubdate data-updated="true">2010年10月29日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;原型法在现在的软件开发过程中被广泛使用。首先，我们要明确的是，任何一种方法或工具都是为我们开发、生产过程服务的，这一点必须清楚，我们不能成为方法或工具的奴隶，只要我们认为这个方法论或工具对我们的过程有用，就可以大胆使用，否则就是教条主义了。</p>
+
+<p>&emsp;&emsp;当今天比较流行的软件开发方法论，比如RUP，敏捷开发，Iconix等都是以项目开发早期降低风险为目标，不论你所开发的是项目型软件，还是产品型的软件，原型法在开发过程中都有举足轻重的作用。可以说，在整个软件开发生命周期中，原型法都将贯穿需求分析、概要设计、详细设计全，甚至实现的全过程中。</p>
+
+<p>&emsp;&emsp;原型法是一种非常实用的方法，从技术面上划分，可以分为界面原型以及架构（技术方案）验证原型，下面我将结合近期开发的voa英语复读网过程对这两种原型技术进行阐述。</p>
+
+<p>&emsp;&emsp;界面原型法，是使用原型工具根据客户需求及软件分析设计人员的理解，将头脑中的界面快速反映到介质上，以方便沟通交流，达到尽早需求验证的目的，尽早明确一些不确定性的因素，笔者在工作中对界面原型法其进行了一些尝试，和大家交流一下。</p>
+
+<p>&emsp;&emsp;<strong>一、</strong> 采集回来的用户需求经过简单整理后，召集公司开发组中有经验的人员一起讨论定义需求，并在白板上画出原型草图，这时的原型可能比较粗糙，仅包含主要的核心界 面元素及页面见的跳转流程，在大家对界面达成一致后，用数码相机拍照下来，整理到一个文档中，为后期可重用界面原型提供依据。本过程中的工具为笔，白板， 照像机，产生的原型仅后后期页面实现人员参考。</p>
+
+<p>&emsp;&emsp;<strong>二、</strong> 基于敏捷开发过程中，客户代表就在现场，此时，可以在纸上用笔直接绘制界面草图与客户沟通，如有理解上的偏差，现场立即修改达成一致，当然，也可以在可迭代中的产品上直接修改；此过程的原型工具为笔、纸，可以把理解偏差快速反馈到项目中，以尽早修改。</p>
+
+<p>&emsp;&emsp;<strong>三、</strong> 客户不在现场，产生基于计算机图形格式文件的原型。这种方式主要采用快速原型工具，依据对需求的理解迅速实现可抛弃原型。在此阶段原型工具很多，笔者就用过几种和大家交流一下：</p>
+
+<p>&emsp;&emsp;1、MS office办公套件：word、execel、powerpoint这三个软件都可以做出较美观的界面原型，缺点是不熟悉微软办公套件的人生产效率将很低，特别是项目中原型页面较多的情况下，该工具不适用。</p>
+
+<p>&emsp;&emsp;2、Viso，这也是微软的一个界面原型产品，但更偏向于做桌面应用界面展现。</p>
+
+<p>&emsp;&emsp;3、 flash, flex，这类工具做界面原型的速度很快，且非常直观，如果你的后期实现用的就是这些语言，那么，产生的界面原型还是可重用的界面原型呢。</p>
+
+<p>&emsp;&emsp;4、webpagemaker，是一个web界面设计的原型工具，可以非常迅速地做出可交互原型，可导出html代码，但页面元素全部都采用有div+css定位，可读性差，可几乎没有维护性，因此不可在后期项目中重用该原型，所以，webpagemaker就该是一个web应用开发的快速可抛弃原型开发工具。</p>
+
+<p>&emsp;&emsp;5、guiDesigner，该工具是一个通用原型工具，无论是做web型应用还是桌面型应用，都比较适用，且该工具还可用连接线标出界面间的流程关系，并可以全屏演示。个人不太喜欢这个工具，因为做出的原型缺少个性，且不能安装在中文目录下。</p>
+
+<p>&emsp;&emsp;6、 DreamWaver，一个非常优秀的网页原型与开发工具，在web项目的开发中，我一般都会用这个来工具来实现照像机拍下来的白板上的原型与客户交流用，如果通过用户的确认，该原型将直接应用到后期的项目中（可直接改成jsp或freemark、velocity等页面）。</p>
+
+<p>&emsp;&emsp;7、Balsamiq Mockups，外国人用flex air写 的一个桌面型快速原型工具，特点是设计原型非常快，无论是桌面应用、手机应用、还是桌面应用，都比较适合，界面效果非常好（就像手工绘制的一样），修改也 非常容易，但该软件是需要注册（注册费还比较贵哦），否则不能保存设计的成果。还有一点，该工具每个页面文件都是做为单独的文件存放的，因此，跨文件的页 面交互也不能实现。</p>
+
+<p>&emsp;&emsp;笔者在一些项目的开发中，就用Balsamiq Mockups进行了原型的设计，在与运营部讨论的过程中，现场快速对原型进行修改，以满足运营目标，同时也利于后期开发人员的实现。</p>
+
+<p>&emsp;&emsp;总的来说，用上面的一些工具做出来的原型，可以到客户现场进行现场演示，也可以通过email或im工具发给客户以确认需求，还是比较理想的。再次强调一下界面原型法实现要点：页面上的主要界面元素，页面界面元素以及页面间的交互关系。界面原型法是验证需求的重要手段，有的人也把它叫做需求测试。</p>
+
+<p>&emsp;&emsp;原型法可用于对技术实现方案及架构可行性进行验证，这种原型对架构设计和技术选择、技术风险的控制有非常重要的作用，有的人也把它称为纵向原型法。我们曾在一个项目中，就搭建了对第三方网站文章抓取的htmlparse进行技术验证，用flex通过socket通讯实时的一个简单的聊天原型，以及播放器中lrc文件的延迟复读功能的关键技术实现，我们用这些原型来证明了技术的可行性、框架的合理性，降低了风险。后期的开发可以参照早期原型重新进行更详细的设计，或直接在早期原型上演进完成后续开发，因此，这种架构验证原型是可重用的。</p>
+
+<p>&emsp;&emsp;原型法是帮助软件开发设计人员提早发现设计各个阶段的缺陷，在早期解决一些需求上的bug，架构上的不可实现因素，大幅降低软件开发的风险和开发的成本。降低风险也是各种开发方法论追求的目标，也导致了原型法的广泛使用。</p>
 </div>
   
   
@@ -577,6 +405,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
@@ -590,10 +422,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a>
       </li>
     
   </ul>
@@ -639,7 +467,7 @@ ds.charset = 'UTF-8';
   </div>
   <footer role="contentinfo"><p>
   版权所有 &copy; 2013 - 冰雨 -
-  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <span class="credit">Powered by <a href="http://ljh2008.github.io">刘江华的博客</a></span>
   <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>
 

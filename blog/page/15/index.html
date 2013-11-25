@@ -9,8 +9,12 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;tomcat在运行几天后，会出现PermGen space溢出错误而无法继续处理请求，解决方法是调整PermGen区域大小： 1
-JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;">
+  <meta name="description" content="&emsp;&emsp;入门级技术文章，为了避免每回都要重写演示，以后就请童鞋门自己来看吧。 &emsp;&emsp;先看表单： 1
+2
+3
+4
+5
+&lt;form action=&quot;&lt;%=path%&gt;/user!addUser.do&quot; method=&quot; &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -19,7 +23,7 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://yoursite.com/blog/page/15">
+  <link rel="canonical" href="http://ljh2008.github.io/blog/page/15">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
@@ -39,7 +43,7 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
   <header role="banner"><hgroup>
   <h1><a href="/">刘江华的博客</a></h1>
   
-    <h2>空山不见人，但闻人语响.</h2>
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
   
 </hgroup>
 
@@ -65,7 +69,7 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012/09/21/jvm-error/">PermGen Space溢出解决方法</a></h1>
+      <h1 class="entry-title"><a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a></h1>
     
     
       <p class="meta">
@@ -81,32 +85,173 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
   
 
 
-<time datetime="2012-09-21T15:18:00+08:00" pubdate data-updated="true">2012年09月21日</time>
+<time datetime="2012-10-31T15:18:00+08:00" pubdate data-updated="true">2012年10月31日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;tomcat在运行几天后，会出现PermGen space溢出错误而无法继续处理请求，解决方法是调整PermGen区域大小：</p>
+  <div class="entry-content"><p>&emsp;&emsp;入门级技术文章，为了避免每回都要重写演示，以后就请童鞋门自己来看吧。</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m"</span></code></pre></td></tr></table></div></figure>
+<p>&emsp;&emsp;先看表单：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&quot;&lt;%=path%&gt;/user!addUser.do&quot;</span> <span class="na">method=</span><span class="s">&quot;post&quot;</span> <span class="na">enctype=</span><span class="s">&quot;multipart/form-data&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>用户昵称:<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;regUser.nickName&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
+</span><span class='line'><span class="nt">&lt;div&gt;</span>选择用户照片：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;file&quot;</span> <span class="na">name=</span><span class="s">&quot;myphoto&quot;</span><span class="nt">/&gt;&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">class=</span><span class="s">&quot;addNewPhoto&quot;</span><span class="nt">&gt;</span>再加一张照片<span class="nt">&lt;/a&gt;</span><span class="ni">&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;</span><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">class=</span><span class="s">&quot;deletePhoto&quot;</span><span class="nt">&gt;</span>删除<span class="nt">&lt;/a&gt;&lt;/div&gt;</span>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;新增&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;/form&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;还有一种说法是使用Jrockit代替sun实现的jdk，但我没有试验。</p>
+<p>&emsp;&emsp;页面效果如下图：</p>
 
-<p>&emsp;&emsp;下面来看看对PermGen space的解释：</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/10/1.jpg' width='' height='' title='struts2多文件上传界面'><span class='caption-text'>struts2多文件上传界面</span></span></p>
 
-<p>&emsp;&emsp;PermGen space的全称是Permanent Generation space，是指内存的永久保存区域，这个内存区域用于：</p>
+<p>&emsp;&emsp;加一个新的上传及删除一个上传选框js代码如下，请加到ready事件中：</p>
 
-<p>&emsp;&emsp;（1）这一部分用于存放Class和Meta的信息，Class在被 Load的时候被放入PermGen space区域，它和和存放Instance的Heap区域不同。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.addNewPhoto&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">parent</span><span class="p">().</span><span class="nx">clone</span><span class="p">(</span><span class="kc">true</span><span class="p">).</span><span class="nx">insertAfter</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">parent</span><span class="p">());</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.deletePhoto&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">parent</span><span class="p">().</span><span class="nx">remove</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>&emsp;&emsp;（2） GC(Garbage Collection)不会在主程序运行期对PermGen space进行清理，所以如果你的APP会LOAD很多CLASS的话,就很可能出现PermGen space错误。</p>
 
-<p>&emsp;&emsp;这种错误常见在web服务器对JSP进行pre compile的时候。</p>
+<p>&emsp;&emsp;服务器端处理代码：</p>
 
-<p>&emsp;&emsp;如果你的WEB APP下都用了大量的第三方jar，其大小超过了jvm默认的大小(4M)那么就会产生此错误信息了。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserAction</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 用于接收注册用户的属性</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">RegUser</span> <span class="n">regUser</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">// 用于接收用户的照片</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">File</span><span class="o">[]</span> <span class="n">myphoto</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">// 用于接收原始文件名</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span><span class="o">[]</span> <span class="n">myphotoFileName</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addUser</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">File</span> <span class="nl">f:</span> <span class="n">myphoto</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">for</span><span class="o">(</span><span class="n">String</span> <span class="n">n</span> <span class="o">:</span> <span class="n">myphotoFileName</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">n</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">......</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果你要处理一个上传上来的文件，核心代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>        <span class="c1">// 假如我们要存放在项目中的soft_upload目录下，那么，我们要先取得这个目录在实际服务器上的位置</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">upload_dir</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getRequest</span><span class="o">().</span><span class="na">getSession</span><span class="o">()</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">getServletContext</span><span class="o">().</span><span class="na">getRealPath</span><span class="o">(</span><span class="s">&quot;soft_upload&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 取文件扩展名</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">extName</span> <span class="o">=</span> <span class="n">myphotoFileName</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="n">myphotoFileName</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">lastIndexOf</span><span class="o">(</span><span class="s">&quot;.&quot;</span><span class="o">));</span>
+</span><span class='line'>        <span class="c1">// 随机生成新的文件名</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">newFileName</span> <span class="o">=</span> <span class="n">UUID</span><span class="o">.</span><span class="na">randomUUID</span><span class="o">().</span><span class="na">toString</span><span class="o">()</span> <span class="o">+</span> <span class="n">extName</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">FileUtils</span><span class="o">.</span><span class="na">copyFile</span><span class="o">(</span><span class="n">myphoto</span><span class="o">,</span> <span class="k">new</span> <span class="n">File</span><span class="o">(</span><span class="n">upload_dir</span> <span class="o">+</span> <span class="n">File</span><span class="o">.</span><span class="na">separator</span>
+</span><span class='line'>                <span class="o">+</span> <span class="n">newFileName</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 最后数据库中保存的路径是一个互联网站路径</span>
+</span><span class='line'>        <span class="n">regUser</span><span class="o">.</span><span class="na">setPhotoPath</span><span class="o">(</span><span class="s">&quot;soft_upload/&quot;</span> <span class="o">+</span> <span class="n">newFileName</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>         <span class="c1">//调用业务方法进行后续操作</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;文件下载部分核心代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>        <span class="c1">// 假如我们要存放在项目中的soft_upload目录下，那么，我们要先取得这个目录在实际服务器上的位置</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">upload_dir</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getRequest</span><span class="o">().</span><span class="na">getSession</span><span class="o">()</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">getServletContext</span><span class="o">().</span><span class="na">getRealPath</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">String</span> <span class="n">imageInDb</span> <span class="o">=</span> <span class="s">&quot;soft_upload/b801a563-f307-4804-a7e3-4e34665af7b3.jpg&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">String</span> <span class="n">fullFileName</span> <span class="o">=</span> <span class="n">upload_dir</span> <span class="o">+</span> <span class="n">File</span><span class="o">.</span><span class="na">separator</span> <span class="o">+</span> <span class="n">imageInDb</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="s">&quot;/&quot;</span><span class="o">,</span> <span class="n">File</span><span class="o">.</span><span class="na">separator</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//把文件给用户发回去</span>
+</span><span class='line'>        <span class="n">HttpServletResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">resp</span><span class="o">.</span><span class="na">addHeader</span><span class="o">(</span><span class="s">&quot;Content-Disposition&quot;</span><span class="o">,</span><span class="s">&quot;attachment;filename=&quot;</span> <span class="o">+</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="s">&quot;陈冠希.jpg&quot;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="s">&quot;gb2312&quot;</span><span class="o">),</span><span class="s">&quot;iso8859-1&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">resp</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">().</span><span class="na">write</span><span class="o">(</span><span class="n">FileUtils</span><span class="o">.</span><span class="na">readFileToByteArray</span><span class="o">(</span><span class="k">new</span> <span class="n">File</span><span class="o">(</span><span class="n">fullFileName</span><span class="o">)));</span>
+</span></code></pre></td></tr></table></div></figure>
+
 </div>
   
   
@@ -119,7 +264,7 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012/09/20/nginx/">Nginx,tomcat集群问题</a></h1>
+      <h1 class="entry-title"><a href="/blog/2012/10/31/auto-complete/">自动完成代码实现（jquery Ui版）</a></h1>
     
     
       <p class="meta">
@@ -135,16 +280,120 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
   
 
 
-<time datetime="2012-09-20T15:18:00+08:00" pubdate data-updated="true">2012年09月20日</time>
+<time datetime="2012-10-31T15:18:00+08:00" pubdate data-updated="true">2012年10月31日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;如果你配置了nginx,tomcat集群，请大家要注意，当更新了新的软件，重新启动系统时，最好的做法是先停止nginx，再去重新运行每一个tomcat服务器！</p>
+  <div class="entry-content"><p>&emsp;&emsp;有人要用，写了一个演示代码，界面效果如下：</p>
 
-<p>&emsp;&emsp;否则，你可能很难道找到访问缓慢，时而中断的情况。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/10/2.jpg' width='' height='' title='struts2多文件上传界面'><span class='caption-text'>struts2多文件上传界面</span></span></p>
+
+<p>&emsp;&emsp;客户端代码，用jquery ui实现：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span> <span class="s2">&quot;#myquery&quot;</span> <span class="p">).</span><span class="nx">autocomplete</span><span class="p">({</span>
+</span><span class='line'>               <span class="nx">source</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span> <span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">){</span>
+</span><span class='line'>                   <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>                       <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;news!autoComplete.do&quot;</span><span class="p">,</span>
+</span><span class='line'>                       <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+</span><span class='line'>                       <span class="nx">data</span><span class="o">:</span><span class="p">{</span><span class="nx">queryName</span><span class="o">:</span><span class="nx">request</span><span class="p">.</span><span class="nx">term</span><span class="p">},</span>
+</span><span class='line'>                       <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span class='line'>                       <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
+</span><span class='line'>                           <span class="nx">response</span><span class="p">(</span><span class="nx">$</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">data</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+</span><span class='line'>                               <span class="k">return</span> <span class="p">{</span>
+</span><span class='line'>                                   <span class="nx">label</span><span class="o">:</span><span class="nx">e</span><span class="p">.</span><span class="nx">title</span>
+</span><span class='line'>                               <span class="p">}</span>
+</span><span class='line'>                           <span class="p">}</span> <span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>                       <span class="p">}</span>
+</span><span class='line'>                   <span class="p">});</span>
+</span><span class='line'>               <span class="p">}</span>
+</span><span class='line'>           <span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;网页上：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>输入查询条件：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;query&quot;</span> <span class="na">id=</span><span class="s">&quot;myquery&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;后台：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//前端输入的查询参数</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">queryName</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 自动完成</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">autoComplete</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//得到响应</span>
+</span><span class='line'>        <span class="n">HttpServletResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">News</span><span class="o">&gt;</span> <span class="n">news</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="na">getNewsByTitle</span><span class="o">(</span><span class="n">queryName</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">json_str</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">news</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">println</span><span class="o">(</span><span class="n">json_str</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;业务层：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">List</span> <span class="nf">getNewsByTitle</span><span class="o">(</span><span class="n">String</span> <span class="n">title</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">baseDao</span><span class="o">.</span><span class="na">queryEntitys</span><span class="o">(</span><span class="s">&quot;from News n where n.title like ?&quot;</span><span class="o">,</span> <span class="k">new</span> <span class="n">Object</span><span class="o">[]{</span><span class="s">&quot;%&quot;</span> <span class="o">+</span> <span class="n">title</span> <span class="o">+</span> <span class="s">&quot;%&quot;</span><span class="o">});</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
 </div>
   
   
@@ -157,7 +406,7 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012/08/21/cglib/">Cglib动态代理演示代码</a></h1>
+      <h1 class="entry-title"><a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a></h1>
     
     
       <p class="meta">
@@ -173,14 +422,105 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
   
 
 
-<time datetime="2012-08-21T15:18:00+08:00" pubdate data-updated="true">2012年08月21日</time>
+<time datetime="2012-10-31T15:18:00+08:00" pubdate data-updated="true">2012年10月31日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;直接看代码。</p>
+  <div class="entry-content"><p>&emsp;&emsp;纸本油画，塔公寺。</p>
+
+<p>&emsp;&emsp;十一期间出游，路线：泸定，丹巴，新都桥，康定，海螺沟，十分难忘的一次出行。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/10/3.jpg' width='' height='' title='纸本油画-塔公寺'><span class='caption-text'>纸本油画-塔公寺</span></span></p>
+
+<p>&emsp;&emsp;异常蓝的天空，美丽的草原，让人心旷神怡。</p>
+
+<p>&emsp;&emsp;虐诚的僧人们在朗诵经文，通往寺庙的小路边挂满了经幡，它们在柔和的风中传送着经文，相恋的一对马儿，悠闲地享受着这一切&hellip;&hellip;，一曲《天籁之爱》最能表现这个场景（我现在的手机铃声，仍旧是这个曲子）。</p>
+
+<p>&emsp;&emsp;画上的落款是孩他妈写的，显得有些生硬，有人说这是一败笔，当然，这也算是两人的一次小小合作吧。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/30/url-utf8/">超链接传递中文参数解决之法</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-30T15:18:00+08:00" pubdate data-updated="true">2012年10月30日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;办法很多，下面介绍一种更为通用，最有效的方式：</p>
+
+<p>&emsp;&emsp;示例页面，其中包含post与get方式的提交：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;need_change&quot;</span> <span class="na">href=</span><span class="s">&quot;myajax!getChineseWord.do?name=中文&quot;</span><span class="nt">&gt;</span>中文测试<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&quot;&lt;%=path%&gt;/myajax!getChineseWord.do&quot;</span> <span class="na">method=</span><span class="s">&quot;post&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        姓名：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">value=</span><span class="s">&quot;中文&quot;</span><span class="nt">&gt;&lt;br&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;post中文&quot;</span> <span class="na">id=</span><span class="s">&quot;login_btn&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/form&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;对于超链接中的中文，使用encodeURI编码，我们在jquery的ready中去做这件事：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>      <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.need_change&quot;</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>          <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">,</span> <span class="nb">encodeURI</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">)));</span>
+</span><span class='line'>      <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;服务器端action中，需要进行转码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="k">if</span> <span class="o">(</span><span class="s">&quot;ISO-8859-1&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">StringUtil</span><span class="o">.</span><span class="na">getEncoding</span><span class="o">(</span><span class="n">name</span><span class="o">)))</span> <span class="o">{</span>
+</span><span class='line'>         <span class="n">name</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">name</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="s">&quot;ISO-8859-1&quot;</span><span class="o">),</span><span class="s">&quot;UTF-8&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;注：StringUtil.getEncoding这个方法将返回字符串的编码集格式，代码是网上copy的，现贴出该方法：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -223,105 +563,49 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
 <span class='line-number'>39</span>
 <span class='line-number'>40</span>
 <span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Test</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * @param args</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 判断字符串的编码</span>
+</span><span class='line'><span class="cm">     * </span>
+</span><span class='line'><span class="cm">     * @param str</span>
+</span><span class='line'><span class="cm">     * @return</span>
 </span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//        HashMap propertyMap = new HashMap();  </span>
-</span><span class='line'><span class="c1">//        propertyMap.put(&quot;MAX_COUNT&quot;, Class.forName(&quot;java.lang.String&quot;));</span>
-</span><span class='line'>        <span class="c1">// TODO Auto-generated method stub</span>
-</span><span class='line'>        <span class="n">Enhancer</span> <span class="n">eh</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Enhancer</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setSuperclass</span><span class="o">(</span><span class="n">MyService</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'>        <span class="c1">//eh.setCallback(new MyInterceptor());</span>
-</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setCallbacks</span><span class="o">(</span><span class="k">new</span> <span class="n">Callback</span><span class="o">[]{</span><span class="k">new</span> <span class="n">MyInterceptor</span><span class="o">(),</span> <span class="n">NoOp</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">});</span>
-</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setCallbackFilter</span><span class="o">(</span><span class="k">new</span> <span class="n">MyCallbackFilter</span><span class="o">());</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setInterfaces</span><span class="o">(</span><span class="k">new</span> <span class="n">Class</span><span class="o">[]{</span><span class="n">Set</span><span class="o">.</span><span class="na">class</span><span class="o">});</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">MyService</span> <span class="n">ms</span> <span class="o">=</span> <span class="o">(</span><span class="n">MyService</span><span class="o">)</span><span class="n">eh</span><span class="o">.</span><span class="na">create</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">ms</span><span class="o">.</span><span class="na">addUser</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">ms</span><span class="o">.</span><span class="na">queryUser</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">Set</span> <span class="n">s</span> <span class="o">=</span> <span class="o">(</span><span class="n">Set</span><span class="o">)</span><span class="n">ms</span><span class="o">;</span>
-</span><span class='line'><span class="c1">//        System.out.println(s.getClass());</span>
-</span><span class='line'><span class="c1">//        s.size();</span>
-</span><span class='line'><span class="c1">//        System.out.println(s.size());</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">//System.out.println(ms.getClass());</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="kd">class</span> <span class="nc">MyInterceptor</span> <span class="kd">implements</span> <span class="n">MethodInterceptor</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">intercept</span><span class="o">(</span><span class="n">Object</span> <span class="n">object</span><span class="o">,</span> <span class="n">Method</span> <span class="n">method</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">,</span>
-</span><span class='line'>            <span class="n">MethodProxy</span> <span class="n">methodProxy</span> <span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;before runing..&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">methodProxy</span><span class="o">.</span><span class="na">invokeSuper</span><span class="o">(</span><span class="n">object</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;end runing....&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">class</span> <span class="nc">MyCallbackFilter</span> <span class="kd">implements</span> <span class="n">CallbackFilter</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">int</span> <span class="nf">accept</span><span class="o">(</span><span class="n">Method</span> <span class="n">method</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="c1">// TODO Auto-generated method stub</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="s">&quot;queryUser&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()))</span> <span class="o">{</span>
-</span><span class='line'>            <span class="c1">//第二个Interceptor，在此例中将不执行操作</span>
-</span><span class='line'>            <span class="k">return</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">getEncoding</span><span class="o">(</span><span class="n">String</span> <span class="n">str</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;GB2312&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">String</span> <span class="n">s</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
+</span><span class='line'>                <span class="k">return</span> <span class="n">s</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception</span><span class="o">)</span> <span class="o">{</span>
 </span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;ISO-8859-1&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">String</span> <span class="n">s1</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
+</span><span class='line'>                <span class="k">return</span> <span class="n">s1</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;UTF-8&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">String</span> <span class="n">s2</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
+</span><span class='line'>                <span class="k">return</span> <span class="n">s2</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception2</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">encode</span> <span class="o">=</span> <span class="s">&quot;GBK&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">str</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="n">encode</span><span class="o">),</span> <span class="n">encode</span><span class="o">)))</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">String</span> <span class="n">s3</span> <span class="o">=</span> <span class="n">encode</span><span class="o">;</span>
+</span><span class='line'>                <span class="k">return</span> <span class="n">s3</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">exception3</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="s">&quot;&quot;</span><span class="o">;</span>
 </span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
-
-
 </div>
   
   
@@ -334,7 +618,7 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012/08/10/art4/">习作- 眼前突然闪现的风景</a></h1>
+      <h1 class="entry-title"><a href="/blog/2012/10/30/poi-excel/">Excel文件导出代码</a></h1>
     
     
       <p class="meta">
@@ -350,66 +634,93 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
   
 
 
-<time datetime="2012-08-10T15:18:00+08:00" pubdate data-updated="true">2012年08月10日</time>
+<time datetime="2012-10-30T15:18:00+08:00" pubdate data-updated="true">2012年10月30日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;水粉作品，《眼前突然闪现的风景》。</p>
+  <div class="entry-content"><p>&emsp;&emsp;经常有人问excle文件导出代码实现，现贴出示例代码(struts2,poi)，想看的童鞋请参考：</p>
 
-<p>&emsp;&emsp;也许，一个人坐在火车上，静静地看着窗外的一切，突然，画面中的一切扑面而来，内心充满了喜悦、惊奇&hellip;&hellip;</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="c1">//业务调用，得到要导出的数据</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Page</span> <span class="n">newsPage</span> <span class="o">=</span> <span class="n">ns</span><span class="o">.</span><span class="na">getNewsByPage</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">10</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="s">&quot;readCount&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">News</span><span class="o">&gt;</span> <span class="n">news</span> <span class="o">=</span> <span class="n">newsPage</span><span class="o">.</span><span class="na">getData</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//内存中生成excle文件</span>
+</span><span class='line'>        <span class="n">HSSFWorkbook</span> <span class="n">wb</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HSSFWorkbook</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">HSSFSheet</span> <span class="n">sheet</span> <span class="o">=</span> <span class="n">wb</span><span class="o">.</span><span class="na">createSheet</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>       <span class="c1">//生成标题，当然，你可以设定格式</span>
+</span><span class='line'>        <span class="n">HSSFRow</span> <span class="n">header</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="na">createRow</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">header</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="s">&quot;新闻id&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">header</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="s">&quot;新闻标题&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">header</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="s">&quot;新闻内容&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//生成数据行</span>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">news</span><span class="o">.</span><span class="na">size</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">News</span> <span class="n">temp_news</span> <span class="o">=</span> <span class="n">news</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">HSSFRow</span> <span class="n">row</span> <span class="o">=</span> <span class="n">sheet</span><span class="o">.</span><span class="na">createRow</span><span class="o">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">row</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="n">temp_news</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>            <span class="n">row</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="n">temp_news</span><span class="o">.</span><span class="na">getTitle</span><span class="o">());</span>
+</span><span class='line'>            <span class="n">row</span><span class="o">.</span><span class="na">createCell</span><span class="o">(</span><span class="mi">2</span><span class="o">).</span><span class="na">setCellValue</span><span class="o">(</span><span class="n">temp_news</span><span class="o">.</span><span class="na">getContent</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="c1">//得到响应</span>
+</span><span class='line'>        <span class="n">HttpServletResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setHeader</span><span class="o">(</span><span class="s">&quot;Content-Disposition&quot;</span><span class="o">,</span><span class="s">&quot;attachment; filename=&quot;</span>
+</span><span class='line'>                <span class="o">+</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="s">&quot;我的新闻列表.xls&quot;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="s">&quot;GB2312&quot;</span><span class="o">),</span><span class="s">&quot;iso-8859-1&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">OutputStream</span> <span class="n">os</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">();</span>
+</span><span class='line'>        <span class="c1">//发回响应</span>
+</span><span class='line'>        <span class="n">wb</span><span class="o">.</span><span class="na">write</span><span class="o">(</span><span class="n">os</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/08/art4.jpg' width='' height='' title='突然闪现的风景-纸本设色'><span class='caption-text'>突然闪现的风景-纸本设色</span></span></p>
-
-<p>&emsp;&emsp;阳光穿过树梢，瞬间，让人张不开眼睛，列车没有停下，仍旧漠然向前&hellip;&hellip;</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/08/09/night-sky-art/">临摹习作-星空</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-08-09T15:18:00+08:00" pubdate data-updated="true">2012年08月09日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;此画为临摹印象派大帅梵高的作品《星空》，也是我非常喜欢的一幅作品，作品是抽象的，但极具形式美感，画中的小村庄，浸润在洁白的月光，教堂、房屋&hellip;..，一切都很安静，而左边高大的树木似乎又有风在吹动，一切都是那么的美好。</p>
-
-<p>&emsp;&emsp;而这又让我想起了我人童年，我和我的兄弟，我们曾经一起躺在收获的庄家上，看着深邃的夜空，小河沟边上有高大的白杨树，时而微风吹起，树叶沙沙作响，财众多小平房中闪烁的点点油灯，一切都是那么的熟悉&hellip;&hellip;</p>
-
-<p>&emsp;&emsp;我在google art中，找到了这张画的原作，下载了很多张局部放大图，在photoshop中拼接出了非常大的一张原图，这样，我就可以细致观察到原作的色彩及笔触`。</p>
-
-<p>&emsp;&emsp;临摹是一种非常有效果的学习方法，我这一张临摹习作，用的是水粉，因为感觉比较快捷。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/08/art3.jpg' width='' height='' title='梵高星空-纸本设色'><span class='caption-text'>梵高星空-纸本设色</span></span></p>
-
-<p>&emsp;&emsp;某天抽点时间，用油画再将《星空》再临摹一遍，再次体验那种感受。</p>
 </div>
   
   
@@ -434,6 +745,10 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
@@ -447,10 +762,6 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a>
       </li>
     
   </ul>
@@ -496,7 +807,7 @@ ds.charset = 'UTF-8';
   </div>
   <footer role="contentinfo"><p>
   版权所有 &copy; 2013 - 冰雨 -
-  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <span class="credit">Powered by <a href="http://ljh2008.github.io">刘江华的博客</a></span>
   <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>
 

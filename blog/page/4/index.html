@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;在项目中，事务是不可缺少的，但是如何在一个业务事务中正确的处理并发，确不是一件容易的事。下面，我通过一个简单的例子来说明这个问题，并给出一些解决办法。 &emsp;&emsp;这个例子也许并不恰当，但足够简单：宠物&mdash;&ndash;>宠物日记，一对多双向关联， &hellip;">
+  <meta name="description" content="&emsp;&emsp;spring对持久层的事务管理采用的aop实现，在spring底层，aop是使用的代理模式实现的，代理模式在java中一般有jdk 动态代理以及cglib实现的更为高效的代理，jdk动态代理采用的是标准代理模式（大家可以看看标准代理模式的uml图），被代理对象必须要实现接口 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://yoursite.com/blog/page/4">
+  <link rel="canonical" href="http://ljh2008.github.io/blog/page/4">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
@@ -38,7 +38,7 @@
   <header role="banner"><hgroup>
   <h1><a href="/">刘江华的博客</a></h1>
   
-    <h2>空山不见人，但闻人语响.</h2>
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
   
 </hgroup>
 
@@ -58,6 +58,300 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/07/01/spring-aop/">Spring Aop实现机制</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-07-01T15:18:00+08:00" pubdate data-updated="true">2013年07月01日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;spring对持久层的事务管理采用的aop实现，在spring底层，aop是使用的代理模式实现的，代理模式在java中一般有jdk 动态代理以及cglib实现的更为高效的代理，jdk动态代理采用的是标准代理模式（大家可以看看标准代理模式的uml图），被代理对象必须要实现接口，而cglib就没有这一强制性要求了。</p>
+
+<p>&emsp;&emsp;下面，我要实现一个环绕通知，分别用jdk动态代理，cglib，以及在spring中的配置实现。</p>
+
+<p>&emsp;&emsp;我有两个接口，IMyService1，IMyService2，实现类MyServiceImpl实现了这两个接口，另外，还写了一个没有实现任何接口的service ,NoInterfaceService。</p>
+
+<p>&emsp;&emsp;<strong>一、jdk动态代理</strong></p>
+
+<figure class='code'><figcaption><span>MyInvocationHandler.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//调用处理程序，相当于aop中的环绕通知</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyInvocationHandler</span> <span class="kd">implements</span> <span class="n">java</span><span class="o">.</span><span class="na">lang</span><span class="o">.</span><span class="na">reflect</span><span class="o">.</span><span class="na">InvocationHandler</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//被代理的对象</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Object</span> <span class="n">target</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//构造方法传入被代理的对象</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">MyInvocationHandler</span><span class="o">(</span><span class="n">Object</span> <span class="n">target</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">Object</span> <span class="n">proxy</span><span class="o">,</span> <span class="n">Method</span> <span class="n">method</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span>
+</span><span class='line'>            <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">//proxy就是$proxy0,里面包含一个target属性，为代理的目标对象</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;方法调用前！&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">target</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;方法调用后！&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;测试代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//目标对象</span>
+</span><span class='line'>        <span class="n">MyServiceImpl</span> <span class="n">ms</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyServiceImpl</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//创建代理对象，interface是代理要</span>
+</span><span class='line'>        <span class="n">IMyService1</span> <span class="n">ms1</span> <span class="o">=</span>
+</span><span class='line'>                <span class="o">(</span><span class="n">IMyService1</span><span class="o">)</span><span class="n">Proxy</span><span class="o">.</span><span class="na">newProxyInstance</span><span class="o">(</span><span class="n">ms</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getClassLoader</span><span class="o">(),</span>
+</span><span class='line'>                <span class="n">ms</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getInterfaces</span><span class="o">(),</span> <span class="k">new</span> <span class="n">MyInvocationHandler</span><span class="o">(</span><span class="n">ms</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ms1</span><span class="o">.</span><span class="na">biz1</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">IMyService2</span> <span class="n">ms2</span> <span class="o">=</span> <span class="o">(</span><span class="n">IMyService2</span><span class="o">)</span><span class="n">ms1</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">ms2</span><span class="o">.</span><span class="na">biz2</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;请大家注意，需要动态代理的接口，由上面ms.getClass().getInterfaces()的代码传入，并且，我们可以发现，代理产生的对象，可以强转为其中任意一个接口，但如果强转为MyServiceImpl会报错：$proxy0不能转换为MyServiceImpl。</p>
+
+<p>&emsp;&emsp;<strong>二、cglib实现</strong></p>
+
+<figure class='code'><figcaption><span>MyAdvice.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//这个是通知类</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">class</span> <span class="nc">MyAdvice</span> <span class="kd">implements</span> <span class="n">MethodInterceptor</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">intercept</span><span class="o">(</span><span class="n">Object</span> <span class="n">object</span><span class="o">,</span> <span class="n">Method</span> <span class="n">method</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">MethodProxy</span> <span class="n">methodProxy</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;执行之前..............&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">methodProxy</span><span class="o">.</span><span class="na">invokeSuper</span><span class="o">(</span><span class="n">object</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;执行之后..............&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;产生代理的测试类：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">Enhancer</span> <span class="n">eh</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Enhancer</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">eh</span><span class="o">.</span><span class="na">setSuperclass</span><span class="o">(</span><span class="n">NoInterfaceService</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>    <span class="c1">//如果不需要通知代码</span>
+</span><span class='line'>    <span class="c1">//eh.setCallback(NoOp.INSTANCE);</span>
+</span><span class='line'>    <span class="n">eh</span><span class="o">.</span><span class="na">setCallback</span><span class="o">(</span><span class="k">new</span> <span class="n">MyAdvice</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">NoInterfaceService</span> <span class="n">ns</span> <span class="o">=</span> <span class="o">(</span><span class="n">NoInterfaceService</span><span class="o">)</span><span class="n">eh</span><span class="o">.</span><span class="na">create</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">ns</span><span class="o">.</span><span class="na">hello</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代理，可以对无接口对象实现代理，有接口的当然也是不存在问题的。</p>
+
+<p>&emsp;&emsp;<strong>三、spring代理配置实现</strong></p>
+
+<figure class='code'><figcaption><span>LoggerAdvice.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LoggerAdvice</span> <span class="kd">implements</span> <span class="n">MethodInterceptor</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">MethodInvocation</span> <span class="n">mi</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">mi</span><span class="o">.</span><span class="na">getMethod</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;开始执行！！！&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">mi</span><span class="o">.</span><span class="na">proceed</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">mi</span><span class="o">.</span><span class="na">getMethod</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;执行完毕！！！&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;配置文件：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>    <span class="c">&lt;!-- 代理对象 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;myServiceProxy&quot;</span>
+</span><span class='line'>        <span class="na">class=</span><span class="s">&quot;org.springframework.aop.framework.ProxyFactoryBean&quot;</span>
+</span><span class='line'>    <span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;target&quot;</span> <span class="na">ref=</span><span class="s">&quot;myService&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;interceptorNames&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;value&gt;</span>loggerAdvice<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;测试代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">BeanFactory</span> <span class="n">bf</span>
+</span><span class='line'>        <span class="o">=</span> <span class="k">new</span> <span class="n">ClassPathXmlApplicationContext</span><span class="o">(</span><span class="s">&quot;beans.xml&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">IMyService1</span> <span class="n">ms1</span> <span class="o">=</span> <span class="o">(</span><span class="n">IMyService1</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myServiceProxy&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">ms1</span><span class="o">.</span><span class="na">biz1</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">IMyService2</span> <span class="n">ms2</span> <span class="o">=</span> <span class="o">(</span><span class="n">IMyService2</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myServiceProxy&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">ms2</span><span class="o">.</span><span class="na">biz2</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果被代理对象实现了接口，默认情况下spring会使用jdk动态代理，因此，如果代把上面取到的对象强转为MyServiceImpl会报错：$proxy0不能转换为MyServiceImpl，但转换为其它所实现的两个接口，都不会存在问题。</p>
+
+<p>&emsp;&emsp;我们也可以通过proxyInterfaces指定，代理哪个接口（默认情况下，会自动代理该类所实现的所有接口）。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;proxyInterfaces&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;value&gt;</span>com.my.service.IMyService1<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/property&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果被代理的类没有实现接口，spring会自动使用cblib作为底层代理实现，如果你的lib下没有该jar包，系统会报错。</p>
+
+<p>&emsp;&emsp;当然，在被代理的类有接口的情况下，你也可以通过配置，强制使用cglib代理，配置如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;proxyTargetClass&quot;</span> <span class="na">value=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;以下代码中可以看出，代理对象可直接强转为实现类：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">NoInterfaceService</span> <span class="n">is</span> <span class="o">=</span>  <span class="o">(</span><span class="n">NoInterfaceService</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myServiceProxy&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">is</span><span class="o">.</span><span class="na">hello</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -959,380 +1253,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/06/06/mongodb-java/">使用mongodb做为持久层技术实现</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-06-06T15:18:00+08:00" pubdate data-updated="true">2013年06月06日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;mongodb是一种基于文档类型的高性能nosql数据库，在高并发下具有优秀的表现，因此，在互联网行业中，mongodb的使用场景将非常广泛。</p>
-
-<p>&emsp;&emsp;当然，mongodb主要对性能关注很多，因而没有提供类似于关系数据库的事务的功能，对于复杂的业务及严格数据一致性要求很高有企业级应用，不建议使用mongodb（网上也有自己去实现事务提交的方案，但实现起来比较繁琐，类似于我们早期dbase,access文件型数据库的事务解决方案）。</p>
-
-<p>&emsp;&emsp;其实，也不排除在企业级应用上把某些访问压力大的，对事务要求不严格的数据保存到nosql数据库中。</p>
-
-<p>&emsp;&emsp;spring data框架，提供了对mongodb的支持，大家可以到<a href="http://mongojack.org/">http://mongojack.org/</a>，及<a href="http://www.springsource.org/spring-data/mongodb">http://www.springsource.org/spring-data/mongodb</a></p>
-
-<p>&emsp;&emsp;上了解更多信息mongodb及sprig data for mongodb相关信息。</p>
-
-<p>&emsp;&emsp;下面，我用一个简单的实例，给大家讲解mongodb的使用，在这之前，你需要下载mongodb java驱动包，spring data commons, spring data for mongodb这些组件包。</p>
-
-<p>&emsp;&emsp;共两个对象，客户，客户订单，一对多关系，单向关联。</p>
-
-<p>&emsp;&emsp;客户：</p>
-
-<figure class='code'><figcaption><span>Customer.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Document</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Customer</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Id</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">loginCode</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">pwd</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Version</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">long</span> <span class="n">varsion</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Date</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;</span> <span class="n">orders</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;订单：</p>
-
-<figure class='code'><figcaption><span>Order.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Document</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Order</span> <span class="o">{</span>
-</span><span class='line'>    <span class="nd">@Id</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">code</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">orderName</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;spring data的配置：</p>
-
-<figure class='code'><figcaption><span>MongoConfiguration.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Configuration</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MongoConfiguration</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="nd">@Bean</span> <span class="n">MongoDbFactory</span> <span class="n">mongoDbFactory</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>        <span class="c1">//需要用户名、密码验证</span>
-</span><span class='line'>        <span class="n">UserCredentials</span> <span class="n">userCredentials</span> <span class="o">=</span> <span class="k">new</span> <span class="n">UserCredentials</span><span class="o">(</span><span class="s">&quot;yq&quot;</span><span class="o">,</span> <span class="s">&quot;123&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">return</span> <span class="k">new</span> <span class="nf">SimpleMongoDbFactory</span><span class="o">(</span><span class="k">new</span> <span class="n">Mongo</span><span class="o">(),</span> <span class="s">&quot;exam&quot;</span><span class="o">,</span> <span class="n">userCredentials</span><span class="o">);</span>
-</span><span class='line'>        <span class="c1">//return new SimpleMongoDbFactory(new Mongo(), &quot;exam&quot;);</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="kd">public</span> <span class="nd">@Bean</span> <span class="n">MongoTemplate</span> <span class="n">mongoTemplate</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="k">new</span> <span class="nf">MongoTemplate</span><span class="o">(</span><span class="n">mongoDbFactory</span><span class="o">());</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;当然，上面这段信息可以配置在xml中，也可以像我上面一样用写在java代码中。</p>
-
-<p>&emsp;&emsp;这里要建立exam库，可以在mongodb命令行下，使用 use 命令建立，比如：use exam，然后随便添点东西在里面，库就建好了。另外，如果要启用认证功能，需要大家通过命令向某个库中添加用户（具体如db.addUser(“用户名”,”密码”)），启动mongodb时使用-auth参数。</p>
-
-<p>&emsp;&emsp;在整合过程中，如果报：</p>
-
-<figure class='code'><figcaption><span>MongoConfiguration.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">tried</span> <span class="n">to</span> <span class="n">access</span> <span class="n">methodorg</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">core</span><span class="o">.</span><span class="na">GenericTypeResolver</span><span class="o">.</span><span class="na">getTypeVariableMap</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;错误，是由于包版本冲突所至，请下载新的spring核心包。</p>
-
-<p>&emsp;&emsp;下面给大家举例说明api的使用：</p>
-
-<p>&emsp;&emsp;我们的所有操作只需要一个MongoTemplate</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Resource</span>
-</span><span class='line'><span class="kd">private</span> <span class="n">MongoTemplate</span> <span class="n">mt</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（1）检测一个空间是否存在</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">collectionExists</span><span class="o">(</span><span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（2）建立新空间</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">createCollection</span><span class="o">(</span><span class="s">&quot;myCollection&quot;</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（3）统计总记录条数，其中query可以为null，或一个建好的带条件查数据的query，如需分页，请先count，再查分页数据</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">count</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（4）删除空间，其中的数据会一并清除</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">dropCollection</span><span class="o">(</span><span class="s">&quot;myCollection&quot;</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（5）按id号查询</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Customer</span> <span class="n">c</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（6）删除id号为1的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">mt</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（7）删除id号小于5的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">).</span><span class="na">lt</span><span class="o">(</span><span class="mi">5</span><span class="o">)),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（8）查询姓名是：张三5，并且密码是：111的用户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cc</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;张三5&quot;</span><span class="o">).</span><span class="na">and</span><span class="o">(</span><span class="s">&quot;pwd&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;111&quot;</span><span class="o">)),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'><span class="err">或</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;张三5&quot;</span><span class="o">).</span><span class="na">andOperator</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;pwd&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;111&quot;</span><span class="o">))),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;要注意，一个criteria中只能有一个andOperator，如果要写并列条件，直接用and就可以了。</p>
-
-<p>&emsp;&emsp;（9）查询姓名是：张三5，或者 密码是：111的用户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>   <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="k">new</span> <span class="n">Criteria</span><span class="o">().</span><span class="na">orOperator</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;张三5&quot;</span><span class="o">),</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;pwd&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;111&quot;</span><span class="o">))),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（10）查询出生日期小于2013年6月6日的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;birthday&quot;</span><span class="o">).</span><span class="na">lt</span><span class="o">(</span><span class="k">new</span> <span class="n">Date</span><span class="o">())),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>    <br/>
-&emsp;&emsp;（11）查询出生日期等于2013年6月6日的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">SimpleDateFormat</span> <span class="n">sf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd-hh:mm:ss&quot;</span><span class="o">);</span>
-</span><span class='line'>    <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span>
-</span><span class='line'>            <span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;birthday&quot;</span><span class="o">).</span><span class="na">gte</span><span class="o">(</span><span class="n">sf</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="s">&quot;2013-06-06-00:00:00&quot;</span><span class="o">))</span>
-</span><span class='line'>           <span class="o">.</span><span class="na">andOperator</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;birthday&quot;</span><span class="o">).</span><span class="na">lte</span><span class="o">(</span><span class="n">sf</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="s">&quot;2013-06-09-23:59:59&quot;</span><span class="o">)))</span>
-</span><span class='line'>           <span class="o">),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（12）查询定单编号是0015或者0018的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="k">new</span> <span class="n">Criteria</span><span class="o">()</span>
-</span><span class='line'>          <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;orders.code&quot;</span><span class="o">).</span><span class="na">in</span><span class="o">(</span><span class="s">&quot;0015&quot;</span><span class="o">,</span><span class="s">&quot;0018&quot;</span><span class="o">)</span>
-</span><span class='line'>            <span class="o">),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;请注意，mongodb可以直接针对集合查询，比如，上面的orders就是一个set集合。</p>
-
-<p>&emsp;&emsp;（13）查询包含四的，并以0结尾的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="c1">//(正则表 达式，以XX开头，请用^,以XX结束，请用$,不写这两个，表示任意)</span>
-</span><span class='line'>   <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="k">new</span> <span class="n">Criteria</span><span class="o">()</span>
-</span><span class='line'>    <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">).</span><span class="na">regex</span><span class="o">(</span><span class="s">&quot;四.*0$&quot;</span><span class="o">)</span>
-</span><span class='line'>   <span class="o">),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;请注意，mongodb不支持在id上的正则查询。</p>
-
-<p>&emsp;&emsp;（14）修改对象属性名，修改后，要同步修改对象中的属性名，否则，此属性值为null</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">mt</span><span class="o">.</span><span class="na">updateMulti</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(),</span> <span class="k">new</span> <span class="n">Update</span><span class="o">().</span><span class="na">rename</span><span class="o">(</span><span class="s">&quot;password&quot;</span><span class="o">,</span> <span class="s">&quot;pwd&quot;</span><span class="o">),</span> <span class="s">&quot;customer&quot;</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p></p>
-
-<p>&emsp;&emsp;（15）批量修改，把id为100的客户姓名改为tomcat999,密码改为222</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">mt</span><span class="o">.</span><span class="na">findAndModify</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="mi">100</span><span class="o">)),</span>
-</span><span class='line'>            <span class="k">new</span> <span class="nf">Update</span><span class="o">().</span><span class="na">set</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">,</span> <span class="s">&quot;tomcat999&quot;</span><span class="o">).</span><span class="na">set</span><span class="o">(</span><span class="s">&quot;pwd&quot;</span><span class="o">,</span> <span class="s">&quot;222&quot;</span><span class="o">),</span>
-</span><span class='line'>            <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（16）修改单个对象</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">Customer</span> <span class="n">cc</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="mi">100</span><span class="o">,</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'>    <span class="n">cc</span><span class="o">.</span><span class="na">setPwd</span><span class="o">(</span><span class="s">&quot;333&quot;</span><span class="o">);</span>
-</span><span class='line'>    <span class="n">mt</span><span class="o">.</span><span class="na">save</span><span class="o">(</span><span class="n">cc</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（17）排序及分页实现</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">Page</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="nf">getCustomerByPage</span><span class="o">(</span><span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">,</span> <span class="n">Map</span> <span class="n">params</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">Page</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">page</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Page</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;(</span><span class="n">pageNo</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//查询数据</span>
-</span><span class='line'>    <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span><span class="n">data</span> <span class="o">=</span> <span class="n">mt</span>
-</span><span class='line'>    <span class="o">.</span><span class="na">find</span><span class="o">(</span>
-</span><span class='line'>            <span class="k">new</span> <span class="nf">Query</span><span class="o">().</span><span class="na">skip</span><span class="o">(</span><span class="n">page</span><span class="o">.</span><span class="na">getRowStartIndex</span><span class="o">())</span>
-</span><span class='line'>            <span class="o">.</span><span class="na">limit</span><span class="o">(</span><span class="n">pageSize</span><span class="o">)</span>
-</span><span class='line'>            <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="k">new</span> <span class="n">Sort</span><span class="o">(</span><span class="n">Sort</span><span class="o">.</span><span class="na">Direction</span><span class="o">.</span><span class="na">DESC</span><span class="o">,</span> <span class="s">&quot;_id&quot;</span><span class="o">))</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="o">,</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">page</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//统计总记录数</span>
-</span><span class='line'>    <span class="kt">long</span> <span class="n">count</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">count</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'>    <span class="n">page</span><span class="o">.</span><span class="na">setRowcounts</span><span class="o">(</span><span class="n">count</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">page</span><span class="o">;</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;最后，给出几个使用mongodb，在对象设计实践：</p>
-
-<ul>
-<li><p>对象id最好设计成String类型，在新增时，如果用户没有赋值，mongodb会自动生成的，当然你也可以使用UUID自己赋值。</p></li>
-<li><p>Spring对mongodb的封装在对象间存在循环关联的情况，在新增及查询时都会出现堆栈溢出情况，目前的解决办法是：</p></li>
-</ul>
-
-
-<p>&emsp;&emsp;A、切断双向关联。比如：一对多双向关联，你可以删除一方的集合属性，多方对一方的引用采用dbref注解标注。一对多、多对多也如此，尽可能地简化对象间的关系。</p>
-
-<p>&emsp;&emsp;B、对象间关系，最好直接建立成关系数据库中的外键形式字段，即：以非面向对象的方式去建立，这就是“鱼和熊掌，不可兼得”，在追求性能效率的同时，放弃更好理解的对象模型。</p>
-
-<ul>
-<li><p>有严格事务要求的业务系统，不要用mongodb。</p></li>
-<li><p>如有极端的高并发大数据量查询，请用mongodb，也可以把项目中的部分数据保存在mongodb中。</p></li>
-<li><p>一般的并发修改，可以使用乐观锁解决，spring mongodb支持@Version注解。</p></li>
-</ul>
-
-
-<p>&emsp;&emsp;还有，开发中最好准备一个图型化的mongodb管理工具，比如：MongoCola，随时查看保存的数据实况，方便调试。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; 更多早期老文章</a>
@@ -1350,6 +1270,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
@@ -1363,10 +1287,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a>
       </li>
     
   </ul>
@@ -1412,7 +1332,7 @@ ds.charset = 'UTF-8';
   </div>
   <footer role="contentinfo"><p>
   版权所有 &copy; 2013 - 冰雨 -
-  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <span class="credit">Powered by <a href="http://ljh2008.github.io">刘江华的博客</a></span>
   <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>
 

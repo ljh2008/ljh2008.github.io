@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;需求还是基于前面的演示程序，只不过，我们把mysql换成了mongodb，因此，我们把以前的orm2插件更换成mongoose插件。 &emsp;&emsp;首先得下载mongodb文件，并启动服务器，这个过程大家可以参考我前面的spring &hellip;">
+  <meta name="description" content="&emsp;&emsp;angular.js是google的一个开源js模板引擎，通过扩展的html标记实现强大的功能，同时，它本身非常的小巧。具体api大家可以到这里去看：http://docs.angularjs.org/api &emsp;&emsp;我们这个例子， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://yoursite.com/blog/page/2">
+  <link rel="canonical" href="http://ljh2008.github.io/blog/page/2">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
@@ -38,7 +38,7 @@
   <header role="banner"><hgroup>
   <h1><a href="/">刘江华的博客</a></h1>
   
-    <h2>空山不见人，但闻人语响.</h2>
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
   
 </hgroup>
 
@@ -58,6 +58,294 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-09-28T15:18:00+08:00" pubdate data-updated="true">2013年09月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;angular.js是google的一个开源js模板引擎，通过扩展的html标记实现强大的功能，同时，它本身非常的小巧。具体api大家可以到这里去看：<a href="http://docs.angularjs.org/api">http://docs.angularjs.org/api</a></p>
+
+<p>&emsp;&emsp;我们这个例子，服务器后台仍然是前面我使用node.js+express+mongodb，restful风格的供客户调用，后端代码没有做任何改动，这也是restful webservice的优势所在。</p>
+
+<p>&emsp;&emsp;首先，给大家讲讲angular.js做为前端实现的优势，我们通过和jQuery，Extjs来比较。</p>
+
+<p>&emsp;&emsp;一、jQuery应用非常广泛，也十分小巧，但过于轻量级，它的长处在于对dom的处理，而对服务器端返回的数据如何和页面展示相结合，则有些力不从心了。</p>
+
+<p>&emsp;&emsp;二、Extjs固然可以做为前端的实现，界面美观，但这个框架有些过于重量级了，而且对服务器的返回数据格式有所要求，部分界面控件并不能随心所欲地处理任意格式的数据。</p>
+
+<p>&emsp;&emsp;三、angular.js则处于两者之间，可以快速进行数据绑定、验证及模板化展示数据，代码将更加简洁，可维护性非常好，请看下面的一个分页代码，采用jQuery版和angular.js版的实现：</p>
+
+<p>&emsp;&emsp;<strong>jQuery版本：</strong></p>
+
+<p>&emsp;&emsp;js部分：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">function</span> <span class="nx">getUserByPage</span><span class="p">(</span><span class="nx">pno</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">url</span><span class="o">:</span><span class="s1">&#39;users/&#39;</span><span class="o">+</span> <span class="nx">pno</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">type</span><span class="o">:</span><span class="s1">&#39;get&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">data</span><span class="o">:</span><span class="p">{</span><span class="nx">q_name</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#queryWhat&#39;</span><span class="p">).</span><span class="nx">val</span><span class="p">()},</span>
+</span><span class='line'>        <span class="nx">dataType</span><span class="o">:</span><span class="s1">&#39;json&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">){</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="kd">var</span> <span class="nx">html</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">data</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>                    <span class="nx">html</span> <span class="o">=</span> <span class="nx">html</span> <span class="o">+</span> <span class="s2">&quot;&lt;tr&gt;&lt;td&gt;&lt;input type=&#39;checkbox&#39; value=&#39;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">_id</span><span class="o">+</span><span class="s2">&quot;&#39; class=&#39;uid_c&#39; /&gt;&lt;/td&gt;&lt;td&gt;&quot;</span>
+</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">_id</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">loginCode</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">userName</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span>
+</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">birthDay</span><span class="p">.</span><span class="nx">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td class=&#39;row_op&#39;&gt;&lt;a href=&#39;view_user.html?uid=&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">_id</span>
+</span><span class='line'>                        <span class="o">+</span><span class="s2">&quot;&#39; &gt;查看&lt;/a&gt;&lt;a href=&#39;modify_user.html?uid=&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">_id</span><span class="o">+</span><span class="s2">&quot;&#39; &gt;修改&lt;/a&gt;&lt;a href=&#39;&#39; uid=&#39;&quot;</span>
+</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">_id</span><span class="o">+</span><span class="s2">&quot;&#39; class=&#39;del_user&#39;&gt;删除&lt;/a&gt;&lt;/tr&gt;&quot;</span>
+</span><span class='line'>                <span class="p">});</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#users&quot;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="nx">html</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#page_info&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">pno</span><span class="o">+</span><span class="s2">&quot;/&quot;</span><span class="o">+</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">pages</span><span class="o">+</span><span class="s2">&quot;,共&quot;</span><span class="o">+</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">rows</span><span class="o">+</span><span class="s2">&quot;条记录&quot;</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.fp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">f_no</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.pp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">p_no</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.np&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">n_no</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.lp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">l_no</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'> <span class="nx">getUserByPage</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.page a&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nx">getUserByPage</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">));</span>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;页面部分：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;span9&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;table</span> <span class="na">class=</span><span class="s">&quot;table&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;tr&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>选择<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>用户id<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>登录名<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>姓名<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>出生日期<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>操作<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;/tr&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;tbody</span> <span class="na">id=</span><span class="s">&quot;users&quot;</span><span class="nt">&gt;&lt;/tbody&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/table&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">style=</span><span class="s">&quot;margin-top: 15px;&quot;</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;page_info&quot;</span> <span class="na">class=</span><span class="s">&quot;span4&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;span8 page&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;fp&quot;</span><span class="nt">&gt;</span>首页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;pp&quot;</span><span class="nt">&gt;</span>上一页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;np&quot;</span><span class="nt">&gt;</span>下一页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;lp&quot;</span><span class="nt">&gt;</span>末页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;请大家注意，js中13-15行部分的代码，就是在jQuery中进行的页面元素拼接，这种方式非常的不直观，也不好维护。anjular版本，又是怎样的呢？</p>
+
+<p>&emsp;&emsp;<strong>angular.js版本：</strong></p>
+
+<p>&emsp;&emsp;js部分：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$scope</span><span class="p">.</span><span class="nx">pageFun</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">pno</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">$http</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;main/users/&#39;</span> <span class="o">+</span>  <span class="nx">pno</span> <span class="p">,{</span><span class="nx">params</span><span class="o">:</span><span class="p">{</span><span class="nx">q_name</span><span class="o">:</span><span class="nx">userService</span><span class="p">.</span><span class="nx">q_name</span><span class="p">}})</span>
+</span><span class='line'>            <span class="p">.</span><span class="nx">success</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;取用户分页数据失败，原因：&#39;</span> <span class="o">+</span> <span class="nx">data</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
+</span><span class='line'>                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="nx">userService</span><span class="p">.</span><span class="nx">pno</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">pno</span><span class="p">;</span>
+</span><span class='line'>                    <span class="nx">$scope</span><span class="p">.</span><span class="nx">page</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">page</span><span class="p">;</span>
+</span><span class='line'>                    <span class="nx">$scope</span><span class="p">.</span><span class="nx">users</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">data</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">})</span> <span class="p">;</span>
+</span><span class='line'>    <span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;页面部分代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;span12&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;table</span> <span class="na">class=</span><span class="s">&quot;table&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;tr&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>选择<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>用户id<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>登录名<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>姓名<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>出生日期<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>操作<span class="nt">&lt;/th&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;/tr&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;tbody</span> <span class="na">id=</span><span class="s">&quot;users&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;tr</span> <span class="na">ng-repeat=</span><span class="s">&quot;user in users&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;td&gt;&lt;input</span> <span class="na">value=</span><span class="s">&quot;&quot;</span> <span class="na">class=</span><span class="s">&quot;uid_c&quot;</span> <span class="na">type=</span><span class="s">&quot;checkbox&quot;</span><span class="nt">&gt;&lt;/td&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;td</span> <span class="na">class=</span><span class="s">&quot;row_op&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                        <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;user/&quot;</span><span class="nt">&gt;</span>查看<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>                        <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;to_modifyuser/&quot;</span><span class="nt">&gt;</span>修改<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>                        <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;deleteUser(user._id)&quot;</span><span class="nt">&gt;</span>删除<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>                    <span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;/tr&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;/tbody&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/table&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">style=</span><span class="s">&quot;margin-top: 15px;&quot;</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;page_info&quot;</span> <span class="na">class=</span><span class="s">&quot;span4&quot;</span><span class="nt">&gt;</span>/  共条记录<span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;span5 page offset3&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.f_no)&quot;</span> <span class="nt">&gt;</span>首 页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.p_no)&quot;</span><span class="nt">&gt;</span>上一页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.n_no)&quot;</span><span class="nt">&gt;</span>下一页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.l_no)&quot;</span><span class="nt">&gt;</span>末 页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;也请大家注意上面的13-24行代码，数据的填充是在页面中通过ng-repeat完成的，这样就达到了页面本身更好理解、维护的作用。</p>
+
+<p>&emsp;&emsp;当然，angular.js的强大功能远远不止这些，我在下篇博客中，会详细给大家介绍。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2163,238 +2451,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/08/09/nodejs-express-mysql-crud3/">node.js中基本于expresss、mysql的CRUD之三（代码实现）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;app.js，程序入口所在。</p>
-
-<p>&emsp;&emsp;<strong>先引入依赖的文件</strong>：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">express</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;express&#39;</span><span class="p">)</span>
-</span><span class='line'>  <span class="p">,</span> <span class="nx">user</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./routes/userAction&#39;</span><span class="p">)</span>
-</span><span class='line'>  <span class="p">,</span> <span class="nx">fileUpload</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./routes/uploadFileAction&#39;</span><span class="p">)</span>
-</span><span class='line'>  <span class="p">,</span> <span class="nx">filter</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./commons/filter&#39;</span><span class="p">)</span>
-</span><span class='line'>  <span class="p">,</span> <span class="nx">http</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;http&#39;</span><span class="p">)</span>
-</span><span class='line'>  <span class="p">,</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">)</span>
-</span><span class='line'>  <span class="p">,</span><span class="nx">orm</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;orm&quot;</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="nx">express</span><span class="p">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>定义数据库连接信息</strong>：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">opts</span> <span class="o">=</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nx">database</span> <span class="o">:</span> <span class="s2">&quot;t88&quot;</span><span class="p">,</span>
-</span><span class='line'>    <span class="nx">protocol</span> <span class="o">:</span> <span class="s2">&quot;mysql&quot;</span><span class="p">,</span>
-</span><span class='line'>    <span class="nx">host</span>     <span class="o">:</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
-</span><span class='line'>    <span class="nx">port</span>     <span class="o">:</span> <span class="mi">3306</span><span class="p">,</span>
-</span><span class='line'>    <span class="nx">user</span>     <span class="o">:</span> <span class="s2">&quot;root&quot;</span><span class="p">,</span>
-</span><span class='line'>    <span class="nx">password</span> <span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-</span><span class='line'>    <span class="nx">query</span>    <span class="o">:</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">pool</span>     <span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">debug</span>    <span class="o">:</span> <span class="kc">true</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>定义实体对象</strong>：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">orm</span><span class="p">.</span><span class="nx">express</span><span class="p">(</span><span class="nx">opts</span><span class="p">,{</span>
-</span><span class='line'>      <span class="nx">define</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">db</span><span class="p">,</span> <span class="nx">models</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>          <span class="nx">models</span><span class="p">.</span><span class="nx">user</span> <span class="o">=</span> <span class="nx">db</span><span class="p">.</span><span class="nx">define</span><span class="p">(</span><span class="s1">&#39;t_user&#39;</span><span class="p">,</span>
-</span><span class='line'>              <span class="p">{</span>
-</span><span class='line'>                  <span class="nx">f_login_code</span>    <span class="o">:</span> <span class="nb">String</span><span class="p">,</span>
-</span><span class='line'>                  <span class="nx">f_name</span>    <span class="o">:</span> <span class="nb">String</span><span class="p">,</span>
-</span><span class='line'>                  <span class="nx">f_pwd</span>  <span class="o">:</span> <span class="p">{</span> <span class="nx">type</span><span class="o">:</span> <span class="s1">&#39;text&#39;</span><span class="p">},</span>
-</span><span class='line'>                  <span class="nx">f_birthday</span><span class="o">:</span><span class="p">{</span><span class="nx">type</span><span class="o">:</span><span class="s1">&#39;date&#39;</span><span class="p">},</span>
-</span><span class='line'>                  <span class="nx">pic</span><span class="o">:</span><span class="nb">String</span>
-</span><span class='line'>              <span class="p">},</span>
-</span><span class='line'>              <span class="p">{</span>
-</span><span class='line'>                  <span class="nx">id</span> <span class="o">:</span> <span class="s1">&#39;pk_id&#39;</span>
-</span><span class='line'>              <span class="p">});</span>
-</span><span class='line'>      <span class="p">}</span>
-</span><span class='line'><span class="p">}));</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;其中，t_user是表名，pk_id是主键。</p>
-
-<p>&emsp;&emsp;<strong>再定义整个系统的环境</strong>，比如：视图引擎，启用对session的支持，路由的支持等。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="c1">// all environments</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">&#39;port&#39;</span><span class="p">,</span> <span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">PORT</span> <span class="o">||</span> <span class="mi">3000</span><span class="p">);</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">&#39;views&#39;</span><span class="p">,</span> <span class="nx">__dirname</span> <span class="o">+</span> <span class="s1">&#39;/views&#39;</span><span class="p">);</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">&#39;view engine&#39;</span><span class="p">,</span> <span class="s1">&#39;jade&#39;</span><span class="p">);</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">express</span><span class="p">.</span><span class="nx">favicon</span><span class="p">());</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">express</span><span class="p">.</span><span class="nx">logger</span><span class="p">(</span><span class="s1">&#39;dev&#39;</span><span class="p">));</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">express</span><span class="p">.</span><span class="nx">bodyParser</span><span class="p">());</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">express</span><span class="p">.</span><span class="nx">methodOverride</span><span class="p">());</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">express</span><span class="p">.</span><span class="nx">cookieParser</span><span class="p">(</span><span class="s1">&#39;your secret here&#39;</span><span class="p">));</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">express</span><span class="p">.</span><span class="nx">session</span><span class="p">());</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">app</span><span class="p">.</span><span class="nx">router</span><span class="p">);</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="nx">express</span><span class="p">.</span><span class="kr">static</span><span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s1">&#39;public&#39;</span><span class="p">)));</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>定义整个系统的路由表</strong>，这个相当于ssh中的struts-config.xml，但下面的写法更加的简洁，并且完美支持restful：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">index</span><span class="p">);</span>
-</span><span class='line'><span class="c1">//分页查询用户数据</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/main/users/:pno&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">user_list</span><span class="p">);</span>
-</span><span class='line'><span class="c1">//根据id查询用户</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/main/user/:uid&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">getUserById</span><span class="p">);</span>
-</span><span class='line'><span class="c1">//修改用户</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">put</span><span class="p">(</span><span class="s1">&#39;/main/user/:uid&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">modifyUser</span><span class="p">);</span>
-</span><span class='line'><span class="c1">//删除用户</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="k">delete</span><span class="p">(</span><span class="s1">&#39;/main/user/:uid&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">deleteUser</span><span class="p">);</span>
-</span><span class='line'><span class="c1">//批量删除用户</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="k">delete</span><span class="p">(</span><span class="s1">&#39;/main/users/:uids&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">deleteUsers</span><span class="p">);</span>
-</span><span class='line'><span class="c1">//添加用户</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="s1">&#39;/main/user&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">addUser</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/to_reg&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span><span class="nx">rsp</span><span class="p">){</span><span class="nx">rsp</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg&#39;</span><span class="p">);});</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="s1">&#39;/reg&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">reg</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/to_login&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span><span class="nx">rsp</span><span class="p">){</span><span class="nx">rsp</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;login&#39;</span><span class="p">);});</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/login&#39;</span><span class="p">,</span><span class="nx">user</span><span class="p">.</span><span class="nx">login</span><span class="p">);</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/logout&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">logout</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/main/to_user_list&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span>  <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span><span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;main/user_list&#39;</span><span class="p">);});</span>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/getState&#39;</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">getState</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="s1">&#39;/commons/upload&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">fileUpload</span><span class="p">.</span><span class="nx">uploadFile</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;路由表中要注意这样几个问题：</p>
-
-<p>&emsp;&emsp;1、app中的get,post,delete,put方法，即表示请求的提交方式。</p>
-
-<p>&emsp;&emsp;2、每一个方法中，第一个参数是请求路径，后面是一个或多个可执行的函数，系统会自动传入request,response,chain等几个参数。</p>
-
-<p>&emsp;&emsp;3、路径变量使用冒号点位符格式书写，比如：&#8217;/main/user/:uid&#8217;，可以表示/main/user/10的请求。</p>
-
-<p>&emsp;&emsp;4、简单的路由跳转功能，可直接书写function，复杂的，可写到一个routes目录中，以保证路由表的简洁。</p>
-
-<p>&emsp;&emsp;最后，<strong>启动服务器</strong>，端口号可自己改，默认是3000：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">http</span><span class="p">.</span><span class="nx">createServer</span><span class="p">(</span><span class="nx">app</span><span class="p">).</span><span class="nx">listen</span><span class="p">(</span><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;port&#39;</span><span class="p">),</span> <span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Express server listening on port &#39;</span> <span class="o">+</span> <span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;port&#39;</span><span class="p">));</span>
-</span><span class='line'><span class="p">});</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; 更多早期老文章</a>
@@ -2412,6 +2468,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
@@ -2425,10 +2485,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a>
       </li>
     
   </ul>
@@ -2474,7 +2530,7 @@ ds.charset = 'UTF-8';
   </div>
   <footer role="contentinfo"><p>
   版权所有 &copy; 2013 - 冰雨 -
-  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <span class="credit">Powered by <a href="http://ljh2008.github.io">刘江华的博客</a></span>
   <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>
 

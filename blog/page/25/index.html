@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;你也许听说过现在的web项目开发，在业务层几乎都是采用事务脚本来组织、暴露业务逻辑，那么，大家为什么都喜欢这么做呢？下面说说我的一些肤浅认识。 &emsp;&emsp;有人说所有的管理类型项目归根结底都是CRUD操作，仔细想想也确实如此，但再深入思考一下， &hellip;">
+  <meta name="description" content="&emsp;&emsp;页面交互实现是一个非常费时间、费精力的过程，如果这个过程做得不好，会影响到项目工期以及系统非功能性需求，我感觉这一块的工作用软件行业的一句话“没有银弹”来形容比较贴切。 &emsp;&emsp;表现层会用到MVC模式，通过引入控制器将视图与业务模型解耦， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -18,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://yoursite.com/blog/page/25">
+  <link rel="canonical" href="http://ljh2008.github.io/blog/page/25">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
@@ -38,7 +38,7 @@
   <header role="banner"><hgroup>
   <h1><a href="/">刘江华的博客</a></h1>
   
-    <h2>空山不见人，但闻人语响.</h2>
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
   
 </hgroup>
 
@@ -64,7 +64,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2010/11/30/tx-script/">浅谈事务脚本</a></h1>
+      <h1 class="entry-title"><a href="/blog/2010/12/27/jeee-tou-5/">一个简单的j2ee入门教程（第五部分—页面交互实现）</a></h1>
     
     
       <p class="meta">
@@ -80,34 +80,755 @@
   
 
 
-<time datetime="2010-11-30T15:18:00+08:00" pubdate data-updated="true">2010年11月30日</time>
+<time datetime="2010-12-27T15:18:00+08:00" pubdate data-updated="true">2010年12月27日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;你也许听说过现在的web项目开发，在业务层几乎都是采用事务脚本来组织、暴露业务逻辑，那么，大家为什么都喜欢这么做呢？下面说说我的一些肤浅认识。</p>
+  <div class="entry-content"><p>&emsp;&emsp;页面交互实现是一个非常费时间、费精力的过程，如果这个过程做得不好，会影响到项目工期以及系统非功能性需求，我感觉这一块的工作用软件行业的一句话“没有银弹”来形容比较贴切。</p>
 
-<p>&emsp;&emsp;有人说所有的管理类型项目归根结底都是CRUD操作，仔细想想也确实如此，但再深入思考一下，既然是数据库的CRUD操作来实现业务，那么一定会出现数据库事务，由于大多数业务操作并不是由一两条简单的sql操作完成，一次业务操作中的N多条sql操作应该是一个元子性操作，要么全部成功，要么失败，这样才是一个完整的业务。何谓事务脚本（应该是MF先提出来的，大家可以去看看企业应用架构模式一书中相关章节），事务指的是完成一次业务操作的数据库事务，脚本指的是数据库sql脚本，也就是以过程化的方式实现业务逻辑，并完成业务状态数据的持久化（图懒得去画了，顺手截了张pojo in action 中的事务脚本示例图）。</p>
+<p>&emsp;&emsp;表现层会用到MVC模式，通过引入控制器将视图与业务模型解耦，MVC流程可以总结为下面几个步骤：</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/12.png' width='' height='' title='事务脚本示意图'><span class='caption-text'>事务脚本示意图</span></span></p>
+<p>&emsp;&emsp;1． 将Web页面中的输入元素封装为一个（请求）数据对象。</p>
 
-<p>&emsp;&emsp;我们可以看到，上图中域对象的行为已经没有了，所有的行为抽取出来放到了业务层中，用一个一个的事务脚本方法来实现业务逻辑封装，在实现过程中一般采用过程化的实现代码；领域对象中的行为抽取出来后，域对象中就仅剩下状态信息，成为了所谓的哑数据对象（失血对象，这样的对象比较安全，可以各层间通传）。很多刚学完OO思想的人就会有疑问，不是提倡面向对象的方式来开发，而在事务脚本模式中怎么又使用过程式的方式来实现业务逻辑呢？原因如下：</p>
+<p>&emsp;&emsp;2． 根据请求的不同，调度相应的逻辑处理单元，并将（请求）数据对象作为参数传入。</p>
 
-<p>&emsp;&emsp;a、由于原来的领域对象中没有了对象职责，这样就避免了为正确分配职责而苦恼的过程（你是否还记得OOAD中为了正确分配职责而画的时序图），使得设计过程变得简单。</p>
+<p>&emsp;&emsp;3． 逻辑处理单元完成运算后，返回一个结果数据对象。</p>
 
-<p>&emsp;&emsp;b、事务脚本对象一般以用例或模块从逻辑上来确定粒度，而事务脚本方法将直接依据界面原型进行设计，是个人都会做这件事（老大说的哈），设计难度降低，设计过程简单（几种常见界面原型的事务脚本方式设计我会在其它文章中单独讲解）。</p>
+<p>&emsp;&emsp;4． 将结果数据对象中的数据与预先设计的表现层相融合并展现给用户。</p>
 
-<p>&emsp;&emsp;c、减少了领域对象之间的职责交互，使系统变得简单，调用者只和业务层对象交互就可实现界面逻辑（这点应该是符合迪米特法则的，和门面模式有共通之处）。</p>
+<p>&emsp;&emsp;根据设计，本示例中分为两个action（控制器Controller），一个是LoginAction完成登录相关操作，一个是StrudentAction完成对学生CRUD相关的操作。</p>
 
-<p>&emsp;&emsp;正是由于这些原因，使得系统开发对从业人员的门槛大大降低，也就间接降低了项目开发的风险，项目后期的可维护性也得到了一定的增强，这也就是你所看到了现状：95%以上的web项目开发采用事务脚本模式的原因。</p>
+<p>&emsp;&emsp;下面贴出控制转发部分的配置文件内容：</p>
 
-<p>&emsp;&emsp;最后说一点，任何事物都有两面性，以事务脚本方式实现业务逻辑也有显示的不足之处，那就是实现复杂的业务逻辑会使代码的可读性降低，不利于后期维护，当然，我们可以采用合理抽取子方法或采用贫血领域对象的方式来降低事务脚本带来的负面影响。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;action</span> <span class="na">name=</span><span class="s">&quot;login&quot;</span> <span class="na">class=</span><span class="s">&quot;loginActionRef&quot;</span> <span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">type=</span><span class="s">&quot;chain&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;param</span> <span class="na">name=</span><span class="s">&quot;actionName&quot;</span><span class="nt">&gt;</span>student_queryByPage<span class="nt">&lt;/param&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/result&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/action&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;action</span> <span class="na">name=</span><span class="s">&quot;student_*&quot;</span> <span class="na">class=</span><span class="s">&quot;studentActionRef&quot;</span> <span class="na">method=</span><span class="s">&quot;{1}&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">name=</span><span class="s">&quot;stduent_list&quot;</span><span class="nt">&gt;</span>/student_list.jsp<span class="nt">&lt;/result&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">name=</span><span class="s">&quot;to_modify&quot;</span><span class="nt">&gt;</span>/update_student.jsp<span class="nt">&lt;/result&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;result</span> <span class="na">name=</span><span class="s">&quot;to_detail&quot;</span><span class="nt">&gt;</span>/student_detail.jsp<span class="nt">&lt;/result&gt;</span>
+</span><span class='line'>  
+</span><span class='line'><span class="nt">&lt;/action&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>&emsp;&emsp;事务脚本在项目实现中，我们一般会用采用AOP方式，把事务管理代码动态注入到业务方法的前后，使得程序员把主要精力用在核心业务逻辑实现上，这样就会提高项目的开发效率，这也是我认为spring最有用处的一个地方之一。</p>
 
-<p>&emsp;&emsp;pojo in action有事务脚本的代码实例与讲解，这本书的第二章也进行了全面的总结，这一章节是这本书的精华所在，建议有兴趣的去读一下，以前csdn上有这个章节的试读版，很可惜现在已经找不到了，这本书值得初、中级水平者买一本仔细阅读，书中的代码实例有利于理解一些抽象的架构概念。</p>
+<p>&emsp;&emsp;在这两个action配置中，都指明了请求路径、对应的action处理类（本配置文件中指向为spring容器中的action的id）以及处理完成后的跳转页面。如果你使用struts1.x或者servlet来做，原理与之类似，只是一些配置参数写法不同而已（注：学生CRUD操作合并到了一个 action中，这与struts1.x中的DispatcherAction类似）。</p>
+
+<p>&emsp;&emsp;登录页面主要代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">”&lt;%=path%</span><span class="nt">&gt;</span>/login.action” method=”post”&gt;
+</span><span class='line'>
+</span><span class='line'>学生编号：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">’text’</span> <span class="na">name=</span><span class="s">”id”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>登录密码：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">”password”</span> <span class="na">name=</span><span class="s">”password”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">”submit”</span> <span class="na">value=</span><span class="s">”登录”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">”reset”</span> <span class="na">value=</span><span class="s">”重置”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/form&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;登录操作的Action代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 用户登录Action</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @author Ljh</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LoginAction</span> <span class="kd">extends</span> <span class="n">ActionSupport</span> <span class="kd">implements</span> <span class="n">SessionAware</span><span class="o">,</span> <span class="n">RequestAware</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">Long</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">String</span> <span class="n">password</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//对应HttpSesson作用域，由SessionAware注入</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">①</span><span class="kd">private</span> <span class="n">Map</span> <span class="n">session</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//对应HttpRequest作用域，由RequestAware注入</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">②</span><span class="kd">private</span> <span class="n">Map</span> <span class="n">request</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//学生业务对象</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">IStudentService</span> <span class="n">studentService</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//登录执行的方法</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">③</span><span class="kd">public</span> <span class="n">String</span> <span class="n">execute</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//进行前台表单数据合法性验证</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">id</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="s">&quot;学生id号不能为空！&quot;</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//调用业务层登录方法</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">try</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">login</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">password</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">session</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;student_session_key&quot;</span><span class="o">,</span> <span class="n">student</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">return</span> <span class="n">SUCCESS</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">......</span><span class="na">get</span> <span class="n">set</span> <span class="err">方法略去。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;可以看到，页面表单名称和action中接收参数的属性名称相同，struts2通过拦截器直接把页面参数放放到相应的字段中，在execute执行时已经正确接收到了页面表单参数值了。</p>
+
+<p>&emsp;&emsp;在 struts1.x中，你还需要一个FromBean来接收页面参数，而在servlet中你需要request.getParameter来取页面参数，由此可见，struts2的这种做法将变得十分的简单，可以提高开发的效率。当然，任何事物都有两面性，struts2的action必须是一个请求一个实例，不再像struts1.x和servlet的单实例哦，这对运行性能有一点影响。</p>
+
+<p>&emsp;&emsp;上述代码①②处值得大家注意，struts2把对httpSession、httptRequest的操作变成了对普通Map的操作，这一变化将使得struts2与web容器完全解耦，页面的交互逻辑测试将变得很容易。</p>
+
+<p>&emsp;&emsp;③处的execute方法无参数，并返加string作为跳转结果标识，这个和struts1.x也有很大的变化，目的只有一个：解耦方便测试。</p>
+
+<p>&emsp;&emsp;下面贴出学生CRUD操作的action代码，代码写得很精简，可以做为你今后表现层代码模板：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+<span class='line-number'>170</span>
+<span class='line-number'>171</span>
+<span class='line-number'>172</span>
+<span class='line-number'>173</span>
+<span class='line-number'>174</span>
+<span class='line-number'>175</span>
+<span class='line-number'>176</span>
+<span class='line-number'>177</span>
+<span class='line-number'>178</span>
+<span class='line-number'>179</span>
+<span class='line-number'>180</span>
+<span class='line-number'>181</span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+<span class='line-number'>194</span>
+<span class='line-number'>195</span>
+<span class='line-number'>196</span>
+<span class='line-number'>197</span>
+<span class='line-number'>198</span>
+<span class='line-number'>199</span>
+<span class='line-number'>200</span>
+<span class='line-number'>201</span>
+<span class='line-number'>202</span>
+<span class='line-number'>203</span>
+<span class='line-number'>204</span>
+<span class='line-number'>205</span>
+<span class='line-number'>206</span>
+<span class='line-number'>207</span>
+<span class='line-number'>208</span>
+<span class='line-number'>209</span>
+<span class='line-number'>210</span>
+<span class='line-number'>211</span>
+<span class='line-number'>212</span>
+<span class='line-number'>213</span>
+<span class='line-number'>214</span>
+<span class='line-number'>215</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 学生相关操作Action</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @author Ljh</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">StudentAction</span> <span class="kd">extends</span> <span class="n">ActionSupport</span> <span class="kd">implements</span> <span class="n">RequestAware</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//学生对象关参数</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">Long</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//分页参数</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">Integer</span> <span class="n">pno</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//日志记录</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="n">Logger</span> <span class="n">log</span> <span class="o">=</span> <span class="n">Logger</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">StudentAction</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//httpRequest，由RequestAware注入</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">Map</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="n">String</span><span class="o">,</span> <span class="n">Object</span><span class="o">&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">request</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//学生业务类对象</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">IStudentService</span> <span class="n">studentService</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 分页查询学生信息</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return 学生列表展示页面</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">queryByPage</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//查询学生数据</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Page</span> <span class="n">pagebean</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">getStudentByPage</span><span class="o">(</span><span class="n">pno</span><span class="o">,</span> <span class="n">IConstant</span><span class="o">.</span><span class="na">PAGE_SIZE</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//将分页对象放到作用域中</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;pb&quot;</span><span class="o">,</span> <span class="n">pagebean</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//跳转至分页显示页面</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="s">&quot;stduent_list&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 添加学生信息</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">addStudent</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//将页面属性拷贝到student中</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">BeanUtils</span><span class="o">.</span><span class="na">copyProperties</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">studentService</span><span class="o">.</span><span class="na">addStudent</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="nf">queryByPage</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 删除学生信息</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">delete</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="n">studentService</span><span class="o">.</span><span class="na">deleteStudentById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="nf">queryByPage</span><span class="o">();</span>
+</span><span class='line'>  
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 修改学生信息</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">updateStudent</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//先根据id查询学生（一定要先查）</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">student</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span><span class="s">&quot;你要修改的学生对象不存在！&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//将页面属性拷贝到student中</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">BeanUtils</span><span class="o">.</span><span class="na">copyProperties</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="n">student</span><span class="o">,</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{});</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="n">studentService</span><span class="o">.</span><span class="na">updateStudent</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="n">ERROR</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="nf">queryByPage</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 转到修改学生信息，这是修改的第一步</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">toModify</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//根据id查询学生</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//放入web作用域</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;student&quot;</span><span class="o">,</span> <span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;pno&quot;</span><span class="o">,</span> <span class="n">pno</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//跳转到修改页面</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="s">&quot;to_modify&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 查看学生信息</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">detail</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//根据id查询学生</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//放入web作用域</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">request</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;student&quot;</span><span class="o">,</span> <span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//跳转到修改页面</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="s">&quot;to_detail&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;再贴一段分页部分的核心代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;table&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;tr</span> <span class="na">style=</span><span class="s">”background-color:gray;”</span><span class="nt">&gt;&lt;td&gt;</span>学生编码<span class="nt">&lt;/td&gt;&lt;td</span> <span class="na">width=</span><span class="s">”100″</span><span class="nt">&gt;</span>姓名<span class="nt">&lt;/td&gt;&lt;td</span> <span class="na">width=</span><span class="s">”150″</span><span class="nt">&gt;</span>出生日期<span class="nt">&lt;/td&gt;&lt;td</span> <span class="na">width=</span><span class="s">”100″</span><span class="nt">&gt;</span>操作<span class="nt">&lt;/td&gt;&lt;/tr&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;c:forEach</span> <span class="na">items=</span><span class="s">”${pb.data}”</span> <span class="na">var=</span><span class="s">”e”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;tr&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;td&gt;</span>${e.id}<span class="nt">&lt;/td&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;td&gt;&lt;a</span> <span class="na">href=</span><span class="s">”student_detail.action?id=${e.id}”</span><span class="nt">&gt;</span>${e.name }<span class="nt">&lt;/a&gt;&lt;/td&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;td&gt;&lt;fmt:formatDate</span> <span class="na">value=</span><span class="s">”${e.birthday}”</span> <span class="na">pattern=</span><span class="s">”yyyy年MM月dd日”/</span><span class="nt">&gt;&lt;/td&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;td&gt;&lt;a</span> <span class="na">href=</span><span class="s">”student_toModify.action?id=${e.id}&amp;pno=${pb.currentPageNo}”</span> <span class="na">style=</span><span class="s">”margin-right:25px;”</span><span class="nt">&gt;</span>修改<span class="nt">&lt;/a&gt;&lt;a</span> <span class="na">href=</span><span class="s">”student_delete.action?id=${e.id}&amp;pno=${pb.currentPageNo}”</span> <span class="na">onclick=</span><span class="s">”javascript:return</span> <span class="na">confirm</span><span class="err">(‘确定要删除记录吗?’);”</span><span class="nt">&gt;</span>删除<span class="nt">&lt;/a&gt;&lt;/td&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/tr&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/c:forEach&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/table&gt;</span>
+</span><span class='line'>
+</span><span class='line'>${pb.currentPageNo}/${pb.totalPages }页，共${pb.totalRows }条记录<span class="ni">&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">”student_queryByPage.action?pno=1″</span><span class="nt">&gt;</span>第一页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">”student_queryByPage.action?pno=${pb.prePageNo}”</span><span class="nt">&gt;</span>上一页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">”student_queryByPage.action?pno=${pb.nextPageNo}”</span><span class="nt">&gt;</span>下一页<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">”student_queryByPage.action?pno=${pb.totalPages}”</span><span class="nt">&gt;</span>末一页<span class="nt">&lt;/a&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码你自己仔细阅读、研究吧，我要强调下面几点：</p>
+
+<p>&emsp;&emsp;1、擅于使用BeanUtils.copyProperties完成对象间属性的copy；</p>
+
+<p>&emsp;&emsp;2、修改对象，必须要先查后改。即先查出要修改的对象，再用BeanUtils.copyProperties赋值，最后再调用业务层方法完成修改；</p>
+
+<p>&emsp;&emsp;3、删除对象也要先查后删除，即不要new出对象再set OID值 再删除；</p>
+
+<p>&emsp;&emsp;4、合理利于异常机制，直接显示业务层出来的异常信息；</p>
+
+<p>&emsp;&emsp;5、定义通用出错页面；</p>
+
+<p>&emsp;&emsp;6、分页的页面代码中，要注意jstl的标记用法，日期格式化代码。</p>
+
+<p>&emsp;&emsp;最后还要注意一点，hibernate属性延迟加载问题。我们使用了spring的OpenSessionInView过滤器（底层用 ThreadLocal实现，建议大家去研究一下哦）来解决在action及页面中访问域对象属性的延迟加载问题，但是在struts2中，你一定要把该过滤器配置到struts2过滤器之前，否则OpenSessionInView不起作用。</p>
+
+<p>&emsp;&emsp;至此，表现层的代码基本完成，你可能已经发现表现层代码会占用我们很多的开发时间，表现层的开发可以通过一些高效、设计良好的表现层框架提高开发的效率，比如：本例使用struts2，你也可以尝试一下JSF之类的框架，也许会有新的发现。</p>
+
+<p>&emsp;&emsp;下一篇，我想谈谈页面的数据合法性验证及测试方面的知识，请大家继续关注。</p>
 </div>
   
   
@@ -120,7 +841,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2010/11/29/domain/">领域对象的关联设计</a></h1>
+      <h1 class="entry-title"><a href="/blog/2010/12/23/jeee-tou-4/">一个简单的j2ee入门教程（第四部分—业务层编码）</a></h1>
     
     
       <p class="meta">
@@ -136,38 +857,415 @@
   
 
 
-<time datetime="2010-11-29T15:18:00+08:00" pubdate data-updated="true">2010年11月29日</time>
+<time datetime="2010-12-23T15:18:00+08:00" pubdate data-updated="true">2010年12月23日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;正如DDD这本书所说的，领域驱动设计是应对日益复杂的软件系统开发的有效途径，前面的文章中我也讲过，领域模型是一个系统更本质、更核心的东西，准确地抓住了域模型，你就抓住了系统的“神”，也就能更加灵活地应对需求的变化。我见过很多初学者在学会了ooad和一些设计模式的知识后，恨不得把学到的所有东西都应用到系统设计当中去，最终的结果就是系统非常的复杂，难于实现和维护。我们知道，真正设计得好的系统，应该是简单的，一目了然。在进行领域模型设计时，我们的一个原则就是要将复杂的系统简单化，关系要由多对多、一对多双向、一对多单向、一对一，直至独立的对象。大道至简，切不可走入“分析瘫痪”的歧途。</p>
+  <div class="entry-content"><p>&emsp;&emsp;编码在整个项目中占用的时间比例不是太多，我篇文章的将结合实例，讲解编码的一些流程和规范。</p>
 
-<p>&emsp;&emsp;在这里，我只想结合一个项目实际中的一部分，谈谈一对多双向及一对多单向的设计，希望大家在实际项目中能做到举一反三。</p>
+<p>&emsp;&emsp;按照常规顺序，先从持久层开始编码实现。持久层预先定义了接口，我们要写出持久层实现类，并写出测试用例保证测试通过，本示例中我们使用的是通用持久层封装，因此，在持久层并没有太多的工作要做。</p>
 
-<p>&emsp;&emsp;本项目是一个风电场实时监控系统，系统中有这么两组一对多关系：一级菜单和二级菜单，风机与风机实时监控记录，根据我们对需求的理解，有人很快设计出下面的领域图：</p>
+<p>&emsp;&emsp;业务层是我们的重点，做法基本按照测试驱动开发来做（当然不是严格意义上的测试驱动开发），我们只是要保证每个业务方法的实现都要有相应的测试代码，测试代码的编写和业务实现代码的编写交替进行，并无严格先后顺序。</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/16.jpg' width='' height='' title='领域对象关联设计示例图'><span class='caption-text'>领域对象关联设计示例图</span></span></p>
+<p>&emsp;&emsp;在eclipse环境中，所有的测试代码位于src下以test开头的一个包中，在这个包中再按测试模块逻辑名称分类存放，目录结构截图如下：</p>
 
-<p>&emsp;&emsp;从图中可以看到，一级菜单和二级菜单均为一对多双向关联，注意secondMeuns与fanRecords集合是多方在一方中的代码体现，那像这种设计有什么好处、有什么问题呢？我们可以从两个方面来考虑这个问题：</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/32.png' width='' height='' title='项目单元测试类目录结构'><span class='caption-text'>项目单元测试类目录结构</span></span></p>
 
-<p>&emsp;&emsp;一，建立对象之间的关联关系，好处是对象之间可以方便地实现导航，即：得到聚合根对象后，就可以得到与之相关联的对象；缺点是实例化聚合根对象时将实例化与之相关的所有对象，如果这些相关对象的在业务中从来没有被用到，则会造成不必要的内存与性能开销（当然，现在的很多ORM框架都有lazy功能，性能倒不是大的问题）。</p>
+<p>&emsp;&emsp;本例中是基于junit测试，版本3.8（4.0以上是支持注解测试的哦，不过检人更喜欢写单独测试类），所有测试类以Test结尾，测试中主要通过断言机制，通过观察测试结果进度条的颜色（红、绿）来判断测试结果，下面贴出部分测试代码：</p>
 
-<p>&emsp;&emsp;那也就是说，我们可以根据业务来确定一对多的关联关系，如果业务中90%的情况是读取到聚合根对象，都一定需要访问它相关的对象，则可以设计为双向关联，在一方中添加一个集合存储多方对象，否则，则可简化为单向关联，也就成了多对一了（注意：我们这时站在多方的立场来看，是多对一）。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">StudentServiceTest</span> <span class="kd">extends</span> <span class="n">TestCase</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">IStudentService</span> <span class="n">sts</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">setUp</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">BeanFactory</span> <span class="n">bf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ClassPathXmlApplicationContext</span><span class="o">(</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">sts</span> <span class="o">=</span> <span class="o">(</span><span class="n">IStudentService</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;studentService&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">testStudentService</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//测试按照id查询学生信息</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Student</span> <span class="n">s</span> <span class="o">=</span> <span class="n">sts</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">assertNotNull</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">assertEquals</span><span class="o">(</span><span class="s">&quot;张三&quot;</span><span class="o">,</span> <span class="n">s</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//测试分页</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Page</span> <span class="n">page</span> <span class="o">=</span> <span class="n">sts</span><span class="o">.</span><span class="na">getStudentByPage</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="mi">5</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">assertEquals</span><span class="o">(</span><span class="mi">3</span><span class="o">,</span> <span class="n">page</span><span class="o">.</span><span class="na">getTotalPages</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">assertEquals</span><span class="o">(</span><span class="mi">5</span><span class="o">,</span> <span class="n">page</span><span class="o">.</span><span class="na">getData</span><span class="o">().</span><span class="na">size</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">assertEquals</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="n">page</span><span class="o">.</span><span class="na">getCurrentPageNo</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//测试其它的业务方法.....（略）</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>根据需求及业务，我们可以做出这样的决策：一级菜单和二级菜单的设计要做成一对多双向关联；风机与风机实时记录，可设计为一对多双向关联，也可以设计为单向，因为很多时候仅仅是查看一下风机的信息，并不去关注该风机的实时记录，但有的时候也要查看。</p>
 
-<p>&emsp;&emsp;二、综合业务与界面呈现来考虑。</p>
+<p>&emsp;&emsp;写出业务代码后，运行该测试用例，如果测试没有通过，再回过头去修改业务实现代码，如此交替进行，最后保证业务类得以实现。这种做法要注意几点：数据库中应预先录入测试数据；要知道如何测试CRUD（一般先测试R通过，再测CUD，因为CUD要依赖于R进行验证）；要知道如何测试有异常抛出的业务方法（要用到fail方法）。</p>
 
-<p>&emsp;&emsp;根据需求来看，一个一级菜单中的二级菜单数据不会太多，即时全部加载出来，也不存在性能问题，从界面呈现来看，一级菜单中的二级菜单会一般情况下都会全部显示出来，因此，一级菜单和二级菜单两者设计为一对多双向关联关系，不存在任何问题。</p>
+<p>&emsp;&emsp;在多人开发环境中经常碰到测试数据库是大家共有的情况，在这种情况下，我们遇到的问题是一个人对测试数据的更改会影响到他人的测试代码通过，在这种环境下就得保证每个人的测试不真正提交到数据库，但又要保证测试的通过，具体请参阅我的另一篇文章《junit测试之hiberante延迟加载问题》的内容。</p>
 
-<p>&emsp;&emsp;再来看风机和风机实时记录，根据需求，一个风机每10秒钟就会产生一条实时记录（每半年清理一次），实时记录的数据量将非常庞大，如果在风机这边设计一个实时记录的集合，我敢保证你永远都不会直接去取这个集合中的数据（不信你调用fan.getFanRecordes()试一下哈），从界面上来看，一般都是通过分页来查看风机实时记录的，因此，在Fan中包含FanRecordes集合，没有实际意义，也就是说，Fan与FanRecord设计为单向关系，把前面的一对多双向关联改为现在的FanRecord与Fan的多对一关系（图我就不再去画了）。</p>
+<p>&emsp;&emsp;下面贴出在spring环境下带事务回滚功能的测试代码：</p>
 
-<p>&emsp;&emsp;也许你有疑问，在一方去掉多方的关联，要是业务实现时又要得到一方所关联的对象怎么办呢？答案是，添加一个相应的业务方法。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">StudentServiceInSpringTest</span> <span class="kd">extends</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">AbstractTransactionalSpringContextTests</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">IStudentService</span> <span class="n">sts</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testUpdateStudent</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="c1">//先按照id查询学生信息</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Student</span> <span class="n">s</span> <span class="o">=</span> <span class="n">sts</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">assertNotNull</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">assertEquals</span><span class="o">(</span><span class="s">&quot;张三&quot;</span><span class="o">,</span> <span class="n">s</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//本测试方法中的事务不回滚，真正向数据库提交</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//this.setComplete();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;张三丰&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>          <span class="n">sts</span><span class="o">.</span><span class="na">updateStudent</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">s</span> <span class="o">=</span> <span class="n">sts</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">assertNotNull</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">assertEquals</span><span class="o">(</span><span class="s">&quot;张三丰&quot;</span><span class="o">,</span> <span class="n">s</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>          <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">protected</span> <span class="n">String</span><span class="o">[]</span> <span class="nf">getConfigLocations</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">return</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">};</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//.....其它代码略去。</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<p>&emsp;&emsp;总的来说，领域对象之间关系在设计时，应根据需求、业务及界面实现等几个方面综合考虑，尽量将问题简化，当然，初学者喜欢将所学的全部应用到设计中，这也很正常的，我相信每个设计师经历过，大家都是这么过来的。</p>
+
+<p>&emsp;&emsp;业务层代码经过测试通过后，将提交到版本控制服务器中，把所有人的测试用例加入到一个测试套件中，统一运行测试套件（TestSuite）没有问题后，业务层代码就算写好了。当然，这个过程中我们可能会发现诸如orm映射文件问题，业务方法设计问题等等，这些存在的问题都会在编码和单元测试的过程中解决。</p>
+
+<p>&emsp;&emsp;下面贴出本示例中业务层代码的实现示例，这部分代码应该成为业务代码实现的规范，非常的重要。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="err">①</span><span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span><span class="o">=</span><span class="kc">false</span><span class="o">,</span><span class="n">rollbackFor</span><span class="o">=</span><span class="n">BizException</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">StudentServiceImpl</span> <span class="kd">implements</span> <span class="n">IStudentService</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 通用DAO</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">IBaseDao</span> <span class="n">baseDao</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">* 用于日志记录</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">②</span><span class="kd">private</span> <span class="kd">static</span> <span class="n">Logger</span> <span class="n">log</span> <span class="o">=</span> <span class="n">Logger</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">StudentServiceImpl</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">*用户登录方法实现</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">③</span><span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span><span class="o">=</span><span class="kc">true</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">Student</span> <span class="nf">login</span><span class="o">(</span><span class="n">Long</span> <span class="n">id</span><span class="o">,</span> <span class="n">String</span> <span class="n">password</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">BizException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">String</span> <span class="n">hql</span> <span class="o">=</span> <span class="err">“</span><span class="n">from</span> <span class="n">Student</span> <span class="n">s</span> <span class="n">where</span> <span class="n">s</span><span class="o">.</span><span class="na">id</span> <span class="o">=</span> <span class="o">?</span> <span class="n">and</span> <span class="n">s</span><span class="o">.</span><span class="na">password</span> <span class="o">=</span> <span class="o">?</span><span class="err">”</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">List</span><span class="o">&lt;</span><span class="n">Student</span><span class="o">&gt;</span> <span class="n">students</span> <span class="o">=</span> <span class="n">baseDao</span><span class="o">.</span><span class="na">queryEntitys</span><span class="o">(</span><span class="n">hql</span><span class="o">,</span> <span class="k">new</span> <span class="n">Object</span><span class="o">[]</span> <span class="o">{</span> <span class="n">id</span><span class="o">,</span> <span class="n">password</span> <span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">students</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">return</span> <span class="n">students</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="err">④</span><span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="err">“</span><span class="n">Student</span> <span class="n">login</span> <span class="n">failure</span><span class="o">,</span> <span class="n">the</span> <span class="n">id</span> <span class="nl">is:</span><span class="err">”</span> <span class="o">+</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="err">⑤</span><span class="k">throw</span> <span class="k">new</span> <span class="n">BizException</span><span class="o">(</span><span class="err">“学生登录失败，</span><span class="n">id</span><span class="err">号是：”</span> <span class="o">+</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* 根据id删除学生对象实现</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @param id</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">deleteStudentById</span><span class="o">(</span><span class="kt">long</span> <span class="n">id</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">BizException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">⑥</span><span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="o">(</span><span class="n">Student</span><span class="o">)</span> <span class="n">baseDao</span><span class="o">.</span><span class="na">queryEntityById</span><span class="o">(</span><span class="n">Student</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">student</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">baseDao</span><span class="o">.</span><span class="na">deleteEntity</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="err">④</span><span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="err">“</span><span class="n">student</span> <span class="n">not</span> <span class="n">exist</span><span class="o">,</span> <span class="n">the</span> <span class="n">id</span> <span class="nl">is:</span><span class="err">”</span> <span class="o">+</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="err">⑤</span><span class="k">throw</span> <span class="k">new</span> <span class="n">BizException</span><span class="o">(</span><span class="err">“你要删除的学生不存在，学生</span><span class="n">id</span><span class="err">号是：”</span> <span class="o">+</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">* 分页查询学生对象实现</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @param pageNo</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @param pageSize</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">* @return</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm">*/</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span><span class="o">=</span><span class="kc">true</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">Page</span> <span class="nf">getStudentByPage</span><span class="o">(</span><span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">String</span> <span class="n">hql</span> <span class="o">=</span> <span class="err">“</span><span class="n">from</span> <span class="n">Student</span><span class="err">”</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">baseDao</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">.</span><span class="na">queryEntityByPage</span><span class="o">(</span><span class="n">pageNo</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">,</span> <span class="n">hql</span><span class="o">,</span> <span class="k">new</span> <span class="n">Object</span><span class="o">[]</span> <span class="o">{});</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//…..其它代码略去。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;请大家注意代码中的数字标识：</p>
+
+<p>&emsp;&emsp;①可以看出，我们使用spring注解方式管理业务方法事务，它标明本实现类中所有的业务方法都是非只读事务，并且业务方法中抛出BizException表示该业务方法执行失败。</p>
+
+<p>&emsp;&emsp;②一个静态日志类，用来实现本类中日志的统一输出。</p>
+
+<p>&emsp;&emsp;③登录业务方法是一个只读事务，如此声明对性能提升有作用。</p>
+
+<p>&emsp;&emsp;④出现异常先进行日志记录，建议用英文（unix、linux下英文维护起来更方便）。</p>
+
+<p>&emsp;&emsp;⑤抛出统一的业务层异常，建议用中文写出原因，因为该信息可以直接放到页面上显示。</p>
+
+<p>&emsp;&emsp;⑥删除时，先查后改；更新同理。</p>
+
+<p>&emsp;&emsp;业务层代码已经完成，下面我们要进入页面交互部分的编写，页面部分工作量非常大，也非常繁琐，占用的编码周期较长，下面一篇文章将详细介绍。</p>
 </div>
   
   
@@ -180,7 +1278,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2010/11/24/login-reg/">写好登录注册-向商业软件的蜕变</a></h1>
+      <h1 class="entry-title"><a href="/blog/2010/12/20/jeee-tou-3/">一个简单的j2ee入门教程（第三部分——编码前的准备）</a></h1>
     
     
       <p class="meta">
@@ -196,68 +1294,221 @@
   
 
 
-<time datetime="2010-11-24T15:18:00+08:00" pubdate data-updated="true">2010年11月24日</time>
+<time datetime="2010-12-20T15:18:00+08:00" pubdate data-updated="true">2010年12月20日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;注册、登录，看似非常简单的功能，曾经多少入门级的软件书籍都是以这个做为Hello world级别的程序进行讲解，但是，有几个人能够真正搞清楚这个看似简单的程序，离商业（产品级）级的应用还差多少？这些也是一个初级程序员在实现时要考虑的。下面我们来一起讨论：</p>
+  <div class="entry-content"><p>&emsp;&emsp;<strong>原型实现</strong></p>
 
-<p><strong>一、登录</strong></p>
+<p>&emsp;&emsp;这篇文章主要讲述项目在进入编码前的一些准备工作，如果这些工作不做好，会影响到编码的进度。</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/19.jpg' width='' height='' title='登录界面原型'><span class='caption-text'>登录界面原型</span></span></p>
+<p>&emsp;&emsp;<strong>一、搭建项目结构</strong></p>
 
-<p>&emsp;&emsp;这个就是大家所做的登录界面，做为商业级应用，下面的一些重要因素，你可能没有全部考虑到：</p>
+<p>在概要设计阶段已经确定的技术框架基础上，搭建立起项目结构，主要有下面的一些内容：</p>
 
-<p>&emsp;&emsp;1、“登录”按钮是否只能有鼠标点击触发。这一点关系到用户体验，有些有户在输入用户名、密码后，可能直接按回车。</p>
+<p>&emsp;&emsp;1、源代码</p>
 
-<p>&emsp;&emsp;2、用户名和密码是否做了非空检测。客户端做数据的合法性检测有利于提高软件可用性，提高向用户反馈数据合法性问题的速度，所以，数据合法性验证在客户端（提高响应速率）、服务器端（做最后的验证）都得做。</p>
+<p>&emsp;&emsp;确定源代码的逻辑包结构，明确域对象、接口、实现类、工具类、控制类的存放规则。我们要知道，不论什么样的规则，都是以项目可读性、可维护性为目标的，如果你明白了这一点，就可以确定出很多规则：比如 分包，命名等。</p>
 
-<p>&emsp;&emsp;3、错误的提示是否友好。你可以直接用一个alert提示，但这对于用户来说似乎有些突兀，最好还是采用其它的提示方式，比如：在页面上加一个醒目的div区域，所有提示信息都显示在这里。</p>
+<p>&emsp;&emsp;a、一图胜千言，贴出本示例中的源代码截图如下：。</p>
 
-<p>&emsp;&emsp;4、当错误发生提示用户后，界面焦点是否在合理的控件上。比如：我们在登录失败时，就可以将焦点移动密码输入框上，用户可重新输入密码。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/27.png' width='' height='' title='项目包结构图'><span class='caption-text'>项目包结构图</span></span></p>
 
-<p>&emsp;&emsp;5、 是否加入了验证码机制。为了系统的安全性，重要的登录窗口一般都需要要上图片验证码机，以访止非法的机器登录，当然，这点也要根据项目需求来定，加了验证 码会增加用户登录的复杂性。我发现腾讯QQ邮箱在这方面做得比较好，当它发现你两次登录的IP地址不在一个城市或连续两次输入密码错误时，才会出现图片验 证码。</p>
+<p>&emsp;&emsp;在上面这个图中，基础框架部分（也就是framework中的所有东西）需要打成一个jar包导入项目lib中（我还没有打jar包），其它部分都按我们的规范文档来做（文档内容不再贴出）。有几点要强调一下：域对象要实现序列化接口，所有集合必须预先初始化，很多人不重视这些细节，后期写起来就会发现问题哈。</p>
 
-<p>&emsp;&emsp;6、服务器端密码验证，是否忽略大小写。这一点要根据系统非功能性需求来定，如果用户的计算机应用水平较低，就得考虑是否忽略密码大小写验证问题。</p>
+<p>&emsp;&emsp;b、配置文件</p>
 
-<p>&emsp;&emsp;7、正在登录的过程中，是否给用户一个进度或文字提示，特别是在登录速度比较慢的情况下非常重要，一定要让用户明白系统正在做的事情以及做的进度。</p>
+<p>所有配置文件全部放到src的config目录中，这样做的好处一方面是利于统一管理维护，另一方面是利于测试。配置文件又按框架分子目录存放，每一种框架又有一篇自己的基础配置文件，然后才是每个程序员自己的配置文件。</p>
 
-<p>&emsp;&emsp;8、登录正在进行中，“登录”按钮是否已经设置为不可点。</p>
+<p>&emsp;&emsp;c、测试类要另建包存入。</p>
 
-<p>&emsp;&emsp;9、是否提供了记住用户名（甚至密码）的选择项。你要相信，很多用户都是非常懒的，所以，我们在实现上一定得考虑周全。</p>
+<p>&emsp;&emsp;按照测试驱动开发的方法来做，业务类中的每个方法都要测试通过。</p>
 
-<p>&emsp;&emsp;上面的一些看似细小的地方，恰恰是一个商业软件要注意的地方，任何一个地方没有做好，都有可能会降低产品的竞争力。</p>
+<p>&emsp;&emsp;d、日志配置文件一定要写好。</p>
 
-<p>&emsp;&emsp;下面再来说一下注册，注册程序要注意这些细节：</p>
+<p>&emsp;&emsp;配置好日志文件，项目中的信息统一用log输出。</p>
 
-<p><strong>二、注册</strong></p>
+<p>&emsp;&emsp;e、导出源代码。我们把本例中详细设计图（有些书上叫设计模型）中的类图导出成源代码，再将这些代码放入我们的目录中（要注意导出时选择utf-8编码集）。</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/29.jpg' width='' height='' title='注册登录原型图'><span class='caption-text'>注册登录原型图</span></span></p>
+<p>&emsp;&emsp;<strong>二、项目页面的处理</strong></p>
 
-<p>&emsp;&emsp;1、你的注册按钮（或链接）是否醒目。我想大家一定遇到过不容易找到注册账号位置的网站而愤然离开的情况。</p>
+<p>&emsp;&emsp;如果后期采用jsp实现，在这就得将原型实现产生的html文件全部转为jsp，在转换时要注意下面几点：</p>
 
-<p>&emsp;&emsp;2、注册界面上是否说明了注册账号后有什么优势。如果没有说明白这一点，很多用户即使打开了注册界面，也会随即离开。</p>
+<p>&emsp;&emsp;a、页面中对所有资源（图片、js、css）的引用，要使用绝对路径。比如：</p>
 
-<p>&emsp;&emsp;3、注册用户名是否已经存在，注册必填信息是否已经填写，注册信息填写是否符合要求，这些字段验证后的结果提示一定要友好，道理和登录是一样的。</p>
+<p>&emsp;&emsp;在jsp开头定义&lt;%Stringpath=request.getContextPath(); %></p>
 
-<p>&emsp;&emsp;4、图片验证码是否已经添加，和登录一样，原因不再重复解释。</p>
+<p>&emsp;&emsp;在登录form的路径引用：</p>
 
-<p>&emsp;&emsp;5、 注册验证方式是否已经确定。这条我要说一下，很多网站注册都需要邮件验证激活或手机码验证激活等，这些验证激活过程会让一些用户在没有注册成功的情况下半 途离开，造成不必要的用户流失，因此，这点一定得注意，很多游戏类的网站都不需要激活，而sns类的可能需要，我们得根据项目的实际需求来定。</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">”&lt;%=path%</span><span class="nt">&gt;</span>/login.action” method=”post”&gt;
+</span></code></pre></td></tr></table></div></figure>
 
-<p>&emsp;&emsp;6、注册信息提交过程中，是否有友好的提示，告诉用户目前的状态。</p>
 
-<p>&emsp;&emsp;7、注册按钮是否已经设置为不可用。你不要认为这些细节我在重复的说哦，我曾经在一个项目中就是因为不注意这些细节，造成同一条用户注册信息在数据库中添加多次的情况，最终找到的原因就是这个。</p>
+<p>其它引用的资源也与之类似。</p>
 
-<p>&emsp;&emsp;8、 注册成功后，是否直接自动登录到系统。这点也是从用户体验来说的，如果用户注册成功后直接自动登录进入系统，为用户带来了方便。但我曾经的一个网站项目 中，用户登录成功后直接登录到系统，在页面右上角显示用户状态信息，但随即发现用户根本注意不了右上角状态的变化，以为自己没有注册成功，进而再次进行注 册，后来，我们采取在用户登录成功后，用显著的方式告诉用户已经登录成功，并提醒注意右上角的信息变化，问题才得到妥善解决。</p>
+<p>&emsp;&emsp;b、页面编码集采用utf-8(有的项目还必须用GBK哦，比如一些支付页面，当然这是特例)。</p>
 
-<p>&emsp;&emsp;9、必填字段是否已经加了标识，比如：一个红色的*，一些选择字段是否设置了初始值以简化用户注册过程。</p>
+<p>&emsp;&emsp;<strong>三、建表，准备测试数据</strong></p>
 
-<p>&emsp;&emsp;10、如果注册时填写了邮箱信息，注册成功后最好给用户发一封祝贺邮件。</p>
+<p>&emsp;&emsp;a、从经过审核的PD物理模型中导入建表sql语句，并在所选择的数据库执行该sql语语建立起表结构，本阶段数据库索引、外键这些可以暂不考虑，在性能调优时再统一添加。</p>
 
-<p>&emsp;&emsp;非常敬佩周鸿伟提出的产品微创新方法，如何把简单的功能做得更贴进用户，确实又是一个非常深入的学问和课题(老大一直喊我们研究ui呢，我们的时间紧啊)， 我发现，做为出道不久的程序员，往往不注意这些产品实现细节，但是细节会决定成败，影响产品的竞争力，本文中我仅用登录、注册做来范例来分析，希望大家能 在实现项目中做到举一反三，快速完成一个新手到老手的蜕变，写出产品级的优秀系统!</p>
+<p>&emsp;&emsp;b、在表中添加合理的测试数据，这是规范的软件开发流程中的做法，当然，也可以由程序员在编码时自行添加。另外，在PD中可以帮助你统一生成测试数据，但这些数据是随机的，没有业务含义，不好理解（如果你懒得手工去输入，可以考虑这种方式）。</p>
+
+<p>本例导出sql如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='sql'><span class='line'><span class="k">CREATE</span> <span class="k">TABLE</span> <span class="o">`</span><span class="n">t_student</span><span class="o">`</span> <span class="p">(</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">`</span><span class="n">pk_id</span><span class="o">`</span> <span class="nb">bigint</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span> <span class="n">AUTO_INCREMENT</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">`</span><span class="n">f_name</span><span class="o">`</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span> <span class="k">NOT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">`</span><span class="n">f_birthday</span><span class="o">`</span> <span class="nb">date</span> <span class="k">DEFAULT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">`</span><span class="n">f_password</span><span class="o">`</span> <span class="nb">varchar</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span> <span class="k">DEFAULT</span> <span class="k">NULL</span><span class="p">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">PRIMARY</span> <span class="k">KEY</span> <span class="p">(</span><span class="o">`</span><span class="n">pk_id</span><span class="o">`</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">)</span> <span class="n">ENGINE</span><span class="o">=</span><span class="n">InnoDB</span> <span class="n">AUTO_INCREMENT</span><span class="o">=</span><span class="mi">1</span> <span class="k">DEFAULT</span> <span class="n">CHARSET</span><span class="o">=</span><span class="n">utf8</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;测试数据由手工添加。</p>
+
+<p>&emsp;&emsp;<strong>四、配置orm映射文件</strong></p>
+
+<p>本例使用hibernate作为持久层框架，所以要编写hbm映射文件。映射文件的编写应交由1~2个人负责，过程要一气呵成，具体做法：可采用反向生成工具一次性生成，再手工调整；或者全部手工来写，两个程序员，一个人屏幕上打开领域对象，一个人打开物理模型，对照起来结对编程，也可高效地完成映射文件的编写（一定不要由每个人自己写自己的映射文哦）。</p>
+
+<p>&emsp;&emsp;本示例中只有一个领域对象，映射文件的编写非常的简单，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="cp">&lt;?xml version=”1.0″ encoding=”utf-8″?&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">&lt;!DOCTYPE hibernate-mapping PUBLIC “-//Hibernate/Hibernate Mapping DTD 3.0//EN”</span>
+</span><span class='line'><span class="cp"> </span>
+</span><span class='line'><span class="cp">“http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd”&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">&lt;!– Mapping file autogenerated by MyEclipse Persistence Tools –&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;hibernate-mapping&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">”com.yourcompany.yourproject.model.Student”</span> <span class="na">table=</span><span class="s">”t_student”</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">”id”</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”pk_id”</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">”identity”</span><span class="nt">&gt;&lt;/generator&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">”name”</span> <span class="na">type=</span><span class="s">”java.lang.String”</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”f_name”</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">”password”</span> <span class="na">type=</span><span class="s">”java.lang.String”</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”f_password”</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">”birthday”</span> <span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="nt">&lt;column</span> <span class="na">name=</span><span class="s">”f_birthday”/</span><span class="nt">&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/class&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/hibernate-mapping&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在编写映射文件的时候要注意的几点是：级联，反转，延迟，fetch加载这几个重要的属性，这些属性对业务和系统的性能都有较大影响。</p>
+
+<p>&emsp;&emsp;<strong>五、版本控制服务器</strong></p>
+
+<p>&emsp;&emsp;a、搭建起版本控制服务器，本示例中使用svn。在使用版本控制服务器时要注意一些基本的用法，比如：上传项目、检入、检出、更新、还原、解决冲突，更换服务器ip等等，这些内容我在这全部讲出来你也不回明白的，只有靠大家在项目中积累。</p>
+
+<p>&emsp;&emsp;b、版本控制服务器客户端要安装好，如果采用eclipse做svn客户端，则下载相应的插件压缩包，将文件拷贝到eclipse相应目录即可；如果用 TortoiseSVN-客户端则更简单，安装完后在系统右键菜单中会出现相应的操作。据我的经验，TortoiseSVN更加的稳定，非常不错。</p>
+
+<p>&emsp;&emsp;<strong>六、完善项目文档</strong></p>
+
+<p>&emsp;&emsp;a、在项目文夹下建立doc目录，将项目需求，数据库相关，变更相关，计划相关的文档全部放到该文夹下，以便后期的统一管理，doc目录结构如下图所示：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/26.png' width='' height='' title='项目文档目录结构'><span class='caption-text'>项目文档目录结构</span></span></p>
+
+<p>&emsp;&emsp;当然，你也可以在版本控制服务器上建立一个新的文档仓库，专门用来存放项目的各类型文档，这种做法也更规范。本示例直接将doc放以了项目中，仅仅做为示范。</p>
+
+<p>&emsp;&emsp;<strong>七、制定后期的开发计划</strong></p>
+
+<p>&emsp;&emsp;制定编码期的项目开发计划，可详细到每一天，如果感觉太细可详细到2~3天，时间点到了就得按计划进行审核，对出现的问题及时处理。</p>
+
+<p>&emsp;&emsp;计划的制定要根据用例（或模块）的复杂性及人员的具体能力分配，量力而行，充分利用每个人的特点和能力，当然，前提是要对每个程序员有充分的了解。计划可以按最终项目完成时间倒退得出，一个迭代期还要留有两到三天的冗余时间。</p>
+
+<p>&emsp;&emsp;<strong>八、明确规范，开始编码</strong></p>
+
+<p>&emsp;&emsp;规范是新员工入职的时候要培训的，在编码前最好再次明确一下，架构级规范、代码级规范、svn规范等等，一切规范都是为了后期代码可读性、可维护性而制定的，大家一定要严格遵照执行。</p>
+
+<p>&emsp;&emsp;终于可以进入编码了，很多人都期待着这一天的早日到来，但是你真的有把握写好代码吗？如果你前面的工作没做好，编码将非常的痛苦。请继续关注我的下一篇关于编码阶段的文章。</p>
 </div>
   
   
@@ -270,7 +1521,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2010/11/23/pay/">项目集成第三方支付设计方案</a></h1>
+      <h1 class="entry-title"><a href="/blog/2010/12/17/jeee-tou-2/">一个简单的j2ee入门教程（第二部分——设计）</a></h1>
     
     
       <p class="meta">
@@ -286,42 +1537,136 @@
   
 
 
-<time datetime="2010-11-23T15:18:00+08:00" pubdate data-updated="true">2010年11月23日</time>
+<time datetime="2010-12-17T15:18:00+08:00" pubdate data-updated="true">2010年12月17日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;现在越来越多的项目都要求集成第三方的支付平台，特别是在互联网项目中，下面简单说说项目中集成第三方支付平台的设计实现思路。</p>
+  <div class="entry-content"><p>&emsp;&emsp;<strong>原型实现</strong></p>
 
-<p>&emsp;&emsp;目前用得比较多的 第三方支付平台有支付宝、易宝、财付通、移动支付等，每种支付平台都提供了详细的支付接口文档及示例代码，要在自己的项目中实现集成第三方支付还是比较容 易的，但主要的问题在于，一个项目中一般都会集成多种支付方式，以方便用户的选择，那么，我们的项目中如何设计才能即保存业务层的稳定，又能方便地加入新的 支付方式（开闭原则体现哦）。设计的思路就是抽象定不变的东西封装起来，变化的部分设计为接口单独封装，以达到灵活的扩展的目的。</p>
+<p>&emsp;&emsp;接下来的一步是要将原型设计阶段的草图，实现为可重用的界面原型，本例中我们用DW(Dreamweaver简写)进行实现。</p>
 
-<p>&emsp;&emsp;对一些平台的支付流程进行研究总结后，我们发现，无论支付工具的接口怎么的不相同，但总的支付流程几乎是一样的，这个支付流程应该可以抽象出来，下面是一个支付过程的活动图：</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/50.png' width='' height='' title='界面原型目录结构图'><span class='caption-text'>界面原型目录结构图</span></span></p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/22.png' width='' height='' title='支付流程图'><span class='caption-text'>支付流程图</span></span></p>
+<p>&emsp;&emsp;在进行原型实现的时候一定要注意下面的一些事项：</p>
 
-<p>&emsp;&emsp;在 这个活动图中，首先用户要选择购买的服务（虚拟点卡、金币、或会员服务等）；在接下来进入支付方式（支付宝、易宝等）选择页面，服务器将根据用户选择的不 同支付方式，生成要向第三方支付服务器的请求参数，放回响应页面中；在新的页面中显示用户要支付的款项金额等信息，要求用户再次确认，如果用户确认后，用 户界面将转到第三方支付服务器，这个支付的过程我们就不用管了；如果用户在第三方支付服务器上付款成功，第三方服务器将会通知我们的服务器，告知我们一些 支付细节，这个时候，我们再在项目中再进行业务处理，比如：更改用户的业务状态。（注：支付参数提交过程可用get或post，参数后都要附加md5签名 字符串，安全性不用担忧，本人建议以get方式提交。）</p>
+<p>&emsp;&emsp;1、目录结构</p>
 
-<p>&emsp;&emsp;经过上面的流程分析，我们可以把支付过程进一步总结为：支付请求参数的提交，以及支付成功回调的业务处理两个过程，根据这两个过程，我设计了类图(原图高清晰，请右键单独查看图片)，并对之进行解释。</p>
+<p>&emsp;&emsp;子模块页面要建上当分类存放；images图片要有专门文件夹；js、css要要有专门文件夹；如果用户可以上传文件，还得规划相应的目录。</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/23.jpg' width='' height='' title='支付后台设计图'><span class='caption-text'>支付后台设计图</span></span></p>
+<p>&emsp;&emsp;2、文件命名方式</p>
 
-<p>&emsp;&emsp;领域对象：</p>
+<p>&emsp;&emsp;原则是见名知意，请参考我上面截图中我的命名方式，你就会明白。</p>
 
-<p>&emsp;&emsp;A、服务项目：可供用户选择的服务项目，包括名称、金额、时长等信息，这些信息在用户支付前进行选择；</p>
+<p>&emsp;&emsp;3、页面中输入框的命名，元素的命名</p>
 
-<p>&emsp;&emsp;B、用户：保存用户支付成功后的一些业务状态；</p>
+<p>&emsp;&emsp;原则是要考虑到域对象中一些属性的命名，以方便后期实现</p>
 
-<p>&emsp;&emsp;C、 支付记录：在用户离开我们的网站到第三支付界面前，我们的系统必须要保存一份支付记录，这个记录中有我方系统产生的唯一交易编号，交易状态为未成功；在支 付成功的回调中，我们从回调参数中取出我方系统产生的唯一交易编号，找到这条没有成功的交易记录，再填上第三方系统产生的唯一交易号（对账时要用），更改 支付记录状态为成功，最后更改用户业务状态。支付记录中会聚合服务项目及用户信息这两个对象，以方便在回调时找到支付的一些情况。</p>
+<p>&emsp;&emsp;4、css、js</p>
 
-<p>&emsp;&emsp;业务类设计：</p>
+<p>&emsp;&emsp;尽量将页面的表现与行为分离到单独的文件中</p>
 
-<p>&emsp;&emsp;PaymentAction 为支付处理控制器(可选择struts action或servlet做为父类)，preparePay方法的主要作用是生成向第三方支付服务器提交的URL（有很多的支付信息要拼接），代码实 现步骤我已在图中进行了注明。其中有一点我要强调一下：我们页面中的付款金额，名称，描述等信息是固定的，而用户选择了不同的支付方式后，要生成不同支付 平台的参数，我的实现思路是，在控制器中通过request.getParameterMap()得到我们页面中输入的键值对，再转换成目标支付平台的参 数键值对，由于每个支付平台参数不同，我们就得把这个对应关系找一个地方单独存起来。</p>
+<p>&emsp;&emsp;页面实现阶段要考虑的东西真的非常多，包括界面风格，seo，用户体验等等。因为页面是很多程序员不屑一顾的，甚至有人认为这完全是美工的事，这些想法都是完全错误的。</p>
 
-<p>&emsp;&emsp;我设计了一个PayConfigurationReader 接口，里面包括读取键值映射、得到商户（我们系统）的ID，密钥等方法，这些方法都是通过对多个平台支付流程的理解后设计出来的，每个平台有一个自己的 properties参数存储文件，用来存放这个平台的配置信息，刚才我们所说的键值映射关系，就写在这个配置文件中。</p>
+<p>&emsp;&emsp;原型实现一定要认真、细致，因为这个原型是后面项目中可重要的原型哦，在这里下的功夫到位了，后期的实现时会节省很多时间。</p>
 
-<p>&emsp;&emsp;具体支付平台实现类将实现PayConfigurationReader接口，完成自身平台相关操作。</p>
+<p>&emsp;&emsp;当然原型的实现也可以放到后期来做（比如详细设计时，编码前期），但建议还是提前，因为原型对完善领域对象的属性有很大的作用。</p>
+
+<p>&emsp;&emsp;下面来说一说设计阶段的主要活动。</p>
+
+<p>&emsp;&emsp;设计阶段分为概要设计和详细设计两个步骤，根据我们的业务需求，先进行概要设计。概要设计要做的事情包括：进一步明确、完善领域模型；确定系统业务架构；确定系统技术架构等。</p>
+
+<p>&emsp;&emsp;<strong>概要设计</strong></p>
+
+<p>&emsp;&emsp;首先要知道为什么概要设计要在需求分析完成后才开始，这个也是很多新手不太明白的。原因在于需求中有很多非功能性需求（约束）对项目的成败影响非常大，这些非功能性需求会在需求分析说明书中进行描述，概要设计就是要根据这些具体需求来确定系统架构，以从整体上满足系统非功能性需求。</p>
+
+<p>&emsp;&emsp;架构又分为业务架构和系统技术架构，系统的业务架构一般会根据很多个类似项目或相近领域项目的开发经验、积累，进行总结提炼后方可行成，比如：权限管理、工作流程管理、税率算法等等，这些业务架构可以在未来的新项目中得以重用，换句话说，新项目可以架构在现有的业务架构之上而不需从零开始。本示例过于简单，中我们没有办法抽取业务架构，固本步骤略去。</p>
+
+<p>&emsp;&emsp;系统技术架构是一定需要的，根据需求选择相应的技术架构，进行简单封装并制定一套开发的规范非常的重要，因为好的技术架构会减少程序员的工作量，提高开发效率。技术架构会根据需求（主要是非功能性需求）来确定，比如：遗留项目二次开发、对系统查询性能要求很高的项目、高并发访问项目，账务项目、军工项目等等，不同的项目类型及项目需求，都可能设计出来不同的技术架构。本示例中，我还是采用最常见的ssh技术架构，业务逻辑采用事务脚本方式封装，下面按分层来分别介绍各个层次在概要设计的决策（架构就是由一系列的决策组成）。</p>
+
+<p>&emsp;&emsp;一、表现层</p>
+
+<p>&emsp;&emsp;表现层的开发会占到编码80%左右的周期，因此表现层的技术、框架的选择是非常的重要，开发效率、可维护性是一个选择的指标，在选择时要多做比较。</p>
+
+<p>&emsp;&emsp;需求：项目中会有大量的js操作——>决策：引入jQuery提高开发效率，并下载jQuery扩展插件进一步减少程序员工作量。</p>
+
+<p>&emsp;&emsp;需求：项目工期紧，表现层交互开发周期紧张——>决策：用struts2提高开发效率（示例中我也会给出struts1.x或servlet的实现注意事项，但struts2确实会简化我们的程序开发）。</p>
+
+<p>&emsp;&emsp;二、业务层</p>
+
+<p>&emsp;&emsp;需求：开发人员更熟悉面向过程，项目后续维护期很长——>决策：采用事务脚本封装业务逻辑，界面可直接映射到业务方法。</p>
+
+<p>&emsp;&emsp;需求：所有业务都需要事务处理；决策：事务交spring管理——>为了业务方法设计的灵活性，采用spring注解方式声明事务。</p>
+
+<p>&emsp;&emsp;再考虑一下业务层数据持久化问题。在本例中，业务实现类中需要聚合一个IBaseDao以完成对象的持久化操作，这种持久层框架设计采用了我在另一篇文章《持久层设计方案总结》中的第二种，业务实现类与持久化类的关系如下图所示：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/41.png' width='' height='' title='学生系统业务层设计图'><span class='caption-text'>学生系统业务层设计图</span></span></p>
+
+<p>&emsp;&emsp;我们在StudnetServiceImpl中聚合IBaseDao完成对象持久化操作，由于IBaseDao是一个通用持久接口，因此，在业务实现类中不可避免会写上很多sql或HQL等，看上去这些代码和数据库相关性很大，如果你认为这种方式不好（似乎职责划分不明确），也可以稍加改进，变成《持久层设计方案总结》中最后一种方案。但你要知道这种方式是软件公司中常用的一种方式，开发的效率较高效，可维护性较好。</p>
+
+<p>&emsp;&emsp;三、持久层</p>
+
+<p>&emsp;&emsp;需求：本系统是全新设计开发（非遗留系统的二次开发）——>决定：使用hibernate作为持久层orm框架。</p>
+
+<p>&emsp;&emsp;需求：业务中基本的CRUD操作非常多——>决定：封装通用持久层。</p>
+
+<p>&emsp;&emsp;通用的dao操作如下设计如下（与hibernate有一定的耦合，当然可以设计出更好的通用方法，但我认为一个项目的持久层技术框架确定后，一般很少有更换的情况，因此，这种耦合是稳定的）：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/42.png' width='' height='' title='学生系统业务层设计图'><span class='caption-text'>学生系统业务层设计图</span></span></p>
+
+<p>&emsp;&emsp;至此，概要设计基本完成，《概要设计说明书》会就是我们的一个标志性文档。我们整体软件开发是一个增量、迭代的过程，我们对业务的理解也会逐渐深入，对领域模型也会调整得更加的准确（域模型就是对业务理解的固化），《概要设计说明》将为详细设计提供指导和依据。</p>
+
+<p>&emsp;&emsp;<strong>详细设计</strong></p>
+
+<p>&emsp;&emsp;紧接着我们马上要进入编码阶段了，但仅仅有概要设计的成果我们还无法开展工作，比如：系统中有哪些具体包，哪些类（由于很多类在领域模型中是没有的，但是编码阶段又是必须要用的）等等，详细设计就是要解决这些问题，把一些更细节的东西确定下来。详细设计阶段要解决下面一些问题：</p>
+
+<p>&emsp;&emsp;A、进一步确定领域对象之间的关系，并完善属性</p>
+
+<p>&emsp;&emsp;在概要设计阶段的领域模型图中，可能标注了对象之间的关系以及数量，但在详细设计阶段需要对这些关系进行进一步的明确，特别是一对多，一对一的方向性问题，我已经在《领域对象的关联设计》一文中有详细论述，由于我们的示例中只有一个对象，所以这个过程就可以简化了。</p>
+
+<p>&emsp;&emsp;领域对象的属性，要得根据原型来，在详细设计阶段，原型应该已经实现完成，找到和域对象相关的界面原型，根据原型的界面元素，完善领域对象的属性，其实，从原型上也可以进一步验证领域对象关系是否合理。宅急送后的领域对象如下图，注意属性要全部准确翻译成英文，中文注释一定要写上。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/39.png' width='' height='' title='完善属性'><span class='caption-text'>完善属性</span></span></p>
+
+<p>&emsp;&emsp;B、数据字典及数据库建表sql语句</p>
+
+<p>&emsp;&emsp;有人由hbm文件反向生成表结构，并设置hbm2ddl参数为true实现表结构的自动更新，这种做法是开发经验不丰富的表现。虽然现在领域驱动设计（DDD），OOAD等的口号喊得很响，但在实际应用中还得必须以数据为中心，而数据往往又是关系型数据库，关系数据和对象间存在阻抗、不匹配性，而最后在压力测试时关系数据库又是90%的性能瓶颈所在，因此，对系统的数据存储进行设计就显得非常的有必要，生成一份详细的《数据字典》，无论对于开发阶段，还是维护阶段来说都有重大意义。</p>
+
+<p>&emsp;&emsp;我们这里使用PD（Powerdesigner简写）进行数据库设计，先建立概念模型，再由概念模型生成物理模型。概念模型建立后，你会发现建立的概念模型和领域模型非常的相似，似乎建立概念模型是一项重复性的工作，我以前也是这么认为的，但在经历过一些项目后，我明白了其中的原因：概念模型可以转成各种不同数据库系统的物理模型，这将为系统更换数据库系统带来方便。下面是本示例的概念模型，要注意的是实体中的 name和code两个字段的含义，name一般填入中文，code为最终导出代码（脚本）时用的名称。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/43.png' width='' height='' title='学生系统概念模型图'><span class='caption-text'>学生系统概念模型图</span></span></p>
+
+<p>&emsp;&emsp;将上面的概念模型转成物理模型，如下图（这个时候就要选择底层的数据库类型了哦，这里我选择mysql5）。物理模型要由手工再逐一核对修改一遍，确保其正确性。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/40.png' width='' height='' title='学生系统物理模型图'><span class='caption-text'>学生系统物理模型图</span></span></p>
+
+<p>&emsp;&emsp;最后，由物理模型导出数据字典，我用PDMReader导出数据字典，PDMReader是一个免费工具，网上google一下就可以下载，得到的数据字典如下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/44.png' width='' height='' title='学生系统数据字典'><span class='caption-text'>学生系统数据字典</span></span></p>
+
+<p>&emsp;&emsp;当然，也可以在PD中直接导出文档，但我认为PD中导出的文档太复杂，有点华而不实，不如PDMReader来得简单。</p>
+
+<p>&emsp;&emsp;最后强调一下表和字段的命名规范，你在填写code的时候，就按这个规则去命名。</p>
+
+<p>&emsp;&emsp;表：t<em>表名，如果是中间表：t</em>表名1_表名2</p>
+
+<p>&emsp;&emsp;字段：f_字段名</p>
+
+<p>&emsp;&emsp;主键：pk_主键名</p>
+
+<p>&emsp;&emsp;外键：fk<em>表名</em>外键字段名</p>
+
+<p>&emsp;&emsp;索引：idx_索引字段名</p>
+
+<p>&emsp;&emsp;《数据字典》是一份非常重要的文档，给它取一个版本号，后期一定会有修改的，版本号要跟着调整。</p>
+
+<p>&emsp;&emsp;C、完成业务层方法的设计，完成其它包层次中的类设计，比如：action编码前要由uml工具导出代码，将导出的代码放入项目初始版本。因此业务方法要根据界面原型来进行详细的设计，如果业务类设计得完整、合理，编码时就会顺利得多。</p>
+
+<p>&emsp;&emsp;当然，不要期待能够把业务层方法设计得非常完善，我们在后续的迭代过程中也会以添加一些没有考虑到的方法。详细设计也得看详细到什么程度，如果你要像日本外包那样来做详细设计，那么action等一切都要设计好，甚至包括界面的像素布局、sql模板都要写好，我想，做为普通的软件公司特别是中小公司，还是要“敏捷”点为好。</p>
+
+<p>&emsp;&emsp;设计阶段完成后，就该进行编码了，但编码前还有很多准备工作要做，这些内容我会在下一篇文章中详细说明。</p>
 </div>
   
   
@@ -334,7 +1679,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2010/11/22/flow/">一个迭代周期内的项目开发流程</a></h1>
+      <h1 class="entry-title"><a href="/blog/2010/12/13/jeee-tou-1/">一个简单的j2ee入门教程（第一部分——需求分析 ）</a></h1>
     
     
       <p class="meta">
@@ -350,134 +1695,64 @@
   
 
 
-<time datetime="2010-11-22T15:18:00+08:00" pubdate data-updated="true">2010年11月22日</time>
+<time datetime="2010-12-13T15:18:00+08:00" pubdate data-updated="true">2010年12月13日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;软件项目开发，一般都会采用增量、迭代、（或者叫进化、演化、演进）的软件开发模型，众多的软件开发模型大多是以经典的瀑布模型为基础进行改进、变形，改进原则是：增加客户在整个项目周期中的参与度，降低软件开发过程中的风险，增强软件项目的后期可维护性。</p>
+  <div class="entry-content"><p>&emsp;&emsp;本系列入门文章将结合一个简单的CRUD示例，以我的一篇博文《项目一个迭代周期内的开发流程》为依据，详细讲解开发过程中的流程及关键点环节的注意事项，希望初级程序员、初学者能够举一反三，并以此例为原型，映射到一个完整项目的开发过程，从中悟出一些自己的东西（注：本文中的需求完全是设想的，可能并不符合实际情况）。</p>
 
-<p>&emsp;&emsp;不同的软件开发模型，迭代周期长短也不相同，有的是一个月，有的是两周，我们一般都是根据实际情况确定，一个周期完成，将项目成果（可运行的软件）提交给用 户（或进行内部评审），通过后就进入下一个迭代开发周期，我画了一个迭代周期的活动草图（适用于中、小型项目的开发），每一个活动，将在下面详细说明。</p>
+<p>&emsp;&emsp;本演示项目是一个学生管理系统，目标客户是某某中学（明确目标客户与用户），该中学委托我们开发一套学生管理系统（可行性分析），我们为此进行前期的需求采集，并进行需求的整理（需求采集、分析、整理），最后形成需求分析说明书，需求分析说明书通过评审后就标志着需求分析完成，一个里程碑已经到达。需求分析说明书中对需求进行了详细的描述，常见需求描述的方式可按照功能模块来，也可以按用例来，我分另写出了两种方式的示例。</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/25.jpg' width='' height='' title='项目开发流程图'><span class='caption-text'>项目开发流程图</span></span></p>
+<p>&emsp;&emsp;<strong>一、需求描述（按功能模块描述）</strong></p>
 
-<p>&emsp;&emsp;<strong>一、明确客户（用户）。</strong>客户和用户一般指的是最终使用软件系统的人或为系统付费的人，搞不清楚目标客户（用户）会造成需求上的偏差。比如一个网站项目，或是一个外包项目，你首先得搞明白软件项目的目标客户（用户）。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/18.jpg' width='' height='' title='功能分解图'><span class='caption-text'>功能分解图</span></span></p>
 
-<p>&emsp;&emsp;<strong>二、市场调研，可行性分析。</strong> 针对目标客户，对软件项目或产品的目前市场状况、目标客户的情况以及公司的开发资源等各个方面因素进行综合分析考虑，确定项目市场与技术上的可行性，如果 发现风险过大，或可行性太低，项目就必须得终止。本阶段一般会产生市场调研报告或市场分析报告等文档。如果项目可行，就算是立项了。</p>
+<p>&emsp;&emsp;按自顶向下的方法，把整个系统层层分解，直到细分到可实现的最小单元为止，根据功能分解，我们列出如下的功能分解列表：</p>
 
-<p>&emsp;&emsp;准备自己创业的同学一定要注意市场调研哦，千万不能想当然，还一腔热血，不要迷恋网上的成功创业传奇。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/17.jpg' width='' height='' title='功能表'><span class='caption-text'>功能表</span></span></p>
 
-<p>&emsp;&emsp;<strong>三、需求采集。</strong>对目标客户进行需求的采集，方法很多，这列几个：部门访谈、中上层领导访谈、问卷调配、同类型软件分析、电话会议等等，收集回来的资料包括客户工作中的报表、表格，访谈记录，会记录、问卷调查表等。</p>
+<p>&emsp;&emsp;接着给出具体功能的详细需求描述：</p>
 
-<p>&emsp;&emsp;<strong>四、需求分析、整理。</strong>对收集、采集回来的资料，进行整理、分析、讨论，梳理出业务流程，形成文档。有些纸质的东西收集回来后，要形成电子表格或word文件。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/33.jpg' width='' height='' title='学生系统具体功能描述'><span class='caption-text'>学生系统具体功能描述</span></span></p>
 
-<p>&emsp;&emsp;<strong>五、形成需求（规约）分析说明书。</strong>需求分析说明书的完成标志着软件生命周期中的第一个重要里程碑完成，需求分析说明书可以用两种形式来描述用户的需求：</p>
+<p>&emsp;&emsp;如果业务过于复杂，后面还会加上“数据描述”，“业务约束”这两项，我们的示例很简单，固省略。</p>
 
-<p>&emsp;&emsp;A、 按功能模块来划分。具体思路是把整个大的系统按逻辑分成子模块功能，子功能再具体细分，直到确信某子功能可以实现为止。这种方式来描述需求有一些缺点，主 要表现在隔离了模块的角色与操作环境，不好把握需求与设计的界线，优点是非常容易映射到实现上（一般一个子功能就是一个菜单项）。这种方法很多大公司至今 都还在用，也许是老程序员已经习惯了这种需求描述的方式吧。</p>
+<p>&emsp;&emsp;<strong>二、需求描述（按用例描述）</strong></p>
 
-<p>&emsp;&emsp;B、按用例来划分。用例是现在很多公司采用的需求描述方式。用例文件是需求主要描述的地方，用例文件描述的是一个会话环境，更加的形象、生动，推荐大家按这种方式来做，我也是习惯于用例来描述需求。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/46.jpg' width='' height='' title='学生系统用例图'><span class='caption-text'>学生系统用例图</span></span></p>
 
-<p>&emsp;&emsp;在前面五个环节中，还有两个活动流程是贯穿在其中的，它们是界面原型和领域模型。我认为这两个软件活动，在软件开发早期就开始了，并且在后续软件开发流程中，都可以找到它们的身影，下在就来谈谈这两个重要的活动。</p>
+<p>&emsp;&emsp;根据需求，可以画出本例中的用例图，总共一个角色，两个用例。我要强调的是，用例图是一个宏观的东西，它可以让我们从整体上对系统有一个大致的了解，但是，图是无法说清楚需求的，我们必须借助于用例文本（或叫用例规约）来对需求进行描述。</p>
 
-<p>&emsp;&emsp;原型法是 我认为在软件开发过程中必不可少的过程，而且非常的重要。我在这里指的原型法，主要是界面原型（架构原型或技术探索原型先不在这讨论），界面原型分两个阶 段来做，分别是原型设计与原型实现，在web项目中，会有不同的工具，并且侧重点也是不同的，具体请参阅我的别一篇文章。总的来说，没有界面原型，后面的 开发流程都免谈。打个比方：你要创作一幅油画，应该先有一个构思，先要有素描稿、色彩稿，要做到心中有数，否则，后期的创作将无从谈起。我现在的任何一个 项目，都是由原型设计开始，原型设计通过评审后，再进行原型实现。</p>
+<p>&emsp;&emsp;下面是“登录系统”用例的描述。</p>
 
-<p>&emsp;&emsp;领域模型的重要性大家应该非常清楚，在DDD一书中已有详细的论 述。领域模型是我们软件开发活动中的一种重要沟通工具，在需求采集、整理阶段就已经可以采用，我们可以用它来和客户沟通，可以固化我们对需求的理解，随着 对需求的不断深入，领域模型将不断完善。领域模型是一个项目的精髓，就像一幅肖像画中的神，它是更本质、更核、更深层的东西，不容易随着需求的变化而变 化。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/45.jpg' width='' height='' title='学生系统用例文本'><span class='caption-text'>学生系统用例文本</span></span></p>
 
-<p>&emsp;&emsp;有一些人和我纠缠界面原型、领域在软件活动中的顺序，比如：先写用例文本，再寻找领域；先写界面原型，再写需求文档等等，如果 你也存在这样的困惑，那就说明你犯了教条主义的错误，读书读死了。软件开发的各个响动，都是以降低软件开发风险，保证功能开发为目的的，无论什么活动，什 么工具，只要你认为对当前所处的开发阶段有用，就可以大胆采用，无要再在顺序上过于纠结。</p>
+<p>&emsp;&emsp;（注：用例文本在不同的软件开发模型，比如RUP、Iconixk中的描述要求和侧重点可能不相同）</p>
 
-<p>&emsp;&emsp;领域模型做完后，有的公司会用一些方法对域模型的可行性 进行验证，常用工具是DB4O，一种面向对象的数据库，具体做法是：结合界面原型实现，直接在Controller层中通过DB4O完成主要域对象与页面 的交互，如果发现领域问题就可以及时修正，减少后期存在的一引起风险因素。</p>
+<p>&emsp;&emsp;由上面实例中的两种方式对比可以看出，按照功能模块来描述需求的方式有一些明显的缺点，比如：仅仅站在系统的立场来描述功能，隔离了参与者；对复杂业务描述、表达不够顺畅等，如果你是一个软件行业新入门者，建议你在今后的项目中采用“用例”来描述你的需求，这种方式比较自然，更加易懂。</p>
 
-<p>&emsp;&emsp;<strong>六、概要设计。</strong>这一过程架构师参与得多一些，主要是根据需求分析阶段的成果（重点要考虑非功能性需求），进行架构的确定，包括业务架构（如果一个公司初入某一行业领域，可能无法确定业务架构），系统架构，技术实现架构等，这一阶段可能还会对领域模型进一步的细化。</p>
+<p>&emsp;&emsp;<strong>三、界面原型法</strong></p>
 
-<p>&emsp;&emsp;<strong>七、详细设计。</strong>该阶段应该完成编码前的所有准备工作，主要完成以下的任务：</p>
+<p>&emsp;&emsp;在进行需求分析的时候，往往会借助于界面原型法来实现承上启下的过渡，一方面，界面原型可以用来和客户沟通需求，明确地表述我们（软件公司）的意图，另一方面，客户可能对自己的需求表述不清楚，但对界面原型十分的敏感，因些，界面原型在需求分析阶段就已经开始介入；原型确定后，我们又要参照前期的原型进行后面的界面实现以及详细设计，可见界面原型法在整个软件开发活动中的重要性。在我们这个示例中，因为已经有了需求文档，那么我们要做的，就是按照需求文档画出界面原型，如下图：</p>
 
-<p>&emsp;&emsp;A、 ER模型。可参照领域模型，完成ER模型的设计，最终结果基本和域模型一致。有的UML工具可以由领域模型直接导出ER模型，经常有人问题有了领域模型， 为什么要创建ER模型呢？因为我们要由ER转物理模型，在PD中由ER转物理模型非常方便，并且可以选择不同的底层数据库，建了ER后数据库移植将非常的 方便。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/47.png' width='' height='' title='学生系统界面原型'><span class='caption-text'>学生系统界面原型</span></span></p>
 
-<p>&emsp;&emsp;B、物理模型。由er直接转面物理模型，再由物理模型导出数据字典，建表sql，在PD中还可以自动生成测试数据，因此，物理模型这一步是 必须要做的。我见过有人是先写好领域对象，再写好hbm，然后动态生成表，这种做法不是太好，因为在实际的生产环境中，数据库和领域对象是不匹配的，存在 阻抗，所以，数据字典对于开发、维护，都绝对是一份非常重要的文档，也就是说一定要有物理模型。</p>
+<p>&emsp;&emsp;（如果你在软件开发前已经有了详细的需求说明文档，那么你也是从界面原型开始了解需求，进行下一步的开发的）。</p>
 
-<p>&emsp;&emsp;C、详细设计包层次结构，包中的类，类中的方法及属性，总之，编码前的一切准备工作都要做好。</p>
+<p>&emsp;&emsp;这一阶段使用工具是Balsamiq Mockups，实现原则是：简单快速，并且要标清楚界面之间的跳转流程。如果界面上遗漏了一些无关紧要的界面元素也是没有关系的。</p>
 
-<p>&emsp;&emsp;D、本次迭代的周期的人员分工，计划等。人员分工可按用例（或功能）来分配，也可以按层来分配（比如：dao,service,action等），任务分配要考虑到任务是否存在时间上和逻辑上的先、后依赖关系。</p>
+<p>&emsp;&emsp;<strong>四、领域模型</strong></p>
 
-<p>&emsp;&emsp;E、如果持久层是hibnerate、ibatis等orm框架，要事先安排一到两人来完成整个系统的关系映射文件（如果用 hibernate，这点很重要，不要让每个实现者去写自己的hbm）。</p>
+<p>&emsp;&emsp;除了界面原型法，我们还有一个重要的活动：建立领域模型，这个活动与界面原型法类似，也是前期可以用来和客户沟通，后期可以用于设计、实现。我们在需求分析阶段建立起来的领域模型比较粗糙，属性也是不完整的，但是重要的属性、关系一定要清楚地标出来。本示例中领域模型图如下：</p>
 
-<p>&emsp;&emsp;F、项目的第一个版本，上传版本控制服务器，每位开发人员检出项目。</p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/38.jpg' width='' height='' title='学生系统领域模型'><span class='caption-text'>学生系统领域模型</span></span></p>
 
-<p>&emsp;&emsp;<strong>八、编码实现，单元测试。</strong> 程序员在这个阶段按照分工及业务需求，进行代码实现。如果是按用例（或功能）来分工的，必须要求程序员从底层向上层写，最好按测试驱动开发（TDD）方式 来做，写一层，测一层，保证底层的实现正确性后再向上写。编码阶段管理者还要注意时间上的控制，业务代码实现大约占比20%，页面交互、实现约占80%的 编码实现周期，做计划时要做到心中有数。如果是程序新手，还得分阶段对代码进行评审，对不规范的代码进行及时指正，以保证代码的质量。</p>
+<p>&emsp;&emsp;本例中使用的uml画图工具是jude，你也可以根据个人喜欢好选择其它自己喜欢的工具（选择标准是该工具支持正向与逆向代码功能），<strong>本阶段画领域模型图的原则是：快速，标清楚域对象主要属性及域对象之间的关系（泛化、组合聚合、数量关系），要抓住问题域的“神”</strong>。</p>
 
-<p>&emsp;&emsp;<strong>九、测试。</strong>本阶段专业的测试人员参与多一些，一般的公司可采用下面的流程。</p>
-
-<p>&emsp;&emsp;A、首先是一个集成测试，必须保证每个程序员写的东西可以做为一个项目整体正确运行；</p>
-
-<p>&emsp;&emsp;B、功能性测试，可以用工具来简化（比如：Selenium），但对前期设计要求很高，如果你的前期设计没有达到这个程度，最好是用人进行手工测试了。比如一些web game，还只能用人来进行测试功能。</p>
-
-<p>&emsp;&emsp;C、 压力测试。压力测试是针对于非功能性需求的，选择一些重要的功能进行压力测试，得到测试报告（得到系统的性能参数后有针对性的优化），可选择工具有 ab，loadruner，jmeter等等，要注意的是压力测试是要有针对性的，一般不会整个项目的全部功能都进行压力测试。根据测试结果，还要进行性 能调优，至少得满足非功能性需求吧。</p>
-
-<p>&emsp;&emsp;<strong>十、用户验收。</strong>把阶段性果（可运行软件）交付用户使用，收集用户反馈，准备下一阶段的迭代准备。如果本次的软件迭代成品是不可运行的，或不需要向客户交付，只需进行一个内部验收或评审即可。</p>
-
-<p>&emsp;&emsp;<strong>十一、项目部署，维护，二次开发等。</strong> 软件开发流程是一环扣一环的，前一阶段的没有做好，一定会对后一阶段造成影响。如果前面的工作做得不扎实，存在一些问题，那么在项目的运行维护期，就等着 前期把挣到的钱一点一点还回去吧。什么开闭原则，高耦合低内聚，代码质量，文档完整性等等这些，我相信在这个阶段你一定会感受到它们的重要性，这些东西绝 对不是空洞的理论。</p>
-
-<p>&emsp;&emsp;上面是对软件开发流程中各个活动进行了一个简单的介绍，下面来谈谈活动的时候及项目管理者如何来管理（主要针对一个已经有需求文的项目，如何带领程序员来实现，假设程序员都是些新手，初级程序员）。</p>
-
-<p>&emsp;&emsp;一个月的时候分为四周，共20个工作日，每周的具体安排如下：</p>
-
-<p>&emsp;&emsp;<strong>第一周：</strong></p>
-
-<p>&emsp;&emsp;A、下发需求文档，必须要明确如何去阅读需求文档。</p>
-
-<p>&emsp;&emsp;B、 在阅读的过程中，认真思考业务流程，并进行界面原型的设计（这是让程序员尽快熟悉需求的最好办法）。本过程的原则是：快速，每张界面原型中要合理布局主要 的界面元素以及要标明页面间的跳转流程，所用工具：Balsamiq Mockups。做好后的原型全部整合到一起，进行总体评审，在评审的过程中，需求将会得到了进一步的明确和理解。（2天）</p>
-
-<p>&emsp;&emsp;审核不合格的，要求进行再次修改，修改完后再次评审。评审以小组为单位，结合业务流程，在PC上进行逐页进行检查，也可以使用投影仪，由页面实现者根据原型设计自己讲解业务。</p>
-
-<p>&emsp;&emsp;（注：本过程之前一定要下发页面原型规范，明确审核标准）</p>
-
-<p>&emsp;&emsp;C、原型实现。以前期的原型设计为基础，进行可重用原型的实现，工具为DW。原则是：按最终的实现去做，尽量细化，详细确定界面上的原素细节。css、js、目录划分、页面命名、页面元素命名这些事项都要进行明确。</p>
-
-<p>&emsp;&emsp;（注：本过程前期要讲清楚原型实现的要求、细节，下发页面框架，在框架的基础上实现，以达到效果的统一）</p>
-
-<p>&emsp;&emsp;普通web项目原型实现要用到js框架，我们一般选择jQuery ui。（3天）</p>
-
-<p>&emsp;&emsp;时间安排上，原型设计约2天时间，原型实现3天时间。第一周完成后的项目成果有：原型设计存盘文件，原型实现存盘文件。</p>
-
-<p>&emsp;&emsp;<strong>第二周：</strong></p>
-
-<p>&emsp;&emsp;A、 领域模型设计。以OOA理论为基础，结合界面原型、需求文件以及自身对业务的理解，小组讨论通过形成第一个版本的领域模型，确保大的结构符合业务需求。第 一个版本的领域模型只包括对象的重要属性及对象间的组合聚合、泛化关系，已经搞清楚的关联数量关系一定要标出，领域对象一定要取合理的名字。这个过程完成 后，要求小组的每个程序员能够根据领域对象图描述自己的业务流程（1天）</p>
-
-<p>&emsp;&emsp;（注：这个过程也可以在第一周讨论业务的时候就开始进行，我一般都会向前提）</p>
-
-<p>&emsp;&emsp;B、 在第一个版本的领域模型图的基础上，结合界面原型，进一步完善领域对象的属性及关系，这个时候必须要做细致，类名及属性名全部用翻译成英文（描述要用中文 写好，导出的代码中就会有中文注释）；对象间的关联关系线全部用具体属性表示；根据业务确定是单向还是双向关联；添加数据库主键；实现序列化接口；实例化 所有集合。</p>
-
-<p>&emsp;&emsp;C、进行数据库ER设计，导出建表sql，生成数据库测试数据，生成数据字典。（B、C两步共用2天时间）</p>
-
-<p>&emsp;&emsp;D、进行详细设计，根据规范建立包名，从uml工具中导出领域对象；根据界面原型及需求（用例）确定业务对象粒度，完成业务层业务方法的设计（业务层业务方法设计这一步也可以省略，按敏捷方法在实现时自行灵活添加）。</p>
-
-<p>&emsp;&emsp;E、 创建一个动态web工程，在公司现有架构基础上（这时要对架构进行讲解），按规范建立初始版本，主要做三件事：生成orm映射文件，确保基本正确无误；所 有html页面转换为jsp页面，注意转换的一些注意事项，要确保新建立起来的项目能够正确启动运行，所有页面均可访问，外观不变形；初始版本项目提交至 版本控制服务器，每位组员根据账号密码检出一份项目代码（1天）。</p>
-
-<p>&emsp;&emsp;F、第二周要建立起编码前的所有准备工作，小组后面两周的计划要制定出来，有横向的人员模块分工，有纵向的哪一天写到哪一个层次。项目管理人员要对编码前所完成的工作进行审核，确保无误。</p>
-
-<p>&emsp;&emsp;第二周的阶段性成果有：领域模型，数据字典，设计模型，项目后期开发计划，ORM映射文档等。</p>
-
-<p>&emsp;&emsp;<strong>第三周：</strong></p>
-
-<p>&emsp;&emsp;进行编码期，这个时期要求程序员从业务层实现写起，junit测试代码与实现代码交替进行（基本按照TDD来做），测试过程中会发现ORM映射文件可能有问 题，表结构或许也有问题，这个时候要进行小的调整（所有的表结构、类、orm调整均由项目负责人进行）。项目管理人员在这个时间主要是对代码进行审核，确 保符合编码规范。</p>
-
-<p>&emsp;&emsp;业务层代码的编写与测试时间大约为2~3天，后面的时间进行页面的交互实现。</p>
-
-<p>&emsp;&emsp;页面的交互花费的时候非常多，工作量也很大，这项工作会持续到第四周。</p>
-
-<p>&emsp;&emsp;<strong>第四周：</strong></p>
-
-<p>&emsp;&emsp;页面的交互实现，项目集成整合，集成测试，功能性测试，压力测试等。</p>
-
-<p>&emsp;&emsp;本 周花在页面交互实现的时间约2~3天，集成测试1~2天，压力测试及最后的整合1天，根据程序员的整体水平的不同，本周的时间可能会非常仓促。如果前面几 周的工作没有做扎实，这周受到的影响会非常大。如果项目最终结果没有达到，时间可能会顺延几天，这样也致使项目在一个迭代周期中无法完成，如果一定要以固 定周期迭代，只有在项目前期减少本次迭代的任务。</p>
-
-<p>&emsp;&emsp;附一个迭代周期主要活动进度图，供参考：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/24.jpg' width='' height='' title='一个月项目周期时间安排图'><span class='caption-text'>一个月项目周期时间安排图</span></span></p>
-
-<p>&emsp;&emsp;最后说一点，每个公司都会根据项目特点和自身习惯，找到一条符合公司实际情况的开发流程，但总的原则只有一个，那就是尽量降低软件开发过程中的风险，确保项目成功开发。</p>
+<p>&emsp;&emsp;至此，需求分析阶段就可以告一段落了，接下来是设计，设计分两个过程：概要设计和详细设计，在下篇博文中我会对设计过程进行详细讲解。</p>
 </div>
   
   
@@ -502,6 +1777,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
@@ -515,10 +1794,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a>
       </li>
     
   </ul>
@@ -564,7 +1839,7 @@ ds.charset = 'UTF-8';
   </div>
   <footer role="contentinfo"><p>
   版权所有 &copy; 2013 - 冰雨 -
-  <span class="credit">Powered by <a href="http://yoursite.com">刘江华的博客</a></span>
+  <span class="credit">Powered by <a href="http://ljh2008.github.io">刘江华的博客</a></span>
   <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_1884340'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s84.cnzz.com/stat.php%3Fid%3D1884340%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>
 

@@ -9,8 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;重新安装系统后，先停止服务，再将之前的mysq的datal目录直接copy到新安装的mysql的data目录下（全部覆盖），并删除ib_logfile0，ib_logfile1，admin-PC.pid，admin-PC.err文件，并重新启动mysql服务。
-">
+  <meta name="description" content="&emsp;&emsp;近些天，网站流量消耗巨大，通过查看nginx访问日志发现，有众多的ip频繁下载网站上的一些固定资源文件，而且每次访问的时间间隔非常近，很显示是非正确访问，进一步观察发现，这些ip并不是固定的，每天都不相同（估计是“肉机”），有些下载ip访问达到100次以上，有的20次， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,7 +64,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013/01/04/mysql-resotre/">Mysql数据恢复</a></h1>
+      <h1 class="entry-title"><a href="/blog/2011/04/05/block/">屏蔽站点非法流量下载</a></h1>
     
     
       <p class="meta">
@@ -81,14 +80,31 @@
   
 
 
-<time datetime="2013-01-04T15:22:00+08:00" pubdate data-updated="true">2013年01月04日</time>
+<time datetime="2011-04-05T15:18:00+08:00" pubdate data-updated="true">2011年04月05日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;重新安装系统后，先停止服务，再将之前的mysq的datal目录直接copy到新安装的mysql的data目录下（全部覆盖），并删除ib_logfile0，ib_logfile1，admin-PC.pid，admin-PC.err文件，并重新启动mysql服务。</p>
+  <div class="entry-content"><p>&emsp;&emsp;近些天，网站流量消耗巨大，通过查看nginx访问日志发现，有众多的ip频繁下载网站上的一些固定资源文件，而且每次访问的时间间隔非常近，很显示是非正确访问，进一步观察发现，这些ip并不是固定的，每天都不相同（估计是“肉机”），有些下载ip访问达到100次以上，有的20次，10次的都有，甚是烦人。</p>
+
+<p>&emsp;&emsp;解决方法是，写一定时脚本，对nginx日志进行统计，对这些访问有异常的ip，用iptables进行屏蔽，具体做法如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>grep  <span class="s1">&#39;资源条件&#39;</span> /var/log/nginx/youwebsite.access.log|sort | awk <span class="s1">&#39;{print $1}&#39;</span>|uniq -c|sort |awk <span class="s1">&#39;{if ($1 &gt; 5)print $2}&#39;</span>&gt;/root/temp/block_ip.txt
+</span><span class='line'><span class="k">while </span><span class="nb">read </span>line
+</span><span class='line'><span class="k">do</span>
+</span><span class='line'>iptables -I INPUT -p tcp --dport 80 -s  <span class="nv">$line</span>  -j DROP
+</span><span class='line'><span class="k">done</span>&lt; /root/temp/block_ip.txt
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上述shell脚本对某一资源访问达到5次以上的ip，将被加入屏蔽列表中。最后将脚本加入crontab，问题得到解决。</p>
 </div>
   
   
@@ -101,7 +117,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013/01/04/compass-search/">Compass全文检索</a></h1>
+      <h1 class="entry-title"><a href="/blog/2011/03/22/cy/">艰难的互联网创业</a></h1>
     
     
       <p class="meta">
@@ -117,83 +133,290 @@
   
 
 
-<time datetime="2013-01-04T15:22:00+08:00" pubdate data-updated="true">2013年01月04日</time>
+<time datetime="2011-03-22T15:18:00+08:00" pubdate data-updated="true">2011年03月22日</time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>&emsp;&emsp;compass提供了更为简洁易用的全文检索接口，并且和spring、hibernate结合更为紧密，底层可使用lucene实现，请看下面的demo。</p>
+  <div class="entry-content"><p>&emsp;&emsp;中国的互联网已经进行几大巨头独霸的局面，中小创业者在夹缝中艰难地生存着，创新很容易被模仿，即时有创新，凭自己的力量实现并推广也是比较困难的。总体来说，中国互联网缺少法律保护，抄袭、同质化问题比较严重。下面说说我身边发生的一些事情，有些是几年前的。从这些事情中，你也许可以读到想要做好一件事，哪些因素比较关键。</p>
 
-<p>&emsp;&emsp;我们用两个对象需要加入全文索引，Customer,Student，所以，要在这两个对象中，要求需求，加入全文索引注解。</p>
+<p>&emsp;&emsp;先说老彭，老彭的思路非常灵活，而且很多东西有自己的想法，但由于种种原因，这些创意都没能实现。他先是提出要做一个站点实时监控网站，专门为中国互联网的广大站长提供站点实时监测，比如：每日浏览，故障次数，平均响应时间等，这些信息会通过手机短信的方式发送给付费站长，普通用户仅有邮件通知。这个想法提出来时，最大的问题如何采集到不同操作系统服务器上的数据，以及如何开发更深层次的扩展应用，比如：站点流量，新增注册用户数等插件开发。想法是好，经过网上查询，当时admin5已经有一个类似的项目，也应该有不错的用户数量，再做一个同类的项目，可以说无法和admin5竞争，我们都知道，“先入为主”这句话在互联网来说非常合适，别人即使比你先推出来一天，效果都是非常不一样的，这个想法就这样被否定。现在，“监控宝”是这类站点中的佼佼者，admin5的监控已经落败，监控宝是有的强大的后台财力支撑，而且做了很多创新，以当时老彭的实力，实现也比较困难。后来，老彭提出做一个saas类的项目，专门供美容美发店使用（会员卡、每日运营情况等），按店收取年费，我都见他设计完了整个项目，包括领域，er，详细设计，后面不知什么原因放弃了，也许问题在推广上。再后来，想做艺术品交易网站，连盈利模式这些都已经想得比较清楚了，但后来也放弃了，原因在于网上有同质化的网站，你想嘛，如果淘宝也开一个这样的版块，那我们就没得搞头了。再后来，想做一个星巴克的网上门店，这个想法因盈利模式有问题放弃。再后来，计划做一个gay交流网站，兼gay物品交易，这个想法应该是做过前期调查的，不知什么原因没了消息。再后来，想做客运站的一个物流系统，也没听到有消息。</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Searchable</span><span class="o">(</span><span class="n">alias</span><span class="o">=</span><span class="s">&quot;customer&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Customer</span> <span class="kd">implements</span> <span class="n">Serializable</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@SearchableId</span><span class="o">(</span><span class="n">index</span><span class="o">=</span><span class="n">Index</span><span class="o">.</span><span class="na">NOT_ANALYZED</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>    <span class="nd">@SearchableProperty</span><span class="o">(</span><span class="n">index</span><span class="o">=</span><span class="n">Index</span><span class="o">.</span><span class="na">TOKENIZED</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>    <span class="nd">@SearchableProperty</span><span class="o">(</span><span class="n">index</span><span class="o">=</span><span class="n">Index</span><span class="o">.</span><span class="na">NOT_ANALYZED</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">comment</span><span class="o">;</span>
-</span><span class='line'>    <span class="nd">@SearchableProperty</span><span class="o">(</span><span class="n">format</span><span class="o">=</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">createDate</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="nd">@Searchable</span><span class="o">(</span><span class="n">alias</span><span class="o">=</span><span class="s">&quot;student&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Student</span> <span class="kd">implements</span> <span class="n">Serializable</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@SearchableId</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Long</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//姓名</span>
-</span><span class='line'>    <span class="nd">@SearchableProperty</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//出生日期</span>
-</span><span class='line'>    <span class="nd">@SearchableProperty</span><span class="o">(</span><span class="n">format</span><span class="o">=</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
+<p>&emsp;&emsp;老杨，先是做团购网站，但线下营销能力不足，效果不好，最后网站因备案问题进入电信机房黑白名单过滤而关闭。后来想做外包网站，我说已经有这样的网站了，但他说在很多地方可以改进及创新，当时考虑到开发效率，用php实现，最后也没听到他的这个网站的消息了。看来做技术的人大多都是重技术而不精营销的。前段时间，我还听说某些软件公司的技术人员想用业余时间做团购网站，也许他们真的不知道什么是线下营销，我们要知道，挣钱的网站，大多是用站点做门户辅助配合线下营销，一个团购网，技术上应该是很容易实现的。</p>
+
+<p>&emsp;&emsp;我们老大，有很多不错的创意。首先是小孩防疫情况通知的这个系统，全国有小孩的家庭应该还是很多的，这个项目要是做成并成功推广，应该是非常不错的。网络智能发贴跟贴（自动注册，发贴，跟贴，而且要有一定的人工智能性），这个做好了也会有收不错收入。电子书平台，进行在线学习，可以将各种格式文档转换为网站内部统一格式，实现在线教育培训，这个项目好像进行了一段时间就终止了，有点可惜。</p>
+
+<p>&emsp;&emsp;肖老二写了一个“烂笔头”，收取注册费，也似乎在互联网上推广过一段时间，最后没了消息。其实，这类软件一定要有功能亮点，否则无法盈利。还有一点，中国网民已经习惯了免费，不想掏钱（玩游戏除外哈），这点根深蒂固。</p>
+
+<p>&emsp;&emsp;军哥，技术牛人，狂人，本人很佩服他，也有一些不错的想法，最后都未能被实现，我们也知道，人家的主业可是专业炒股，专业做投资的哦。我身边有投资意识的人，目前仅此一人，我遇到一些问题，都还得向他咨询。</p>
+
+<p>我的一个做互联网的朋友，也比较有想法。一年前申请了一个域名（墓地网），准备做网上墓地销售，不知什么原因，该域名如今还空着的。后来还做过一个比较有前途的“二手工程机械交易网”，但由于线下营销能力跟不上来，最后没了消息。</p>
+
+<p>&emsp;&emsp;我的另一个朋友，非常精于运营和营销，自己带团队做过网页游戏，最终失败于技术。此人的运营营销能力非常强，就像天生是为这行而生的，我从那里学到了很多的东西，也深刻地意识到，技术如何快速适应需求，为需求服务，如果按“软件工程”思想按部就班地做互联网项目，只有死路一条。</p>
+
+<p>&emsp;&emsp;最近一同事向我提起曾今想做一个旅游网站，专为外国人提供散客或组团导游服务，我觉得这里面很多事情没有考虑清楚，盈利方式不明确。我还有一个新疆的同学，上回QQ上给我说想做一个闭路电视在线交费系统，要和广电上做接口什么的，说了很多，感觉信心很大，但我认为这个项目对现在的广电来说基本上没有什么利益和好处，也行无法推广，这个想法也是“虎头蛇尾”，没了下文。</p>
+
+<p>&emsp;&emsp;我也有很多想法，但实现的不多，我对互联网本来就缺乏敏锐性，但我认为互联网上创业的机会还是有的，在互联网上做事情，可能比现实社会中做事要单纯得多，更适合技术人员一些，但是要做强做大，技术人员就不适合了。我认为要将自己的创意变为现实，要注意下面几点。</p>
+
+<p>&emsp;&emsp;1、想好盈利模式；</p>
+
+<p>&emsp;&emsp;2、务实，脚踏实地，避免不必要的投入（比如计算后期用户量有多大，流量有多大，等等，），避免好高骛远；</p>
+
+<p>&emsp;&emsp;3、有想法，要有实现的动力，要用恒心；</p>
+
+<p>&emsp;&emsp;4、如果有团队，一定要统一每个人的预期目标，这点很重要；</p>
+
+<p>&emsp;&emsp;5、要有合作精神，靠一个人的力量很难做成大事；</p>
+
+<p>&emsp;&emsp;6、坚持，坚持，再坚持。在目标没有达到之前，请不要轻言放弃。</p>
+</div>
+  
+  
 
 
-<p>&emsp;&emsp;spring文件配置中加入如下配置项：</p>
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/03/17/seo/">SEO的形像比喻</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-03-17T15:18:00+08:00" pubdate data-updated="true">2011年03月17日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;搜索引擎如何决定众多站点的权重及页面的排名？搞计算机的都知道，搜索引擎本质上是一个程序，是开发人员将算法规则用程序来进行模拟。我们可以把的网站比做社会中一个一个的人，搜索引擎要做的，就是要识别这些人，并按照要求，快速地找到你需要的人。</p>
+
+<p>&emsp;&emsp;我们知道，很多站点下都有友情链接，这个将被视为站外导出，如果一个站被其它站在友情链接中引用较多，权重就会高一些。就好比一个人被其它人提及得越多，就说明这个人社会关系网越广泛，社交能力强，受到大家的欢迎。</p>
+
+<p>&emsp;&emsp;当然，如果你被一些“垃圾”站点大量引用，可能会降低你的权重。就好比一个人的朋友都是些臭名昭著的人，也就说明这个人不是什么好人，中国有句话叫“近朱者赤，近墨者黑”。反之，如果你被一些大人物、名人时常提起，那么你的地位也一定很高。</p>
+
+<p>&emsp;&emsp;站点的外链也和上面讲的同理，如果有很多站都引用你的站点或站内页面地址，也将证明这个站点或站内页面权重高。你可以看看开心网，虽然只有一个简单的首页，但权重很高，还有一个例子，工信部的网站是中国惟一一个google pr达到9的站点，原因也在于众多的网站都有这个站的外链。当然，搜索引擎也会判断是哪些类型的网站引用了你，就好比你是搞IT的，但是被一些搞艺术的人经常提起，这就说明有问题，网站排名会受到影响。“物以类聚，人以群分”就是这个道理。</p>
+
+<p>&emsp;&emsp;说完了一个人的社会关系，再来看看一个人自身的人品。首先是一个网站的结构要清晰，重点突出，让人一目了然，这就好比一个人，要把自己推销出去，自身的素质要提高 ，要有良好的表达，着装工整，要有亲和力。站内的内部链接要做好，这个是结构的问题，但可以提高与搜索引擎的亲和力。站点的美化要做好，也就是美工、用户体验，现在搜索引擎越来越重视这个了，google即然有自己的浏览器，也一定可以评测出站点在浏览器中的显示效果，最近baidu也出浏览器了，搜索引擎从技术上已经可以给页面的美观评级了。</p>
+
+<p>&emsp;&emsp;网站内容原创最好，不要从其它网站抄过来再改改（伪原创），也就是一个人，要有自己的性格和魅力，要有自己的特点、气质，如果硬是从其它地方搬过来一些东西再包装一下，但这些东西终究不属于自己，骗得了一时骗不了一世。抄袭，也证明了这个人的人品有问题，如果人品出现问题，这个人将很难在社会中立足。</p>
+
+<p>&emsp;&emsp;站点要经常更新（更新频率），如果一个人“顽固不化，一成不变”，自然得不到其它人的关注。“喜新厌旧”的道理大家都应该明白。</p>
+
+<p>&emsp;&emsp;搜索引擎就好像根据这些规则去相识、相知一个人，直至建立起信任关系，只不过这一切是程序自动做的，当你要找某人时，搜索引擎将尽可能找到最符合条件的人给你，这也就是搜索引擎公平、公正的原则。</p>
+
+<p>&emsp;&emsp;暂时先写上面几条，以后想起了，再补充上去。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/03/13/flower/">植物园春暖花开</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-03-13T15:18:00+08:00" pubdate data-updated="true">2011年03月13日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;06年和老婆去过一次植物园，时隔5年后的2011，我们又去了植物园，其实主要是去看一个老朋友，下午顺便去的植物园。朋友虽都在成都，但我们平日里也疏于来往，偶尔会有电话、QQ联系，也许城市大了就是这样，只适合于工作。</p>
+
+<p>&emsp;&emsp;朋友家就在植物园对面的小区，中间仅隔一条马路，在楼上就可以看到403路公交车摆放在植物园门口。这次去，梨花已经开过了，但海棠花开得正艳。</p>
+
+<p>&emsp;&emsp;5年前时候，还只有我和老婆（那个时候是GF）两个人，现在可是多了个言言娃了，变化真的很大，朋友家的女儿也出生了，比我们家的这个小1个月。。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/21.jpg' width='' height='' title='朋友女儿'><span class='caption-text'>朋友女儿</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/10.jpg' width='' height='' title='言言'><span class='caption-text'>言言</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/35.jpg' width='' height='' title='海棠1'><span class='caption-text'>海棠1</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/36.jpg' width='' height='' title='海棠2'><span class='caption-text'>海棠2</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/37.jpg' width='' height='' title='海棠3'><span class='caption-text'>海棠3</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/11.jpg' width='' height='' title='言娃娃想睡觉了'><span class='caption-text'>言娃娃想睡觉了</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/30.jpg' width='' height='' title='粉色花'><span class='caption-text'>粉色花</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/34.jpg' width='' height='' title='路边小黄花'><span class='caption-text'>路边小黄花</span></span></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/03/09/server-comeback/">服务器回来了</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-03-09T15:18:00+08:00" pubdate data-updated="true">2011年03月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;电信又开始严查了，先前托管的一台服务器被“赶”出了机房。一年后又见到了服务器，最近要开始准备数据迁移了。</p>
+
+<p>&emsp;&emsp;由于托管的服务器机房较远，在平日的操作中都极为谨慎，生怕将系统搞瘫惹出多的事情，感觉就像发射出去的一颗卫星，要是出现故障维护可就难了，呵呵。不过，现在这颗“卫星”已经收回来了。</p>
+
+<p>&emsp;&emsp;打开箱子取出服务器，居然发现服务器非常的干净，透过机箱缝隙可以看到内部电路元件上几乎无灰尘，就像新购置的一样，不禁感叹电信机房的环境（看来真的是无尘），你要想想，服务器是24小时不间断工作了一年多哈，发张照片上来，呵呵。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/9.jpg' width='' height='' title='我的服务器'><span class='caption-text'>我的服务器</span></span></p>
+
+<p>&emsp;&emsp;数据转移时遇到当初系统一个设计上的问题，当初上传图片、音频、视频等资源的存放目录没有做规划，导致现在将资源重新上传到新的服务器上时，无法挑出几年前的老资料做特殊处理，这点，请大家一定要注意，在进行系统设计时，资源一定要归好类，一般按资源类、年、月建目录存放就非常不错了，比如：/var/data/projectname/video/2011/03/，用来存放2011年3月份的视频资源。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/03/05/new-start/">2011年，梨花又开了</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-03-05T15:18:00+08:00" pubdate data-updated="true">2011年03月05日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;记得去年春天花开的时候，言娃娃还在他妈的肚子里，今天，陪老婆到她的一个好朋友家去看了看（言娃娃二爸在家没事不好耍，也和我们一起去了），在朋友的小区中，发现小区中的惟一一棵梨树已经挂满了花朵，十分漂亮，随手拍了些照片。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/5.jpg' width='' height='' title='梨花'><span class='caption-text'>梨花</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/6.jpg' width='' height='' title='我和言言二爸'><span class='caption-text'>我和言言二爸</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/7.jpg' width='' height='' title='朋友家邻居的房间'><span class='caption-text'>朋友家邻居的房间</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/8.jpg' width='' height='' title='晚上回来拍的一张言娃娃'><span class='caption-text'>晚上回来拍的一张言娃娃</span></span></p>
+
+<p>&emsp;&emsp;又是一个春天来了，一年之计在于春，每个人都有新的一年中的计划。言言二爸明天早上9：40的火车，他也要开始新的一年的奔波了，心里有些难过… 。长大了，见面的机会也就少得多了，有的时候非常怀念和他一起度过的童年。</p>
+
+<p>&emsp;&emsp;现在，只能在心里祝愿他兔年顺利、平安，让我们都放心。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/02/18/java-image-process/">Java 图像缩放方案</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-02-18T15:18:00+08:00" pubdate data-updated="true">2011年02月18日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;java对图片的操作功能可谓是比较弱，而且效果比较差。而在项目中，又经常会对图片进行操作，比如：用户上传一个图片上来做为头像，系统就要对图片进行缩放，以使头像符合界面显示要求，并且减少头像文件大小，对站点的响应有一定作用。</p>
+
+<p>&emsp;&emsp;图片绽放，精度肯定会损失，一般我们都要求缩放后的图片在视觉上平滑，不要出现锯齿，下面列举一些实现方案：</p>
+
+<p>&emsp;&emsp;一、利用j2se的Graphics、JPEGImageEncoder等类实现图片缩放，这样的代码网上很多，有兴趣的可以google一下。这种方案的缺点是：效果不理想。还有一点，JPEGImageEncoder在有些jdk实现版本中不支持，比如：OpenJDK。</p>
+
+<p>&emsp;&emsp;二、借助于开源图像处理框架Java Image Filters，网址在这：<a href="http://www.jhlabs.com/ip/filters/index.html">http://www.jhlabs.com/ip/filters/index.html</a>，该框架可以实现常见的图片处理，在<a href="http://www.oschina.net/bbs/thread/8248">http://www.oschina.net/bbs/thread/8248</a>还有一篇文章，介绍如何使用。不过，你打开源代码看看图片缩放的源码，就会发现框架也是简单的封装了j2se的图像处理api，因些，缩放效果很不理想。当然，该框架中的其它图像处理功能比较强大。</p>
+
+<p>&emsp;&emsp;三、使用 ImageMagick,这也是一个开源框架，c语言写的，还有专门的java的接口，在<a href="http://www.imagemagick.org%20/script/api.php">http://www.imagemagick.org /script/api.php</a>可以看到ImageMagick的各种语言接口实现。该框架的功能非常强大，图像处理后出来的效果是最好的，像是缺点是：环境搭建困难，比如：在windows下需要dll,jar包的支持，如果是linux或unix系统要手动编译.so的库文件，新手搞起来肯定比较困难。</p>
+
+<p>&emsp;&emsp;四、如果项目中对图片处理功能要求不多，仅仅是一个缩放功能，用下面这段代码就可以搞定，而且处理效果不错，值得推荐。</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -243,208 +466,720 @@
 <span class='line-number'>46</span>
 <span class='line-number'>47</span>
 <span class='line-number'>48</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'>    <span class="c">&lt;!-- 对全文搜索注解的支持 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;annotationConfiguration&quot;</span> <span class="na">class=</span><span class="s">&quot;org.compass.annotations.config.CompassAnnotationsConfiguration&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c">&lt;!-- 索引核心对象 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;compass&quot;</span> <span class="na">class=</span><span class="s">&quot;org.compass.spring.LocalCompassBean&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;classMappings&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;value&gt;</span>com.yourcompany.yourproject.model.Customer<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;value&gt;</span>com.yourcompany.yourproject.model.Student<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;compassConfiguration&quot;</span> <span class="na">ref=</span><span class="s">&quot;annotationConfiguration&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;compassSettings&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;props&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;prop</span> <span class="na">key=</span><span class="s">&quot;compass.engine.connection&quot;</span><span class="nt">&gt;</span>d:/compass<span class="nt">&lt;/prop&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;prop</span> <span class="na">key=</span><span class="s">&quot;compass.transaction.factory&quot;</span><span class="nt">&gt;</span>org.compass.spring.transaction.SpringSyncTransactionFactory<span class="nt">&lt;/prop&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;prop</span> <span class="na">key=</span><span class="s">&quot;compass.engine.analyzer.default.type&quot;</span><span class="nt">&gt;</span>org.apache.lucene.analysis.cn.ChineseAnalyzer<span class="nt">&lt;/prop&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;prop</span> <span class="na">key=</span><span class="s">&quot;compass.engine.highlighter.default.formatter.simple.pre&quot;</span><span class="nt">&gt;</span><span class="cp">&lt;![CDATA[&lt;font color=&quot;red&quot;&gt;&lt;b&gt;]]&gt;</span><span class="nt">&lt;/prop&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;prop</span> <span class="na">key=</span><span class="s">&quot;compass.engine.highlighter.default.formatter.simple.post&quot;</span><span class="nt">&gt;</span><span class="cp">&lt;![CDATA[&lt;b&gt;&lt;/font&gt;]]&gt;</span><span class="nt">&lt;/prop&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;/props&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;transactionManager&quot;</span> <span class="na">ref=</span><span class="s">&quot;transactionManager&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c">&lt;!-- 与hibernate操作同步 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;hibernateGpsDevice&quot;</span> <span class="na">class=</span><span class="s">&quot;org.compass.gps.device.hibernate.HibernateGpsDevice&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;value&gt;</span>hibernateDevice<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;sessionFactory&quot;</span> <span class="na">ref=</span><span class="s">&quot;sessionFactory&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;nativeExtractor&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.compass.spring.device.hibernate.SpringNativeHibernateExtractor&quot;</span><span class="nt">&gt;&lt;/bean&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c">&lt;!-- 定位器 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;compassGps&quot;</span> <span class="na">class=</span><span class="s">&quot;org.compass.gps.impl.SingleCompassGps&quot;</span> <span class="na">init-method=</span><span class="s">&quot;start&quot;</span> <span class="na">destroy-method=</span><span class="s">&quot;stop&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;compass&quot;</span> <span class="na">ref=</span><span class="s">&quot;compass&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;gpsDevices&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.compass.spring.device.SpringSyncTransactionGpsDeviceWrapper&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;gpsDevice&quot;</span> <span class="na">ref=</span><span class="s">&quot;hibernateGpsDevice&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;测试代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">CompassSession</span> <span class="n">session</span> <span class="o">=</span>   <span class="n">compass</span><span class="o">.</span><span class="na">openSession</span><span class="o">();</span>
-</span><span class='line'><span class="n">CompassHits</span> <span class="n">hits</span> <span class="o">=</span>  <span class="n">session</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="s">&quot;张  刘&quot;</span><span class="o">);</span>
-</span><span class='line'><span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">hits</span><span class="o">.</span><span class="na">length</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">Object</span> <span class="n">o</span> <span class="o">=</span> <span class="n">hits</span><span class="o">.</span><span class="na">data</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
-</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;查询到：&quot;</span> <span class="o">+</span> <span class="n">o</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+<span class='line-number'>170</span>
+<span class='line-number'>171</span>
+<span class='line-number'>172</span>
+<span class='line-number'>173</span>
+<span class='line-number'>174</span>
+<span class='line-number'>175</span>
+<span class='line-number'>176</span>
+<span class='line-number'>177</span>
+<span class='line-number'>178</span>
+<span class='line-number'>179</span>
+<span class='line-number'>180</span>
+<span class='line-number'>181</span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+<span class='line-number'>194</span>
+<span class='line-number'>195</span>
+<span class='line-number'>196</span>
+<span class='line-number'>197</span>
+<span class='line-number'>198</span>
+<span class='line-number'>199</span>
+<span class='line-number'>200</span>
+<span class='line-number'>201</span>
+<span class='line-number'>202</span>
+<span class='line-number'>203</span>
+<span class='line-number'>204</span>
+<span class='line-number'>205</span>
+<span class='line-number'>206</span>
+<span class='line-number'>207</span>
+<span class='line-number'>208</span>
+<span class='line-number'>209</span>
+<span class='line-number'>210</span>
+<span class='line-number'>211</span>
+<span class='line-number'>212</span>
+<span class='line-number'>213</span>
+<span class='line-number'>214</span>
+<span class='line-number'>215</span>
+<span class='line-number'>216</span>
+<span class='line-number'>217</span>
+<span class='line-number'>218</span>
+<span class='line-number'>219</span>
+<span class='line-number'>220</span>
+<span class='line-number'>221</span>
+<span class='line-number'>222</span>
+<span class='line-number'>223</span>
+<span class='line-number'>224</span>
+<span class='line-number'>225</span>
+<span class='line-number'>226</span>
+<span class='line-number'>227</span>
+<span class='line-number'>228</span>
+<span class='line-number'>229</span>
+<span class='line-number'>230</span>
+<span class='line-number'>231</span>
+<span class='line-number'>232</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">java.awt.image.BufferedImage</span><span class="o">;</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ImageScale</span> <span class="o">{</span>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 图片无损缩放 try { File fi = new File(&quot;c:/image2.jpg&quot;); // 大图文件 File fo = new</span>
+</span><span class='line'><span class="cm">  * File(&quot;c:/imgTest.jpg&quot;); // 将要转换出的小图文件 BufferedImage bis =</span>
+</span><span class='line'><span class="cm">  * ImageIO.read(fi); BufferedImage bid = null; bid = new</span>
+</span><span class='line'><span class="cm">  * ImageScale().imageZoomOut(bis, 228, 96); ImageIO.write(bid, &quot;jpeg&quot;, fo);</span>
+</span><span class='line'><span class="cm">  * } catch (Exception e) { e.printStackTrace(); }</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">width</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">height</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">scaleWidth</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">double</span> <span class="n">support</span> <span class="o">=</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="mf">3.0</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">double</span> <span class="n">PI</span> <span class="o">=</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="mf">3.14159265358978</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">double</span><span class="o">[]</span> <span class="n">contrib</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">double</span><span class="o">[]</span> <span class="n">normContrib</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">double</span><span class="o">[]</span> <span class="n">tmpContrib</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="n">startContrib</span><span class="o">,</span> <span class="n">stopContrib</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="n">nDots</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="n">nHalfDots</span><span class="o">;</span>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * Start: Use Lanczos filter to replace the original algorithm for image</span>
+</span><span class='line'><span class="cm">  * scaling. Lanczos improves quality of the scaled image modify by :blade</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">BufferedImage</span> <span class="nf">imageZoomOut</span><span class="o">(</span><span class="n">BufferedImage</span> <span class="n">srcBufferImage</span><span class="o">,</span> <span class="kt">int</span> <span class="n">w</span><span class="o">,</span> <span class="kt">int</span> <span class="n">h</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">width</span> <span class="o">=</span> <span class="n">srcBufferImage</span><span class="o">.</span><span class="na">getWidth</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">height</span> <span class="o">=</span> <span class="n">srcBufferImage</span><span class="o">.</span><span class="na">getHeight</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">scaleWidth</span> <span class="o">=</span> <span class="n">w</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">DetermineResultSize</span><span class="o">(</span><span class="n">w</span><span class="o">,</span> <span class="n">h</span><span class="o">)</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="n">srcBufferImage</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="n">CalContrib</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">BufferedImage</span> <span class="n">pbOut</span> <span class="o">=</span> <span class="n">HorizontalFiltering</span><span class="o">(</span><span class="n">srcBufferImage</span><span class="o">,</span> <span class="n">w</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">BufferedImage</span> <span class="n">pbFinalOut</span> <span class="o">=</span> <span class="n">VerticalFiltering</span><span class="o">(</span><span class="n">pbOut</span><span class="o">,</span> <span class="n">h</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">pbFinalOut</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">DetermineResultSize</span><span class="o">(</span><span class="kt">int</span> <span class="n">w</span><span class="o">,</span> <span class="kt">int</span> <span class="n">h</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">scaleH</span><span class="o">,</span> <span class="n">scaleV</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">scaleH</span> <span class="o">=</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">w</span> <span class="o">/</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">width</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">scaleV</span> <span class="o">=</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">h</span> <span class="o">/</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">height</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">scaleH</span> <span class="o">&gt;=</span> <span class="mf">1.0</span> <span class="o">&amp;&amp;</span> <span class="n">scaleV</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">double</span> <span class="nf">Lanczos</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">,</span> <span class="kt">int</span> <span class="n">inWidth</span><span class="o">,</span> <span class="kt">int</span> <span class="n">outWidth</span><span class="o">,</span> <span class="kt">double</span> <span class="n">Support</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">x</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">x</span> <span class="o">=</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">i</span> <span class="o">*</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">outWidth</span> <span class="o">/</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">inWidth</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">Math</span><span class="o">.</span><span class="na">sin</span><span class="o">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">PI</span><span class="o">)</span> <span class="o">/</span> <span class="o">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">PI</span><span class="o">)</span> <span class="o">*</span> <span class="n">Math</span><span class="o">.</span><span class="na">sin</span><span class="o">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">PI</span> <span class="o">/</span> <span class="n">Support</span><span class="o">)</span>
+</span><span class='line'>              <span class="o">/</span> <span class="o">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">PI</span> <span class="o">/</span> <span class="n">Support</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of Lanczos()</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">CalContrib</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">nHalfDots</span> <span class="o">=</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">((</span><span class="kt">double</span><span class="o">)</span> <span class="n">width</span> <span class="o">*</span> <span class="n">support</span> <span class="o">/</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">scaleWidth</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">nDots</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">contrib</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">double</span><span class="o">[</span><span class="n">nDots</span><span class="o">];</span>
+</span><span class='line'>          <span class="n">normContrib</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">double</span><span class="o">[</span><span class="n">nDots</span><span class="o">];</span>
+</span><span class='line'>          <span class="n">tmpContrib</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">double</span><span class="o">[</span><span class="n">nDots</span><span class="o">];</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;init   contrib,normContrib,tmpContrib&quot;</span> <span class="o">+</span> <span class="n">e</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">center</span> <span class="o">=</span> <span class="n">nHalfDots</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">contrib</span><span class="o">[</span><span class="n">center</span><span class="o">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">;</span>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">weight</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">center</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">contrib</span><span class="o">[</span><span class="n">center</span> <span class="o">+</span> <span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">Lanczos</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="n">width</span><span class="o">,</span> <span class="n">scaleWidth</span><span class="o">,</span> <span class="n">support</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">weight</span> <span class="o">+=</span> <span class="n">contrib</span><span class="o">[</span><span class="n">center</span> <span class="o">+</span> <span class="n">i</span><span class="o">];</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">center</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span><span class="o">--)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">contrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">contrib</span><span class="o">[</span><span class="n">center</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">i</span><span class="o">];</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">1.0</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">center</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">normContrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">contrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">/</span> <span class="n">weight</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">center</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">nDots</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">normContrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">normContrib</span><span class="o">[</span><span class="n">center</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">i</span><span class="o">];</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">CalTempContrib</span><span class="o">(</span><span class="kt">int</span> <span class="n">start</span><span class="o">,</span> <span class="kt">int</span> <span class="n">stop</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">weight</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">start</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">stop</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">weight</span> <span class="o">+=</span> <span class="n">contrib</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">start</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">stop</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">tmpContrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">contrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">/</span> <span class="n">weight</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of CalTempContrib()</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">GetRedValue</span><span class="o">(</span><span class="kt">int</span> <span class="n">rgbValue</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">rgbValue</span> <span class="o">&amp;</span> <span class="mh">0x00ff0000</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">temp</span> <span class="o">&gt;&gt;</span> <span class="mi">16</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">GetGreenValue</span><span class="o">(</span><span class="kt">int</span> <span class="n">rgbValue</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">rgbValue</span> <span class="o">&amp;</span> <span class="mh">0x0000ff00</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">temp</span> <span class="o">&gt;&gt;</span> <span class="mi">8</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">GetBlueValue</span><span class="o">(</span><span class="kt">int</span> <span class="n">rgbValue</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">rgbValue</span> <span class="o">&amp;</span> <span class="mh">0x000000ff</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">ComRGB</span><span class="o">(</span><span class="kt">int</span> <span class="n">redValue</span><span class="o">,</span> <span class="kt">int</span> <span class="n">greenValue</span><span class="o">,</span> <span class="kt">int</span> <span class="n">blueValue</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="o">(</span><span class="n">redValue</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span><span class="o">)</span> <span class="o">+</span> <span class="o">(</span><span class="n">greenValue</span> <span class="o">&lt;&lt;</span> <span class="mi">8</span><span class="o">)</span> <span class="o">+</span> <span class="n">blueValue</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">HorizontalFilter</span><span class="o">(</span><span class="n">BufferedImage</span> <span class="n">bufImg</span><span class="o">,</span> <span class="kt">int</span> <span class="n">startX</span><span class="o">,</span> <span class="kt">int</span> <span class="n">stopX</span><span class="o">,</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">start</span><span class="o">,</span> <span class="kt">int</span> <span class="n">stop</span><span class="o">,</span> <span class="kt">int</span> <span class="n">y</span><span class="o">,</span> <span class="kt">double</span><span class="o">[]</span> <span class="n">pContrib</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">valueRed</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">valueGreen</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">valueBlue</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">valueRGB</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">i</span><span class="o">,</span> <span class="n">j</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">startX</span><span class="o">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">start</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">stopX</span><span class="o">;</span> <span class="n">i</span><span class="o">++,</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">valueRGB</span> <span class="o">=</span> <span class="n">bufImg</span><span class="o">.</span><span class="na">getRGB</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="n">y</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">valueRed</span> <span class="o">+=</span> <span class="n">GetRedValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
+</span><span class='line'>          <span class="n">valueGreen</span> <span class="o">+=</span> <span class="n">GetGreenValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
+</span><span class='line'>          <span class="n">valueBlue</span> <span class="o">+=</span> <span class="n">GetBlueValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="n">valueRGB</span> <span class="o">=</span> <span class="n">ComRGB</span><span class="o">(</span><span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueRed</span><span class="o">),</span> <span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueGreen</span><span class="o">),</span>
+</span><span class='line'>              <span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueBlue</span><span class="o">));</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">valueRGB</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of HorizontalFilter()</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">BufferedImage</span> <span class="nf">HorizontalFiltering</span><span class="o">(</span><span class="n">BufferedImage</span> <span class="n">bufImage</span><span class="o">,</span> <span class="kt">int</span> <span class="n">iOutW</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">dwInW</span> <span class="o">=</span> <span class="n">bufImage</span><span class="o">.</span><span class="na">getWidth</span><span class="o">();</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">dwInH</span> <span class="o">=</span> <span class="n">bufImage</span><span class="o">.</span><span class="na">getHeight</span><span class="o">();</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">BufferedImage</span> <span class="n">pbOut</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BufferedImage</span><span class="o">(</span><span class="n">iOutW</span><span class="o">,</span> <span class="n">dwInH</span><span class="o">,</span>
+</span><span class='line'>              <span class="n">BufferedImage</span><span class="o">.</span><span class="na">TYPE_INT_RGB</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">iOutW</span><span class="o">;</span> <span class="n">x</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">startX</span><span class="o">;</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">start</span><span class="o">;</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">X</span> <span class="o">=</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(((</span><span class="kt">double</span><span class="o">)</span> <span class="n">x</span><span class="o">)</span> <span class="o">*</span> <span class="o">((</span><span class="kt">double</span><span class="o">)</span> <span class="n">dwInW</span><span class="o">)</span> <span class="o">/</span> <span class="o">((</span><span class="kt">double</span><span class="o">)</span> <span class="n">iOutW</span><span class="o">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">);</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>          <span class="n">startX</span> <span class="o">=</span> <span class="n">X</span> <span class="o">-</span> <span class="n">nHalfDots</span><span class="o">;</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">startX</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">startX</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>              <span class="n">start</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">-</span> <span class="n">X</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">stop</span><span class="o">;</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">stopX</span> <span class="o">=</span> <span class="n">X</span> <span class="o">+</span> <span class="n">nHalfDots</span><span class="o">;</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">stopX</span> <span class="o">&gt;</span> <span class="o">(</span><span class="n">dwInW</span> <span class="o">-</span> <span class="mi">1</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">stopX</span> <span class="o">=</span> <span class="n">dwInW</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>              <span class="n">stop</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">+</span> <span class="o">(</span><span class="n">dwInW</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">X</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">stop</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">*</span> <span class="mi">2</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">start</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">||</span> <span class="n">stop</span> <span class="o">&lt;</span> <span class="n">nDots</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">CalTempContrib</span><span class="o">(</span><span class="n">start</span><span class="o">,</span> <span class="n">stop</span><span class="o">);</span>
+</span><span class='line'>              <span class="k">for</span> <span class="o">(</span><span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">dwInH</span><span class="o">;</span> <span class="n">y</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">value</span> <span class="o">=</span> <span class="n">HorizontalFilter</span><span class="o">(</span><span class="n">bufImage</span><span class="o">,</span> <span class="n">startX</span><span class="o">,</span> <span class="n">stopX</span><span class="o">,</span> <span class="n">start</span><span class="o">,</span>
+</span><span class='line'>                          <span class="n">stop</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">tmpContrib</span><span class="o">);</span>
+</span><span class='line'>                  <span class="n">pbOut</span><span class="o">.</span><span class="na">setRGB</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>              <span class="k">for</span> <span class="o">(</span><span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">dwInH</span><span class="o">;</span> <span class="n">y</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">value</span> <span class="o">=</span> <span class="n">HorizontalFilter</span><span class="o">(</span><span class="n">bufImage</span><span class="o">,</span> <span class="n">startX</span><span class="o">,</span> <span class="n">stopX</span><span class="o">,</span> <span class="n">start</span><span class="o">,</span>
+</span><span class='line'>                          <span class="n">stop</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">normContrib</span><span class="o">);</span>
+</span><span class='line'>                  <span class="n">pbOut</span><span class="o">.</span><span class="na">setRGB</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">pbOut</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of HorizontalFiltering()</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">VerticalFilter</span><span class="o">(</span><span class="n">BufferedImage</span> <span class="n">pbInImage</span><span class="o">,</span> <span class="kt">int</span> <span class="n">startY</span><span class="o">,</span> <span class="kt">int</span> <span class="n">stopY</span><span class="o">,</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">start</span><span class="o">,</span> <span class="kt">int</span> <span class="n">stop</span><span class="o">,</span> <span class="kt">int</span> <span class="n">x</span><span class="o">,</span> <span class="kt">double</span><span class="o">[]</span> <span class="n">pContrib</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">valueRed</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">valueGreen</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
+</span><span class='line'>      <span class="kt">double</span> <span class="n">valueBlue</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">valueRGB</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">i</span><span class="o">,</span> <span class="n">j</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">startY</span><span class="o">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">start</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">stopY</span><span class="o">;</span> <span class="n">i</span><span class="o">++,</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">valueRGB</span> <span class="o">=</span> <span class="n">pbInImage</span><span class="o">.</span><span class="na">getRGB</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">i</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">valueRed</span> <span class="o">+=</span> <span class="n">GetRedValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
+</span><span class='line'>          <span class="n">valueGreen</span> <span class="o">+=</span> <span class="n">GetGreenValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
+</span><span class='line'>          <span class="n">valueBlue</span> <span class="o">+=</span> <span class="n">GetBlueValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="n">valueRGB</span> <span class="o">=</span> <span class="n">ComRGB</span><span class="o">(</span><span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueRed</span><span class="o">),</span> <span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueGreen</span><span class="o">),</span>
+</span><span class='line'>              <span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueBlue</span><span class="o">));</span>
+</span><span class='line'>      <span class="c1">// System.out.println(valueRGB);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">valueRGB</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of VerticalFilter()</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">BufferedImage</span> <span class="nf">VerticalFiltering</span><span class="o">(</span><span class="n">BufferedImage</span> <span class="n">pbImage</span><span class="o">,</span> <span class="kt">int</span> <span class="n">iOutH</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">iW</span> <span class="o">=</span> <span class="n">pbImage</span><span class="o">.</span><span class="na">getWidth</span><span class="o">();</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">iH</span> <span class="o">=</span> <span class="n">pbImage</span><span class="o">.</span><span class="na">getHeight</span><span class="o">();</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">BufferedImage</span> <span class="n">pbOut</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BufferedImage</span><span class="o">(</span><span class="n">iW</span><span class="o">,</span> <span class="n">iOutH</span><span class="o">,</span>
+</span><span class='line'>              <span class="n">BufferedImage</span><span class="o">.</span><span class="na">TYPE_INT_RGB</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">iOutH</span><span class="o">;</span> <span class="n">y</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">startY</span><span class="o">;</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">start</span><span class="o">;</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">Y</span> <span class="o">=</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(((</span><span class="kt">double</span><span class="o">)</span> <span class="n">y</span><span class="o">)</span> <span class="o">*</span> <span class="o">((</span><span class="kt">double</span><span class="o">)</span> <span class="n">iH</span><span class="o">)</span> <span class="o">/</span> <span class="o">((</span><span class="kt">double</span><span class="o">)</span> <span class="n">iOutH</span><span class="o">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">startY</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">-</span> <span class="n">nHalfDots</span><span class="o">;</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">startY</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">startY</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>              <span class="n">start</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">-</span> <span class="n">Y</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">stop</span><span class="o">;</span>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">stopY</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">+</span> <span class="n">nHalfDots</span><span class="o">;</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">stopY</span> <span class="o">&gt;</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(</span><span class="n">iH</span> <span class="o">-</span> <span class="mi">1</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">stopY</span> <span class="o">=</span> <span class="n">iH</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>              <span class="n">stop</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">+</span> <span class="o">(</span><span class="n">iH</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">Y</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">stop</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">*</span> <span class="mi">2</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">start</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">||</span> <span class="n">stop</span> <span class="o">&lt;</span> <span class="n">nDots</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">CalTempContrib</span><span class="o">(</span><span class="n">start</span><span class="o">,</span> <span class="n">stop</span><span class="o">);</span>
+</span><span class='line'>              <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">iW</span><span class="o">;</span> <span class="n">x</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">value</span> <span class="o">=</span> <span class="n">VerticalFilter</span><span class="o">(</span><span class="n">pbImage</span><span class="o">,</span> <span class="n">startY</span><span class="o">,</span> <span class="n">stopY</span><span class="o">,</span> <span class="n">start</span><span class="o">,</span> <span class="n">stop</span><span class="o">,</span>
+</span><span class='line'>                          <span class="n">x</span><span class="o">,</span> <span class="n">tmpContrib</span><span class="o">);</span>
+</span><span class='line'>                  <span class="n">pbOut</span><span class="o">.</span><span class="na">setRGB</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>              <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">iW</span><span class="o">;</span> <span class="n">x</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">value</span> <span class="o">=</span> <span class="n">VerticalFilter</span><span class="o">(</span><span class="n">pbImage</span><span class="o">,</span> <span class="n">startY</span><span class="o">,</span> <span class="n">stopY</span><span class="o">,</span> <span class="n">start</span><span class="o">,</span> <span class="n">stop</span><span class="o">,</span>
+</span><span class='line'>                          <span class="n">x</span><span class="o">,</span> <span class="n">normContrib</span><span class="o">);</span>
+</span><span class='line'>                  <span class="n">pbOut</span><span class="o">.</span><span class="na">setRGB</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">pbOut</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of VerticalFiltering()</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="nf">Clip</span><span class="o">(</span><span class="kt">int</span> <span class="n">x</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span>
+</span><span class='line'>          <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="mi">255</span><span class="o">)</span>
+</span><span class='line'>          <span class="k">return</span> <span class="mi">255</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">x</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
 </span><span class='line'><span class="o">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;应用系统中，hibernate对这两个对象的操作，都会同步到索引库中，非常的方便。</p>
+<p>&emsp;&emsp;代码我也是在网上找的，“拿来主义”，能够满足项目要求就是最终目的，呵呵！</p>
+</div>
+  
+  
 
-<p>&emsp;&emsp;附：</p>
 
-<p>&emsp;&emsp;查询表达式：</p>
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/01/20/zhaopin/">Java Mis类型项目招聘技术点总结</a></h1>
+    
+    
+      <p class="meta">
+        
 
-<p><a href="http://lucene.apache.org/core/old_versioned_docs/versions/3_0_0/queryparsersyntax.html">http://lucene.apache.org/core/old_versioned_docs/versions/3_0_0/queryparsersyntax.html</a></p>
 
-<p>&emsp;&emsp;cimpass查询api示例：</p>
 
-<p><a href="http://static.compassframework.org/docs/latest/core-workingwithobjects.html">http://static.compassframework.org/docs/latest/core-workingwithobjects.html</a></p>
 
-<p>&emsp;&emsp;当然，如果要做更复杂的操作，需要大家自己去研究，比如：</p>
 
-<p>&emsp;&emsp;<strong>一、重建索引：</strong></p>
+
+
+
+  
+
+
+<time datetime="2011-01-20T15:18:00+08:00" pubdate data-updated="true">2011年01月20日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;我有过一些在软件公司招聘的经历，下面谈谈在招聘过程中我所关注的一些地方，做为新手可以从这些方面去掂量下下自己，找一个合适的方向。</p>
+
+<p>&emsp;&emsp;当然，不同的公司，招聘条件并不相同，不同的项目，招聘条件也不同。但是也存在一些招聘误区，比如：有的公司喜欢作秀，把题目出得很难很深，这些考试内容在实际项目中根本用不上；也有的公司把自己花了很大精力才解决的问题拿来考面试者；还有的公司出一堆IQ测试题等等，这样的情况非常多。我还是喜欢务实一些的，工作中、项目中用什么就考什么。据我所知，成都的很多公司喜欢来虚的，深圳、上海等地的公司更务实些，呵呵。</p>
+
+<p>&emsp;&emsp;我以前出的一些题目，主要是从实际项目出发，考核应聘者的一些基本能力，不同类型的项目，条件也不一样，但有很多基础的东西是必须要掌握的，下面以开java开发MIS系统为例，进行讲解。</p>
+
+<p>&emsp;&emsp;1、java基础</p>
+
+<p>&emsp;&emsp;a、基本语法：顺序、分支、循环这三种基本的程序结构要了解，同时要关注一下执行效率问题(比如：变量的申明范围、类型等)。</p>
+
+<p>&emsp;&emsp;b、对象的继承、封装、多态，对象修饰符，构造函数等知识。</p>
+
+<p>&emsp;&emsp;c、集合的使用：数组，set，map，list的基本用法。</p>
+
+<p>&emsp;&emsp;d、基本流操作：InputStream,OutputStream及几个常用子类，比如：操作文件的、操作带缓冲区的、带整行读取功能的、操作字节的等，流操作虽然用得不多，但有时还是要用的哦。</p>
+
+<p>&emsp;&emsp;e、多线程原理。对理解服务器请求处理及资源同步有帮助。</p>
+
+<p>&emsp;&emsp;f、工具类的使用：有这么几个类很常用SimpleDateFormat，Calendar，Math，Radom，字符串与数字类型的转换，以及正则达式类。其实也就是不同类型的转换、格式化等操作。</p>
+
+<p>&emsp;&emsp;2、web部分</p>
+
+<p>&emsp;&emsp;a、socket的原理，http头（很重要）。这些东西在实际编码时几乎不用，但又需要程序员理解，因为这些知识对解决实际问题非常有帮助。</p>
+
+<p>&emsp;&emsp;b、4个web作用域，必须要有一定的认识。session与cookie的联系区别要清楚。</p>
+
+<p>&emsp;&emsp;c、页面与业务的交互流程要清楚，还要了解一些安全交互方面的知道，比如：数据验证，跨域等。</p>
+
+<p>&emsp;&emsp;d、el和jstl，jstl中的core，fmt和fn都要熟悉，特别是日期、数字的格式化。</p>
+
+<p>&emsp;&emsp;e、对xml解析方式要清楚，有的项目在这方面要求还比较高。</p>
+
+<p>&emsp;&emsp;3、页面展现</p>
+
+<p>&emsp;&emsp;a、基本html元素必须熟悉。</p>
+
+<p>&emsp;&emsp;b、合理使用css定制页面外观。</p>
+
+<p>&emsp;&emsp;c、基本的js操作方法（取页面元素、加载事件、触发事件等）。</p>
+
+<p>&emsp;&emsp;e、一些js框架，比如：jQuery，Extjs等，其中jQuery是重点哦。</p>
+
+<p>&emsp;&emsp;f、父、子页面（或iframe）间的参数传递及互访。</p>
+
+<p>&emsp;&emsp;g、ajax交互原理。</p>
+
+<p>&emsp;&emsp;3、数据库方面</p>
+
+<p>&emsp;&emsp;a、基本的sql语法，特别是子查询、分组，聚合、分页。</p>
+
+<p>&emsp;&emsp;b、特定平台的存储过程（有的项目需要）。</p>
+
+<p>&emsp;&emsp;c、范式的基本认识。</p>
+
+<p>&emsp;&emsp;d、一些性能方面的知识。</p>
+
+<p>&emsp;&emsp;4、框架部分知识</p>
+
+<p>&emsp;&emsp;a、struts1.x，重点是一个交互流程。DispatchAction，FormBean的基本用法。</p>
+
+<p>&emsp;&emsp;b、hibernate,关系映射的配置是一个方面，另一个是HQL的写法，特别是关联对象，多对多对象的hql写法。hibernate性能方面要有所了解。</p>
+
+<p>&emsp;&emsp;c、对spring容器获取的方法，特别是在web环境下的获取。对spring的AOP、数据库事务管理（重要）以及bean的生命周期要有一定了解。其实spring本身的配置和使用还是相当简单的，重要的是原理。</p>
+
+<p>&emsp;&emsp;e、对其它框架要了解，比如：struts2，ibatis,ejb3,webservice相关框架等等。</p>
+
+<p>&emsp;&emsp;5、架构及设计模式</p>
+
+<p>&emsp;&emsp;架构方面对于一个普通程序员，要求不是太高，但常见的mvc、失血模型、事务脚本、dao这几个，一定要理解透彻</p>
+
+<p>&emsp;&emsp;设计模式只做一般了解，工厂、单例、装饰、适配器、观察者、门面 这几个模式相对来说比较重要，因为模式体现了面向对象设计原则，对代码重构及理解其它写人的代码都有好处。</p>
+
+<p>&emsp;&emsp;上面的这些考核知识点比较散，也不完善、不成体系，但却是项目中所需要的，是从实战出发所总结，大家要引起重视。</p>
+
+<p>&emsp;&emsp;最后，还有两点也是一个公司比较看重要的：</p>
+
+<p>&emsp;&emsp;1、人品，所谓“有德有才 破格重用，有德无才 培养使用，有才无德 限制录用，无德无才是坚决不用”，说的就是德，可见，人的品德是多么的重要。</p>
+
+<p>&emsp;&emsp;2、对技术的敏感性。</p>
+
+<p>&emsp;&emsp;我曾经面试过一个法律专业的小伙来公司做技术，面试时就发现该人非常踏实，诚实，人比较聪明，此人已经自学了一些编程知识，但当时老板不太同意，最终还是招进了公司。这个小伙子我只带了一个月，就很快能够独顶一面，进步得非常快。也许有的人天生就是吃这碗饭的。</p>
+
+<p>&emsp;&emsp;软件行业中对技术还比较迷茫的人，希望读完本文后，能给你点启示，毕竟过来人都走过一些弯路的，这些总结对你一定有用。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/01/19/jsoup/">网页解析利器——jsoup</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-01-19T15:18:00+08:00" pubdate data-updated="true">2011年01月19日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;从第三方网站上抓取一张页面，分析其中的内容，然后转换为自己的格式并持久化，这就是网络爬虫的操作步骤。目前，对网页的抓取及解析也在互联网项目中有较为广泛的应用，下面简单谈谈一些网页解析工具的使用方法。</p>
+
+<p>&emsp;&emsp;网页的爬取及解析，应该利用一现有的工具或框架去实现，而这些框架的选择，至少要考虑下面的一些因素：</p>
+
+<p>&emsp;&emsp;1、应该具有一定的兼容性，比如：原始页面中的一些语法错误、未关闭标签等，应该能够被正确解析；</p>
+
+<p>&emsp;&emsp;2、应该可以方便地查找、过滤页面元素；</p>
+
+<p>&emsp;&emsp;3、应该要以对找到的元素进行操作，比如：修改，删除等，当然也可以加入新的元素。</p>
+
+<p>&emsp;&emsp;我主要说两个常用的网页解析工具，一个是htmlParser，这个框架出来得比较早，并且有比较广泛的应用，官方站点在<a href="http://htmlparser.sourceforge.net/">http://htmlparser.sourceforge.net/</a>，下面是一段示例代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Parser</span> <span class="n">parser</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Parser</span><span class="o">(</span><span class="n">str_url</span><span class="o">);</span>
+</span><span class='line'><span class="n">parser</span><span class="o">.</span><span class="na">setEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">NodeList</span> <span class="n">imageNodeList</span> <span class="o">=</span> <span class="n">contentNodeList</span><span class="o">.</span><span class="na">extractAllNodesThatMatch</span><span class="o">(</span><span class="k">new</span> <span class="n">TagNameFilter</span><span class="o">(</span><span class="s">&quot;img&quot;</span><span class="o">),</span> <span class="kc">true</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面将得到页面中的所有图片链接。其中的extractAllNodes方法有很多种实现，可以按元素类型、包含的属性等等条件进行过滤，我以前的一些项目中就曾使用这种方法来做，也用得十分的恼火，让人头疼的地方主要是：</p>
+
+<p>&emsp;&emsp;1、容错性差，目标页面有错误，解析起来就得不到正确的结果，为此，当时都研究过firefox的解析包，但发现十分复杂，放弃了（注：如果每个页面都通过xhtml标准检查，那么用dom4j中的xpath就可以解决网页解析的问题了，呵呵）。</p>
+
+<p>&emsp;&emsp;2、要仔细分析目标网页，针对目标网页的页面元素层级关系，编写相应的解析代码，写出的代码非常冗长（主要是元素查询、过滤很麻烦），可维护性不高。一旦目标网站页面格式调整，再次调整代码，修改解析代码非常痛苦。</p>
+
+<p>&emsp;&emsp;3、页面的修改、重组都不方便。</p>
+
+<p>&emsp;&emsp;用HtmlParser的经历可以说是比较痛苦，但在当时的情况下，HtmlParser是最好的一个java开源网页解析器，也只有将应着用了。同时也期待着新的框架问世。</p>
+
+<p>&emsp;&emsp;直到有一天，发现了jsoup，以前困扰过我的问题终于得到了解决，并且解决得很彻底，是到了跟HtmlParser说再见的时候了。jsoup官网地址在<a href="http://jsoup.org/">http://jsoup.org/</a>，整个jar包135kb，非常小巧，而且不依赖其它包，够强悍。下面贴出一段示例代码（具体使用官网上有Cookbook，另外chinaos版主也写了一篇jsoup的使用文档，自己去google一下吧）：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Document</span> <span class="n">doc</span> <span class="o">=</span> <span class="n">Jsoup</span><span class="o">.</span><span class="na">connect</span><span class="o">(</span><span class="n">str_url</span><span class="o">).</span><span class="na">get</span><span class="o">();</span>
+</span><span class='line'><span class="n">Elements</span> <span class="n">es</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="s">&quot;#results .trans-wrapper h2 span&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">es</span><span class="o">.</span><span class="na">text</span><span class="o">());</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;jsoup 具有页面纠错功能，对于一般的标签未封闭，未结束等错误可以智能纠正，这点对网页解析来说意义重大。其次，页面元素查找、定位十分的方便，它完全支持 jQuery的元素查找方式，并且几乎所有的api方法，都和jQuery api中的方法一模一样，我们知道，jQuery之所以可以被如此广泛使用，和它简洁强大的页面元素定位及简单的api是分不开的，jsoup的这种做法可以说是非常明智的。</p>
+
+<p>&emsp;&emsp;我对jQuery非常的熟悉，jsoup和jQuery又如此的相似，因此jsoup后可以说是拿来即用，感觉十分的亲切、自然。用了jsoup后，你会发现，实现同样功能的代码，jsoup代码量会比Htmlparser少很多很多，并且可读性非常的强，可维护性自然提高。</p>
+
+<p>&emsp;&emsp;做网页解析的朋友们，赶紧”鸟枪换炮“吧。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/01/11/quartz/">一个复杂的定时任务架构原型实现</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-01-11T15:18:00+08:00" pubdate data-updated="true">2011年01月11日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;我在前面的文章中讲过定时任务在项目中的应用 —<a href="/blog/2010/10/26/task/">【项目中定时任务实现方式比较】</a>，并且我推荐大家利用操作系统的定时任务去完成相应的功能，对于简单的定时任务，操作系统的定时任务功能完全没有问题的，但是，如果项目需求复杂一些，操作系统的定时任务恐怕就不能胜任了。最近，我们在重庆移动实时监控项目中就遇到了这个问题，下面贴出界面原型，并简单描述该部分的功能需求。</p>
+
+<p>&emsp;&emsp;实时监控系统中可以建立多个预警任务，每个预期任务中包含一个运行周期，运行周期从周期类型和天内频率两个方面来描述这个任务的执行触发条件，如下图所示：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/28.jpg' width='' height='' title='运行周期界面原型图'><span class='caption-text'>运行周期界面原型图</span></span></p>
+
+<p>&emsp;&emsp;每个预警任务建立完成后，还可以暂时、启动任务，或立即执行任务，并且预警任务的运行周期是可以修改的。预期任务列表界面原型如下图。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/14.jpg' width='' height='' title='预警任务列表图'><span class='caption-text'>预警任务列表图</span></span></p>
+
+<p>&emsp;&emsp;预警任务在达到运行周期中设定的触发条件后就会自动运行，在运行过程中，系统将向预警任务中设计的目标网元、数据源等监控目标进行通讯，并采集性能数据，经过整理后将结果存入每个预期任务对应的预警结果中。</p>
+
+<p>&emsp;&emsp;预警任务可以由人工单独运行（即：立即执行一次），或者按照设计的运行周期自动触发。</p>
+
+<p>&emsp;&emsp;很显示，在这个需求中，用操作系统的定时任务已经无法达到我们要求，原因是：每个预期任务的运行同期都不相同，而且比较复杂，并且预期任务可以随时修改，周期也可以修改，我们不可能在这些东西修改后，再去修改操作系统的配置文件。</p>
+
+<p>&emsp;&emsp;根据预警任务这一块的需求，我们在项目之初设计了架构原型，并写出了相应的代码，实现思路是在项目中深度整合quartz框架。架构原型设计图如下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/13.png' width='' height='' title='预警任务自动运行类图设计'><span class='caption-text'>预警任务自动运行类图设计</span></span></p>
+
+<p>&emsp;&emsp;图中粉红色类为我们所写，兰色类为quartz所定义，黄色为spring定义。</p>
+
+<p>&emsp;&emsp;先来看WarningTask（预期任务）。我们在其中定义了cronExpression属性，该属性字符串为任务触发条件字符串，由 WarningTask类中的+ convertToCronExpression() : String方法生成（该方法实现代码有点复杂哦，呵呵）。任务运行时，将执行+ runTask() : void方法，该方法根据本对象的监控目标执行一次运行，运行过程中将网元设备上采集到的运行结果保存到数据库，显然，这个对象不再是失血对象了。 IWarningTaskService，完成WarningTask相关的业务操作。MyJobDetail，触发条件满足时的具体执行类，该类实现 quartz的job接口。</p>
+
+<p>&emsp;&emsp;首先要清楚一个预警任务具体执行流程如下，只有理解了该流程，才能在项目中灵活运用好quartz：</p>
+
+<p>&emsp;&emsp;（1）得到Scheduler任务调度类，此类在spring中已经定义好了，我们使用时从beanfactory中得到，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">BeanFactory</span> <span class="n">bf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ClassPathXmlApplicationContext</span><span class="o">(</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Scheduler</span> <span class="n">sfb</span> <span class="o">=</span> <span class="o">(</span><span class="n">Scheduler</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;scheduler&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;（2）得到一个工作bean，即JobDetail,我们也从spring中得到（注:当然也可以自己new一个jobDetail对象，如果从spring容器中得到，注意将scope设置为”prototype”）：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">CompassGps</span> <span class="n">gps</span> <span class="o">=</span> <span class="err">由容器注入</span><span class="o">;</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">IWarningTaskService</span> <span class="n">warningService</span> <span class="o">=</span> <span class="o">(</span><span class="n">IWarningTaskService</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;warningTaskService&quot;</span><span class="o">);</span>
 </span><span class='line'>
-</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;begin re index....&quot;</span><span class="o">);</span>
-</span><span class='line'><span class="n">gps</span><span class="o">.</span><span class="na">index</span><span class="o">();</span>
-</span><span class='line'> <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;end re index....&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">JobDetailBean</span> <span class="n">job</span> <span class="o">=</span> <span class="o">(</span><span class="n">JobDetailBean</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myJobDetail&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;wt_id&quot;</span><span class="o">,</span> <span class="o">(</span><span class="kt">long</span><span class="o">)</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;warningService&quot;</span><span class="o">,</span> <span class="n">warningService</span><span class="o">);</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;<strong>二、关键字高亮</strong></p>
+<p>&emsp;&emsp;每个预期任务都与一个JobDetail实例关联，我们通过向JobDetail实例中的JobDataMap中放入相应的预期任务数据（在一个工作组中，jobdetail的名称要唯一），本示例中我们放的是预期任务的id，以及预期任务业务对象。</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">hits</span><span class="o">.</span><span class="na">highlighter</span><span class="o">(</span><span class="n">i</span><span class="o">).</span><span class="na">fragment</span><span class="o">(</span><span class="s">&quot;高亮html代码&quot;</span><span class="o">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>三、排序</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">CompassHits</span> <span class="n">hits</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">queryBuilder</span><span class="o">().</span><span class="na">queryString</span><span class="o">(</span><span class="s">&quot;刘 OR 1988-09-09&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="o">.</span><span class="na">toQuery</span><span class="o">().</span><span class="na">addSort</span><span class="o">(</span><span class="s">&quot;customer.comment&quot;</span><span class="o">,</span> <span class="n">SortPropertyType</span><span class="o">.</span><span class="na">STRING</span><span class="o">).</span><span class="na">hits</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;四、中文分词，数据分页（要自己进行内存分页），大家自己去查哈&hellip;&hellip;..</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/12/28/restful6/">教你一步步做 Restful程序（6）&#8212;总结</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-12-28T15:22:00+08:00" pubdate data-updated="true">2012年12月28日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;上面的程序非常简单，仅供大家参考，如要运用到生产环境，有些细节问题并没有考虑到，请大家自己完善。</p>
-
-<p>&emsp;&emsp;上面的示例中，状态的控制还是放在服务器端管理的，这和restful理论上有所冲突，另外，提交方式也并没有严格按照标准来做，主要原因是中文参数的处理不方便。</p>
-
-<p>&emsp;&emsp;总之，restful架构将服务端和客户端解耦，确实对现在多客户端的系统来说，服务器的处理更加的方便。但restful在实际生产环境中的使用还得根据项目的需求来具体情况具体再说，比如：</p>
-
-<p>&emsp;&emsp;1、所有的功能都要提供电脑版、其它终端及客户端版吗？</p>
-
-<p>&emsp;&emsp;2、不同客户端，对返回的数据格式要求都一样吗？（比如：一个列表，移动终端可能需要显示的数据量要少得多）</p>
-
-<p>&emsp;&emsp;3、前端开发人员对纯js的操作是否熟悉?(因为页面的生成，跳转都在客户端完成哦)</p>
-
-<p>&emsp;&emsp;4、是否有些业务复杂、严谨到不适合这种模式。</p>
-
-<p>&emsp;&emsp;大家从这，返回我的第一篇关于restful的文章《<a href="/blog/2012/12/28/restful1/">教你一步步做 restful程序（1）为什么要用restful</a>》</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/12/28/restful5/">教你一步步做 Restful程序（5）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-12-28T15:21:00+08:00" pubdate data-updated="true">2012年12月28日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;加入简单的安全控制：</p>
-
-<p>&emsp;&emsp;写一个过滤器，对非法用户进行过滤</p>
+<p>&emsp;&emsp;（3）新建一个CronTrigger，将JobDetail与触发器关联起来，要注意的是，每个Trigger都要有一个唯一的名字（在一个组中），以后要取出这个Trigger就非常容易了。</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -455,114 +1190,21 @@
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
 <span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * @see Filter#doFilter(ServletRequest, ServletResponse, FilterChain)</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">ServletRequest</span> <span class="n">request</span><span class="o">,</span> <span class="n">ServletResponse</span> <span class="n">response</span><span class="o">,</span> <span class="n">FilterChain</span> <span class="n">chain</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span><span class="o">,</span> <span class="n">ServletException</span> <span class="o">{</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">CronTriggerBean</span> <span class="n">trigger1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CronTriggerBean</span><span class="o">();</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="n">HttpServletRequest</span> <span class="n">req</span> <span class="o">=</span> <span class="o">(</span><span class="n">HttpServletRequest</span><span class="o">)</span><span class="n">request</span><span class="o">;</span>
-</span><span class='line'>        <span class="n">String</span> <span class="n">path</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="na">getRequestURI</span><span class="o">();</span>
+</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">);</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;你访问的资源路径是：&quot;</span> <span class="o">+</span> <span class="n">req</span><span class="o">.</span><span class="na">getRequestURI</span><span class="o">());</span>
+</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setJobName</span><span class="o">(</span><span class="s">&quot;myJobDetail&quot;</span><span class="o">);</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getSession</span><span class="o">().</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;session_key&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">chain</span><span class="o">.</span><span class="na">doFilter</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
-</span><span class='line'>            <span class="k">return</span><span class="o">;</span>
-</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setCronExpression</span><span class="o">(</span><span class="s">&quot;0/1 * * * * ?&quot;</span><span class="o">);</span>
 </span><span class='line'>
-</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">path</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="s">&quot;/userManager/&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">HttpServletResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="o">(</span><span class="n">HttpServletResponse</span><span class="o">)</span><span class="n">response</span><span class="o">;</span>
-</span><span class='line'>                <span class="n">resp</span><span class="o">.</span><span class="na">sendRedirect</span><span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getContextPath</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;/error.html&quot;</span><span class="o">);</span>
-</span><span class='line'>                <span class="k">return</span><span class="o">;</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">chain</span><span class="o">.</span><span class="na">doFilter</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setJobDetail</span><span class="o">(</span><span class="n">job</span><span class="o">);</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;并在web.xml中添加：</p>
+<p>&emsp;&emsp;（4）最后，就可以启动、暂停、或重新启动任务了，下面的代码演示了对任务的操作。</p>
 
-<figure class='code'><figcaption><span>web.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'> <span class="nt">&lt;filter&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;display-name&gt;</span>AuthFilter<span class="nt">&lt;/display-name&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>AuthFilter<span class="nt">&lt;/filter-name&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;filter-class&gt;</span>com.my.jxc.filter.AuthFilter<span class="nt">&lt;/filter-class&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/filter&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;filter-mapping&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>AuthFilter<span class="nt">&lt;/filter-name&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;url-pattern&gt;</span>/*<span class="nt">&lt;/url-pattern&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/filter-mapping&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/12/28/restful4/">教你一步步做 Restful程序（4）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-12-28T15:20:00+08:00" pubdate data-updated="true">2012年12月28日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;新增用户，客户端代码 user_add.html：</p>
-
-<figure class='code'><figcaption><span>user_add.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -589,92 +1231,41 @@
 <span class='line-number'>25</span>
 <span class='line-number'>26</span>
 <span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;link</span> <span class="na">type=</span><span class="s">&quot;text/css&quot;</span> <span class="na">href=</span><span class="s">&quot;../css/redmond/jquery-ui-1.8.16.custom.css&quot;</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery-1.6.2.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery-ui-1.8.16.custom.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery.validate.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/messages_cn.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/kindeditor-min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>    <span class="nx">KE</span><span class="p">.</span><span class="nx">show</span><span class="p">({</span>
-</span><span class='line'>        <span class="nx">id</span><span class="o">:</span><span class="s2">&quot;desc&quot;</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">imageUploadJson</span><span class="o">:</span><span class="s2">&quot;../../../upload_img&quot;</span>
-</span><span class='line'>    <span class="p">});</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">addJob</span><span class="o">(</span><span class="n">trigger1</span><span class="o">.</span><span class="na">getJobDetail</span><span class="o">(),</span> <span class="kc">true</span><span class="o">);</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;birthday&#39;]&quot;</span><span class="p">).</span><span class="nx">datepicker</span><span class="p">({</span><span class="nx">dateFormat</span><span class="o">:</span><span class="s2">&quot;yy-mm-dd&quot;</span><span class="p">});</span>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_close&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nb">window</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.add_user_dlg&quot;</span><span class="p">).</span><span class="nx">dialog</span><span class="p">(</span><span class="s2">&quot;destroy&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#myform&quot;</span><span class="p">).</span><span class="nx">validate</span><span class="p">({</span><span class="nx">submitHandler</span><span class="o">:</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
-</span><span class='line'>            <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;post&quot;</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">cache</span><span class="o">:</span><span class="kc">false</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">data</span><span class="o">:</span><span class="p">{</span>
-</span><span class='line'>                <span class="nx">loginCode</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;loginCode&#39;]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span>
-</span><span class='line'>                <span class="nx">name</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;name&#39;]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span>
-</span><span class='line'>                <span class="nx">password</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;password&#39;]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span>
-</span><span class='line'>                <span class="nx">birthday</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;birthday&#39;]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span>
-</span><span class='line'>            <span class="p">},</span>
-</span><span class='line'>            <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nb">window</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">refresh</span><span class="p">();</span>
-</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;添加成功！&quot;</span><span class="p">);</span>
-</span><span class='line'>                    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_close&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">();</span>
-</span><span class='line'>                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;添加失败!原因：！&quot;</span> <span class="o">+</span> <span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
-</span><span class='line'>                <span class="p">}</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">});</span>
-</span><span class='line'>    <span class="p">}});</span>
-</span><span class='line'><span class="p">});</span>
-</span><span class='line'><span class="nt">&lt;/script&gt;</span>
+</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">scheduleJob</span><span class="o">(</span><span class="n">trigger1</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//sfb.start();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">CronTrigger</span> <span class="n">trigger2</span> <span class="o">=</span> <span class="o">(</span><span class="n">CronTrigger</span><span class="o">)</span><span class="n">sfb</span><span class="o">.</span><span class="na">getTrigger</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">,</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;修改运行周期为5秒&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">trigger2</span><span class="o">.</span><span class="na">setCronExpression</span><span class="o">(</span><span class="s">&quot;0/5 * * * * ?&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">rescheduleJob</span><span class="o">(</span><span class="n">trigger2</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">,</span> <span class="n">trigger2</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">10000</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;停止....&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">pauseTrigger</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">,</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">10000</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;再次重新启动.....&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">resumeTrigger</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">,</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;表单：</p>
+<p>&emsp;&emsp;搞清楚了最基本的操作流程后，最重要的是如何在本项目中集成quartz，我们可以从下面几个技术点上来考虑：</p>
+
+<p>&emsp;&emsp;（1）如何在项目服务器启动时，将系统中已经有的预警任务全部运行起来？答案是：用监听器。架构原型中的代码如下：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form</span> <span class="na">id=</span><span class="s">&quot;myform&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>用户登录编码：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;loginCode&quot;</span> <span class="na">class=</span><span class="s">&quot;required&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
-</span><span class='line'>姓名：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
-</span><span class='line'>登录密码：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;password&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
-</span><span class='line'>出生日期：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;birthday&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
-</span><span class='line'>描述：<span class="nt">&lt;textarea</span> <span class="na">id=</span><span class="s">&quot;desc&quot;</span> <span class="na">cols=</span><span class="s">&quot;60&quot;</span> <span class="na">rows=</span><span class="s">&quot;10&quot;</span><span class="nt">&gt;&lt;/textarea&gt;&lt;br/&gt;</span>
-</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;新增&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_add&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;关闭&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_close&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'><span class="nt">&lt;/form&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;修改的客户端代码(user_modify.html)：</p>
-
-<figure class='code'><figcaption><span>user_modify.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -719,70 +1310,95 @@
 <span class='line-number'>43</span>
 <span class='line-number'>44</span>
 <span class='line-number'>45</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery-1.6.2.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery.query.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">TaskServletContextListener</span> <span class="kd">implements</span> <span class="n">ServletContextListener</span> <span class="o">{</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_save&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
-</span><span class='line'>            <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;post&quot;</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;user/&quot;</span> <span class="o">+</span> <span class="nx">$</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s2">&quot;uid&quot;</span><span class="p">)</span> <span class="p">,</span>
-</span><span class='line'>            <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">data</span><span class="o">:</span><span class="p">{</span><span class="s1">&#39;loginCode&#39;</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.code&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span><span class="s1">&#39;name&#39;</span><span class="o">:</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.name&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span><span class="s1">&#39;birthday&#39;</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.birthday&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()},</span>
-</span><span class='line'>            <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nb">window</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">refresh</span><span class="p">();</span>
-</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;修改成功！&quot;</span><span class="p">);</span>
-</span><span class='line'>                    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_close&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">();</span>
-</span><span class='line'>                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;修改失败!！&quot;</span><span class="p">);</span>
-</span><span class='line'>                <span class="p">}</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">});</span>
-</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="nd">@Override</span>
 </span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">contextInitialized</span><span class="o">(</span><span class="n">ServletContextEvent</span> <span class="n">sce</span><span class="o">)</span> <span class="o">{</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_close&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nb">window</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.modify_user_dlg&quot;</span><span class="p">).</span><span class="nx">dialog</span><span class="p">(</span><span class="s2">&quot;destroy&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="n">BeanFactory</span> <span class="n">bf</span> <span class="o">=</span> <span class="n">WebApplicationContextUtils</span><span class="o">.</span><span class="na">getWebApplicationContext</span><span class="o">(</span><span class="n">sce</span><span class="o">.</span><span class="na">getServletContext</span><span class="o">());</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
-</span><span class='line'>        <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;get&quot;</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;user/&quot;</span> <span class="o">+</span> <span class="nx">$</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s2">&quot;uid&quot;</span><span class="p">)</span> <span class="p">,</span>
-</span><span class='line'>        <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.code&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">loginCode</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.name&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.birthday&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">birthday</span><span class="p">);</span>
+</span><span class='line'><span class="n">Scheduler</span> <span class="n">sfb</span> <span class="o">=</span> <span class="o">(</span><span class="n">Scheduler</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;scheduler&quot;</span><span class="o">);</span>
 </span><span class='line'>
-</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;取用户数据发生错误!！&quot;</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'><span class="p">});</span>
-</span><span class='line'><span class="nt">&lt;/script&gt;</span>
+</span><span class='line'><span class="n">IWarningTaskService</span> <span class="n">wts</span> <span class="o">=</span> <span class="o">(</span><span class="n">IWarningTaskService</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;warningTaskService&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//通过预警任务业务类，得到所有的可运行任务</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">List</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="n">WarningTask</span><span class="o">&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">ws</span> <span class="o">=</span> <span class="n">wts</span><span class="o">.</span><span class="na">getAllWarningTasks</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//将每个预警任务跑起来</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">for</span> <span class="o">(</span><span class="n">WarningTask</span> <span class="nl">w:</span> <span class="n">ws</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//创建一个新的工作（从spring中得到）</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">JobDetailBean</span> <span class="n">job</span> <span class="o">=</span> <span class="o">(</span><span class="n">JobDetailBean</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myJobDetail&quot;</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//给工作设计一个唯一名称，我们直接调用预警任务中的一个方法生成</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">w</span><span class="o">.</span><span class="na">generateQuartzRuningName</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//将工作与一个预警任务关联在一起，这里是通过预警任务id</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;wt_id&quot;</span><span class="o">,</span> <span class="n">w</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;warningService&quot;</span><span class="o">,</span> <span class="n">wts</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//新建Trigger，在构造方法中与job进行了联，Trigger名称也是唯一的，我们直接调用预警任务中的一个方法生成</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">CronTrigger</span> <span class="n">ct</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CronTrigger</span><span class="o">(</span><span class="n">w</span><span class="o">.</span><span class="na">generateQuartzRuningName</span><span class="o">(),</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="c1">//设置触发条件，直接从预警任务中取到</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">ct</span><span class="o">.</span><span class="na">setCronExpression</span><span class="o">(</span><span class="n">w</span><span class="o">.</span><span class="na">getCronExpression</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">sfb</span><span class="o">.</span><span class="na">addJob</span><span class="o">(</span><span class="n">job</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//开始运行此预期任务</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">sfb</span><span class="o">.</span><span class="na">scheduleJob</span><span class="o">(</span><span class="n">ct</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//........................</span>
 </span></code></pre></td></tr></table></div></figure>
 
+
+<p>&emsp;&emsp;最后在web.xml中加载些监听器，注意要在spring监听器之后加载。你需要重点看我写的每一行代码注释。</p>
+
+<p>&emsp;&emsp;（2）任务运行时，如何执行每个预警任务中的runTask()方法？核心代码在JobDetail中，需要用到JobDataMap中存放的预警任务id，代码如下所示：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'>登录编码：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">class=</span><span class="s">&quot;code&quot;</span><span class="nt">&gt;&lt;/input&gt;&lt;br&gt;</span>
-</span><span class='line'>用户名：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">class=</span><span class="s">&quot;name&quot;</span><span class="nt">&gt;&lt;/input&gt;&lt;br&gt;</span>
-</span><span class='line'>出生日期：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">class=</span><span class="s">&quot;birthday&quot;</span><span class="nt">&gt;&lt;/input&gt;&lt;br&gt;</span>
-</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;保存&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_save&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;关闭&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_close&quot;</span><span class="nt">/&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;查看的客户端代码(user_detail.html)：</p>
-
-<figure class='code'><figcaption><span>user_detail.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -805,46 +1421,86 @@
 <span class='line-number'>21</span>
 <span class='line-number'>22</span>
 <span class='line-number'>23</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'>$(function(){
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyJobDetail</span> <span class="kd">implements</span>  <span class="n">Job</span> <span class="o">{</span>
 </span><span class='line'>
-</span><span class='line'>    $(&quot;#btn_close&quot;).click(function(){
-</span><span class='line'>        window.parent.$(&quot;.view_user_dlg&quot;).dialog(&quot;destroy&quot;);
-</span><span class='line'>    });
+</span><span class='line'><span class="nd">@Override</span>
 </span><span class='line'>
-</span><span class='line'>    $.ajax({
-</span><span class='line'>        type:&quot;get&quot;,
-</span><span class='line'>        url:&quot;user/&quot; + $.query.get(&quot;uid&quot;) ,
-</span><span class='line'>        dataType:&quot;json&quot;,
-</span><span class='line'>        success:function(result) {
-</span><span class='line'>            if (result.code == 1 ) {
-</span><span class='line'>                $(&quot;.code&quot;).text(result.data.loginCode);
-</span><span class='line'>                $(&quot;.name&quot;).text(result.data.name);
-</span><span class='line'>                $(&quot;.birthday&quot;).text(result.data.birthday);
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">(</span><span class="n">JobExecutionContext</span> <span class="n">jec</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">JobExecutionException</span> <span class="o">{</span>
 </span><span class='line'>
-</span><span class='line'>            } else {
-</span><span class='line'>                alert(&quot;取用户数据发生错误!！&quot;);
-</span><span class='line'>            }
-</span><span class='line'>        }
-</span><span class='line'>    });
-</span><span class='line'>});
-</span><span class='line'><span class="nt">&lt;/script&gt;</span>
+</span><span class='line'>  <span class="c1">//得到业务操作类</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">IWarningTaskService</span> <span class="n">warningService</span> <span class="o">=</span> <span class="o">(</span><span class="n">IWarningTaskService</span><span class="o">)</span><span class="n">jec</span><span class="o">.</span><span class="na">getJobDetail</span><span class="o">().</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;warningService&quot;</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//得到与该工作任务相关的预警任务id</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Long</span> <span class="n">id</span> <span class="o">=</span> <span class="o">(</span><span class="n">Long</span><span class="o">)</span><span class="n">jec</span><span class="o">.</span><span class="na">getJobDetail</span><span class="o">().</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;wt_id&quot;</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//查出预警任务</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">WarningTask</span> <span class="n">wt</span> <span class="o">=</span> <span class="n">warningService</span><span class="o">.</span><span class="na">getWarningTaskById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//执行预警任务</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">wt</span><span class="o">.</span><span class="na">runTask</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
+<p>&emsp;&emsp;当然，预警任务的runTask方法实现时，需要要从spring beanfactory中得到相应的service，以处理执行后得到的数据。</p>
 
+<p>&emsp;&emsp;（3）在页面上对预警任务执行暂停、重启动等操作，代码就没有写了，我只说一下实现流程：</p>
+
+<p>&emsp;&emsp;a、获得页面传入的预期任务id；</p>
+
+<p>&emsp;&emsp;b、查询得到预警任务实例；</p>
+
+<p>&emsp;&emsp;c、从spring容器中得到Scheduler，根据预期任务实例生成的触发器名，取得触发器；</p>
+
+<p>&emsp;&emsp;d、对触发器进行相应的操作（pause, resume等）；</p>
+
+<p>&emsp;&emsp;f、对预警任务状态进行持久化。</p>
+
+<p>&emsp;&emsp;通过这个架构原型，我们对系统的一个技术点进行了验证，降低了系统后期的风险，并且为详细设计提供了依据。</p>
+
+<p>&emsp;&emsp;（附：quartz在spring配置代码，一共3个bean）</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'>登录编码：<span class="nt">&lt;span</span> <span class="na">class=</span><span class="s">&quot;code&quot;</span><span class="nt">&gt;&lt;/span&gt;&lt;br&gt;</span>
-</span><span class='line'>用户名：<span class="nt">&lt;span</span> <span class="na">class=</span><span class="s">&quot;name&quot;</span><span class="nt">&gt;&lt;/span&gt;&lt;br&gt;</span>
-</span><span class='line'>出生日期：<span class="nt">&lt;span</span> <span class="na">class=</span><span class="s">&quot;birthday&quot;</span><span class="nt">&gt;&lt;/span&gt;&lt;br&gt;</span>
-</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;关闭&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_close&quot;</span><span class="nt">/&gt;</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;scheduler&quot;</span>
+</span><span class='line'>    <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.SchedulerFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;autoStartup&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;value&gt;</span>true<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;warningTaskService&quot;</span> <span class="na">class=</span><span class="s">&quot;com.yourcompany.yourproject.service.impl.WarningTaskServiceImpl&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;myJobDetail&quot;</span>
+</span><span class='line'>    <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.JobDetailBean&quot;</span> <span class="na">scope=</span><span class="s">&quot;prototype&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;jobClass&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;value&gt;</span>com.yourcompany.yourproject.service.impl.MyJobDetail<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;删除的客户端代码已经在mian.html中提供，大家可以看到的。</p>
+
 </div>
   
   
@@ -869,7 +1525,7 @@
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2013/11/26/my-blog/">我的个人博客再次开放</a>
+        <a href="/blog/2013/11/26/my-blog/">我的独立博客再次开放</a>
       </li>
     
       <li class="post">

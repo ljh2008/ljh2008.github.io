@@ -9,7 +9,28 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;spring对持久层的事务管理采用的aop实现，在spring底层，aop是使用的代理模式实现的，代理模式在java中一般有jdk 动态代理以及cglib实现的更为高效的代理，jdk动态代理采用的是标准代理模式（大家可以看看标准代理模式的uml图），被代理对象必须要实现接口 &hellip;">
+  <meta name="description" content="&emsp;&emsp;nodejs的非阻塞，异步调用方式，给nodejs带来了非常好的性能，但这同时也给我们编程带来了复杂性，先来看来下面一个文件上传的代码： 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+//用户注册，可上传照片 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +79,172 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/07/29/nodejs-sync/">node.js中的同步</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-07-29T15:18:00+08:00" pubdate data-updated="true">2013年07月29日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;nodejs的非阻塞，异步调用方式，给nodejs带来了非常好的性能，但这同时也给我们编程带来了复杂性，先来看来下面一个文件上传的代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="c1">//用户注册，可上传照片</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">reg</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">files</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">files</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">dir</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;public&quot;</span><span class="p">,</span> <span class="s2">&quot;upload&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">filename</span> <span class="o">=</span> <span class="nx">uuid</span><span class="p">.</span><span class="nx">v4</span><span class="p">()</span><span class="o">+</span><span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">fs</span><span class="p">.</span><span class="nx">copy</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">path</span><span class="p">,</span> <span class="nx">dir</span> <span class="o">+</span> <span class="s1">&#39;\\&#39;</span> <span class="o">+</span> <span class="nx">filename</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;copy file success!&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/&#39;</span> <span class="o">+</span> <span class="nx">filename</span>  <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/default.jpeg&#39;</span>  <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这段代码，以我们传统的代码顺序执行思路来看，没有任何问题，但在nodejs中情况就不同了。请大家注意其中的fs.copy方法，文件的处理是在一个异步回调中完成的，因此，当我们给客户端发回响应的时候，fs.copy也许还没有执行完成，客户将看不到我们上传的文件。当然，这段代码改起来相对来说还是简单的，只需把res.render(&lsquo;reg/reg_success&rsquo;, { regName: req.body.uname,photo:&lsquo;upload/&rsquo; + filename  });这行代码，移到console.log(&ldquo;copy file success!&rdquo;);之前即可，但对于一些复杂的同步操作，就没有这么简单了。</p>
+
+<p>&emsp;&emsp;nodejs中也有很多同步的第三方插件，比如：step, async，seq我们先来看看seq插件的用法。</p>
+
+<p>&emsp;&emsp;先在package.json中添加对seq的依赖：&#8221;seq&#8221;:&ldquo;*&#8221;，cmd下转至项目目录并运行npm install安装seq。</p>
+
+<p>&emsp;&emsp;假设我有三个函数，f1,f2,f3,代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">function</span> <span class="nx">f1</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function1 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'><span class="p">}</span>  <span class="p">;</span>
+</span><span class='line'><span class="kd">function</span> <span class="nx">f2</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">fs</span><span class="p">.</span><span class="nx">readFile</span><span class="p">(</span><span class="nx">__filename</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">text</span><span class="p">){</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">text</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function2 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'><span class="p">}</span> <span class="p">;</span>
+</span><span class='line'><span class="kd">function</span> <span class="nx">f3</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function3 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'><span class="p">}</span> <span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果我的调用代码是：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">f1</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">f2</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">f3</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;出现的结果是，f3已经执行完成，但f2中的文件内容输出还没有完成，最终文件内容的打印，将会出现在最后，这可能和我们的预期不相同，采用seq后的写法如下，我们将对f2方法进行拆分：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">Seq</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;seq&#39;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">Seq</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">f1</span><span class="p">();</span><span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();})</span>
+</span><span class='line'>    <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">fs</span><span class="p">.</span><span class="nx">readFile</span><span class="p">(</span><span class="nx">__filename</span><span class="p">,</span><span class="k">this</span><span class="p">)})</span>
+</span><span class='line'>    <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">text</span><span class="p">){</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;111=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">text</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;111=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function2 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">}).</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">f3</span><span class="p">();</span><span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();})</span> <span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码中，f3的执行将会在文件内容全部打印输出后，这就是seq同步的一个简单规例。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1183,76 +1370,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/06/08/art-step/">雨.都市骤雨-步骤解析</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-06-08T15:18:00+08:00" pubdate data-updated="true">2013年06月08日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;这是描绘窗外雨系列油画作品中的一张，表现的是一种现代都市人的苦恼。</p>
-
-<p>&emsp;&emsp;根据画面构思，有城市，有灯火，有风雨，先画了几张小的构图，选择一张比较合理的。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/a1.jpg' width='' height='' title='构思草图'><span class='caption-text'>构思草图</span></span></p>
-
-<p>&emsp;&emsp;画色彩稿，确定大的色彩关系，以验证意境是否得以充分表达，这也是防止正式画作失败的一种预先尝试。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/a2.jpg' width='' height='' title='色彩稿第一步，开始打底搞'><span class='caption-text'>色彩稿第一步，开始打底搞</span></span></p>
-
-<p>&emsp;&emsp;我一般用水粉去画一张色彩稿，主要是简便，速度快。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/3.jpg' width='' height='' title='色彩稿着色完成，效果还不错，有花在流泪的感觉'><span class='caption-text'>色彩稿着色完成，效果还不错，有花在流泪的感觉</span></span></p>
-
-<p>&emsp;&emsp;开始在画布上，正式起稿，并画出大的关系色，边上放的就是色彩稿，随时找到整体感觉。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/4.jpg' width='' height='' title='正式画布上，铺大块的关系色'><span class='caption-text'>正式画布上，铺大块的关系色</span></span></p>
-
-<p>&emsp;&emsp;基本完成铺色，这个时候，可以调整大的明暗关系。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/5.jpg' width='' height='' title='基本完成铺色'><span class='caption-text'>基本完成铺色</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/6.jpg' width='' height='' title='画出树木在风中的摇摆'><span class='caption-text'>画出树木在风中的摇摆</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/7.jpg' width='' height='' title='让整体更有虚实感'><span class='caption-text'>让整体更有虚实感</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/8.jpg' width='' height='' title='添加玻璃上的雨水纹路'><span class='caption-text'>添加玻璃上的雨水纹路</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/9.jpg' width='' height='' title='完善细节，完成作品，在户外楼顶拍照一张'><span class='caption-text'>完善细节，完成作品，在户外楼顶拍照一张</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/10.jpg' width='' height='' title='继续完善后的作品'><span class='caption-text'>继续完善后的作品</span></span></p>
-
-<p>&emsp;&emsp;虽然这张作品最后已经签名，但我感觉还没有达到预期的效果，画面的某些部分，在将来的某一天会继续修改、添加（因为在平时的观察中这张画的过程中，又会有一些新的理解）。</p>
-
-<p>&emsp;&emsp;最终完成的作品，我将补充在这个教程中。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; 更多早期老文章</a>
@@ -1270,6 +1387,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/11/26/my-blog/">我的个人博客再次开放</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
       </li>
     
@@ -1283,10 +1404,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
   </ul>

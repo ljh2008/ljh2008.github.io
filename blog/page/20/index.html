@@ -9,8 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;首先说明，不是spring的问题，是程序员编程时要注意的问题，不要被标题误导了哈。
-spring通过aop机制为项目的事务管理带来了极大的方便，有了事务切面，我们的代码中再也看到commit、rollback之类的语句，我们要做的仅仅是在需要事务的地方声明事务的一些属性， &hellip;">
+  <meta name="description" content="&emsp;&emsp;今天下班回家，言娃娃妈拿出一个神秘的礼物让我猜是什么东西，搞得我一头雾水，心想也不是我生日啊，难道是一个什么重要日子？ 还没有打开的礼物 &emsp;&emsp;再三追问，言娃娃妈才说，不是快过父亲节了嘛，代表言娃娃提前给我买了个小礼物，拆开一看，非常的喜欢， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -59,6 +58,220 @@ spring通过aop机制为项目的事务管理带来了极大的方便，有了�
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/06/13/father-day/">父亲节的礼物</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-13T15:18:00+08:00" pubdate data-updated="true">2011年06月13日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;今天下班回家，言娃娃妈拿出一个神秘的礼物让我猜是什么东西，搞得我一头雾水，心想也不是我生日啊，难道是一个什么重要日子？</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/7.jpg' width='' height='' title='还没有打开的礼物'><span class='caption-text'>还没有打开的礼物</span></span></p>
+
+<p>&emsp;&emsp;再三追问，言娃娃妈才说，不是快过父亲节了嘛，代表言娃娃提前给我买了个小礼物，拆开一看，非常的喜欢，是一个电动剃须刀，philips的。我原来那个philips是2003年买的，前段时候开关不灵了了，每次用完都得手工取出电池，否则它会转个不停的。这个新剃须刀比我原先的要高级一些，旧的终于可以淘汰了，呵呵。言娃娃妈心好细哦，这东西买的及时、实用，心里头真的有些感动！</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/8.jpg' width='' height='' title='打开了，原来是个剃须刀'><span class='caption-text'>打开了，原来是个剃须刀</span></span></p>
+
+<p>&emsp;&emsp;不知不觉自己也做了父亲，也有了自己的首个父亲节日，呵呵。晚上又给言娃娃爷爷打了个电话，算是父亲节提交的问候吧。</p>
+
+<p>&emsp;&emsp;最后发张言娃娃的照片，走路越来越硬走了！我看过不了几天，就不需要大人牵着走了。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/9.jpg' width='' height='' title='快了，我马上就会走路了哈'><span class='caption-text'>快了，我马上就会走路了哈</span></span></p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/06/10/hibernate/">Hibernate中的“隐喻”</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-10T15:18:00+08:00" pubdate data-updated="true">2011年06月10日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;隐喻，百科上的解释是“隐喻是在彼类事物的暗示之下感知、体验、想象、理解、谈论此类事物的心理行为、语言行为和文化行为。”，隐喻一词用在计算机软件领域，意思是：我们想当然或我们认为是这样的，但实际的执行情况却大相径庭，直至错误出现才意识到问题严重性，下面我举两个实例来说明。</p>
+
+<p>&emsp;&emsp;第一个例子和<strong>hibernate继承映射（多态）</strong>有关，比如：我们的领域中有员工和客户两个对象，每个员工和客户都有自己的附件资料，是一对多双向关联关系。由于附件的大多数属性都相同，我们使用了泛化关系，即：员工附件、客户附件都是附件类的子类型，这种设计方式在项目中比较常见，领域模型见下图。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/4.jpg' width='' height='' title='hibernate继承映射领域关系实例'><span class='caption-text'>hibernate继承映射领域关系实例</span></span></p>
+
+<p>&emsp;&emsp;数据库物理模型如下图所示。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/5.jpg' width='' height='' title='hibernate继承映射物理模型'><span class='caption-text'>hibernate继承映射物理模型</span></span></p>
+
+<p>&emsp;&emsp;附件被设计成存储在一张表中，用f_accessor_type来标识不同的附件类型，而用fk_owner_id来标识这个附件的属主，可能是员工，也有可能是客户。</p>
+
+<p>&emsp;&emsp;下面来看hibernate的映射文件。</p>
+
+<p>&emsp;&emsp;附件类非常简单，按照多态映射很容易写好，xml文件如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">&quot;com.my.domain.ext.Accessory&quot;</span>
+</span><span class='line'>          <span class="na">table=</span><span class="s">&quot;t_accessory&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">unsaved-value=</span><span class="s">&quot;0&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">&quot;identity&quot;</span><span class="nt">&gt;&lt;/generator&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="nt">&lt;discriminator</span> <span class="na">column=</span><span class="s">&quot;f_accessory_type&quot;</span><span class="nt">&gt;&lt;/discriminator&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span> <span class="na">type=</span><span class="s">&quot;string&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>      <span class="cp">&lt;!- 其它普通属性配置略去---&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;subclass</span>
+</span><span class='line'>      <span class="na">name=</span><span class="s">&quot;com.my.domain.ext. Accessory4Employee&quot;</span>
+</span><span class='line'>      <span class="na">discriminator-value=</span><span class="s">&quot;1&quot;</span>
+</span><span class='line'>      <span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;otherProperty&quot;</span> <span class="na">column=</span><span class="s">&quot;f_otherColumn&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;many-to-one</span> <span class="na">name=</span><span class="s">&quot;Employee&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Employee&quot;</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/many-to-one&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/subclass&gt;</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="nt">&lt;subclass</span>
+</span><span class='line'>      <span class="na">name=</span><span class="s">&quot;com.my.domain.ext. Accessory4Customer&quot;</span>
+</span><span class='line'>      <span class="na">discriminator-value=</span><span class="s">&quot;2&quot;</span>
+</span><span class='line'>      <span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;otherProperty&quot;</span> <span class="na">column=</span><span class="s">&quot;f_otherColumn&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;many-to-one</span> <span class="na">name=</span><span class="s">&quot;customer&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Customer&quot;</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/many-to-one&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/subclass&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;/class&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;员工和客户的映射文件我只贴出一个，因为这两篇文件很相似，不再浪费篇幅。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">&quot;com.my.domain.ext.Employee&quot;</span>
+</span><span class='line'>          <span class="na">table=</span><span class="s">&quot;t_employee&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">unsaved-value=</span><span class="s">&quot;0&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">&quot;identity&quot;</span><span class="nt">&gt;&lt;/generator&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span> <span class="na">type=</span><span class="s">&quot;string&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;set</span> <span class="na">name=</span><span class="s">&quot;accessorys&quot;</span> <span class="na">table=</span><span class="s">&quot;t_accessory&quot;</span> <span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;key</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/key&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;one-to-many</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Accessory4Employee&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/set&gt;</span>    
+</span><span class='line'>  <span class="nt">&lt;/class&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;完成配置文件后，手工录入测试数据，添加了一个id为1的员工，又添加了一个id为1的客户，在附件表中分别给员工和客户添加附件，员工添加两条附件记录，客户也添加两条附件记录（你可以想像一下t_accessory中的数据情况，fk_owner_id全部为1，fk_accessory_type两条值为1，另两条值为2）。我们随即写出了下面的一段代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Employee</span> <span class="n">employee</span> <span class="o">=</span> <span class="o">(</span><span class="n">Employee</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Employee</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>     
+</span><span class='line'><span class="n">Set</span> <span class="n">accessorys</span> <span class="o">=</span> <span class="n">employee</span><span class="o">.</span><span class="na">getAccessorys</span><span class="o">(</span> <span class="o">);</span>  
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">accessorys</span><span class="o">.</span><span class="na">size</span><span class="o">());</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;没运行之前，我们先猜猜输出的结果是多少？我相信大多数人的回答是：2，因为id号为1的员工只有两个附件。而最终的结果是4，这和我们想的有很大差别，看来，很多事情不能想当然啊。
+查看sql就会发现，在取附件的时候，hibernate没有带上子类类型在表中的标识，即f_accessory_type并没有作为查询条件，导致查出了所有fk_owner_id 为1的附件，这里指定的具体子类类型竟然被hibernate忽略了。</p>
+
+<p>&emsp;&emsp;上面的这个案例发生在一个真实的项目中（不过为了说明问题，代码是我另写的一个演示），程序员一直在给我抱怨查出的数据条数不对，但有时又是正确的，我当时没有在意，让他们检查测试数据是否存在问题。后来项目要上线了，这块代码开始报子类类型转换出错，看来不解决这个问题肯定是不行的了，逐坐下来和其中一个程序员一起找问题原因所在，发现了这个hibernate中存在的“隐喻”。解决办法也很简单：在set集合的配置上加上where属性再次指定子类类型字段标志值，比如在employee映射文件的set上加上 where = “f_accessory_type=1”，问题终于解决了（其实也可以通过更改Customer、Employee的OID生成方式为uuid解决本问题）。</p>
+
+<p>&emsp;&emsp;第二个例子和<strong>hibernate的hql查询</strong>有关。比如Customer和Order是一对多双向关联，关系图如下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/6.jpg' width='' height='' title='客户与订单领域关系图'><span class='caption-text'>客户与订单领域关系图</span></span></p>
+
+<p>&emsp;&emsp;客户中包含订单的集合，而该集合默认情况下是lazy的，但有时为了提高性能，我们想用一条sql加载用户及其订单，我们可以写出下面的HQL。</p>
+
+<p>&emsp;&emsp;<em>from Customer c left join fetch c.orders o;</em></p>
+
+<p>&emsp;&emsp;但这条HQL得到了客户List集合中，却有很多重复的用户对象，又和我们的想法不太一样，我们只是想加载客户时初始化客户的订单集合，实际上我们得到了一些重复客户对象集合。</p>
+
+<p>&emsp;&emsp;正确的HQL应该这么写：<em>select distinct( c ) from Customer c left join fetch c.orders o</em>，这条HQL会得到唯一的客户集合（我见有人写过用Set来过滤List集合重复元素的代码，其实没有这个必要）。</p>
+
+<p>&emsp;&emsp;补充一点HQL的东西，很多人是写不出来这条HQL的：查询订了iphone订单的客户集合，HQL可以这么写：<em>select distinct( c ) from Customer c left join fetch c.orders o where o.name = ‘iphone’</em>，你不要老是想着orders是集合而觉不能用o.name这样的条件哦，呵呵。这种查询同样适用于多对多中集合条件的查询。</p>
+
+<p>&emsp;&emsp;记得Ruby on rails中曾经提到一个“惯例重于配置”的原则，也就是说很多规则不用配置，会按我们的惯例进行处理，但很多时候，恰恰是我们认为惯例是这样的，而实际上却是另外的“一番景象”。</p>
+
+<p>&emsp;&emsp;“实践是检验真理的惟一标准”，软件开发人员也应牢记这一点！</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -778,673 +991,6 @@ spring通过aop机制为项目的事务管理带来了极大的方便，有了�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/06/07/json/">B/S系统中json操作必读</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-06-07T15:18:00+08:00" pubdate data-updated="true">2011年06月07日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;json做为服务器端与浏览器端通讯常用的一种格式，得到了广泛的应用。很早以前我就想把json的操作总结一下，今天终于写完了，算是一篇json操作必读的博文吧。json操作要考虑下面的一些问题：</p>
-
-<ul>
-<li>如何将普通对象打包成json字符串问题。</li>
-<li>如何解决特殊对象打包成字符中格式问题，比如：Date类型。</li>
-<li>如何解决对象循环引用（死循环会导致转换失败）问题。</li>
-<li>如何忽略不需要的属性问题。</li>
-<li>如何解决客户端json格式解析问题。</li>
-<li>如何解决跨域调用问题（这个做网站的时候会遇到）。</li>
-<li>如何解决由json字符串反序列化生成对象问题（这个不常用）。</li>
-</ul>
-
-
-<p>&emsp;&emsp;首先要明确的是，json这符串不要手工去拼接，因为已经有很开源工具类可以帮助我们做这个事情（我见过有人手工去拼的哦，有些吃力不讨好哈）。</p>
-
-<p>&emsp;&emsp;<strong>一、在几种开源框架中处理json对象</strong></p>
-
-<p>&emsp;&emsp;<strong>A、json lib中对json操作的实现</strong></p>
-
-<p>&emsp;&emsp;把json-lib-2.2.1-jdk15.jar（还依赖ezmorph-1.0.4.jar）添加到项目路径中，运行下面的代码实例：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">List</span> <span class="n">students</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">();</span>
-</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
-</span><span class='line'>  <span class="n">student</span><span class="o">.</span><span class="na">setBirthday</span><span class="o">(</span><span class="k">new</span> <span class="n">Date</span><span class="o">());</span>
-</span><span class='line'>  <span class="n">student</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;yanwawa&quot;</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">student</span><span class="o">.</span><span class="na">setPassword</span><span class="o">(</span><span class="s">&quot;111&quot;</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">students</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">students</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">JsonConfig</span> <span class="n">jc</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JsonConfig</span><span class="o">();</span>
-</span><span class='line'>  <span class="n">jc</span><span class="o">.</span><span class="na">registerJsonValueProcessor</span><span class="o">(</span><span class="n">Date</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="k">new</span> <span class="n">JsonValueProcessor</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>      <span class="nd">@Override</span>
-</span><span class='line'>      <span class="kd">public</span> <span class="n">Object</span> <span class="nf">processObjectValue</span><span class="o">(</span><span class="n">String</span> <span class="n">str</span><span class="o">,</span> <span class="n">Object</span> <span class="n">obj</span><span class="o">,</span>
-</span><span class='line'>              <span class="n">JsonConfig</span> <span class="n">jcf</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">SimpleDateFormat</span> <span class="n">sf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">);</span>
-</span><span class='line'>          <span class="k">return</span> <span class="n">sf</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="n">obj</span><span class="o">);</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="nd">@Override</span>
-</span><span class='line'>      <span class="kd">public</span> <span class="n">Object</span> <span class="nf">processArrayValue</span><span class="o">(</span><span class="n">Object</span> <span class="n">obj</span><span class="o">,</span> <span class="n">JsonConfig</span> <span class="n">jcf</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>  <span class="o">});</span>
-</span><span class='line'>  <span class="n">jc</span><span class="o">.</span><span class="na">setExcludes</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">[]</span> <span class="o">{</span> <span class="s">&quot;id&quot;</span> <span class="o">});</span>
-</span><span class='line'>  <span class="n">JSONObject</span> <span class="n">jo</span> <span class="o">=</span> <span class="n">JSONObject</span><span class="o">.</span><span class="na">fromObject</span><span class="o">(</span><span class="n">student</span><span class="o">,</span> <span class="n">jc</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">jo</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-</span><span class='line'>  <span class="n">JSONArray</span> <span class="n">ja</span> <span class="o">=</span> <span class="n">JSONArray</span><span class="o">.</span><span class="na">fromObject</span><span class="o">(</span><span class="n">students</span><span class="o">,</span> <span class="n">jc</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">ja</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的代码中，JsonConfig是关键，我们通过registerJsonValueProcessor方法可以定义复杂对象的转换格式（比如日期类型格式），而通过setExcludes可以排不需要的属性，这样就可以打破循环引用的问题。通过JSONObject和JSONArray的fromObject静态方法可以完成对普通对象以及集合对象的转换。最后通过JSONObject和JSONArray的toString方法即可看到需要的结果了。</p>
-
-<p>&emsp;&emsp;<strong>B、 gson中的操作实现。</strong></p>
-
-<p>&emsp;&emsp;google的一个开源json解析包，具有更高的效率，并且反序列化这块做得很不错。项目需要将gson-1.4.jar包导入项目中，下面的是转换方法中核心代码节选。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> * gson操作示例</span>
-</span><span class='line'><span class="cm"> * @author yanwawa</span>
-</span><span class='line'><span class="cm"> * datePattern 、exclusionAttr[]变量由方法传入</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="n">GsonBuilder</span> <span class="n">gsonBuilder</span> <span class="o">=</span> <span class="k">new</span> <span class="n">GsonBuilder</span><span class="o">().</span><span class="na">setDateFormat</span><span class="o">(</span><span class="n">datePattern</span><span class="o">);</span>
-</span><span class='line'><span class="n">gsonBuilder</span><span class="o">.</span><span class="na">setExclusionStrategies</span><span class="o">(</span><span class="k">new</span> <span class="n">ExclusionStrategy</span><span class="o">(){</span>
-</span><span class='line'>          <span class="c1">//所有类均json解析</span>
-</span><span class='line'>          <span class="nd">@Override</span>
-</span><span class='line'>          <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">shouldSkipClass</span><span class="o">(</span><span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>              <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>          <span class="c1">//对属性进行排除</span>
-</span><span class='line'>          <span class="nd">@Override</span>
-</span><span class='line'>          <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">shouldSkipField</span><span class="o">(</span><span class="n">FieldAttributes</span> <span class="n">fa</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>              <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">exclusionAttr</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="k">if</span> <span class="o">(</span><span class="n">fa</span><span class="o">.</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="n">exclusionAttr</span><span class="o">[</span><span class="n">i</span><span class="o">])){</span>
-</span><span class='line'>                      <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>                  <span class="o">}</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>              <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>      <span class="o">});</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">gsonBuilder</span><span class="o">.</span><span class="na">create</span><span class="o">().</span><span class="na">toJson</span><span class="o">(</span><span class="n">obj</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的代码中通过GsonBuilder的setDateFormat方法设计日期类型的格式。通过setExclusionStrategies排除某些类类型或属性的json解析。最后通过toJson方法返回json对象，toString方法得到了就是json字符串了。</p>
-
-<p>&emsp;&emsp;<strong>C、 struts2中的json操作实现</strong></p>
-
-<p>&emsp;&emsp;在struts2中的操作将特别的简单，首先要用到org.apache.struts2.json.annotations.JSON注解，在需要返回的对象属性get方法前添加注解，即可指定最终序列化的结果，比如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@JSON</span><span class="o">(</span><span class="n">serialize</span><span class="o">=</span><span class="kc">false</span><span class="o">)</span> <span class="c1">//此字段将排除</span>
-</span><span class='line'><span class="nd">@JSON</span><span class="o">(</span><span class="n">format</span><span class="o">=</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">)</span> <span class="c1">//此日期类型的json字符串格式</span>
-</span><span class='line'><span class="nd">@JSON</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;myNewPropertyName&quot;</span><span class="o">)</span> <span class="c1">//想改变生成的json字符串的的属性名</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;有了上面的注解，已经可以满足我们的需要了（最近越来越钟情于注解了，哪天要专门写一篇博文来比较注解和xml元数据类型配置的优劣比较）。</p>
-
-<p>&emsp;&emsp;<strong>二、如何向客户端返回json响应</strong></p>
-
-<p>&emsp;&emsp;下面我们来看看客户端如何得到json响应。</p>
-
-<p>&emsp;&emsp;在struts1或普通的servlet中，可以取得response对象，从该对象中得到输出流，然后将json字符串打印出去，参考代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="err">“</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="err">″</span><span class="o">);</span>
-</span><span class='line'><span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">print</span><span class="o">(</span><span class="n">ja</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果需要返回跳转视图结果对象，我们一般返回null。</p>
-
-<p>&emsp;&emsp;在struts2中的json响应返回，相对来说就简单得多了，演示代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">JsonAction</span> <span class="kd">extends</span> <span class="n">ActionSupport</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="n">List</span><span class="o">&lt;</span><span class="n">Student</span><span class="o">&gt;</span> <span class="n">students</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">Student</span><span class="o">&gt;();</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">execute</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
-</span><span class='line'>      <span class="c1">//student的属性设置代码略去</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="n">Student</span> <span class="n">student2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
-</span><span class='line'>      <span class="c1">//student2的属性设置代码略去</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="n">students</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
-</span><span class='line'>      <span class="n">students</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">student2</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="k">return</span> <span class="n">SUCCESS</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;这里面似乎没有特别的，直接返回String的跳转，来看看stuts2文件是如何配置的：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'> <span class="nt">&lt;package</span> <span class="na">name=</span><span class="s">&quot;myjson&quot;</span> <span class="na">extends=</span><span class="s">&quot;json-default&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;action</span> <span class="na">name=</span><span class="s">&quot;jsonAction&quot;</span> <span class="na">class=</span><span class="s">&quot;jsonActionRefInSpringContext&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;result</span> <span class="na">type=</span><span class="s">&quot;json&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;param</span> <span class="na">name=</span><span class="s">&quot;root&quot;</span><span class="nt">&gt;</span>students<span class="nt">&lt;/param&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;/result&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/action&gt;</span>
-</span><span class='line'><span class="nt">&lt;/package&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的配置中，要注意的是，包要继承息json-default。root指定以action中的students为json字符串根节点输入（默认情况下是以当前action为根节点的）。</p>
-
-<p>&emsp;&emsp;<strong>三、客户端对json的解析</strong></p>
-
-<p>&emsp;&emsp;A、在纯js环境中，要用到eval函数对json字符串进行一次处理，之后就可以像操作对象一样操作json返回结果了，示例代码如下：
-var students = eval(jsonResopnseStr);
-alert(student[0].name);</p>
-
-<p>&emsp;&emsp;B、在jQuery中，操作将更为简单，你可以通过指定dataType属性来告诉jQuery服务器上预期返回的数据格式，也可以通过jQuery封闭的几个便捷方法来处理，比如：getJSON(url,callback)，下面给出一段解析示例代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#showDataHref&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span>
-</span><span class='line'>      <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>          <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">(</span> <span class="p">{</span>
-</span><span class='line'>              <span class="nx">url</span> <span class="o">:</span> <span class="s2">&quot;json.action&quot;</span><span class="p">,</span>
-</span><span class='line'>              <span class="nx">dataType</span> <span class="o">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span class='line'>              <span class="nx">success</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                  <span class="kd">var</span> <span class="nx">options</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
-</span><span class='line'>                  <span class="nx">$</span><span class="p">(</span><span class="nx">data</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span>
-</span><span class='line'>                          <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>                              <span class="nx">options</span> <span class="o">=</span> <span class="nx">options</span>
-</span><span class='line'>                                      <span class="o">+</span> <span class="s2">&quot;&lt;option&gt;_&quot;</span>
-</span><span class='line'>                                      <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span>
-</span><span class='line'>                                      <span class="o">+</span> <span class="s2">&quot;&lt;/option&gt;&quot;</span><span class="p">;</span>
-</span><span class='line'>                          <span class="p">});</span>
-</span><span class='line'>                  <span class="nx">$</span><span class="p">(</span><span class="nx">options</span><span class="p">).</span><span class="nx">appendTo</span><span class="p">(</span><span class="s2">&quot;#myselect&quot;</span><span class="p">);</span>
-</span><span class='line'>              <span class="p">}</span>
-</span><span class='line'>          <span class="p">});</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>四、关于json跨域调用问题</strong></p>
-
-<p>&emsp;&emsp;最后来看看跨域调用。跨域调用不仅仅存在于js中，也存在于flsh、flex项目中，简单地说，主要指的是一个网站上取下来的js，swf等文件在本地执行时，不可以访问本域名之外的域名地址上的资源。</p>
-
-<p>&emsp;&emsp;比如domainB网址上有下面一段代码，它要调用domainA上的登录验证代码，请看下面这段在jquery中的跨域调用代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">.</span><span class="nx">getJSON</span><span class="p">(</span><span class="s2">&quot;http://domainA.com/login.do?callback=?&quot;</span><span class="p">,</span>
-</span><span class='line'>                  <span class="p">{</span><span class="nx">email</span><span class="o">:</span><span class="nx">email</span><span class="p">,</span><span class="nx">password</span><span class="o">:</span><span class="nx">pw</span><span class="p">,</span><span class="nx">m</span><span class="o">:</span><span class="s1">&#39;ajaxLogin&#39;</span><span class="p">,</span><span class="nx">crossDomain</span><span class="o">:</span><span class="kc">true</span><span class="p">},</span>
-</span><span class='line'>                  <span class="kd">function</span><span class="p">(</span><span class="nx">json</span><span class="p">){</span>
-</span><span class='line'>                  <span class="k">if</span> <span class="p">(</span><span class="nx">json</span><span class="p">.</span><span class="nx">flag</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                         <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#dialog&#39;</span><span class="p">).</span><span class="nx">dialog</span><span class="p">(</span><span class="s1">&#39;close&#39;</span><span class="p">);</span>
-</span><span class='line'>                         <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="s2">&quot;http://domainB.com/index.htm&quot;</span>
-</span><span class='line'>                     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                       <span class="c1">//进行错误信息的提示，代码略去</span>
-</span><span class='line'>                     <span class="p">}</span>
-</span><span class='line'>                  <span class="p">}</span>
-</span><span class='line'>          <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;服务器端action中的主要代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>  <span class="c1">//是否跨域调用</span>
-</span><span class='line'>        <span class="kt">boolean</span> <span class="n">isCrossDomain</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
-</span><span class='line'>        <span class="n">String</span> <span class="n">crossDomain</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">&quot;crossDomain&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="s">&quot;true&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">crossDomain</span><span class="o">))</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">isCrossDomain</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>            <span class="n">callBackFun</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">&quot;callback&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="n">JSONObject</span> <span class="n">joResp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JSONObject</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">joResp</span><span class="o">.</span><span class="na">element</span><span class="o">(</span><span class="s">&quot;flag&quot;</span><span class="o">,</span> <span class="n">loginSuccessFlag</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">joResp</span><span class="o">.</span><span class="na">element</span><span class="o">(</span><span class="s">&quot;msg&quot;</span><span class="o">,</span> <span class="n">loginMsg</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">isCrossDomain</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="c1">//跨域调用（注意这里的返回格式）</span>
-</span><span class='line'>            <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">println</span><span class="o">(</span><span class="n">callBackFun</span><span class="o">+</span><span class="s">&quot;(&quot;</span><span class="o">+</span> <span class="n">joResp</span><span class="o">.</span><span class="na">toString</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span><span class="o">);</span>
-</span><span class='line'>         <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>             <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">println</span><span class="o">(</span><span class="n">joResp</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-</span><span class='line'>         <span class="o">}</span>
-</span><span class='line'>         <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;其中callBackFun由jQuery自动生成（请注意<a href="#">http:/domainA.com/login.do?callback=?</a>路径），每次可能都不一样，这就是jQuery中的jsonp的跨域调用，在调用其它第三方网站的api接口将非常有用。当然，在flex(flsh)中，需要在第三方网站上加入crossdomain.xml跨域文件方可实现，你可以了解一下flex中的安全沙箱原理。</p>
-
-<p>&emsp;&emsp;spring mvc中的json操作随后补上。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/06/06/spring-mvc2/">都spring Mvc了（二）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-06-06T15:18:00+08:00" pubdate data-updated="true">2011年06月06日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;任何软件系统的开发，都必须考虑输入数据的有效性问题，即要保证非法的数据不被系统接收，又要有较好的用户操作体验。B/S系统的开发更是如此，数据的验证至少都要建立起：客户端和服务器端两道防线。建立客户端验证机制是为了加快验证速度，提高用户交互效率，而服务器端验证将是数据必经之路，这道关卡是必不可少的。</p>
-
-<p>&emsp;&emsp;B/S系统中的表现层框架中，struts2是一个即能自动生成客户端，又能生成服务器端数据验证代码的框架，这点非常可贵，但是必须要引用struts2的自定标记库。struts1和struts2的验证，都是通过在xml文件中配置formbean的中每一个字段的验证规则以及出错提示消息，结合相应的标记库，可以显示服务器端的验证结果，并且通过标记库，可以保留（回填）用户之前输入的数据。</p>
-
-<p>&emsp;&emsp;因此，我们在开发中要考虑三个问题，一是页面上哪些输入元素用什么样的验证规则，二是出错后如何在页面上显示出错信息，三是用户之前输入的数据回填（避免用户重新再输入）。</p>
-
-<p>&emsp;&emsp;我之前在一些小项目中都是不主张引入验证框架的，输入表单不算太复杂，由程序员手工if esle 做验证，并将验证信息放入request中。但对于大、中型项目，这种做法显然并不规范。我们用DTO(VO)接收页面表单数据，之后根据配置的验证规则对表单数据进行验证，如果满足验证规则执行后面的业务处理，否则回填数据，并向用户报告未通过验证的原因。</p>
-
-<p>&emsp;&emsp;下面我们一起来看看spring mvc中是如何做的。spring mvc通过JSR 303规范对java bean字段验证定义，通过注解配置来实现对数据的合法性验证。JSR 303目前有jboss和hibernate的两个实现，我们在这里采用hibernate的实现。</p>
-
-<p>&emsp;&emsp;先要在项目中导入validation-api-1.0.0.GA.jar和hibernate-validator-4.1.0.Final.jar两个包，之后就在DTO(VO)中对需要验证的字段进行配置了（如果页面字段内容和领域模型中的POJO字段一致，可以不必定义新的DTO(VO)对象，直接使用POJO即可），示例代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Student</span> <span class="kd">implements</span> <span class="n">Serializable</span> <span class="o">{</span>
-</span><span class='line'>  <span class="c1">//姓名</span>
-</span><span class='line'>  <span class="nd">@NotEmpty</span><span class="o">(</span><span class="n">message</span><span class="o">=</span><span class="s">&quot;姓名不可以为空！&quot;</span><span class="o">)</span>
-</span><span class='line'>  <span class="nd">@Length</span><span class="o">(</span><span class="n">min</span><span class="o">=</span><span class="mi">2</span><span class="o">,</span><span class="n">max</span><span class="o">=</span><span class="mi">5</span><span class="o">)</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>  <span class="c1">//出生日期</span>
-</span><span class='line'>  <span class="nd">@Past</span><span class="o">(</span><span class="n">message</span><span class="o">=</span><span class="s">&quot;生日输入不正确，请核对！&quot;</span><span class="o">)</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;先来看上面代码中的name字段，我们用了@NotEmpty注解，标明此字段不能为空，如果为空将显示由message指定的消息，如果想指定资源文件中的消息key，可以用NotEmpty.modelname.fieldname指定，modelname是DTO对象在spring mvc作用域中的名称，fieldname是字段属性名。</p>
-
-<p>&emsp;&emsp;@Length指定该字段的长度区间，在这里我没有指定默认消息，系统将使用内置的默认消息（英文的），当然你可以在资源文件中指定消息key，比如，在资源文件中定义：Length.student.name = 用户的姓名长度必须在 2 到 5之间!。</p>
-
-<p>&emsp;&emsp;@Past注解标明该日期必须在今天以后。
-更多更复杂的验证规则配置，大家可参考下面表格的描述（转自hiberante validator官网）：</p>
-
-<table>
-<thead>
-<tr>
-<th align="center">Annotation</th>
-<th align="center"> Part of Bean Validation Specification</th>
-<th align="left"> Apply on</th>
-<th align="left"> Use</th>
-<th align="center"> Hibernate Metadata impact</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center">@AssertFalse</td>
-<td align="center"> yes</td>
-<td align="left"> field/property</td>
-<td align="left"> check that the annotated element is false.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">@AssertTrue</td>
-<td align="center"> yes</td>
-<td align="left"> field/property</td>
-<td align="left"> check that the annotated element is true.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">@DecimalMax</td>
-<td align="center"> yes</td>
-<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
-<td align="left"> The annotated element must be a number whose value must be lower or equal to the specified maximum. The parameter value is the string representation of the max value according to the BigDecimal string representation.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">@DecimalMin</td>
-<td align="center"> yes</td>
-<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
-<td align="left"> The annotated element must be a number whose value must be higher or equal to the specified minimum. The parameter value is the string representation of the min value according to the BigDecimal string representation.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">&ldquo;@Digits(integer=, fraction=)&rdquo;</td>
-<td align="center"> yes</td>
-<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
-<td align="left"> Check whether the property is a number having up to integer digits and fraction fractional digits.</td>
-<td align="center"> Define column precision and scale.</td>
-</tr>
-<tr>
-<td align="center">@Email</td>
-<td align="center"> no</td>
-<td align="left"> field/property. Needs to be a string.</td>
-<td align="left"> Check whether the specified string is a valid email address.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">@Future</td>
-<td align="center"> yes</td>
-<td align="left"> field/property. Supported types are java.util.Date and java.util.Calendar.</td>
-<td align="left"> Checks whether the annotated date is in the future.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">&ldquo;@Length(min=, max=)&rdquo;</td>
-<td align="center"> no</td>
-<td align="left"> field/property. Needs to be a string.</td>
-<td align="left"> Validate that the annotated string is between min and max included.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">@Max</td>
-<td align="center"> yes</td>
-<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
-<td align="left"> Checks whether the annotated value is less than or equal to the specified maximum.</td>
-<td align="center"> Add a check constraint on the column.</td>
-</tr>
-<tr>
-<td align="center">@Min</td>
-<td align="center"> yes</td>
-<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
-<td align="left"> Check whether the annotated value is higher than or equal to the specified minimum.</td>
-<td align="center"> Add a check constraint on the column.</td>
-</tr>
-<tr>
-<td align="center">@NotNull</td>
-<td align="center"> yes</td>
-<td align="left"> field/property</td>
-<td align="left"> Check that the annotated value is not null.</td>
-<td align="center"> Column(s) are not null.</td>
-</tr>
-<tr>
-<td align="center">@NotEmpty</td>
-<td align="center"> no</td>
-<td align="left"> field/property. Needs to be a string.</td>
-<td align="left"> Check if the string is not null nor empty.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">@Null</td>
-<td align="center"> yes</td>
-<td align="left"> field/property</td>
-<td align="left"> Check that the annotated value is null.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">@Past</td>
-<td align="center"> yes</td>
-<td align="left"> field/property. Supported types are java.util.Date and java.util.Calendar.</td>
-<td align="left"> Checks whether the annotated date is in the past.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">&ldquo;@Pattern(regex=, flag=)&rdquo;</td>
-<td align="center"> yes</td>
-<td align="left"> field/property. Needs to be a string.</td>
-<td align="left"> Check if the annotated string match the regular expression regex.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">&ldquo;@Range(min=, max=)&rdquo;</td>
-<td align="center"> no</td>
-<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
-<td align="left"> Check whether the annotated value lies between (inclusive) the specified minimum and maximum.</td>
-<td align="center"> none</td>
-</tr>
-<tr>
-<td align="center">&ldquo;@Size(min=, max=)&rdquo;</td>
-<td align="center"> yes</td>
-<td align="left"> &ldquo;field/property. Supported types are String, Collection, Map and arrays.&rdquo;</td>
-<td align="left"> Check if the annotated element size is between min and max (inclusive).</td>
-<td align="center"> Column length will be set to max.</td>
-</tr>
-<tr>
-<td align="center">@Valid</td>
-<td align="center"> yes</td>
-<td align="left"> field/property</td>
-<td align="left"> Perform validation recursively on the associated object.</td>
-<td align="center"> none</td>
-</tr>
-</tbody>
-</table>
-
-
-<p>&emsp;&emsp;再来看看action中新增学生的代码中，是如何进行数据验证的：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> * 添加学生信息</span>
-</span><span class='line'><span class="cm"> * @return String</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">params</span><span class="o">=</span><span class="s">&quot;add&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">addStudent</span><span class="o">(</span><span class="n">ModelMap</span> <span class="n">model</span><span class="o">,</span>
-</span><span class='line'>      <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;pno&quot;</span><span class="o">,</span><span class="n">defaultValue</span><span class="o">=</span><span class="s">&quot;1&quot;</span><span class="o">)</span><span class="kt">int</span> <span class="n">pno</span><span class="o">,</span>
-</span><span class='line'>      <span class="nd">@ModelAttribute</span><span class="o">(</span><span class="s">&quot;student&quot;</span><span class="o">)</span> <span class="nd">@Valid</span> <span class="n">Student</span> <span class="n">stu</span><span class="o">,</span>
-</span><span class='line'>      <span class="n">BindingResult</span> <span class="n">result</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">result</span><span class="o">.</span><span class="na">hasErrors</span><span class="o">())</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;add_student&quot;</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
-</span><span class='line'>  <span class="c1">//将页面属性拷贝到student中</span>
-</span><span class='line'>  <span class="n">BeanUtils</span><span class="o">.</span><span class="na">copyProperties</span><span class="o">(</span><span class="n">stu</span><span class="o">,</span> <span class="n">student</span><span class="o">,</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{});</span>
-</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>      <span class="n">studentService</span><span class="o">.</span><span class="na">addStudent</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
-</span><span class='line'>  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="n">model</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
-</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;error&quot;</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="k">return</span> <span class="s">&quot;redirect:student.action?page&amp;pno=&quot;</span> <span class="o">+</span> <span class="n">pno</span><span class="o">;</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的代码@ModelAttribute(“student”) @Valid Student stu中，我们用@Valid注解标明，页面传入的 Student stu必须要验证，规则当然是我们前面用注解定义过的了。
-如果验证没有通过，我们怎么能够知道呢？BindingResult result，看到这个参数了么，这个里面有验证是否通过的信息，我们用result.hasErrors()就可以知道验证是否通过，如果没有通过，则转到出错的页面。</p>
-
-<p>&emsp;&emsp;最后一个问题，页面中如果显示这个错误信息呢？需要引入&lt;%@ taglib uri=&ldquo;/WEB-INF/spring-form.tld&rdquo; prefix=&ldquo;form&rdquo; %>标记库，这个是spring mvc定义的。比如对姓名的错误显示，我们通过</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form:errors</span> <span class="na">path=</span><span class="s">&quot;student.name&quot;</span><span class="nt">/&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;就可以显示这个字段的验证出错信息了。</p>
-
-<p>&emsp;&emsp;有人说，引入spring mvc的标签库，似乎在jsp中产生了和spring mvc的耦合。确实如此，天下没有免费的午餐，你想想，其它的mvc验证框架，不是也要引入相应的视图标签库么。spring mvc将org.springframework.validation.BindingResult.modelAttributeName名作为key保存出错的信息，本例中用org.springframework.validation.BindingResult.student为key保存了一个org.springframework.validation.BeanPropertyBindingResult的错误对象，如果用EL表达式来取出错的信息，还真取不出来。</p>
-
-<p>&emsp;&emsp;数据的回填问题非常简单，直接访问作用域中的modelAttributeName的对象就可以了，本例中是studnet，姓名的页面元素，就可以写成：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">value=</span><span class="s">&quot;${student.name}&quot;</span><span class="nt">/&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;好了，就这么多，这就是spring mvc，够简单，够强大的吧。如果你还有什么问题，请给我留言。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/21/">&larr; 更多早期老文章</a>
@@ -1462,6 +1008,10 @@ alert(student[0].name);</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/11/26/my-blog/">我的个人博客再次开放</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
       </li>
     
@@ -1475,10 +1025,6 @@ alert(student[0].name);</p>
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
   </ul>

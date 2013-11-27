@@ -9,7 +9,52 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;此画为临摹印象派大帅梵高的作品《星空》，也是我非常喜欢的一幅作品，作品是抽象的，但极具形式美感，画中的小村庄，浸润在洁白的月光，教堂、房屋&hellip;..，一切都很安静，而左边高大的树木似乎又有风在吹动，一切都是那么的美好。 &emsp;&emsp; &hellip;">
+  <meta name="description" content="&emsp;&emsp;直接看代码。 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +103,225 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/08/21/cglib/">Cglib动态代理演示代码</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-08-21T15:18:00+08:00" pubdate data-updated="true">2012年08月21日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;直接看代码。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Test</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * @param args</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//        HashMap propertyMap = new HashMap();  </span>
+</span><span class='line'><span class="c1">//        propertyMap.put(&quot;MAX_COUNT&quot;, Class.forName(&quot;java.lang.String&quot;));</span>
+</span><span class='line'>        <span class="c1">// TODO Auto-generated method stub</span>
+</span><span class='line'>        <span class="n">Enhancer</span> <span class="n">eh</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Enhancer</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setSuperclass</span><span class="o">(</span><span class="n">MyService</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//eh.setCallback(new MyInterceptor());</span>
+</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setCallbacks</span><span class="o">(</span><span class="k">new</span> <span class="n">Callback</span><span class="o">[]{</span><span class="k">new</span> <span class="n">MyInterceptor</span><span class="o">(),</span> <span class="n">NoOp</span><span class="o">.</span><span class="na">INSTANCE</span><span class="o">});</span>
+</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setCallbackFilter</span><span class="o">(</span><span class="k">new</span> <span class="n">MyCallbackFilter</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">eh</span><span class="o">.</span><span class="na">setInterfaces</span><span class="o">(</span><span class="k">new</span> <span class="n">Class</span><span class="o">[]{</span><span class="n">Set</span><span class="o">.</span><span class="na">class</span><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">MyService</span> <span class="n">ms</span> <span class="o">=</span> <span class="o">(</span><span class="n">MyService</span><span class="o">)</span><span class="n">eh</span><span class="o">.</span><span class="na">create</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ms</span><span class="o">.</span><span class="na">addUser</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">ms</span><span class="o">.</span><span class="na">queryUser</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Set</span> <span class="n">s</span> <span class="o">=</span> <span class="o">(</span><span class="n">Set</span><span class="o">)</span><span class="n">ms</span><span class="o">;</span>
+</span><span class='line'><span class="c1">//        System.out.println(s.getClass());</span>
+</span><span class='line'><span class="c1">//        s.size();</span>
+</span><span class='line'><span class="c1">//        System.out.println(s.size());</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//System.out.println(ms.getClass());</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">class</span> <span class="nc">MyInterceptor</span> <span class="kd">implements</span> <span class="n">MethodInterceptor</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">intercept</span><span class="o">(</span><span class="n">Object</span> <span class="n">object</span><span class="o">,</span> <span class="n">Method</span> <span class="n">method</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">MethodProxy</span> <span class="n">methodProxy</span> <span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;before runing..&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">methodProxy</span><span class="o">.</span><span class="na">invokeSuper</span><span class="o">(</span><span class="n">object</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;end runing....&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">class</span> <span class="nc">MyCallbackFilter</span> <span class="kd">implements</span> <span class="n">CallbackFilter</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">int</span> <span class="nf">accept</span><span class="o">(</span><span class="n">Method</span> <span class="n">method</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">// TODO Auto-generated method stub</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="s">&quot;queryUser&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()))</span> <span class="o">{</span>
+</span><span class='line'>            <span class="c1">//第二个Interceptor，在此例中将不执行操作</span>
+</span><span class='line'>            <span class="k">return</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/08/10/art4/">习作- 眼前突然闪现的风景</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-08-10T15:18:00+08:00" pubdate data-updated="true">2012年08月10日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;水粉作品，《眼前突然闪现的风景》。</p>
+
+<p>&emsp;&emsp;也许，一个人坐在火车上，静静地看着窗外的一切，突然，画面中的一切扑面而来，内心充满了喜悦、惊奇&hellip;&hellip;</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/08/art4.jpg' width='' height='' title='突然闪现的风景-纸本设色'><span class='caption-text'>突然闪现的风景-纸本设色</span></span></p>
+
+<p>&emsp;&emsp;阳光穿过树梢，瞬间，让人张不开眼睛，列车没有停下，仍旧漠然向前&hellip;&hellip;</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -210,135 +474,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/08/01/art1/">习作-成都锦里</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-08-01T15:18:00+08:00" pubdate data-updated="true">2012年08月01日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;锦里，成都非常出名的一条街道，也是外地游客来成都必玩之地。</p>
-
-<p>&emsp;&emsp;老街、宅邸、府第、民居、客栈、商铺座落分布，青瓦错落有致，青石板路蜿蜒前行，让人恍若时空倒流，在古色中流连忘返。</p>
-
-<p>&emsp;&emsp;高挂着丝绸灯笼的栈，似乎在静静地等等着什么&hellip;&hellip;</p>
-
-<p>&emsp;&emsp;此画为纸本水粉习作，意在表现锦里的古朴建筑。</p>
-
-<p>&emsp;&emsp;泛黄的古代人物，与身着艳丽时常服装的现代人，形成时空上的冲撞，他们似乎要交流，但又无可奈何。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/08/art1.jpg' width='' height='' title='锦里-纸本设色'><span class='caption-text'>锦里-纸本设色</span></span></p>
-
-<p>&emsp;&emsp;我们似乎都生活在一个奇妙幻境之中，此刻，周围人群的都异常安静，听不到任何喧闹之声，每个人心中，静静地守候着那一方净土&hellip;&hellip;</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/07/29/timer/">使用timer，实现指定秒数后运行另一任务</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-07-29T15:18:00+08:00" pubdate data-updated="true">2012年07月29日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;请看代码就是，不多言。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">UnsupportedEncodingException</span><span class="o">,</span> <span class="n">InterruptedException</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="kd">final</span> <span class="n">Timer</span> <span class="n">timer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Timer</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">timer</span><span class="o">.</span><span class="na">schedule</span><span class="o">(</span><span class="k">new</span> <span class="n">TimerTask</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="nd">@Override</span>
-</span><span class='line'>            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>                <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>                    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;runing .....&quot;</span><span class="o">);</span>
-</span><span class='line'>                    <span class="n">timer</span><span class="o">.</span><span class="na">cancel</span><span class="o">();</span>
-</span><span class='line'>                    <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">2000</span><span class="o">);</span>
-</span><span class='line'>                    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;over .....&quot;</span><span class="o">);</span>
-</span><span class='line'>                <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                    <span class="n">Logger</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">TempTest</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getName</span><span class="o">()).</span><span class="na">log</span><span class="o">(</span><span class="n">Level</span><span class="o">.</span><span class="na">SEVERE</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
-</span><span class='line'>                <span class="o">}</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>        <span class="o">},</span> <span class="mi">1</span> <span class="o">*</span> <span class="mi">2000</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;main runing .....&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">3000</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;main overing .....&quot;</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/18/">&larr; 更多早期老文章</a>
@@ -356,6 +491,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/11/26/my-blog/">我的个人博客再次开放</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
       </li>
     
@@ -369,10 +508,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
   </ul>

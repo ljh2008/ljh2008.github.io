@@ -9,17 +9,10 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;要让spring mvc支持json，需要在配置文件中加下面的代码： 1
+  <meta name="description" content="&emsp;&emsp;jquery validate是一个使用非常广泛的客户端验证框架，扩展性好，功能强大，你可以按下面步骤使用： 一、先导入js包: 1
 2
 3
-4
-5
-6
-7
-8
-9
-10
-&lt;bean name=&quot;messageConverters&quot; class=&quot;org.springframework.web. &hellip;">
+&lt;script type=&quot;text/javascript&quot; src=&quot;js/jquery-1. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -68,6 +61,180 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/23/jquery-validate/">Jquery Validate</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-23T15:18:00+08:00" pubdate data-updated="true">2012年11月23日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;jquery  validate是一个使用非常广泛的客户端验证框架，扩展性好，功能强大，你可以按下面步骤使用：</p>
+
+<p><strong>一、先导入js包:</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span> <span class="nx">src</span><span class="o">=</span><span class="s2">&quot;js/jquery-1.8.2.js&quot;</span><span class="o">&gt;&lt;</span><span class="err">/script&gt;</span>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span> <span class="nx">src</span><span class="o">=</span><span class="s2">&quot;js/jquery.validate.min.js&quot;</span><span class="o">&gt;&lt;</span><span class="err">/script&gt;</span>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span> <span class="nx">src</span><span class="o">=</span><span class="s2">&quot;js/messages_zh.js&quot;</span><span class="o">&gt;&lt;</span><span class="err">/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后一个是本地消息文件，我引入的是中文的。</p>
+
+<p>&emsp;&emsp;<strong>二、为表单添加验证功能</strong></p>
+
+<p>&emsp;&emsp;jquery  validate支持两种方式书写验证信息</p>
+
+<p>&emsp;&emsp;1、一种是把信息写入class中，例如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>class=&quot;{required:true,minlength:5,equalTo:&#39;#password&#39;}&quot;
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;2、另一种，是在页面加载完成后，通过js代码加载验证功能：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#myForm&quot;</span><span class="p">).</span><span class="nx">validate</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">rules</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>   <span class="nx">username</span><span class="o">:</span> <span class="s2">&quot;required&quot;</span><span class="p">,</span>
+</span><span class='line'>   <span class="nx">email</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">required</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">email</span><span class="o">:</span> <span class="kc">true</span>
+</span><span class='line'>   <span class="p">},</span>
+</span><span class='line'>   <span class="nx">pwd1</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">required</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">minlength</span><span class="o">:</span> <span class="mi">5</span>
+</span><span class='line'>   <span class="p">},</span>
+</span><span class='line'>   <span class="nx">pwd2</span><span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">required</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">minlength</span><span class="o">:</span> <span class="mi">5</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">equalTo</span><span class="o">:</span> <span class="s2">&quot;#pwd2&quot;</span>
+</span><span class='line'>   <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>三、改变消息样式</strong></p>
+
+<p>&emsp;&emsp;比如，我可以定义如下样式</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='css'><span class='line'><span class="nt">label</span><span class="nc">.error</span><span class="p">{</span>
+</span><span class='line'> <span class="k">color</span><span class="o">:</span><span class="nb">red</span><span class="p">;</span>
+</span><span class='line'> <span class="k">background</span><span class="o">:</span><span class="sx">url(&quot;images/unchecked.gif&quot;)</span> <span class="k">no-repeat</span><span class="p">;</span>
+</span><span class='line'> <span class="k">padding-left</span><span class="o">:</span><span class="m">20px</span><span class="p">;</span><span class="k">margin-left</span><span class="o">:</span><span class="m">5px</span><span class="p">;</span>
+</span><span class='line'> <span class="p">}</span>
+</span><span class='line'> <span class="nt">label</span><span class="nc">.checked</span><span class="p">{</span>
+</span><span class='line'> <span class="k">color</span><span class="o">:</span><span class="nb">green</span><span class="p">;</span>
+</span><span class='line'> <span class="k">background</span><span class="o">:</span><span class="sx">url(&quot;images/checked.gif&quot;)</span> <span class="k">no-repeat</span><span class="p">;</span>
+</span><span class='line'> <span class="k">padding-left</span><span class="o">:</span><span class="m">20px</span><span class="p">;</span><span class="k">margin-left</span><span class="o">:</span><span class="m">5px</span><span class="p">;</span>
+</span><span class='line'> <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;另外，你可以通过success属性，添加自定义样式，或添加验证通过后的function中执行自定义操作。</p>
+
+<p>&emsp;&emsp;更多使用细节（添加新的验证方法等），请大家在so.com中输入：【jQuery验证控件jquery.validate.js使用说明 中文API】关键字搜索了解。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/22/art6/">油画- 雨.听雨</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-22T15:18:00+08:00" pubdate data-updated="true">2012年11月22日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;纸本油画，听雨。</p>
+
+<p>&emsp;&emsp;傍晚，窗外静静地下着小雨，模糊的小路上偶尔有车辆走过。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/11/1.jpg' width='' height='' title='纸本油画-听雨'><span class='caption-text'>纸本油画-听雨</span></span></p>
+
+<p>&emsp;&emsp;桌边，一个人静静地听着雨滴在玻璃上离开留下的声音，白色的玫瑰静静的开着，充满了忧伤、憧憬&hellip;..</p>
+
+<p>&emsp;&emsp;十八岁那年的雨季，许下的诺言不过只是善意的谎言，年少的跌倒如今留下去不掉的伤疤，再见十八岁的季节&hellip;&hellip;</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -369,419 +536,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-11-07T15:18:00+08:00" pubdate data-updated="true">2012年11月07日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;有些命令时间长了不用，会突然想不起来，现记录一下，以备后查：</p>
-
-<h2>工作相关：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nb">jobs</span>，查看后台的工作，-l 参数，可看到pid
-</span><span class='line'>
-</span><span class='line'><span class="nb">fg</span> ,将某个pid转前台，也可用： %工作序号
-</span><span class='line'>
-</span><span class='line'><span class="nb">bg</span>，将某个pid转后台。
-</span><span class='line'>
-</span><span class='line'>ctrl + z:将某个工作转后台，并且stop
-</span><span class='line'>
-</span><span class='line'>ctrl + c:将结束当前进程
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果在启动某个程序，想让它直接转至后台，请在命令最后加上  &amp;。</p>
-
-<h2>网络：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>netstat -lnpt，查看网络连接，还可以看到程序的pid
-</span><span class='line'>
-</span><span class='line'>wget url，可下载资源，当服务器与外网连通的情况下，安装jdk，tomcat等很有用。
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>进程，cpu使用率等：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>ps -aux,很详细，其中会有cpu使用率
-</span><span class='line'>
-</span><span class='line'>top，这个可以看到动态的cpu使用率，ctrl + c终止
-</span><span class='line'>
-</span><span class='line'><span class="nb">kill</span> -9 pid，强行结束，一般用这个以防止某些进程无法 <span class="nb">kill</span>死的情况
-</span><span class='line'>
-</span><span class='line'>pstree，树结构显示，可寻找进程间依赖关系
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>磁盘：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>df 查看每个挂载区使用大小，在磁盘空间不够时，请运行
-</span><span class='line'>
-</span><span class='line'>du -ssh，查看当前目录所占用空间
-</span><span class='line'>
-</span><span class='line'>ls -l，查看到文件的更多详情
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>ssh连接：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>ssh -q 用户名@主机ip
-</span><span class='line'>
-</span><span class='line'>rz -y ，可上传文件，并直接覆盖原文件
-</span><span class='line'>
-</span><span class='line'>sz 文件名，可下载服务串上的文件
-</span><span class='line'>
-</span><span class='line'>sudo  su - 用户名，可进行操作用的的切换
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>文件压缩</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>tar –zxvf filename.tar.gz 解压到当前目录，你也可以指定新的位置
-</span><span class='line'>
-</span><span class='line'>tar -zcvf 压缩文件名.tar.gz  目录或文件，注意z参数，指明要用gzip压缩，一般都要加上。
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>其它常见操作命令</h2>
-
-<p>我就不再解释：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>ls -l
-</span><span class='line'>
-</span><span class='line'><span class="nb">cd</span>
-</span><span class='line'>
-</span><span class='line'>mkdir
-</span><span class='line'>
-</span><span class='line'>rm
-</span><span class='line'>
-</span><span class='line'>rm -r
-</span><span class='line'>
-</span><span class='line'>cp file1, file2
-</span><span class='line'>
-</span><span class='line'>mv file1, file2
-</span><span class='line'>
-</span><span class='line'>ln -s file  link-name
-</span><span class='line'>
-</span><span class='line'>vim filename
-</span><span class='line'>
-</span><span class='line'>cat filename
-</span><span class='line'>
-</span><span class='line'><span class="nb">logout</span>
-</span><span class='line'>
-</span><span class='line'><span class="nb">exit</span>
-</span><span class='line'>
-</span><span class='line'>chmod
-</span><span class='line'>
-</span><span class='line'>chown
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>java下的一些常见命令：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>catalina.sh start
-</span><span class='line'>
-</span><span class='line'>catalina.sh stop
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>java –cp .:/home/user_00/soft_setup/dev/romanticroom/WEB-INF/lib/* : /home/user_00/mysoft/tomcat6-1/lib/* com.maxsoft.app.romanticroom.facade.impl.AutoRun
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>mysql:</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>mysql -h10.181.48.24 -P3335 -u root
-</span><span class='line'>
-</span><span class='line'>mysqldump -h10.182.50.24 -P3335 -u root -p room &gt; room_server.sql
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;注意，这个sql导出后，要压缩打包后再传回备份。</p>
-
-<h2>memcached:</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>/home/user_00/mysoft/memcached/bin/memcached -d -m 1024 -u user_00 -l 16.124.49.121 -p 9584
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>jdk环境变量配置：</h2>
-
-<p>&emsp;&emsp;JDK安装：</p>
-
-<p>&emsp;&emsp;安装完成jdk后，在home/user001/执行，vim .bashrc</p>
-
-<p>&emsp;&emsp;直接./xxxxx.bin解压jdk</p>
-
-<p>&emsp;&emsp;java环境变量配置：</p>
-
-<p>&emsp;&emsp;到usr_00的home下,vim .bashrc，在最后加入：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nv">exportJAVA_HOME</span><span class="o">=</span>/usr/local/services/java/jdk1.6.0_31
-</span><span class='line'>
-</span><span class='line'><span class="nv">exportCLASSPATH</span><span class="o">=</span>.:<span class="nv">$JAVA_HOME</span>/jre/lib:<span class="nv">$JAVA_HOME</span>/lib/tools.jar
-</span><span class='line'>
-</span><span class='line'><span class="nb">export </span><span class="nv">JRE_HOME</span><span class="o">=</span><span class="nv">$JAVA_HOME</span>/jre
-</span><span class='line'>
-</span><span class='line'><span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$JAVA_HOME</span>/bin:<span class="nv">$PATH</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;为了让配置立即生效：source.bashrc</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/11/05/king-editor/">Kindeditor在线编辑器使用-附上传本地图片实现方法</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-11-05T15:18:00+08:00" pubdate data-updated="true">2012年11月05日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;在线编辑器在网站后台管理系统中比较常见，特别是内容发布系统，下面贴出一个简单demo大家参考，先看界面：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/10/4.jpg' width='' height='' title='在线编辑界面'><span class='caption-text'>在线编辑界面</span></span></p>
-
-<p>&emsp;&emsp;前端代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href=</span><span class="s">&quot;&lt;%=path%&gt;/css/skins/default.css&quot;</span> <span class="na">type=</span><span class="s">&quot;text/css&quot;</span> <span class="na">media=</span><span class="s">&quot;screen&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;&lt;%=path%&gt;/js/jquery-1.8.2.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;&lt;%=path%&gt;/js/kindeditor-min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>$(function(){
-</span><span class='line'>    KE.show({
-</span><span class='line'>        id : &#39;content&#39;,
-</span><span class='line'>        imageUploadJson:&quot;<span class="err">&lt;</span>%=path%&gt;/news!uploadImg.do&quot;,
-</span><span class='line'>        cssPath : &#39;./index.css&#39;
-</span><span class='line'>    });
-</span><span class='line'>});
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;后台服务器处理代码（struts2代码）：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> * 上传的文件</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'>
-</span><span class='line'> <span class="kd">private</span> <span class="n">File</span> <span class="n">imgFile</span><span class="o">;</span>
-</span><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> * 文件名称</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="kd">private</span> <span class="n">String</span> <span class="n">imgFileFileName</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">uploadImg</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 对上传的文件进行处理（重命名，保存到合适的位置）</span>
-</span><span class='line'>    <span class="c1">// 假如我们要存放在项目中的soft_upload目录下，那么，我们要先取得这个目录在实际服务器上的位置</span>
-</span><span class='line'>    <span class="n">String</span> <span class="n">upload_dir</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getRequest</span><span class="o">().</span><span class="na">getSession</span><span class="o">()</span>
-</span><span class='line'>            <span class="o">.</span><span class="na">getServletContext</span><span class="o">().</span><span class="na">getRealPath</span><span class="o">(</span><span class="s">&quot;soft_upload&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 取文件扩展名</span>
-</span><span class='line'>    <span class="n">String</span> <span class="n">extName</span> <span class="o">=</span> <span class="n">imgFileFileName</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="n">imgFileFileName</span>
-</span><span class='line'>            <span class="o">.</span><span class="na">lastIndexOf</span><span class="o">(</span><span class="s">&quot;.&quot;</span><span class="o">));</span>
-</span><span class='line'>    <span class="c1">// 随机生成新的文件名</span>
-</span><span class='line'>    <span class="n">String</span> <span class="n">newFileName</span> <span class="o">=</span> <span class="n">UUID</span><span class="o">.</span><span class="na">randomUUID</span><span class="o">().</span><span class="na">toString</span><span class="o">()</span> <span class="o">+</span> <span class="n">extName</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">FileUtils</span><span class="o">.</span><span class="na">copyFile</span><span class="o">(</span><span class="n">imgFile</span><span class="o">,</span> <span class="k">new</span> <span class="n">File</span><span class="o">(</span><span class="n">upload_dir</span> <span class="o">+</span> <span class="n">File</span><span class="o">.</span><span class="na">separator</span>
-</span><span class='line'>            <span class="o">+</span> <span class="n">newFileName</span><span class="o">));</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">Map</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
-</span><span class='line'>    <span class="n">result</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error&quot;</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
-</span><span class='line'>    <span class="n">result</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;url&quot;</span><span class="o">,</span> <span class="s">&quot;soft_upload/&quot;</span> <span class="o">+</span> <span class="n">newFileName</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">HttpServletResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>    <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">resp</span><span class="o">.</span><span class="na">getWriter</span><span class="o">(),</span> <span class="n">result</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;其中有些参数是kindeditor约定的：</p>
-
-<p>&emsp;&emsp;如：imgFile是上传文件的控件名称</p>
-
-<p>&emsp;&emsp;error是json返回的错误状态码，url是服务器上的文件名称等。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/15/">&larr; 更多早期老文章</a>
@@ -799,6 +553,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/11/26/my-blog/">我的个人博客再次开放</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
       </li>
     
@@ -812,10 +570,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
   </ul>

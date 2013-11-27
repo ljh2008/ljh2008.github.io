@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;ibatis相对hibernate来说，是一个半自动化的ORM映射框架，它是在jdbc的基础上进行了有限的封装，网上有很多关于ibatis与hibernate的讨论、争议，我在这就不再去论述二者之间的优劣，下面，我从程序员开发的角度来看看ibatis的使用。 &emsp;& &hellip;">
+  <meta name="description" content="&emsp;&emsp;“高耦合、低内聚”是评判一个系统优劣的标准之一，作为一名合格的程序员，如何在实际的开发过程中让系统向这个标准靠拢，是我们要思考的问题。在系统的设计中“开闭原则”非常的重要，它是OOD的第一原则，在这个原则的实现中，我们一般会将系统中变化的部分进行抽象， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,187 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/07/04/config/">谈解耦合在项目中的配置方式</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-07-04T15:18:00+08:00" pubdate data-updated="true">2011年07月04日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;“高耦合、低内聚”是评判一个系统优劣的标准之一，作为一名合格的程序员，如何在实际的开发过程中让系统向这个标准靠拢，是我们要思考的问题。在系统的设计中“开闭原则”非常的重要，它是OOD的第一原则，在这个原则的实现中，我们一般会将系统中变化的部分进行抽象，将不变的东西与可能变化的东西分离开，这样，在不久的将来，系统发生变化，这个变化将不会对系统中设计为不变部分产生影响，系统相对来说是稳定的。</p>
+
+<p>&emsp;&emsp;话又说回来，“变化”与“不变”只是相对的，不能“刻舟求剑”，也不能“杞人忧天”，“变化”与“不变”的把握，在需求分析和设计上都要依据项目经验来找到一个“平衡点”。</p>
+
+<h2>一、设计上的考虑</h2>
+
+<p>&emsp;&emsp;在设计上，我们将变化的部分会抽取出来放到接口（或抽象类）中，由具体的实现类负责实现，这样做最直接的好处是：软件系统中各个模块、层次之间不再依赖于具体而是依赖抽象，而抽象是稳定的。另一个原因是：代码实现会从AOP中获益（想想代理模式中必须要抽象接口哦），我曾经见过有些设计人员认为DAO（或 Service）的实现在某个特定项目中不再改变而将DAO（或 Service）的接口全部省去，让层次间直接依赖于实现类，这种方式不值得推荐，因为他忽略了AOP在项目中的作用。</p>
+
+<h2>二、代码实现上的考虑</h2>
+
+<p>&emsp;&emsp;在设计上做到了模块、层次间的解耦合，但是代码实现上往往会和具体实现产生依赖。比如代码：IUserService userService = new UserServiceImpl()将在代码级别产生和具体实现的依赖，而且是编译期依赖，如果我们更换实现类就得重新编译代码，当然，这种依赖对eclipse这种保存时即时编译的工具来说产生的影响可能不大，但对于c、c++这些语言来说可能非常的“恼火”（我还记得当年Delphi的“闪电编译”是如何捍卫Borland在编程领域的地位）。因此，我们希望在代码级别，最好不要产生对具体实现类的依赖。做法倒是很简单，我们把这种依赖关系放到外部的元数类型文件中描述，在程序运行时由第三方（一般是容器）读取配置信息并依据这些信息来维护、生成正确的对象依赖关系，这就是IOC/DI，有效果地解除了编译期依赖（耦合）问题。</p>
+
+<h2>三、配置方式</h2>
+
+<p><strong>1、xml文件</strong></p>
+
+<p>&emsp;&emsp;将依赖信息写到第三方的配置文件中，xml文件肯定是首选。j2ee开源框架通常都是把配置文件写到 xml文件中，当依赖关系发生改变时，我们要做的仅仅是修改配置文件，这种方式已经被广大开发人员接受。</p>
+
+<p>&emsp;&emsp;但经过众多的项目实践我们发现，当某项需求变更发生时，我们要修改代码，但往往要修改多处代码，比如在SSH项目中：一个需求更，带来领域对象的改变，紧接着是hbm文件的修改，再下来是业务代码修改，可能又会对spring配置文件中bean配置的修改，再接着对action代码修改，对struts的映射文件修改，又会引发action在spring中配置信息的修改。从这个修改“链式反应”中可以看出，项目在开发和维护期，程序员会反复对实现代码、配置文件进行修改，维护二者一致性以满足项目业务需求。“解耦合”是做到了，但程序员工作量没有减少，生产率并没有得到提高。</p>
+
+<p><strong>2、注解</strong></p>
+
+<p>&emsp;&emsp;以xml（properties）配置方式已遭到程序员的“反感”，相反，Anotation注解方式逐渐变得流行起来。Anotation方式是将配置信息直接写入源代码中，在编译时由编译器将这些信息写入class字节码文件（当然也可以选择不编译到class中），系统在运行时，框架通过反射机制获得配置信息，进行相应的行为控制。</p>
+
+<p>&emsp;&emsp;我们可以看到，无论是xml配置方式还是Anotation配置方式，对于框架系统而言，只是配置信息存放的位置不一样而已，只要读到这些配置信息，框架的后续操作都是相同的。但对于程序员来说就很不一样了：首先是项目开发与维护时，只需要在一个地方进行修改（即源代码中），其次，配置的信息量至少减少了一半（这点你可以思考一下：注解在源代码中的位置是不是已经代表了注解所作用的对象）。</p>
+
+<p>&emsp;&emsp;可能有人要提出反对意见了：“需求更改了，要改配置，还得修改源代码中的注解，还得重新编译，我们似乎又回到了以前的老路上”。确实如此，不过我们再想想，难道把配置信息写到xml文件中，需求改变了，你的项目不重新编译，系统不重新启动？你真的见过能够提供7*24小时不间断服务的系统？恐怕中国最赚钱的网游都还要在固定时段停机维护！</p>
+
+<p>&emsp;&emsp;当然，注解用得过头了会“适得其反”，带来降低源代码可读性的弊端，我们可以看到mybatis中加入了注解功能，在dao源代码中通过注解嵌入大量的sql语句，看起来让人心里“发毛”（注：mybatis是ibatis的升级版本，核心类名和api都改了，但功能并没见得增强，最新版本spring都不支持mybatis，看来这种升级会流失用户的。另，想了解ibtaits的，可以查看我的《<a href="/blog/2011/06/30/ibatis/">ibatis使用荟萃</a>》一文）。</p>
+
+<p>&emsp;&emsp;也许，生活就像走钢丝，我们不停的在寻找一个平衡点，重心时而偏左时而偏右，但我们都在会回归平衡，又走向下一个不平衡。前几年网页游戏逐渐受到网民的欢迎，这就是人们厌恶了庞大的客户端游戏的安装、更新之苦，网页游戏流行过为，大家又发现网页游戏的效果又大打折扣，现在，大家似乎又要回归到大客户端游戏中去了。项目开发也是如此，“开发效率”是不断追求的平衡点，项目配置方式的变化如此，架构、技术的选择也如此。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/07/02/wap/">WAP系统上线测试中，总结一下</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-07-02T15:18:00+08:00" pubdate data-updated="true">2011年07月02日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;《wap精准招生系统》前端部分用古老的wap展示，后端管理功能用j2ee技术完成，我们在项目开发中遇到了一些问题，现总结一下。</p>
+
+<p>&emsp;&emsp;一、客户端如何访问wap系统
+很显然是通过wap浏览器，如果用手机来访问，一种是手机客户端直接访问wap网站，另一种是通过服务提供商代理访问wap网站后返回wap页面内容，这两种方式对用户来说几乎感觉不到区别，对网站服务器来说，第二种方式可能会获得除ip地址以外的更多信息，比如：比如手机号码等。</p>
+
+<p>&emsp;&emsp;二、wap开发工具</p>
+
+<p>&emsp;&emsp;wap页面编写试了很多工具，最后发现WapTor不错，简洁易用，可即时预览界面，看了一下该软件的about，居然是2000年时出的，距今已11年，可见wap技术的年份。
+wap的主要语言是wml，当然wap浏览器也可以运行简单的脚本文件WMLScript，大家可以到w3school查看wml的语法。</p>
+
+<p>&emsp;&emsp;书写wml代码时要注意：</p>
+
+<p>&emsp;&emsp;1、 某些标记，有些wap浏览器中不支持，比如：table；
+&emsp;&emsp;2、 空格不能用&amp;nbsp，要用 表示；
+&emsp;&emsp;3、 页面提交代码和html不同，下面是一段向服务器提交数据的演示代码：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;anchor title="提交"&gt;提交 &lt;go method="post" href="&lt;%=path%&gt;/register.action" accept-charset="utf-8"&gt;
+</span><span class='line'>&lt;postfield name="name" value="$name" /&gt;
+</span><span class='line'>&lt;/go&gt; &lt;/anchor&gt;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;注意其中的postfield字段中的name属性是后台接收参数时的名称，value要和wap页面中的输入元素名称对应；</p>
+
+<p>&emsp;&emsp;4、 服务器返的的页面实际上是xml文件，这种格式可以严格规范页面的内容；</p>
+
+<p>&emsp;&emsp;5、 wml很简洁，是html的一个子集，但又有所扩展。</p>
+
+<p><strong>三、服务器端响应</strong></p>
+
+<p>&emsp;&emsp;服务器端在给客户响应时，需设置头信息为“text/vnd.wap.wml”，并且还要注意编码集格式问题。比如 java后台，可以写上：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">response</span><span class="o">.</span><span class="na">setContentType</span><span class="o">(</span><span class="s">&quot;text/vnd.wap.wml&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>四、服务器上部署出现的问题</strong></p>
+
+<p>&emsp;&emsp;1、 由于没太注意将本项目tomcat的shutdown端口号及服务器中另一个项目的相同，致使在调试过程中关闭本项目服务器，造成另一个项目tomcat关闭，很长时间都没有被发现（请大家以后在配置集群的时候，一定要注意这些细节）。</p>
+
+<p>&emsp;&emsp;2、 后台管理部分有一个jfreechat图形报表（用于直观显示每日的访问量），部署后发现图形报表中的中文全部显示为“方格”，经查明，原因是liunx 服务器中的jdk缺少中文字体，解决办法如下：</p>
+
+<p>&emsp;&emsp;将windows下的字体fonts\simsun.ttf文件上传至 linux服务器中的jre/lib/fonts中，修改服务器上/jre/lib/fonts/fonts.dir文件，在文件最后加一行：simsun.ttc -SungtiL GB-medium-r-normal–0-0-0-0-c-0-gb2312.1988-0，并将该文件第一行的数字+1，这个数字表示jre中总的字体数。</p>
+
+<p>&emsp;&emsp;jfreechat中生成图表部分的代码也要做相应的修改，下面贴出一段演示代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//配置字体  </span>
+</span><span class='line'><span class="n">Font</span> <span class="n">xfont</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Font</span><span class="o">(</span><span class="s">&quot;SimSun&quot;</span><span class="o">,</span><span class="n">Font</span><span class="o">.</span><span class="na">PLAIN</span><span class="o">,</span><span class="mi">15</span><span class="o">)</span> <span class="o">;</span><span class="c1">// X轴  </span>
+</span><span class='line'><span class="c1">//其它代码略去……</span>
+</span><span class='line'><span class="n">XYPlot</span> <span class="n">plot</span> <span class="o">=</span> <span class="n">chart</span><span class="o">.</span><span class="na">getXYPlot</span><span class="o">();</span><span class="c1">// 图形的绘制结构对象 </span>
+</span><span class='line'><span class="n">ValueAxis</span> <span class="n">va</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="na">getDomainAxis</span><span class="o">();</span>
+</span><span class='line'><span class="n">va</span><span class="o">.</span><span class="na">setTickLabelFont</span><span class="o">(</span><span class="n">xfont</span><span class="o">);</span>
+</span><span class='line'><span class="n">va</span><span class="o">.</span><span class="na">setLabelFont</span><span class="o">(</span><span class="n">xfont</span><span class="o">);</span>
+</span><span class='line'><span class="c1">//其它代码略去……</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>五、客户端测试</strong></p>
+
+<p>&emsp;&emsp;wap系统上线测试时，我们发现在NOKIA赛班中显示正常，但在android和iphone平台上显示为乱码，后来发现是有些页面没有加response.setCharacterEncoding(“utf-8″)造成，当然也要注意jsp文件自身的存盘格式为utf-8。</p>
+
+<p>&emsp;&emsp;<strong>六、开发阶段的测试工具</strong></p>
+
+<p>&emsp;&emsp;开发阶段可以安装firefox wml插件，或者直接用Opera浏览器，因为Opera内置wml支持。IE 下的wml 浏览器下载了好几个都不能用，几乎都是些嵌广告的垃圾软件。
+当项目布署到服务器上后，可以用手机去访问，也可以在网上找到上些在线wap模拟器，方便调整wap页面的显示效果。</p>
+
+<p>&emsp;&emsp;最后一个问题，wap系统一定要检测访问ip是来息普通电脑还是手机客户端，如果发现是电脑系统，我们将拒绝提供服务。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -785,220 +966,6 @@ validate验证框架的原理是把通用的验证逻辑代码提取出来，将
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/06/13/father-day/">父亲节的礼物</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-06-13T15:18:00+08:00" pubdate data-updated="true">2011年06月13日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;今天下班回家，言娃娃妈拿出一个神秘的礼物让我猜是什么东西，搞得我一头雾水，心想也不是我生日啊，难道是一个什么重要日子？</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/7.jpg' width='' height='' title='还没有打开的礼物'><span class='caption-text'>还没有打开的礼物</span></span></p>
-
-<p>&emsp;&emsp;再三追问，言娃娃妈才说，不是快过父亲节了嘛，代表言娃娃提前给我买了个小礼物，拆开一看，非常的喜欢，是一个电动剃须刀，philips的。我原来那个philips是2003年买的，前段时候开关不灵了了，每次用完都得手工取出电池，否则它会转个不停的。这个新剃须刀比我原先的要高级一些，旧的终于可以淘汰了，呵呵。言娃娃妈心好细哦，这东西买的及时、实用，心里头真的有些感动！</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/8.jpg' width='' height='' title='打开了，原来是个剃须刀'><span class='caption-text'>打开了，原来是个剃须刀</span></span></p>
-
-<p>&emsp;&emsp;不知不觉自己也做了父亲，也有了自己的首个父亲节日，呵呵。晚上又给言娃娃爷爷打了个电话，算是父亲节提交的问候吧。</p>
-
-<p>&emsp;&emsp;最后发张言娃娃的照片，走路越来越硬走了！我看过不了几天，就不需要大人牵着走了。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/9.jpg' width='' height='' title='快了，我马上就会走路了哈'><span class='caption-text'>快了，我马上就会走路了哈</span></span></p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/06/10/hibernate/">Hibernate中的“隐喻”</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-06-10T15:18:00+08:00" pubdate data-updated="true">2011年06月10日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;隐喻，百科上的解释是“隐喻是在彼类事物的暗示之下感知、体验、想象、理解、谈论此类事物的心理行为、语言行为和文化行为。”，隐喻一词用在计算机软件领域，意思是：我们想当然或我们认为是这样的，但实际的执行情况却大相径庭，直至错误出现才意识到问题严重性，下面我举两个实例来说明。</p>
-
-<p>&emsp;&emsp;第一个例子和<strong>hibernate继承映射（多态）</strong>有关，比如：我们的领域中有员工和客户两个对象，每个员工和客户都有自己的附件资料，是一对多双向关联关系。由于附件的大多数属性都相同，我们使用了泛化关系，即：员工附件、客户附件都是附件类的子类型，这种设计方式在项目中比较常见，领域模型见下图。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/4.jpg' width='' height='' title='hibernate继承映射领域关系实例'><span class='caption-text'>hibernate继承映射领域关系实例</span></span></p>
-
-<p>&emsp;&emsp;数据库物理模型如下图所示。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/5.jpg' width='' height='' title='hibernate继承映射物理模型'><span class='caption-text'>hibernate继承映射物理模型</span></span></p>
-
-<p>&emsp;&emsp;附件被设计成存储在一张表中，用f_accessor_type来标识不同的附件类型，而用fk_owner_id来标识这个附件的属主，可能是员工，也有可能是客户。</p>
-
-<p>&emsp;&emsp;下面来看hibernate的映射文件。</p>
-
-<p>&emsp;&emsp;附件类非常简单，按照多态映射很容易写好，xml文件如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">&quot;com.my.domain.ext.Accessory&quot;</span>
-</span><span class='line'>          <span class="na">table=</span><span class="s">&quot;t_accessory&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">unsaved-value=</span><span class="s">&quot;0&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">&quot;identity&quot;</span><span class="nt">&gt;&lt;/generator&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;/id&gt;</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="nt">&lt;discriminator</span> <span class="na">column=</span><span class="s">&quot;f_accessory_type&quot;</span><span class="nt">&gt;&lt;/discriminator&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span> <span class="na">type=</span><span class="s">&quot;string&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>      <span class="cp">&lt;!- 其它普通属性配置略去---&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;subclass</span>
-</span><span class='line'>      <span class="na">name=</span><span class="s">&quot;com.my.domain.ext. Accessory4Employee&quot;</span>
-</span><span class='line'>      <span class="na">discriminator-value=</span><span class="s">&quot;1&quot;</span>
-</span><span class='line'>      <span class="nt">&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;otherProperty&quot;</span> <span class="na">column=</span><span class="s">&quot;f_otherColumn&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;many-to-one</span> <span class="na">name=</span><span class="s">&quot;Employee&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Employee&quot;</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/many-to-one&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;/subclass&gt;</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="nt">&lt;subclass</span>
-</span><span class='line'>      <span class="na">name=</span><span class="s">&quot;com.my.domain.ext. Accessory4Customer&quot;</span>
-</span><span class='line'>      <span class="na">discriminator-value=</span><span class="s">&quot;2&quot;</span>
-</span><span class='line'>      <span class="nt">&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;otherProperty&quot;</span> <span class="na">column=</span><span class="s">&quot;f_otherColumn&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;many-to-one</span> <span class="na">name=</span><span class="s">&quot;customer&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Customer&quot;</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/many-to-one&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;/subclass&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="nt">&lt;/class&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;员工和客户的映射文件我只贴出一个，因为这两篇文件很相似，不再浪费篇幅。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">&quot;com.my.domain.ext.Employee&quot;</span>
-</span><span class='line'>          <span class="na">table=</span><span class="s">&quot;t_employee&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">unsaved-value=</span><span class="s">&quot;0&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">&quot;identity&quot;</span><span class="nt">&gt;&lt;/generator&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;/id&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span> <span class="na">type=</span><span class="s">&quot;string&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;set</span> <span class="na">name=</span><span class="s">&quot;accessorys&quot;</span> <span class="na">table=</span><span class="s">&quot;t_accessory&quot;</span> <span class="nt">&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;key</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/key&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;one-to-many</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Accessory4Employee&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;/set&gt;</span>    
-</span><span class='line'>  <span class="nt">&lt;/class&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;完成配置文件后，手工录入测试数据，添加了一个id为1的员工，又添加了一个id为1的客户，在附件表中分别给员工和客户添加附件，员工添加两条附件记录，客户也添加两条附件记录（你可以想像一下t_accessory中的数据情况，fk_owner_id全部为1，fk_accessory_type两条值为1，另两条值为2）。我们随即写出了下面的一段代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Employee</span> <span class="n">employee</span> <span class="o">=</span> <span class="o">(</span><span class="n">Employee</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Employee</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>     
-</span><span class='line'><span class="n">Set</span> <span class="n">accessorys</span> <span class="o">=</span> <span class="n">employee</span><span class="o">.</span><span class="na">getAccessorys</span><span class="o">(</span> <span class="o">);</span>  
-</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">accessorys</span><span class="o">.</span><span class="na">size</span><span class="o">());</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;没运行之前，我们先猜猜输出的结果是多少？我相信大多数人的回答是：2，因为id号为1的员工只有两个附件。而最终的结果是4，这和我们想的有很大差别，看来，很多事情不能想当然啊。
-查看sql就会发现，在取附件的时候，hibernate没有带上子类类型在表中的标识，即f_accessory_type并没有作为查询条件，导致查出了所有fk_owner_id 为1的附件，这里指定的具体子类类型竟然被hibernate忽略了。</p>
-
-<p>&emsp;&emsp;上面的这个案例发生在一个真实的项目中（不过为了说明问题，代码是我另写的一个演示），程序员一直在给我抱怨查出的数据条数不对，但有时又是正确的，我当时没有在意，让他们检查测试数据是否存在问题。后来项目要上线了，这块代码开始报子类类型转换出错，看来不解决这个问题肯定是不行的了，逐坐下来和其中一个程序员一起找问题原因所在，发现了这个hibernate中存在的“隐喻”。解决办法也很简单：在set集合的配置上加上where属性再次指定子类类型字段标志值，比如在employee映射文件的set上加上 where = “f_accessory_type=1”，问题终于解决了（其实也可以通过更改Customer、Employee的OID生成方式为uuid解决本问题）。</p>
-
-<p>&emsp;&emsp;第二个例子和<strong>hibernate的hql查询</strong>有关。比如Customer和Order是一对多双向关联，关系图如下：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/6.jpg' width='' height='' title='客户与订单领域关系图'><span class='caption-text'>客户与订单领域关系图</span></span></p>
-
-<p>&emsp;&emsp;客户中包含订单的集合，而该集合默认情况下是lazy的，但有时为了提高性能，我们想用一条sql加载用户及其订单，我们可以写出下面的HQL。</p>
-
-<p>&emsp;&emsp;<em>from Customer c left join fetch c.orders o;</em></p>
-
-<p>&emsp;&emsp;但这条HQL得到了客户List集合中，却有很多重复的用户对象，又和我们的想法不太一样，我们只是想加载客户时初始化客户的订单集合，实际上我们得到了一些重复客户对象集合。</p>
-
-<p>&emsp;&emsp;正确的HQL应该这么写：<em>select distinct( c ) from Customer c left join fetch c.orders o</em>，这条HQL会得到唯一的客户集合（我见有人写过用Set来过滤List集合重复元素的代码，其实没有这个必要）。</p>
-
-<p>&emsp;&emsp;补充一点HQL的东西，很多人是写不出来这条HQL的：查询订了iphone订单的客户集合，HQL可以这么写：<em>select distinct( c ) from Customer c left join fetch c.orders o where o.name = ‘iphone’</em>，你不要老是想着orders是集合而觉不能用o.name这样的条件哦，呵呵。这种查询同样适用于多对多中集合条件的查询。</p>
-
-<p>&emsp;&emsp;记得Ruby on rails中曾经提到一个“惯例重于配置”的原则，也就是说很多规则不用配置，会按我们的惯例进行处理，但很多时候，恰恰是我们认为惯例是这样的，而实际上却是另外的“一番景象”。</p>
-
-<p>&emsp;&emsp;“实践是检验真理的惟一标准”，软件开发人员也应牢记这一点！</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/20/">&larr; 更多早期老文章</a>
@@ -1016,6 +983,10 @@ validate验证框架的原理是把通用的验证逻辑代码提取出来，将
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/11/26/my-blog/">我的个人博客再次开放</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
       </li>
     
@@ -1029,10 +1000,6 @@ validate验证框架的原理是把通用的验证逻辑代码提取出来，将
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
   </ul>

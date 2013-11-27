@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;app.js，程序入口所在。 &emsp;&emsp;先引入依赖的文件： 1
+  <meta name="description" content="&emsp;&emsp;路由中的代码： 路由中的代码目录结构图 &emsp;&emsp;userAction.js中封装了用户相关的操作，取名为Action结尾，只是从ssh转型的命名习惯，直接上代码，并有注释： userAction.js1
 2
 3
 4
@@ -19,7 +19,9 @@
 8
 9
 10
-var express = require(&#39;express&#39;) , user = require(&#39;./routes/ &hellip;">
+11
+12
+13 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -68,6 +70,724 @@ var express = require(&#39;express&#39;) , user = require(&#39;./routes/ &hellip
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/08/09/nodejs-express-mysql-crud4/">node.js中基本于expresss、mysql的CRUD之四（代码实现）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;路由中的代码：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/8.jpg' width='' height='' title='路由中的代码目录结构图'><span class='caption-text'>路由中的代码目录结构图</span></span></p>
+
+<p>&emsp;&emsp;userAction.js中封装了用户相关的操作，取名为Action结尾，只是从ssh转型的命名习惯，直接上代码，并有注释：</p>
+
+<figure class='code'><figcaption><span>userAction.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+<span class='line-number'>170</span>
+<span class='line-number'>171</span>
+<span class='line-number'>172</span>
+<span class='line-number'>173</span>
+<span class='line-number'>174</span>
+<span class='line-number'>175</span>
+<span class='line-number'>176</span>
+<span class='line-number'>177</span>
+<span class='line-number'>178</span>
+<span class='line-number'>179</span>
+<span class='line-number'>180</span>
+<span class='line-number'>181</span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+<span class='line-number'>194</span>
+<span class='line-number'>195</span>
+<span class='line-number'>196</span>
+<span class='line-number'>197</span>
+<span class='line-number'>198</span>
+<span class='line-number'>199</span>
+<span class='line-number'>200</span>
+<span class='line-number'>201</span>
+<span class='line-number'>202</span>
+<span class='line-number'>203</span>
+<span class='line-number'>204</span>
+<span class='line-number'>205</span>
+<span class='line-number'>206</span>
+<span class='line-number'>207</span>
+<span class='line-number'>208</span>
+<span class='line-number'>209</span>
+<span class='line-number'>210</span>
+<span class='line-number'>211</span>
+<span class='line-number'>212</span>
+<span class='line-number'>213</span>
+<span class='line-number'>214</span>
+<span class='line-number'>215</span>
+<span class='line-number'>216</span>
+<span class='line-number'>217</span>
+<span class='line-number'>218</span>
+<span class='line-number'>219</span>
+<span class='line-number'>220</span>
+<span class='line-number'>221</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="cm">/*</span>
+</span><span class='line'><span class="cm"> * User operations</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">),</span>
+</span><span class='line'>    <span class="nx">fs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;fs-extra&#39;</span><span class="p">),</span>
+</span><span class='line'>    <span class="nx">uuid</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;node-uuid&#39;</span><span class="p">),</span>
+</span><span class='line'>    <span class="nx">Seq</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;seq&#39;</span><span class="p">),</span>
+</span><span class='line'>    <span class="nx">orm</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;orm&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">//引及分页全局定义对象</span>
+</span><span class='line'>    <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../commons/page&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="c1">//首页</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">index</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;login&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//添加用户</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">addUser</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">picPath</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">pic</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">picPath</span> <span class="o">||</span> <span class="nx">picPath</span><span class="p">.</span><span class="nx">trim</span><span class="p">()</span><span class="o">==</span><span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">picPath</span> <span class="o">=</span> <span class="s2">&quot;upload/photo.jpg&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">create</span><span class="p">([{</span>
+</span><span class='line'>        <span class="nx">f_name</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">f_login_code</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">loginCode</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">f_birthday</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">birthday</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">f_pwd</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">password</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">pic</span><span class="o">:</span><span class="nx">picPath</span>
+</span><span class='line'>    <span class="p">}],</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">items</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;添加用户失败：&#39;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">};</span>
+</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>  <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;添加用户成功！&#39;</span><span class="p">};</span>
+</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//批量删除用户 (uids为id字串，用-拼接，比如：1-3-4-5 )</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">deleteUsers</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">({</span><span class="nx">pk_id</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uids</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)}).</span><span class="nx">remove</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;批量删除用户失败：&#39;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">};</span>
+</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>  <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;批量删除用户成功！&#39;</span><span class="p">};</span>
+</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//删除用户</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">deleteUser</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uid</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">user</span><span class="p">){</span>
+</span><span class='line'>       <span class="nx">user</span><span class="p">.</span><span class="nx">remove</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
+</span><span class='line'>           <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>               <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;删除用户失败：&#39;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">};</span>
+</span><span class='line'>               <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>           <span class="p">}</span>  <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>               <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;删除用户成功！&#39;</span><span class="p">};</span>
+</span><span class='line'>               <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>           <span class="p">}</span>
+</span><span class='line'>       <span class="p">});</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//修改用户</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">modifyUser</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uid</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">user</span><span class="p">){</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>            <span class="k">return</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">f_name</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">userName</span><span class="p">;</span>
+</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">f_pwd</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">password</span><span class="p">;</span>
+</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">f_birthday</span> <span class="o">=</span>  <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">birthday</span><span class="p">;</span>
+</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">pic</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">pic</span><span class="p">;</span>
+</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
+</span><span class='line'>              <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                  <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;修改用户失败：&#39;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">};</span>
+</span><span class='line'>                  <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>              <span class="p">}</span>  <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                  <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;修改用户成功！&#39;</span><span class="p">};</span>
+</span><span class='line'>                  <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>              <span class="p">}</span>
+</span><span class='line'>            <span class="p">});</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;要修改的用户可能不存在！&#39;</span><span class="p">};</span>
+</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//根据id查询用户</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">getUserById</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">uid</span> <span class="o">=</span>  <span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uid</span><span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;查询用户失败！&#39;</span><span class="p">};</span>
+</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">uid</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">user</span><span class="p">){</span>
+</span><span class='line'>          <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>              <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>              <span class="k">return</span><span class="p">;</span>
+</span><span class='line'>          <span class="p">}</span>
+</span><span class='line'>          <span class="k">if</span> <span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>              <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;data&#39;</span><span class="o">:</span><span class="nx">user</span><span class="p">};</span>
+</span><span class='line'>              <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>          <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>              <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>          <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//显示用户列表</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">user_list</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">pno</span> <span class="o">=</span>  <span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">pno</span><span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">queryName</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">q_name</span><span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">pageSize</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">queryParm</span> <span class="o">=</span> <span class="p">{};</span>
+</span><span class='line'>    <span class="c1">//进行多条件的拼装</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">queryName</span> <span class="o">&amp;&amp;</span> <span class="nx">queryName</span><span class="p">.</span><span class="nx">trim</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>         <span class="c1">//如果用户输入了姓名</span>
+</span><span class='line'>        <span class="nx">queryParm</span><span class="p">.</span><span class="nx">f_name</span> <span class="o">=</span> <span class="nx">orm</span><span class="p">.</span><span class="nx">like</span><span class="p">(</span><span class="s2">&quot;%&quot;</span> <span class="o">+</span> <span class="nx">queryName</span> <span class="o">+</span> <span class="s2">&quot;%&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>     <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">queryParm</span><span class="p">)</span>
+</span><span class='line'>         <span class="p">.</span><span class="nx">limit</span><span class="p">(</span><span class="nx">pageSize</span><span class="p">)</span>
+</span><span class='line'>         <span class="p">.</span><span class="nx">offset</span><span class="p">((</span><span class="nx">pno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="nx">pageSize</span><span class="p">)</span>
+</span><span class='line'>        <span class="c1">// .only(&quot;pk_id&quot;,&quot;f_name&quot;,&quot;f_login_code&quot;,&quot;f_birthday&quot;)   //不需要密码字段</span>
+</span><span class='line'>         <span class="p">.</span><span class="nx">run</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">users</span><span class="p">){</span>
+</span><span class='line'>         <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>             <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+</span><span class='line'>             <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;取用户分页数据失败！&#39;</span><span class="p">});</span>
+</span><span class='line'>         <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>             <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">queryParm</span><span class="p">).</span><span class="nx">count</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">userCount</span><span class="p">){</span>
+</span><span class='line'>                 <span class="kd">var</span> <span class="nx">p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Page</span><span class="p">(</span><span class="nx">pno</span><span class="p">,</span> <span class="nx">pageSize</span><span class="p">,</span> <span class="nx">userCount</span><span class="p">,</span> <span class="nx">users</span><span class="p">);</span>
+</span><span class='line'>                 <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;page&#39;</span><span class="o">:</span><span class="nx">p</span><span class="p">};</span>
+</span><span class='line'>                 <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span><span class='line'>             <span class="p">});</span>
+</span><span class='line'>         <span class="p">}</span>
+</span><span class='line'>     <span class="p">});</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//得到登录用户状态</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">getState</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">user</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span><span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span>  <span class="nx">resultJson</span> <span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">resultJson</span> <span class="o">=</span> <span class="p">{</span><span class="nx">code</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">name</span><span class="o">:</span><span class="nx">user</span><span class="p">.</span><span class="nx">f_name</span><span class="p">};</span>
+</span><span class='line'>        <span class="c1">//resultJson = JSON.stringify({code:1,name:user.f_name});</span>
+</span><span class='line'>    <span class="p">}</span>  <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">resultJson</span> <span class="o">=</span>  <span class="p">{</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;对不起，您没有登录！&#39;</span><span class="p">};</span>
+</span><span class='line'>        <span class="c1">//resultJson = JSON.stringify({code:0,msg:&#39;对不起，您没有登录！&#39;});</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">resultJson</span><span class="p">);</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//用户注册，可上传照片</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">reg</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">files</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">files</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">dir</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;public&quot;</span><span class="p">,</span> <span class="s2">&quot;upload&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">filename</span> <span class="o">=</span> <span class="nx">uuid</span><span class="p">.</span><span class="nx">v4</span><span class="p">()</span><span class="o">+</span><span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">fs</span><span class="p">.</span><span class="nx">copy</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">path</span><span class="p">,</span> <span class="nx">dir</span> <span class="o">+</span> <span class="s1">&#39;\\&#39;</span> <span class="o">+</span> <span class="nx">filename</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+</span><span class='line'>                <span class="c1">//返回出错页面</span>
+</span><span class='line'>                <span class="c1">//res.render(&#39;reg/reg_success&#39;, { regName: req.body.uname,photo:&#39;upload/default.jpeg&#39;  });</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;copy file success!&quot;</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/&#39;</span> <span class="o">+</span> <span class="nx">filename</span>  <span class="p">});</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//返回默认图片</span>
+</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/default.jpeg&#39;</span>  <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//退出系统</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">logout</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
+</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+</span><span class='line'>    <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;login&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//登录系统</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">login</span><span class="o">=</span><span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
+</span><span class='line'>    <span class="c1">//express中得到参数req.body.uname或req.query.uname，其中，req.body可支持post,delete,put等方式</span>
+</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;user login, name is:&quot;</span> <span class="o">+</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">uname</span> <span class="o">+</span> <span class="s2">&quot;,pwd is:&quot;</span> <span class="o">+</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">pwd</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">loginUser</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">Seq</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>            <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">({</span> <span class="nx">f_login_code</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">f_pwd</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">pwd</span> <span class="p">}).</span><span class="nx">run</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}).</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">users</span><span class="p">){</span>
+</span><span class='line'>            <span class="c1">//在此仅假设用户登录编码和名称有重复的情况</span>
+</span><span class='line'>            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">&lt;</span> <span class="nx">users</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="c1">//只处理一个</span>
+</span><span class='line'>                    <span class="nx">loginUser</span> <span class="o">=</span> <span class="nx">users</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
+</span><span class='line'>                    <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}).</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>            <span class="kd">var</span> <span class="nx">resultJson</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">loginUser</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">name</span><span class="o">:</span><span class="nx">loginUser</span><span class="p">.</span><span class="nx">f_name</span><span class="p">});</span>
+</span><span class='line'>                <span class="c1">//保存登录用户状态信息至session中</span>
+</span><span class='line'>                <span class="c1">//var s = req.session;</span>
+</span><span class='line'>                <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span> <span class="o">=</span> <span class="nx">loginUser</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;用户名或密码错误，请核对！&#39;</span><span class="p">});</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="c1">//发回登录json字串</span>
+</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nx">resultJson</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;uploadFileAction.js是一个通用的文件上传action，专门用于ajax的文件上专使用，代码如下：</p>
+
+<figure class='code'><figcaption><span>uploadFileAction.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">),</span>
+</span><span class='line'>    <span class="nx">fs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;fs-extra&#39;</span><span class="p">),</span>
+</span><span class='line'>    <span class="nx">uuid</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;node-uuid&#39;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//上传文件，可上传照片</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">uploadFile</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">files</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">files</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">//回调函数名</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">callbackFunctionName</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">cbName</span><span class="p">;</span>
+</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">callbackFunctionName</span><span class="p">);</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">dir</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;public&quot;</span><span class="p">,</span> <span class="s2">&quot;upload&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">filename</span> <span class="o">=</span> <span class="nx">uuid</span><span class="p">.</span><span class="nx">v4</span><span class="p">()</span><span class="o">+</span><span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">fs</span><span class="p">.</span><span class="nx">copy</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">path</span><span class="p">,</span> <span class="nx">dir</span> <span class="o">+</span> <span class="s1">&#39;\\&#39;</span> <span class="o">+</span> <span class="nx">filename</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="s2">&quot;&lt;script&gt;&quot;</span><span class="o">+</span><span class="nx">callbackFunctionName</span> <span class="o">+</span> <span class="s2">&quot;(0,&#39;upload/error.jpg&#39;);&lt;/script&gt;&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;copy file success!&quot;</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="s2">&quot;&lt;script&gt;&quot;</span><span class="o">+</span><span class="nx">callbackFunctionName</span> <span class="o">+</span> <span class="s2">&quot;(1,&#39;upload/&quot;</span> <span class="o">+</span> <span class="nx">filename</span> <span class="o">+</span> <span class="s2">&quot;&#39;);&lt;/script&gt;&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">//返回默认图片</span>
+</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="s2">&quot;&lt;script&gt;&quot;</span><span class="o">+</span><span class="nx">callbackFunctionName</span> <span class="o">+</span> <span class="s2">&quot;(0,&#39;upload/error.jpg&#39;);&lt;/script&gt;&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;从上面两个文件的代码实现中，我们可以发现，node.js的代码写java代码相比，实现同样的功能，代码查将更简洁、更少。但有一些要点，我需要给大家指出，这也是我花了一定时间和精力才得到的：</p>
+
+<p>&emsp;&emsp;<strong>1、请求参数的获取：</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="err">参数名</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="err">参数名</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这两种方式中，body是支持post,delete,put等方式，功能更为强大。</p>
+
+<p>&emsp;&emsp;<strong>2、路径参数的获取</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="err">参数占位符名，其中参数占位符名必须和路由表中的名称一致，比如：</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uid</span><span class="err">对应路由表中的</span><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/main/user/:uid&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">getUserById</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>3、session的访问</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="err">自定义</span><span class="nx">key</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;比如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span> <span class="o">=</span> <span class="nx">loginUser</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;获取时：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">u</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>4、页面的跳转</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="err">，参数为路转的表现层页面文件路径，以及放在作用域中的参数，这些参数可以在页面模板中取到。比如：</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/&#39;</span> <span class="o">+</span> <span class="nx">filename</span>  <span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;而jade中的代码是：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'> <span class="nx">body</span>
+</span><span class='line'>   <span class="nx">div</span><span class="p">.</span><span class="nx">container</span>
+</span><span class='line'>    <span class="nx">p</span><span class="p">.</span><span class="nx">alert</span> <span class="err">注册成功</span>
+</span><span class='line'>    <span class="nx">p</span><span class="p">.</span><span class="nx">alert</span><span class="p">.</span><span class="nx">alert</span><span class="o">-</span><span class="nx">info</span> <span class="err">注册用户名是：#</span><span class="p">{</span><span class="nx">regName</span><span class="p">}</span>
+</span><span class='line'>    <span class="nx">p</span><span class="p">.</span><span class="nx">alert</span><span class="p">.</span><span class="nx">alert</span><span class="o">-</span><span class="nx">info</span> <span class="err">照片是</span>
+</span><span class='line'>     <span class="nx">img</span><span class="p">(</span><span class="nx">src</span><span class="o">=</span><span class="s1">&#39;#{photo}&#39;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这样，就得到了regName以及photo参数了。</p>
+
+<p>&emsp;&emsp;<strong>5、页面重定向</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">redirect</span><span class="p">(</span><span class="s1">&#39;你的url地址&#39;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;注意是response的方法。</p>
+
+<p>&emsp;&emsp;<strong>6、自定义响应</strong></p>
+
+<p>&emsp;&emsp;写数据方式1：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s2">&quot;&lt;h1&gt;ok!&lt;/h1&gt;&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">end</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;写数据方式2：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="s2">&quot;&lt;h1&gt;ok!&lt;/h1&gt;&quot;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>7、json数据的输出</strong></p>
+
+<p>&emsp;&emsp;可以用第6条的方式输出，比如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;用户名或密码错误，请核对！&#39;</span><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nx">resultJson</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;也可以用json方法输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'> <span class="kd">var</span> <span class="nx">p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Page</span><span class="p">(</span><span class="nx">pno</span><span class="p">,</span> <span class="nx">pageSize</span><span class="p">,</span> <span class="nx">userCount</span><span class="p">,</span> <span class="nx">users</span><span class="p">);</span>
+</span><span class='line'> <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;page&#39;</span><span class="o">:</span><span class="nx">p</span><span class="p">};</span>
+</span><span class='line'> <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;对于如果控制输入对象中的哪几个字段至json，我还没有找到方法，知道的同学请告知我。</p>
+
+<p>&emsp;&emsp;<strong>8、同步</strong></p>
+
+<p>&emsp;&emsp;Seq，请看上面的登录代码中我写的演示。当然，一般简单的操作，你可将代码直接写到回调中即可。</p>
+
+<p>&emsp;&emsp;最后，说点关于orm2的东西</p>
+
+<p>&emsp;&emsp;<strong>1、分页查询</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">queryParm</span><span class="p">)</span>
+</span><span class='line'>         <span class="p">.</span><span class="nx">limit</span><span class="p">(</span><span class="nx">pageSize</span><span class="p">)</span>
+</span><span class='line'>         <span class="p">.</span><span class="nx">offset</span><span class="p">((</span><span class="nx">pno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="nx">pageSize</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这是orm2的分页，但是要注意 .only(&ldquo;pk_id&rdquo;,&ldquo;f_name&rdquo;,&ldquo;f_login_code&rdquo;,&ldquo;f_birthday&rdquo;)，可以指定需要哪些字段，但这个设置是全局的，会影响到其它查询，所以最后不要用only。</p>
+
+<p>&emsp;&emsp;2、多条件的自动拼装，将更加的简单：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">queryParm</span> <span class="o">=</span> <span class="p">{};</span>
+</span><span class='line'>    <span class="c1">//进行多条件的拼装</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">queryName</span> <span class="o">&amp;&amp;</span> <span class="nx">queryName</span><span class="p">.</span><span class="nx">trim</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>         <span class="c1">//如果用户输入了姓名</span>
+</span><span class='line'>        <span class="nx">queryParm</span><span class="p">.</span><span class="nx">f_name</span> <span class="o">=</span> <span class="nx">orm</span><span class="p">.</span><span class="nx">like</span><span class="p">(</span><span class="s2">&quot;%&quot;</span> <span class="o">+</span> <span class="nx">queryName</span> <span class="o">+</span> <span class="s2">&quot;%&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;orm2更详细的用法，请大家参考：<a href="https://github.com/dresende/node-orm2">https://github.com/dresende/node-orm2</a></p>
+
+<p>&emsp;&emsp;如果你需要事务，需要用到orm-transaction包，需要通过npm来安装。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -634,172 +1354,6 @@ var express = require(&#39;express&#39;) , user = require(&#39;./routes/ &hellip
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/07/29/nodejs-sync/">node.js中的同步</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-07-29T15:18:00+08:00" pubdate data-updated="true">2013年07月29日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;nodejs的非阻塞，异步调用方式，给nodejs带来了非常好的性能，但这同时也给我们编程带来了复杂性，先来看来下面一个文件上传的代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="c1">//用户注册，可上传照片</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">reg</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">files</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">files</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">dir</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;public&quot;</span><span class="p">,</span> <span class="s2">&quot;upload&quot;</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">filename</span> <span class="o">=</span> <span class="nx">uuid</span><span class="p">.</span><span class="nx">v4</span><span class="p">()</span><span class="o">+</span><span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">fs</span><span class="p">.</span><span class="nx">copy</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">path</span><span class="p">,</span> <span class="nx">dir</span> <span class="o">+</span> <span class="s1">&#39;\\&#39;</span> <span class="o">+</span> <span class="nx">filename</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;copy file success!&quot;</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">});</span>
-</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/&#39;</span> <span class="o">+</span> <span class="nx">filename</span>  <span class="p">});</span>
-</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/default.jpeg&#39;</span>  <span class="p">});</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;这段代码，以我们传统的代码顺序执行思路来看，没有任何问题，但在nodejs中情况就不同了。请大家注意其中的fs.copy方法，文件的处理是在一个异步回调中完成的，因此，当我们给客户端发回响应的时候，fs.copy也许还没有执行完成，客户将看不到我们上传的文件。当然，这段代码改起来相对来说还是简单的，只需把res.render(&lsquo;reg/reg_success&rsquo;, { regName: req.body.uname,photo:&lsquo;upload/&rsquo; + filename  });这行代码，移到console.log(&ldquo;copy file success!&rdquo;);之前即可，但对于一些复杂的同步操作，就没有这么简单了。</p>
-
-<p>&emsp;&emsp;nodejs中也有很多同步的第三方插件，比如：step, async，seq我们先来看看seq插件的用法。</p>
-
-<p>&emsp;&emsp;先在package.json中添加对seq的依赖：&#8221;seq&#8221;:&ldquo;*&#8221;，cmd下转至项目目录并运行npm install安装seq。</p>
-
-<p>&emsp;&emsp;假设我有三个函数，f1,f2,f3,代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">function</span> <span class="nx">f1</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function1 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'><span class="p">}</span>  <span class="p">;</span>
-</span><span class='line'><span class="kd">function</span> <span class="nx">f2</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nx">fs</span><span class="p">.</span><span class="nx">readFile</span><span class="p">(</span><span class="nx">__filename</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">text</span><span class="p">){</span>
-</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">text</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function2 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'><span class="p">}</span> <span class="p">;</span>
-</span><span class='line'><span class="kd">function</span> <span class="nx">f3</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function3 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'><span class="p">}</span> <span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果我的调用代码是：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">f1</span><span class="p">();</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">f2</span><span class="p">();</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">f3</span><span class="p">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;出现的结果是，f3已经执行完成，但f2中的文件内容输出还没有完成，最终文件内容的打印，将会出现在最后，这可能和我们的预期不相同，采用seq后的写法如下，我们将对f2方法进行拆分：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">Seq</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;seq&#39;</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">Seq</span><span class="p">()</span>
-</span><span class='line'>    <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">f1</span><span class="p">();</span><span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();})</span>
-</span><span class='line'>    <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">fs</span><span class="p">.</span><span class="nx">readFile</span><span class="p">(</span><span class="nx">__filename</span><span class="p">,</span><span class="k">this</span><span class="p">)})</span>
-</span><span class='line'>    <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">text</span><span class="p">){</span>
-</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;111=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">text</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;111=======================&quot;</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'>        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;function2 calling...&quot;</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();</span>
-</span><span class='line'>    <span class="p">}).</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">f3</span><span class="p">();</span><span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();})</span> <span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的代码中，f3的执行将会在文件内容全部打印输出后，这就是seq同步的一个简单规例。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/4/">&larr; 更多早期老文章</a>
@@ -817,6 +1371,10 @@ var express = require(&#39;express&#39;) , user = require(&#39;./routes/ &hellip
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/11/26/my-blog/">我的个人博客再次开放</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
       </li>
     
@@ -830,10 +1388,6 @@ var express = require(&#39;express&#39;) , user = require(&#39;./routes/ &hellip
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
   </ul>

@@ -1,0 +1,319 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>关于主键生成的方式 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;一、在jdbc中，可通过如下代码得到mysql、sqlserver类型数据库的自增主键： 1
+2
+3
+4
+5
+6
+7
+ResultSet rs = pstmt.getGeneratedKeys(); if (rs.next()) { 　　Long id = rs. &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2013/04/07/primary-key-generate">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">关于主键生成的方式</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-07T15:18:00+08:00" pubdate data-updated="true">2013年04月07日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;<strong>一、在jdbc中，可通过如下代码得到mysql、sqlserver类型数据库的自增主键：</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ResultSet</span> <span class="n">rs</span> <span class="o">=</span> <span class="n">pstmt</span><span class="o">.</span><span class="na">getGeneratedKeys</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">rs</span><span class="o">.</span><span class="na">next</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">　　</span><span class="n">Long</span> <span class="n">id</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="na">getLong</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">｝</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>二、在ibatis中，以mysql为例：</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>insert id=&quot;insertTopic&quot; parameterClass=&quot;topic&quot;&gt;
+</span><span class='line'>insert into TOPIC (FORUM_ID, USERID, TITLE, SUMMARY, CREATE_TIME)
+</span><span class='line'>values (#forumId#, #userid#, #title#, #summary#, now())
+</span><span class='line'><span class="nt">&lt;selectKey</span> <span class="na">resultClass=</span><span class="s">&quot;string&quot;</span> <span class="na">keyProperty=</span><span class="s">&quot;id&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>select last_insert_id() as ID from TOPIC limit 1
+</span><span class='line'><span class="nt">&lt;/selectKey&gt;</span>
+</span><span class='line'><span class="nt">&lt;/insert&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码会在增加成功后填充id字段，利用了mysql的内部函数。</p>
+
+<p>&emsp;&emsp;<strong>三、对于oracle的序列类型，又有两个做法。</strong></p>
+
+<p>&emsp;&emsp;一个是用触发器将序列和表的新增绑定在一起；</p>
+
+<p>&emsp;&emsp;另一种是不绑定，由程序在新增时查询该序列后得到新值，hibernate对orcale中的自增就采用这种方式。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-07T15:18:00+08:00" pubdate data-updated="true">2013年04月07日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/03/29/restful-gui/" title="上一篇文章: restful复杂界面参数的接收设计">&laquo;上一篇:&nbsp;&nbsp;restful复杂界面参数的接收设计</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/04/08/art-step/" title="下一篇文章: 合江亭.安顺廊桥-步骤解析">下一篇: &nbsp;&nbsp;合江亭.安顺廊桥-步骤解析 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/11/26/my-blog/">我的个人博客再次开放</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用---第五部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用---第四部分</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用---第三部分</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="10">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

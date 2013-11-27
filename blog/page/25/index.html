@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;页面交互实现是一个非常费时间、费精力的过程，如果这个过程做得不好，会影响到项目工期以及系统非功能性需求，我感觉这一块的工作用软件行业的一句话“没有银弹”来形容比较贴切。 &emsp;&emsp;表现层会用到MVC模式，通过引入控制器将视图与业务模型解耦， &hellip;">
+  <meta name="description" content="&emsp;&emsp;做架构设计必须要根据系统非功能性需求来开展，以使系统的架构可以在一定程度上满足将来系统发展、变化。但是将来的事情认谁也无法预测，因此，我们的架构在运行维护期随着用户需求的变化而调整的情况也比较常见，下面我结合以前的一次项目经历，谈谈大数据量应用中的一些设计经验。 &emsp &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,220 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/12/29/pf-aduj/">一个大数据量应用的痛苦经历</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-29T15:18:00+08:00" pubdate data-updated="true">2010年12月29日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;做架构设计必须要根据系统非功能性需求来开展，以使系统的架构可以在一定程度上满足将来系统发展、变化。但是将来的事情认谁也无法预测，因此，我们的架构在运行维护期随着用户需求的变化而调整的情况也比较常见，下面我结合以前的一次项目经历，谈谈大数据量应用中的一些设计经验。</p>
+
+<p>&emsp;&emsp;先描述一下需求（几年前的项目了）：这是一个 CAI票预测网站，根据预先录入的母公式及前600~700期开奖号码生成最终的下期奖预测结果。核心部分的领域对象图如下（凭记忆画出）：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/31.png' width='' height='' title='彩票网站设计领域模型'><span class='caption-text'>彩票网站设计领域模型</span></span></p>
+
+<p>&emsp;&emsp;彩票号有很多种，当时客户就提出了4种（全部为3D类型CAI票），每种类型需要至少录入600期历史开奖号码数据，输入历史数据后，要根据已经输入的母公式生成子公式，客户录入了约300个母公式，一个母公式在一期中奖号码上会生成近200个子公式，最后对生成的子公式进行处理，计算出这些子公式在历史开奖号上的准确率，然后进行后续的预测流程。</p>
+
+<p>&emsp;&emsp;根据需求画出了上面的领域模型，我们又很快设计了ER模型，并生成物理模型，物理模型是这样的（我只描述关键表中的关键字段）：</p>
+
+<p>&emsp;&emsp;彩票号码表：用一个标识字段来区别不同的彩票类型（领域中采用继承映射）；</p>
+
+<p>&emsp;&emsp;子公式表：用一外键指向母公式id，再用一外键指向彩票号码id。</p>
+
+<p>&emsp;&emsp;根据我们的经验，这样的设计合情合理，没有任何问题，在实际的开发过程中也证明确实如此，我们很快完成了开发，并交给了用户使用，大家都认为可以轻松一下了，呵呵。</p>
+
+<p>&emsp;&emsp;很快，客户的电话很快就来了，程序运行效率有问题，有一项计算子公式准确率的功能，竟然跑了近1个小时才完成，这对于一些实时性要求较高的CAI票种类（有的CAI票每5分钟开一期）根本无法使用。效率怎么会相差这么大呢？我们开始排查原因。</p>
+
+<p>&emsp;&emsp;一、首先想到的是程序算法问题，特别在在公式解析及计算这一块，算法十分的复杂，我们就先对它进行了优化（变量声明范围、数据替代List等），完成后再跑程序，问题依旧，看来不是这的原因。</p>
+
+<p>&emsp;&emsp;二、那就看看日志文件中记录了些什么吧，也许会发现些问题。当我们从服务器上down日志文件时，才发现这个日志文件竟然达到3G大小，完全无法取下来。一查原因才发现，我们将hibernate的show_sql设置为ture了，因为该项业务操作会对表进行大量的insert操作，日志文件又没有分卷保存，因此会记录很多的sql日志。而当日志文件非常大的时候，log4j在写日志时将会非常的缓慢，最终的性能就出在这里。我们关闭hibernate的 sql日志输出，日志文件是弯小了，但运行还是很耗时，非常的郁闷，看来问题的根本不在这。</p>
+
+<p>&emsp;&emsp;三、想到这项业务操作的算法中，会分批从子公式表中读出数据，再分批进行处理，最后再将处理结果存入其它表中，也许这就是性能问题所在。为了验证，我们在分批操作的一次循环开始和结束处加上日志输出（要取系统时间的，算出执行时间差），发现这里果然有问题，一次循环要执行近2分钟，问题找到就赶紧解决吧。</p>
+
+<p>&emsp;&emsp;我们想到了多线程，修改程序，同时启动了10个线程，每个线程处理一定范围内的批次（当然线程还需要同步，比较麻烦），等10个线程全部完成后再进行后续操作。程序写完了，满以为可以大功告成，但上服务器一跑，结果同样令人沮丧，效率完全没有任何改进。</p>
+
+<p>&emsp;&emsp;四、估计问题还是在数据批量处理处这个地方，我们这个时候才想到可能问题出在数据库上。马上将日志输入定位在数据库批量查询处，真相终于被发现了，一次查询要近2分钟，也就是一条查询sql的执行要2分钟，太恐怖了。</p>
+
+<p>&emsp;&emsp;我们来对数据量进行一个计算：一个母公式一个号码生成200个子公式，总计300个母公式、600期号码就是：200 * 300 * 600=36000000，即3千600万条记录，这还是一种彩票类型，如果4种彩票类型同时上线运行，子公式表中就得存放：3千600万条 * 4 = 144000000条记录，原因清楚了，就开始解决。</p>
+
+<p>&emsp;&emsp;我们首先是根据查询条件，对查询字段建立起复合索引，测试后无效，也就是说，在非常大的数据量下对表建立索引对性能提升无明显作用。</p>
+
+<p>&emsp;&emsp;突然想到可以对表进行分区（Oracle下有，MySql下也有），在查询条件中是按业务中的一个叫col的字段分批查询处理的，我们一定可以按这个字段来建立RANGE类型的分区，于是规划了一个分区方案：对子公式表，按col范围进行分区，划分单独的物理文件存放，经过这样的操作，性能提升非常可观，大约10分钟可以跑完准确率计算业务。</p>
+
+<p>&emsp;&emsp;五、分表，然后再分区。这个是后面进一步考虑到的，就是把子公式按不同CAI票类型分不同的表存放，客户有4种类型的CAI票类型，我们就建立了4个子公式表，与之一一对应，这样一来，每张表中最多就3千600万条记，现在再对一张表来按业务col字段分区，保证每个物理分区文件中的记录在100万条以下，性能提升非常明显，1分钟完成了该项业务操作。</p>
+
+<p>&emsp;&emsp;当然，分表后，hibernate的映射文件要进行相应的修改。</p>
+
+<p>&emsp;&emsp;六、进一步优化。在表中加冗余字段，比如：子公式表中直接加入中奖号码，其它的表也加入一些冗余，使很多以前要关联两张或三张表的查询，现在只需对一张表操作就搞定（这种情况下就不要过多的去考虑OO了哦）。</p>
+
+<p>&emsp;&emsp;七、更换proxool连接池为dbcp。以前据我的经验，proxool的稳定性和性能优于dbcp，但是在这个项目中，proxool无法处理这种大数据量的一次性事务提交处理，dbcp反而不错（proxool要报错的哈）。</p>
+
+<p>&emsp;&emsp;八、根据客户的实际使用情况，我们最后将数据库中的一些表改成非事务方式，即由mysql的innodb改为myisam模式，性能又有所提升。</p>
+
+<p>&emsp;&emsp;最后，这项最耗时的操作完全可以在1分钟内跑完，满足了客户的要求，项目后期，我们又对后台正在执行的任务用状态对象持久化保存，使客户可以知道后台的正在进行某项耗时工作任务，让操作更加人性化。</p>
+
+<p>&emsp;&emsp;从1个小时到1分钟，一步一步走来十分不易，当你也有了这些经验后，在面对下一个系统的设计时，就能做到心中有数，设计出更好的方案来。我们可以从这个项目中总结出来一些结论来：</p>
+
+<p>&emsp;&emsp;<strong>一、应用90%以上的性能瓶颈在数据库，此话不假。</strong></p>
+
+<p>&emsp;&emsp;<strong>二、设计系统时，应该对表的数据量有一个估算，根据数据量决定是否分表、分区、加冗余。</strong></p>
+
+<p>&emsp;&emsp;<strong>三、大数据量应用中，可采用面向过程的领域对象设计，毕竟这种情形是以性能为中心的，面向过程、面向对象、面向需求，其实最终是面向需求的，特别是非功能性需求。</strong></p>
+
+<p>&emsp;&emsp;mysql性能也不错哦，不要一想到大数据量就想到oracle、db2这些哈(mysql分区资料，请访问这个地址：<a href="http://dev.mysql.com/doc/refman/5.1/zh/partitioning.html">http://dev.mysql.com/doc/refman/5.1/zh/partitioning.html</a>)。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/12/28/jeee-tou-6/">一个简单的j2ee入门教程（第六部分—细节完善及测试）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-28T15:18:00+08:00" pubdate data-updated="true">2010年12月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;在项目的主要功能都完成后，我们会对表现层代码进行一个测试，重点是页面的跳转流程是否正确。当然，国内很多小公司的项目可能并不会做这项测试。</p>
+
+<p>&emsp;&emsp;表现层的测试要做到和容器解耦合才能进行下去（顺便提一下，ejb2有一个最大的弊病是不能和容器解耦）：</p>
+
+<p>&emsp;&emsp;如果你用的是struts1.x，可以选择使用StrutsTestCase开源框架的来做表现层的测试，在 <a href="http://strutstestcase.sourceforge.net">http://strutstestcase.sourceforge.net</a>官网上有使用详细说明，看看例子你就明白该怎么做了；如果你用的是 Struts2就十分的方便了，我们从spring容器中得到action对象后，调用相应的方法并验证返回结果字符串就可知道测试结果；单纯 servlet要实现测试可能比较复杂些。页面间的跳转流程测试通过后，就需要对页面的交互细节进一步的完善，我们先来考虑页面数据合法性验证问题。页面的数据合法性验证，可以用下面三种方式为实现：</p>
+
+<p>&emsp;&emsp;1、一种是采用客户端js实现，优点是可以快速对用户输入的非法数据以友好的提示，提高交互效率，缺点是容易被绕过；</p>
+
+<p>&emsp;&emsp;2、第二种是采用框架的验证功能实现，这种方式优点是配置配置就可完成，和框架本身集成紧密，缺点是配置繁琐；</p>
+
+<p>&emsp;&emsp;3、最后一种是程序员在后台人工验证，优点是灵活，缺点是对大数据字段表单操作起来极为不便，而且对验证没通过后的数据回填也比较麻烦。</p>
+
+<p>&emsp;&emsp;上面的三种验证方式，第一种是客户端验证，后两种中服务器端验证，服务器端的验证在任何情况下都是必不可少的。我们在这个示例中，采用jQuery完成对客户端数据的验证，有些好看的显示效果使用jQuery ui插件完成；服务器端采用程序验证的方式。</p>
+
+<p>&emsp;&emsp;使用jQuery的原因是：常简单、高效，而且插件众多，可以大幅度提高前台页面的开发效率。首先将jQuery的js文下载到本地，引入到页面文件中，其次还要有一份jQuery API在手，按API上的示例去写js代码即可。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="o">&lt;</span><span class="nx">link</span> <span class="nx">type</span><span class="o">=</span><span class="err">”</span><span class="nx">text</span><span class="o">/</span><span class="nx">css</span><span class="err">”</span> <span class="nx">rel</span><span class="o">=</span><span class="err">”</span><span class="nx">stylesheet</span><span class="err">”</span> <span class="nx">href</span><span class="o">=</span><span class="err">”</span><span class="nx">css</span><span class="o">/</span><span class="nx">ui</span><span class="o">-</span><span class="nx">lightness</span><span class="o">/</span><span class="nx">jquery</span><span class="o">-</span><span class="nx">ui</span><span class="o">-</span><span class="mf">1.8</span><span class="p">.</span><span class="mi">5</span><span class="p">.</span><span class="nx">custom</span><span class="p">.</span><span class="nx">css</span><span class="err">”</span> <span class="o">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="err">”</span><span class="nx">text</span><span class="o">/</span><span class="nx">javascript</span><span class="err">”</span> <span class="nx">src</span><span class="o">=</span><span class="err">”</span><span class="nx">js</span><span class="o">/</span><span class="nx">jquery</span><span class="o">-</span><span class="mf">1.4</span><span class="p">.</span><span class="mi">2</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">js</span><span class="err">”</span><span class="o">&gt;&lt;</span><span class="err">/script&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="err">”</span><span class="nx">text</span><span class="o">/</span><span class="nx">javascript</span><span class="err">”</span> <span class="nx">src</span><span class="o">=</span><span class="err">”</span><span class="nx">js</span><span class="o">/</span><span class="nx">jquery</span><span class="o">-</span><span class="nx">ui</span><span class="o">-</span><span class="mf">1.8</span><span class="p">.</span><span class="mi">5</span><span class="p">.</span><span class="nx">custom</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">js</span><span class="err">”</span><span class="o">&gt;&lt;</span><span class="err">/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;大家要注意的是js引入的顺序问题，一般是先引入jQuery核心库文件，再引入插件库文件，如果插件库自身带有样式，还要引入css样式文件。还要注意js和css都要分目录存入（我在页面规则中写得有）。下面贴出在登录页面中加入的js验证代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#login_btn&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">if</span> <span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=id]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;学生编码不能为空！&quot;</span><span class="p">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=password]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      
+</span><span class='line'>        <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;登录密码不能为空！&quot;</span><span class="p">);</span>
+</span><span class='line'>      
+</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>  
+</span><span class='line'>   <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果想提示信息更加友好，可使用jQuery ui的Dialog，具体做法你去查询jQuery ui的api文档，这些东西说起来很简单，但要熟悉掌握仍然需要我们大量的实践。可参阅我的&lt;写好登录注册-向商业软件的蜕变>，页面交互这一块内容还很多。</p>
+
+<p>&emsp;&emsp;最看来看看集成测试，大致分为功能性（需求）测试和性能测试两个部分，先来看功能性测试：</p>
+
+<p>&emsp;&emsp;1、最简单、有效的办法是按照功能说明书，用人工的方式逐一测试页面功能，发现错误记录下来。人工方式也是最强、最灵活的，有些功能测试必须由人工来做，比如webgame；如果前期的详细设计非常到位，可以采用自动化工具对需求进行测试，比如Selenium。</p>
+
+<p>&emsp;&emsp;2、性能测试，主要针对有问题的模块进行，常用工具有loadrunner,jmeter,ab等，测试发现系统不满足非功能性需求就要对系统性能进行调优（可参阅我<a href="/blog/2010/11/05/prof-web/">&lt;系统性能优化总结之表现层></a>、<a href="/blog/2010/11/08/prof-service/">&lt;系统性能优化总结之业务层></a>、<a href="/blog/2010/11/09/prof-dao/">&lt;系统性能优化总结之持久层篇></a>）。关于测试这块，我计划用另一篇文章详细讲述。</p>
+
+<p>&emsp;&emsp;j2ee入门教程至此暂告一段落，写作的过程比较艰辛。希望初学者能从这个简单的例子中，真正悟到一个项目究竟是按什么样的流程来做的，每个流程中要注意些什么事项，并能够在实际工作中做到举一反三，这就是本入门系列文章的目的所在。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1516,250 +1730,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/12/17/jeee-tou-2/">一个简单的j2ee入门教程（第二部分——设计）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-12-17T15:18:00+08:00" pubdate data-updated="true">2010年12月17日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;<strong>原型实现</strong></p>
-
-<p>&emsp;&emsp;接下来的一步是要将原型设计阶段的草图，实现为可重用的界面原型，本例中我们用DW(Dreamweaver简写)进行实现。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/50.png' width='' height='' title='界面原型目录结构图'><span class='caption-text'>界面原型目录结构图</span></span></p>
-
-<p>&emsp;&emsp;在进行原型实现的时候一定要注意下面的一些事项：</p>
-
-<p>&emsp;&emsp;1、目录结构</p>
-
-<p>&emsp;&emsp;子模块页面要建上当分类存放；images图片要有专门文件夹；js、css要要有专门文件夹；如果用户可以上传文件，还得规划相应的目录。</p>
-
-<p>&emsp;&emsp;2、文件命名方式</p>
-
-<p>&emsp;&emsp;原则是见名知意，请参考我上面截图中我的命名方式，你就会明白。</p>
-
-<p>&emsp;&emsp;3、页面中输入框的命名，元素的命名</p>
-
-<p>&emsp;&emsp;原则是要考虑到域对象中一些属性的命名，以方便后期实现</p>
-
-<p>&emsp;&emsp;4、css、js</p>
-
-<p>&emsp;&emsp;尽量将页面的表现与行为分离到单独的文件中</p>
-
-<p>&emsp;&emsp;页面实现阶段要考虑的东西真的非常多，包括界面风格，seo，用户体验等等。因为页面是很多程序员不屑一顾的，甚至有人认为这完全是美工的事，这些想法都是完全错误的。</p>
-
-<p>&emsp;&emsp;原型实现一定要认真、细致，因为这个原型是后面项目中可重要的原型哦，在这里下的功夫到位了，后期的实现时会节省很多时间。</p>
-
-<p>&emsp;&emsp;当然原型的实现也可以放到后期来做（比如详细设计时，编码前期），但建议还是提前，因为原型对完善领域对象的属性有很大的作用。</p>
-
-<p>&emsp;&emsp;下面来说一说设计阶段的主要活动。</p>
-
-<p>&emsp;&emsp;设计阶段分为概要设计和详细设计两个步骤，根据我们的业务需求，先进行概要设计。概要设计要做的事情包括：进一步明确、完善领域模型；确定系统业务架构；确定系统技术架构等。</p>
-
-<p>&emsp;&emsp;<strong>概要设计</strong></p>
-
-<p>&emsp;&emsp;首先要知道为什么概要设计要在需求分析完成后才开始，这个也是很多新手不太明白的。原因在于需求中有很多非功能性需求（约束）对项目的成败影响非常大，这些非功能性需求会在需求分析说明书中进行描述，概要设计就是要根据这些具体需求来确定系统架构，以从整体上满足系统非功能性需求。</p>
-
-<p>&emsp;&emsp;架构又分为业务架构和系统技术架构，系统的业务架构一般会根据很多个类似项目或相近领域项目的开发经验、积累，进行总结提炼后方可行成，比如：权限管理、工作流程管理、税率算法等等，这些业务架构可以在未来的新项目中得以重用，换句话说，新项目可以架构在现有的业务架构之上而不需从零开始。本示例过于简单，中我们没有办法抽取业务架构，固本步骤略去。</p>
-
-<p>&emsp;&emsp;系统技术架构是一定需要的，根据需求选择相应的技术架构，进行简单封装并制定一套开发的规范非常的重要，因为好的技术架构会减少程序员的工作量，提高开发效率。技术架构会根据需求（主要是非功能性需求）来确定，比如：遗留项目二次开发、对系统查询性能要求很高的项目、高并发访问项目，账务项目、军工项目等等，不同的项目类型及项目需求，都可能设计出来不同的技术架构。本示例中，我还是采用最常见的ssh技术架构，业务逻辑采用事务脚本方式封装，下面按分层来分别介绍各个层次在概要设计的决策（架构就是由一系列的决策组成）。</p>
-
-<p>&emsp;&emsp;一、表现层</p>
-
-<p>&emsp;&emsp;表现层的开发会占到编码80%左右的周期，因此表现层的技术、框架的选择是非常的重要，开发效率、可维护性是一个选择的指标，在选择时要多做比较。</p>
-
-<p>&emsp;&emsp;需求：项目中会有大量的js操作——>决策：引入jQuery提高开发效率，并下载jQuery扩展插件进一步减少程序员工作量。</p>
-
-<p>&emsp;&emsp;需求：项目工期紧，表现层交互开发周期紧张——>决策：用struts2提高开发效率（示例中我也会给出struts1.x或servlet的实现注意事项，但struts2确实会简化我们的程序开发）。</p>
-
-<p>&emsp;&emsp;二、业务层</p>
-
-<p>&emsp;&emsp;需求：开发人员更熟悉面向过程，项目后续维护期很长——>决策：采用事务脚本封装业务逻辑，界面可直接映射到业务方法。</p>
-
-<p>&emsp;&emsp;需求：所有业务都需要事务处理；决策：事务交spring管理——>为了业务方法设计的灵活性，采用spring注解方式声明事务。</p>
-
-<p>&emsp;&emsp;再考虑一下业务层数据持久化问题。在本例中，业务实现类中需要聚合一个IBaseDao以完成对象的持久化操作，这种持久层框架设计采用了我在另一篇文章《持久层设计方案总结》中的第二种，业务实现类与持久化类的关系如下图所示：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/41.png' width='' height='' title='学生系统业务层设计图'><span class='caption-text'>学生系统业务层设计图</span></span></p>
-
-<p>&emsp;&emsp;我们在StudnetServiceImpl中聚合IBaseDao完成对象持久化操作，由于IBaseDao是一个通用持久接口，因此，在业务实现类中不可避免会写上很多sql或HQL等，看上去这些代码和数据库相关性很大，如果你认为这种方式不好（似乎职责划分不明确），也可以稍加改进，变成《持久层设计方案总结》中最后一种方案。但你要知道这种方式是软件公司中常用的一种方式，开发的效率较高效，可维护性较好。</p>
-
-<p>&emsp;&emsp;三、持久层</p>
-
-<p>&emsp;&emsp;需求：本系统是全新设计开发（非遗留系统的二次开发）——>决定：使用hibernate作为持久层orm框架。</p>
-
-<p>&emsp;&emsp;需求：业务中基本的CRUD操作非常多——>决定：封装通用持久层。</p>
-
-<p>&emsp;&emsp;通用的dao操作如下设计如下（与hibernate有一定的耦合，当然可以设计出更好的通用方法，但我认为一个项目的持久层技术框架确定后，一般很少有更换的情况，因此，这种耦合是稳定的）：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/42.png' width='' height='' title='学生系统业务层设计图'><span class='caption-text'>学生系统业务层设计图</span></span></p>
-
-<p>&emsp;&emsp;至此，概要设计基本完成，《概要设计说明书》会就是我们的一个标志性文档。我们整体软件开发是一个增量、迭代的过程，我们对业务的理解也会逐渐深入，对领域模型也会调整得更加的准确（域模型就是对业务理解的固化），《概要设计说明》将为详细设计提供指导和依据。</p>
-
-<p>&emsp;&emsp;<strong>详细设计</strong></p>
-
-<p>&emsp;&emsp;紧接着我们马上要进入编码阶段了，但仅仅有概要设计的成果我们还无法开展工作，比如：系统中有哪些具体包，哪些类（由于很多类在领域模型中是没有的，但是编码阶段又是必须要用的）等等，详细设计就是要解决这些问题，把一些更细节的东西确定下来。详细设计阶段要解决下面一些问题：</p>
-
-<p>&emsp;&emsp;A、进一步确定领域对象之间的关系，并完善属性</p>
-
-<p>&emsp;&emsp;在概要设计阶段的领域模型图中，可能标注了对象之间的关系以及数量，但在详细设计阶段需要对这些关系进行进一步的明确，特别是一对多，一对一的方向性问题，我已经在《领域对象的关联设计》一文中有详细论述，由于我们的示例中只有一个对象，所以这个过程就可以简化了。</p>
-
-<p>&emsp;&emsp;领域对象的属性，要得根据原型来，在详细设计阶段，原型应该已经实现完成，找到和域对象相关的界面原型，根据原型的界面元素，完善领域对象的属性，其实，从原型上也可以进一步验证领域对象关系是否合理。宅急送后的领域对象如下图，注意属性要全部准确翻译成英文，中文注释一定要写上。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/39.png' width='' height='' title='完善属性'><span class='caption-text'>完善属性</span></span></p>
-
-<p>&emsp;&emsp;B、数据字典及数据库建表sql语句</p>
-
-<p>&emsp;&emsp;有人由hbm文件反向生成表结构，并设置hbm2ddl参数为true实现表结构的自动更新，这种做法是开发经验不丰富的表现。虽然现在领域驱动设计（DDD），OOAD等的口号喊得很响，但在实际应用中还得必须以数据为中心，而数据往往又是关系型数据库，关系数据和对象间存在阻抗、不匹配性，而最后在压力测试时关系数据库又是90%的性能瓶颈所在，因此，对系统的数据存储进行设计就显得非常的有必要，生成一份详细的《数据字典》，无论对于开发阶段，还是维护阶段来说都有重大意义。</p>
-
-<p>&emsp;&emsp;我们这里使用PD（Powerdesigner简写）进行数据库设计，先建立概念模型，再由概念模型生成物理模型。概念模型建立后，你会发现建立的概念模型和领域模型非常的相似，似乎建立概念模型是一项重复性的工作，我以前也是这么认为的，但在经历过一些项目后，我明白了其中的原因：概念模型可以转成各种不同数据库系统的物理模型，这将为系统更换数据库系统带来方便。下面是本示例的概念模型，要注意的是实体中的 name和code两个字段的含义，name一般填入中文，code为最终导出代码（脚本）时用的名称。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/43.png' width='' height='' title='学生系统概念模型图'><span class='caption-text'>学生系统概念模型图</span></span></p>
-
-<p>&emsp;&emsp;将上面的概念模型转成物理模型，如下图（这个时候就要选择底层的数据库类型了哦，这里我选择mysql5）。物理模型要由手工再逐一核对修改一遍，确保其正确性。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/40.png' width='' height='' title='学生系统物理模型图'><span class='caption-text'>学生系统物理模型图</span></span></p>
-
-<p>&emsp;&emsp;最后，由物理模型导出数据字典，我用PDMReader导出数据字典，PDMReader是一个免费工具，网上google一下就可以下载，得到的数据字典如下：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/44.png' width='' height='' title='学生系统数据字典'><span class='caption-text'>学生系统数据字典</span></span></p>
-
-<p>&emsp;&emsp;当然，也可以在PD中直接导出文档，但我认为PD中导出的文档太复杂，有点华而不实，不如PDMReader来得简单。</p>
-
-<p>&emsp;&emsp;最后强调一下表和字段的命名规范，你在填写code的时候，就按这个规则去命名。</p>
-
-<p>&emsp;&emsp;表：t<em>表名，如果是中间表：t</em>表名1_表名2</p>
-
-<p>&emsp;&emsp;字段：f_字段名</p>
-
-<p>&emsp;&emsp;主键：pk_主键名</p>
-
-<p>&emsp;&emsp;外键：fk<em>表名</em>外键字段名</p>
-
-<p>&emsp;&emsp;索引：idx_索引字段名</p>
-
-<p>&emsp;&emsp;《数据字典》是一份非常重要的文档，给它取一个版本号，后期一定会有修改的，版本号要跟着调整。</p>
-
-<p>&emsp;&emsp;C、完成业务层方法的设计，完成其它包层次中的类设计，比如：action编码前要由uml工具导出代码，将导出的代码放入项目初始版本。因此业务方法要根据界面原型来进行详细的设计，如果业务类设计得完整、合理，编码时就会顺利得多。</p>
-
-<p>&emsp;&emsp;当然，不要期待能够把业务层方法设计得非常完善，我们在后续的迭代过程中也会以添加一些没有考虑到的方法。详细设计也得看详细到什么程度，如果你要像日本外包那样来做详细设计，那么action等一切都要设计好，甚至包括界面的像素布局、sql模板都要写好，我想，做为普通的软件公司特别是中小公司，还是要“敏捷”点为好。</p>
-
-<p>&emsp;&emsp;设计阶段完成后，就该进行编码了，但编码前还有很多准备工作要做，这些内容我会在下一篇文章中详细说明。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/12/13/jeee-tou-1/">一个简单的j2ee入门教程（第一部分——需求分析 ）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-12-13T15:18:00+08:00" pubdate data-updated="true">2010年12月13日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;本系列入门文章将结合一个简单的CRUD示例，以我的一篇博文《项目一个迭代周期内的开发流程》为依据，详细讲解开发过程中的流程及关键点环节的注意事项，希望初级程序员、初学者能够举一反三，并以此例为原型，映射到一个完整项目的开发过程，从中悟出一些自己的东西（注：本文中的需求完全是设想的，可能并不符合实际情况）。</p>
-
-<p>&emsp;&emsp;本演示项目是一个学生管理系统，目标客户是某某中学（明确目标客户与用户），该中学委托我们开发一套学生管理系统（可行性分析），我们为此进行前期的需求采集，并进行需求的整理（需求采集、分析、整理），最后形成需求分析说明书，需求分析说明书通过评审后就标志着需求分析完成，一个里程碑已经到达。需求分析说明书中对需求进行了详细的描述，常见需求描述的方式可按照功能模块来，也可以按用例来，我分另写出了两种方式的示例。</p>
-
-<p>&emsp;&emsp;<strong>一、需求描述（按功能模块描述）</strong></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/18.jpg' width='' height='' title='功能分解图'><span class='caption-text'>功能分解图</span></span></p>
-
-<p>&emsp;&emsp;按自顶向下的方法，把整个系统层层分解，直到细分到可实现的最小单元为止，根据功能分解，我们列出如下的功能分解列表：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/17.jpg' width='' height='' title='功能表'><span class='caption-text'>功能表</span></span></p>
-
-<p>&emsp;&emsp;接着给出具体功能的详细需求描述：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/33.jpg' width='' height='' title='学生系统具体功能描述'><span class='caption-text'>学生系统具体功能描述</span></span></p>
-
-<p>&emsp;&emsp;如果业务过于复杂，后面还会加上“数据描述”，“业务约束”这两项，我们的示例很简单，固省略。</p>
-
-<p>&emsp;&emsp;<strong>二、需求描述（按用例描述）</strong></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/46.jpg' width='' height='' title='学生系统用例图'><span class='caption-text'>学生系统用例图</span></span></p>
-
-<p>&emsp;&emsp;根据需求，可以画出本例中的用例图，总共一个角色，两个用例。我要强调的是，用例图是一个宏观的东西，它可以让我们从整体上对系统有一个大致的了解，但是，图是无法说清楚需求的，我们必须借助于用例文本（或叫用例规约）来对需求进行描述。</p>
-
-<p>&emsp;&emsp;下面是“登录系统”用例的描述。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/45.jpg' width='' height='' title='学生系统用例文本'><span class='caption-text'>学生系统用例文本</span></span></p>
-
-<p>&emsp;&emsp;（注：用例文本在不同的软件开发模型，比如RUP、Iconixk中的描述要求和侧重点可能不相同）</p>
-
-<p>&emsp;&emsp;由上面实例中的两种方式对比可以看出，按照功能模块来描述需求的方式有一些明显的缺点，比如：仅仅站在系统的立场来描述功能，隔离了参与者；对复杂业务描述、表达不够顺畅等，如果你是一个软件行业新入门者，建议你在今后的项目中采用“用例”来描述你的需求，这种方式比较自然，更加易懂。</p>
-
-<p>&emsp;&emsp;<strong>三、界面原型法</strong></p>
-
-<p>&emsp;&emsp;在进行需求分析的时候，往往会借助于界面原型法来实现承上启下的过渡，一方面，界面原型可以用来和客户沟通需求，明确地表述我们（软件公司）的意图，另一方面，客户可能对自己的需求表述不清楚，但对界面原型十分的敏感，因些，界面原型在需求分析阶段就已经开始介入；原型确定后，我们又要参照前期的原型进行后面的界面实现以及详细设计，可见界面原型法在整个软件开发活动中的重要性。在我们这个示例中，因为已经有了需求文档，那么我们要做的，就是按照需求文档画出界面原型，如下图：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/47.png' width='' height='' title='学生系统界面原型'><span class='caption-text'>学生系统界面原型</span></span></p>
-
-<p>&emsp;&emsp;（如果你在软件开发前已经有了详细的需求说明文档，那么你也是从界面原型开始了解需求，进行下一步的开发的）。</p>
-
-<p>&emsp;&emsp;这一阶段使用工具是Balsamiq Mockups，实现原则是：简单快速，并且要标清楚界面之间的跳转流程。如果界面上遗漏了一些无关紧要的界面元素也是没有关系的。</p>
-
-<p>&emsp;&emsp;<strong>四、领域模型</strong></p>
-
-<p>&emsp;&emsp;除了界面原型法，我们还有一个重要的活动：建立领域模型，这个活动与界面原型法类似，也是前期可以用来和客户沟通，后期可以用于设计、实现。我们在需求分析阶段建立起来的领域模型比较粗糙，属性也是不完整的，但是重要的属性、关系一定要清楚地标出来。本示例中领域模型图如下：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/38.jpg' width='' height='' title='学生系统领域模型'><span class='caption-text'>学生系统领域模型</span></span></p>
-
-<p>&emsp;&emsp;本例中使用的uml画图工具是jude，你也可以根据个人喜欢好选择其它自己喜欢的工具（选择标准是该工具支持正向与逆向代码功能），<strong>本阶段画领域模型图的原则是：快速，标清楚域对象主要属性及域对象之间的关系（泛化、组合聚合、数量关系），要抓住问题域的“神”</strong>。</p>
-
-<p>&emsp;&emsp;至此，需求分析阶段就可以告一段落了，接下来是设计，设计分两个过程：概要设计和详细设计，在下篇博文中我会对设计过程进行详细讲解。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/26/">&larr; 更多早期老文章</a>
@@ -1777,6 +1747,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/11/26/my-blog/">我的个人博客再次开放</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
       </li>
     
@@ -1790,10 +1764,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
   </ul>

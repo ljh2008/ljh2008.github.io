@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;搜索引擎如何决定众多站点的权重及页面的排名？搞计算机的都知道，搜索引擎本质上是一个程序，是开发人员将算法规则用程序来进行模拟。我们可以把的网站比做社会中一个一个的人，搜索引擎要做的，就是要识别这些人，并按照要求，快速地找到你需要的人。 &emsp;&emsp;我们知道， &hellip;">
+  <meta name="description" content="&emsp;&emsp;近些天，网站流量消耗巨大，通过查看nginx访问日志发现，有众多的ip频繁下载网站上的一些固定资源文件，而且每次访问的时间间隔非常近，很显示是非正确访问，进一步观察发现，这些ip并不是固定的，每天都不相同（估计是“肉机”），有些下载ip访问达到100次以上，有的20次， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,125 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/04/05/block/">屏蔽站点非法流量下载</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-04-05T15:18:00+08:00" pubdate data-updated="true">2011年04月05日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;近些天，网站流量消耗巨大，通过查看nginx访问日志发现，有众多的ip频繁下载网站上的一些固定资源文件，而且每次访问的时间间隔非常近，很显示是非正确访问，进一步观察发现，这些ip并不是固定的，每天都不相同（估计是“肉机”），有些下载ip访问达到100次以上，有的20次，10次的都有，甚是烦人。</p>
+
+<p>&emsp;&emsp;解决方法是，写一定时脚本，对nginx日志进行统计，对这些访问有异常的ip，用iptables进行屏蔽，具体做法如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>grep  <span class="s1">&#39;资源条件&#39;</span> /var/log/nginx/youwebsite.access.log|sort | awk <span class="s1">&#39;{print $1}&#39;</span>|uniq -c|sort |awk <span class="s1">&#39;{if ($1 &gt; 5)print $2}&#39;</span>&gt;/root/temp/block_ip.txt
+</span><span class='line'><span class="k">while </span><span class="nb">read </span>line
+</span><span class='line'><span class="k">do</span>
+</span><span class='line'>iptables -I INPUT -p tcp --dport 80 -s  <span class="nv">$line</span>  -j DROP
+</span><span class='line'><span class="k">done</span>&lt; /root/temp/block_ip.txt
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上述shell脚本对某一资源访问达到5次以上的ip，将被加入屏蔽列表中。最后将脚本加入crontab，问题得到解决。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/03/22/cy/">艰难的互联网创业</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-03-22T15:18:00+08:00" pubdate data-updated="true">2011年03月22日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;中国的互联网已经进行几大巨头独霸的局面，中小创业者在夹缝中艰难地生存着，创新很容易被模仿，即时有创新，凭自己的力量实现并推广也是比较困难的。总体来说，中国互联网缺少法律保护，抄袭、同质化问题比较严重。下面说说我身边发生的一些事情，有些是几年前的。从这些事情中，你也许可以读到想要做好一件事，哪些因素比较关键。</p>
+
+<p>&emsp;&emsp;先说老彭，老彭的思路非常灵活，而且很多东西有自己的想法，但由于种种原因，这些创意都没能实现。他先是提出要做一个站点实时监控网站，专门为中国互联网的广大站长提供站点实时监测，比如：每日浏览，故障次数，平均响应时间等，这些信息会通过手机短信的方式发送给付费站长，普通用户仅有邮件通知。这个想法提出来时，最大的问题如何采集到不同操作系统服务器上的数据，以及如何开发更深层次的扩展应用，比如：站点流量，新增注册用户数等插件开发。想法是好，经过网上查询，当时admin5已经有一个类似的项目，也应该有不错的用户数量，再做一个同类的项目，可以说无法和admin5竞争，我们都知道，“先入为主”这句话在互联网来说非常合适，别人即使比你先推出来一天，效果都是非常不一样的，这个想法就这样被否定。现在，“监控宝”是这类站点中的佼佼者，admin5的监控已经落败，监控宝是有的强大的后台财力支撑，而且做了很多创新，以当时老彭的实力，实现也比较困难。后来，老彭提出做一个saas类的项目，专门供美容美发店使用（会员卡、每日运营情况等），按店收取年费，我都见他设计完了整个项目，包括领域，er，详细设计，后面不知什么原因放弃了，也许问题在推广上。再后来，想做艺术品交易网站，连盈利模式这些都已经想得比较清楚了，但后来也放弃了，原因在于网上有同质化的网站，你想嘛，如果淘宝也开一个这样的版块，那我们就没得搞头了。再后来，想做一个星巴克的网上门店，这个想法因盈利模式有问题放弃。再后来，计划做一个gay交流网站，兼gay物品交易，这个想法应该是做过前期调查的，不知什么原因没了消息。再后来，想做客运站的一个物流系统，也没听到有消息。</p>
+
+<p>&emsp;&emsp;老杨，先是做团购网站，但线下营销能力不足，效果不好，最后网站因备案问题进入电信机房黑白名单过滤而关闭。后来想做外包网站，我说已经有这样的网站了，但他说在很多地方可以改进及创新，当时考虑到开发效率，用php实现，最后也没听到他的这个网站的消息了。看来做技术的人大多都是重技术而不精营销的。前段时间，我还听说某些软件公司的技术人员想用业余时间做团购网站，也许他们真的不知道什么是线下营销，我们要知道，挣钱的网站，大多是用站点做门户辅助配合线下营销，一个团购网，技术上应该是很容易实现的。</p>
+
+<p>&emsp;&emsp;我们老大，有很多不错的创意。首先是小孩防疫情况通知的这个系统，全国有小孩的家庭应该还是很多的，这个项目要是做成并成功推广，应该是非常不错的。网络智能发贴跟贴（自动注册，发贴，跟贴，而且要有一定的人工智能性），这个做好了也会有收不错收入。电子书平台，进行在线学习，可以将各种格式文档转换为网站内部统一格式，实现在线教育培训，这个项目好像进行了一段时间就终止了，有点可惜。</p>
+
+<p>&emsp;&emsp;肖老二写了一个“烂笔头”，收取注册费，也似乎在互联网上推广过一段时间，最后没了消息。其实，这类软件一定要有功能亮点，否则无法盈利。还有一点，中国网民已经习惯了免费，不想掏钱（玩游戏除外哈），这点根深蒂固。</p>
+
+<p>&emsp;&emsp;军哥，技术牛人，狂人，本人很佩服他，也有一些不错的想法，最后都未能被实现，我们也知道，人家的主业可是专业炒股，专业做投资的哦。我身边有投资意识的人，目前仅此一人，我遇到一些问题，都还得向他咨询。</p>
+
+<p>我的一个做互联网的朋友，也比较有想法。一年前申请了一个域名（墓地网），准备做网上墓地销售，不知什么原因，该域名如今还空着的。后来还做过一个比较有前途的“二手工程机械交易网”，但由于线下营销能力跟不上来，最后没了消息。</p>
+
+<p>&emsp;&emsp;我的另一个朋友，非常精于运营和营销，自己带团队做过网页游戏，最终失败于技术。此人的运营营销能力非常强，就像天生是为这行而生的，我从那里学到了很多的东西，也深刻地意识到，技术如何快速适应需求，为需求服务，如果按“软件工程”思想按部就班地做互联网项目，只有死路一条。</p>
+
+<p>&emsp;&emsp;最近一同事向我提起曾今想做一个旅游网站，专为外国人提供散客或组团导游服务，我觉得这里面很多事情没有考虑清楚，盈利方式不明确。我还有一个新疆的同学，上回QQ上给我说想做一个闭路电视在线交费系统，要和广电上做接口什么的，说了很多，感觉信心很大，但我认为这个项目对现在的广电来说基本上没有什么利益和好处，也行无法推广，这个想法也是“虎头蛇尾”，没了下文。</p>
+
+<p>&emsp;&emsp;我也有很多想法，但实现的不多，我对互联网本来就缺乏敏锐性，但我认为互联网上创业的机会还是有的，在互联网上做事情，可能比现实社会中做事要单纯得多，更适合技术人员一些，但是要做强做大，技术人员就不适合了。我认为要将自己的创意变为现实，要注意下面几点。</p>
+
+<p>&emsp;&emsp;1、想好盈利模式；</p>
+
+<p>&emsp;&emsp;2、务实，脚踏实地，避免不必要的投入（比如计算后期用户量有多大，流量有多大，等等，），避免好高骛远；</p>
+
+<p>&emsp;&emsp;3、有想法，要有实现的动力，要用恒心；</p>
+
+<p>&emsp;&emsp;4、如果有团队，一定要统一每个人的预期目标，这点很重要；</p>
+
+<p>&emsp;&emsp;5、要有合作精神，靠一个人的力量很难做成大事；</p>
+
+<p>&emsp;&emsp;6、坚持，坚持，再坚持。在目标没有达到之前，请不要轻言放弃。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -211,569 +330,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/03/05/new-start/">2011年，梨花又开了</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-03-05T15:18:00+08:00" pubdate data-updated="true">2011年03月05日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;记得去年春天花开的时候，言娃娃还在他妈的肚子里，今天，陪老婆到她的一个好朋友家去看了看（言娃娃二爸在家没事不好耍，也和我们一起去了），在朋友的小区中，发现小区中的惟一一棵梨树已经挂满了花朵，十分漂亮，随手拍了些照片。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/5.jpg' width='' height='' title='梨花'><span class='caption-text'>梨花</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/6.jpg' width='' height='' title='我和言言二爸'><span class='caption-text'>我和言言二爸</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/7.jpg' width='' height='' title='朋友家邻居的房间'><span class='caption-text'>朋友家邻居的房间</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/8.jpg' width='' height='' title='晚上回来拍的一张言娃娃'><span class='caption-text'>晚上回来拍的一张言娃娃</span></span></p>
-
-<p>&emsp;&emsp;又是一个春天来了，一年之计在于春，每个人都有新的一年中的计划。言言二爸明天早上9：40的火车，他也要开始新的一年的奔波了，心里有些难过… 。长大了，见面的机会也就少得多了，有的时候非常怀念和他一起度过的童年。</p>
-
-<p>&emsp;&emsp;现在，只能在心里祝愿他兔年顺利、平安，让我们都放心。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/02/18/java-image-process/">Java 图像缩放方案</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-02-18T15:18:00+08:00" pubdate data-updated="true">2011年02月18日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;java对图片的操作功能可谓是比较弱，而且效果比较差。而在项目中，又经常会对图片进行操作，比如：用户上传一个图片上来做为头像，系统就要对图片进行缩放，以使头像符合界面显示要求，并且减少头像文件大小，对站点的响应有一定作用。</p>
-
-<p>&emsp;&emsp;图片绽放，精度肯定会损失，一般我们都要求缩放后的图片在视觉上平滑，不要出现锯齿，下面列举一些实现方案：</p>
-
-<p>&emsp;&emsp;一、利用j2se的Graphics、JPEGImageEncoder等类实现图片缩放，这样的代码网上很多，有兴趣的可以google一下。这种方案的缺点是：效果不理想。还有一点，JPEGImageEncoder在有些jdk实现版本中不支持，比如：OpenJDK。</p>
-
-<p>&emsp;&emsp;二、借助于开源图像处理框架Java Image Filters，网址在这：<a href="http://www.jhlabs.com/ip/filters/index.html">http://www.jhlabs.com/ip/filters/index.html</a>，该框架可以实现常见的图片处理，在<a href="http://www.oschina.net/bbs/thread/8248">http://www.oschina.net/bbs/thread/8248</a>还有一篇文章，介绍如何使用。不过，你打开源代码看看图片缩放的源码，就会发现框架也是简单的封装了j2se的图像处理api，因些，缩放效果很不理想。当然，该框架中的其它图像处理功能比较强大。</p>
-
-<p>&emsp;&emsp;三、使用 ImageMagick,这也是一个开源框架，c语言写的，还有专门的java的接口，在<a href="http://www.imagemagick.org%20/script/api.php">http://www.imagemagick.org /script/api.php</a>可以看到ImageMagick的各种语言接口实现。该框架的功能非常强大，图像处理后出来的效果是最好的，像是缺点是：环境搭建困难，比如：在windows下需要dll,jar包的支持，如果是linux或unix系统要手动编译.so的库文件，新手搞起来肯定比较困难。</p>
-
-<p>&emsp;&emsp;四、如果项目中对图片处理功能要求不多，仅仅是一个缩放功能，用下面这段代码就可以搞定，而且处理效果不错，值得推荐。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-<span class='line-number'>75</span>
-<span class='line-number'>76</span>
-<span class='line-number'>77</span>
-<span class='line-number'>78</span>
-<span class='line-number'>79</span>
-<span class='line-number'>80</span>
-<span class='line-number'>81</span>
-<span class='line-number'>82</span>
-<span class='line-number'>83</span>
-<span class='line-number'>84</span>
-<span class='line-number'>85</span>
-<span class='line-number'>86</span>
-<span class='line-number'>87</span>
-<span class='line-number'>88</span>
-<span class='line-number'>89</span>
-<span class='line-number'>90</span>
-<span class='line-number'>91</span>
-<span class='line-number'>92</span>
-<span class='line-number'>93</span>
-<span class='line-number'>94</span>
-<span class='line-number'>95</span>
-<span class='line-number'>96</span>
-<span class='line-number'>97</span>
-<span class='line-number'>98</span>
-<span class='line-number'>99</span>
-<span class='line-number'>100</span>
-<span class='line-number'>101</span>
-<span class='line-number'>102</span>
-<span class='line-number'>103</span>
-<span class='line-number'>104</span>
-<span class='line-number'>105</span>
-<span class='line-number'>106</span>
-<span class='line-number'>107</span>
-<span class='line-number'>108</span>
-<span class='line-number'>109</span>
-<span class='line-number'>110</span>
-<span class='line-number'>111</span>
-<span class='line-number'>112</span>
-<span class='line-number'>113</span>
-<span class='line-number'>114</span>
-<span class='line-number'>115</span>
-<span class='line-number'>116</span>
-<span class='line-number'>117</span>
-<span class='line-number'>118</span>
-<span class='line-number'>119</span>
-<span class='line-number'>120</span>
-<span class='line-number'>121</span>
-<span class='line-number'>122</span>
-<span class='line-number'>123</span>
-<span class='line-number'>124</span>
-<span class='line-number'>125</span>
-<span class='line-number'>126</span>
-<span class='line-number'>127</span>
-<span class='line-number'>128</span>
-<span class='line-number'>129</span>
-<span class='line-number'>130</span>
-<span class='line-number'>131</span>
-<span class='line-number'>132</span>
-<span class='line-number'>133</span>
-<span class='line-number'>134</span>
-<span class='line-number'>135</span>
-<span class='line-number'>136</span>
-<span class='line-number'>137</span>
-<span class='line-number'>138</span>
-<span class='line-number'>139</span>
-<span class='line-number'>140</span>
-<span class='line-number'>141</span>
-<span class='line-number'>142</span>
-<span class='line-number'>143</span>
-<span class='line-number'>144</span>
-<span class='line-number'>145</span>
-<span class='line-number'>146</span>
-<span class='line-number'>147</span>
-<span class='line-number'>148</span>
-<span class='line-number'>149</span>
-<span class='line-number'>150</span>
-<span class='line-number'>151</span>
-<span class='line-number'>152</span>
-<span class='line-number'>153</span>
-<span class='line-number'>154</span>
-<span class='line-number'>155</span>
-<span class='line-number'>156</span>
-<span class='line-number'>157</span>
-<span class='line-number'>158</span>
-<span class='line-number'>159</span>
-<span class='line-number'>160</span>
-<span class='line-number'>161</span>
-<span class='line-number'>162</span>
-<span class='line-number'>163</span>
-<span class='line-number'>164</span>
-<span class='line-number'>165</span>
-<span class='line-number'>166</span>
-<span class='line-number'>167</span>
-<span class='line-number'>168</span>
-<span class='line-number'>169</span>
-<span class='line-number'>170</span>
-<span class='line-number'>171</span>
-<span class='line-number'>172</span>
-<span class='line-number'>173</span>
-<span class='line-number'>174</span>
-<span class='line-number'>175</span>
-<span class='line-number'>176</span>
-<span class='line-number'>177</span>
-<span class='line-number'>178</span>
-<span class='line-number'>179</span>
-<span class='line-number'>180</span>
-<span class='line-number'>181</span>
-<span class='line-number'>182</span>
-<span class='line-number'>183</span>
-<span class='line-number'>184</span>
-<span class='line-number'>185</span>
-<span class='line-number'>186</span>
-<span class='line-number'>187</span>
-<span class='line-number'>188</span>
-<span class='line-number'>189</span>
-<span class='line-number'>190</span>
-<span class='line-number'>191</span>
-<span class='line-number'>192</span>
-<span class='line-number'>193</span>
-<span class='line-number'>194</span>
-<span class='line-number'>195</span>
-<span class='line-number'>196</span>
-<span class='line-number'>197</span>
-<span class='line-number'>198</span>
-<span class='line-number'>199</span>
-<span class='line-number'>200</span>
-<span class='line-number'>201</span>
-<span class='line-number'>202</span>
-<span class='line-number'>203</span>
-<span class='line-number'>204</span>
-<span class='line-number'>205</span>
-<span class='line-number'>206</span>
-<span class='line-number'>207</span>
-<span class='line-number'>208</span>
-<span class='line-number'>209</span>
-<span class='line-number'>210</span>
-<span class='line-number'>211</span>
-<span class='line-number'>212</span>
-<span class='line-number'>213</span>
-<span class='line-number'>214</span>
-<span class='line-number'>215</span>
-<span class='line-number'>216</span>
-<span class='line-number'>217</span>
-<span class='line-number'>218</span>
-<span class='line-number'>219</span>
-<span class='line-number'>220</span>
-<span class='line-number'>221</span>
-<span class='line-number'>222</span>
-<span class='line-number'>223</span>
-<span class='line-number'>224</span>
-<span class='line-number'>225</span>
-<span class='line-number'>226</span>
-<span class='line-number'>227</span>
-<span class='line-number'>228</span>
-<span class='line-number'>229</span>
-<span class='line-number'>230</span>
-<span class='line-number'>231</span>
-<span class='line-number'>232</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">java.awt.image.BufferedImage</span><span class="o">;</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ImageScale</span> <span class="o">{</span>
-</span><span class='line'>  <span class="cm">/**</span>
-</span><span class='line'><span class="cm">  * 图片无损缩放 try { File fi = new File(&quot;c:/image2.jpg&quot;); // 大图文件 File fo = new</span>
-</span><span class='line'><span class="cm">  * File(&quot;c:/imgTest.jpg&quot;); // 将要转换出的小图文件 BufferedImage bis =</span>
-</span><span class='line'><span class="cm">  * ImageIO.read(fi); BufferedImage bid = null; bid = new</span>
-</span><span class='line'><span class="cm">  * ImageScale().imageZoomOut(bis, 228, 96); ImageIO.write(bid, &quot;jpeg&quot;, fo);</span>
-</span><span class='line'><span class="cm">  * } catch (Exception e) { e.printStackTrace(); }</span>
-</span><span class='line'><span class="cm">  */</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">width</span><span class="o">;</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">height</span><span class="o">;</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">scaleWidth</span><span class="o">;</span>
-</span><span class='line'>  <span class="kt">double</span> <span class="n">support</span> <span class="o">=</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="mf">3.0</span><span class="o">;</span>
-</span><span class='line'>  <span class="kt">double</span> <span class="n">PI</span> <span class="o">=</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="mf">3.14159265358978</span><span class="o">;</span>
-</span><span class='line'>  <span class="kt">double</span><span class="o">[]</span> <span class="n">contrib</span><span class="o">;</span>
-</span><span class='line'>  <span class="kt">double</span><span class="o">[]</span> <span class="n">normContrib</span><span class="o">;</span>
-</span><span class='line'>  <span class="kt">double</span><span class="o">[]</span> <span class="n">tmpContrib</span><span class="o">;</span>
-</span><span class='line'>  <span class="kt">int</span> <span class="n">startContrib</span><span class="o">,</span> <span class="n">stopContrib</span><span class="o">;</span>
-</span><span class='line'>  <span class="kt">int</span> <span class="n">nDots</span><span class="o">;</span>
-</span><span class='line'>  <span class="kt">int</span> <span class="n">nHalfDots</span><span class="o">;</span>
-</span><span class='line'>  <span class="cm">/**</span>
-</span><span class='line'><span class="cm">  * Start: Use Lanczos filter to replace the original algorithm for image</span>
-</span><span class='line'><span class="cm">  * scaling. Lanczos improves quality of the scaled image modify by :blade</span>
-</span><span class='line'><span class="cm">  */</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="n">BufferedImage</span> <span class="nf">imageZoomOut</span><span class="o">(</span><span class="n">BufferedImage</span> <span class="n">srcBufferImage</span><span class="o">,</span> <span class="kt">int</span> <span class="n">w</span><span class="o">,</span> <span class="kt">int</span> <span class="n">h</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="n">width</span> <span class="o">=</span> <span class="n">srcBufferImage</span><span class="o">.</span><span class="na">getWidth</span><span class="o">();</span>
-</span><span class='line'>      <span class="n">height</span> <span class="o">=</span> <span class="n">srcBufferImage</span><span class="o">.</span><span class="na">getHeight</span><span class="o">();</span>
-</span><span class='line'>      <span class="n">scaleWidth</span> <span class="o">=</span> <span class="n">w</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">DetermineResultSize</span><span class="o">(</span><span class="n">w</span><span class="o">,</span> <span class="n">h</span><span class="o">)</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="k">return</span> <span class="n">srcBufferImage</span><span class="o">;</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="n">CalContrib</span><span class="o">();</span>
-</span><span class='line'>      <span class="n">BufferedImage</span> <span class="n">pbOut</span> <span class="o">=</span> <span class="n">HorizontalFiltering</span><span class="o">(</span><span class="n">srcBufferImage</span><span class="o">,</span> <span class="n">w</span><span class="o">);</span>
-</span><span class='line'>      <span class="n">BufferedImage</span> <span class="n">pbFinalOut</span> <span class="o">=</span> <span class="n">VerticalFiltering</span><span class="o">(</span><span class="n">pbOut</span><span class="o">,</span> <span class="n">h</span><span class="o">);</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">pbFinalOut</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">DetermineResultSize</span><span class="o">(</span><span class="kt">int</span> <span class="n">w</span><span class="o">,</span> <span class="kt">int</span> <span class="n">h</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="kt">double</span> <span class="n">scaleH</span><span class="o">,</span> <span class="n">scaleV</span><span class="o">;</span>
-</span><span class='line'>      <span class="n">scaleH</span> <span class="o">=</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">w</span> <span class="o">/</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">width</span><span class="o">;</span>
-</span><span class='line'>      <span class="n">scaleV</span> <span class="o">=</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">h</span> <span class="o">/</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">height</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">scaleH</span> <span class="o">&gt;=</span> <span class="mf">1.0</span> <span class="o">&amp;&amp;</span> <span class="n">scaleV</span> <span class="o">&gt;=</span> <span class="mf">1.0</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="k">return</span> <span class="mi">1</span><span class="o">;</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">double</span> <span class="nf">Lanczos</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">,</span> <span class="kt">int</span> <span class="n">inWidth</span><span class="o">,</span> <span class="kt">int</span> <span class="n">outWidth</span><span class="o">,</span> <span class="kt">double</span> <span class="n">Support</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="kt">double</span> <span class="n">x</span><span class="o">;</span>
-</span><span class='line'>      <span class="n">x</span> <span class="o">=</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">i</span> <span class="o">*</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">outWidth</span> <span class="o">/</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">inWidth</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">Math</span><span class="o">.</span><span class="na">sin</span><span class="o">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">PI</span><span class="o">)</span> <span class="o">/</span> <span class="o">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">PI</span><span class="o">)</span> <span class="o">*</span> <span class="n">Math</span><span class="o">.</span><span class="na">sin</span><span class="o">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">PI</span> <span class="o">/</span> <span class="n">Support</span><span class="o">)</span>
-</span><span class='line'>              <span class="o">/</span> <span class="o">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">PI</span> <span class="o">/</span> <span class="n">Support</span><span class="o">);</span>
-</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of Lanczos()</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">CalContrib</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>      <span class="n">nHalfDots</span> <span class="o">=</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">((</span><span class="kt">double</span><span class="o">)</span> <span class="n">width</span> <span class="o">*</span> <span class="n">support</span> <span class="o">/</span> <span class="o">(</span><span class="kt">double</span><span class="o">)</span> <span class="n">scaleWidth</span><span class="o">);</span>
-</span><span class='line'>      <span class="n">nDots</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">contrib</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">double</span><span class="o">[</span><span class="n">nDots</span><span class="o">];</span>
-</span><span class='line'>          <span class="n">normContrib</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">double</span><span class="o">[</span><span class="n">nDots</span><span class="o">];</span>
-</span><span class='line'>          <span class="n">tmpContrib</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">double</span><span class="o">[</span><span class="n">nDots</span><span class="o">];</span>
-</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;init   contrib,normContrib,tmpContrib&quot;</span> <span class="o">+</span> <span class="n">e</span><span class="o">);</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">center</span> <span class="o">=</span> <span class="n">nHalfDots</span><span class="o">;</span>
-</span><span class='line'>      <span class="n">contrib</span><span class="o">[</span><span class="n">center</span><span class="o">]</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">;</span>
-</span><span class='line'>      <span class="kt">double</span> <span class="n">weight</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">center</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">contrib</span><span class="o">[</span><span class="n">center</span> <span class="o">+</span> <span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">Lanczos</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="n">width</span><span class="o">,</span> <span class="n">scaleWidth</span><span class="o">,</span> <span class="n">support</span><span class="o">);</span>
-</span><span class='line'>          <span class="n">weight</span> <span class="o">+=</span> <span class="n">contrib</span><span class="o">[</span><span class="n">center</span> <span class="o">+</span> <span class="n">i</span><span class="o">];</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">center</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span><span class="o">--)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">contrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">contrib</span><span class="o">[</span><span class="n">center</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">i</span><span class="o">];</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">1.0</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">center</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">normContrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">contrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">/</span> <span class="n">weight</span><span class="o">;</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">center</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">nDots</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">normContrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">normContrib</span><span class="o">[</span><span class="n">center</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">i</span><span class="o">];</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">CalTempContrib</span><span class="o">(</span><span class="kt">int</span> <span class="n">start</span><span class="o">,</span> <span class="kt">int</span> <span class="n">stop</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="kt">double</span> <span class="n">weight</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">start</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">stop</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">weight</span> <span class="o">+=</span> <span class="n">contrib</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">start</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">stop</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">tmpContrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">=</span> <span class="n">contrib</span><span class="o">[</span><span class="n">i</span><span class="o">]</span> <span class="o">/</span> <span class="n">weight</span><span class="o">;</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of CalTempContrib()</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">GetRedValue</span><span class="o">(</span><span class="kt">int</span> <span class="n">rgbValue</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">rgbValue</span> <span class="o">&amp;</span> <span class="mh">0x00ff0000</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">temp</span> <span class="o">&gt;&gt;</span> <span class="mi">16</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">GetGreenValue</span><span class="o">(</span><span class="kt">int</span> <span class="n">rgbValue</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">rgbValue</span> <span class="o">&amp;</span> <span class="mh">0x0000ff00</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">temp</span> <span class="o">&gt;&gt;</span> <span class="mi">8</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">GetBlueValue</span><span class="o">(</span><span class="kt">int</span> <span class="n">rgbValue</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">rgbValue</span> <span class="o">&amp;</span> <span class="mh">0x000000ff</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">ComRGB</span><span class="o">(</span><span class="kt">int</span> <span class="n">redValue</span><span class="o">,</span> <span class="kt">int</span> <span class="n">greenValue</span><span class="o">,</span> <span class="kt">int</span> <span class="n">blueValue</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">return</span> <span class="o">(</span><span class="n">redValue</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span><span class="o">)</span> <span class="o">+</span> <span class="o">(</span><span class="n">greenValue</span> <span class="o">&lt;&lt;</span> <span class="mi">8</span><span class="o">)</span> <span class="o">+</span> <span class="n">blueValue</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">HorizontalFilter</span><span class="o">(</span><span class="n">BufferedImage</span> <span class="n">bufImg</span><span class="o">,</span> <span class="kt">int</span> <span class="n">startX</span><span class="o">,</span> <span class="kt">int</span> <span class="n">stopX</span><span class="o">,</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">start</span><span class="o">,</span> <span class="kt">int</span> <span class="n">stop</span><span class="o">,</span> <span class="kt">int</span> <span class="n">y</span><span class="o">,</span> <span class="kt">double</span><span class="o">[]</span> <span class="n">pContrib</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="kt">double</span> <span class="n">valueRed</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
-</span><span class='line'>      <span class="kt">double</span> <span class="n">valueGreen</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
-</span><span class='line'>      <span class="kt">double</span> <span class="n">valueBlue</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">valueRGB</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">i</span><span class="o">,</span> <span class="n">j</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">startX</span><span class="o">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">start</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">stopX</span><span class="o">;</span> <span class="n">i</span><span class="o">++,</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">valueRGB</span> <span class="o">=</span> <span class="n">bufImg</span><span class="o">.</span><span class="na">getRGB</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="n">y</span><span class="o">);</span>
-</span><span class='line'>          <span class="n">valueRed</span> <span class="o">+=</span> <span class="n">GetRedValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
-</span><span class='line'>          <span class="n">valueGreen</span> <span class="o">+=</span> <span class="n">GetGreenValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
-</span><span class='line'>          <span class="n">valueBlue</span> <span class="o">+=</span> <span class="n">GetBlueValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="n">valueRGB</span> <span class="o">=</span> <span class="n">ComRGB</span><span class="o">(</span><span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueRed</span><span class="o">),</span> <span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueGreen</span><span class="o">),</span>
-</span><span class='line'>              <span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueBlue</span><span class="o">));</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">valueRGB</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of HorizontalFilter()</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="n">BufferedImage</span> <span class="nf">HorizontalFiltering</span><span class="o">(</span><span class="n">BufferedImage</span> <span class="n">bufImage</span><span class="o">,</span> <span class="kt">int</span> <span class="n">iOutW</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">dwInW</span> <span class="o">=</span> <span class="n">bufImage</span><span class="o">.</span><span class="na">getWidth</span><span class="o">();</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">dwInH</span> <span class="o">=</span> <span class="n">bufImage</span><span class="o">.</span><span class="na">getHeight</span><span class="o">();</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>      <span class="n">BufferedImage</span> <span class="n">pbOut</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BufferedImage</span><span class="o">(</span><span class="n">iOutW</span><span class="o">,</span> <span class="n">dwInH</span><span class="o">,</span>
-</span><span class='line'>              <span class="n">BufferedImage</span><span class="o">.</span><span class="na">TYPE_INT_RGB</span><span class="o">);</span>
-</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">iOutW</span><span class="o">;</span> <span class="n">x</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">startX</span><span class="o">;</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">start</span><span class="o">;</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">X</span> <span class="o">=</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(((</span><span class="kt">double</span><span class="o">)</span> <span class="n">x</span><span class="o">)</span> <span class="o">*</span> <span class="o">((</span><span class="kt">double</span><span class="o">)</span> <span class="n">dwInW</span><span class="o">)</span> <span class="o">/</span> <span class="o">((</span><span class="kt">double</span><span class="o">)</span> <span class="n">iOutW</span><span class="o">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">);</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>          <span class="n">startX</span> <span class="o">=</span> <span class="n">X</span> <span class="o">-</span> <span class="n">nHalfDots</span><span class="o">;</span>
-</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">startX</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>              <span class="n">startX</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>              <span class="n">start</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">-</span> <span class="n">X</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>              <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">stop</span><span class="o">;</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">stopX</span> <span class="o">=</span> <span class="n">X</span> <span class="o">+</span> <span class="n">nHalfDots</span><span class="o">;</span>
-</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">stopX</span> <span class="o">&gt;</span> <span class="o">(</span><span class="n">dwInW</span> <span class="o">-</span> <span class="mi">1</span><span class="o">))</span> <span class="o">{</span>
-</span><span class='line'>              <span class="n">stopX</span> <span class="o">=</span> <span class="n">dwInW</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span>
-</span><span class='line'>              <span class="n">stop</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">+</span> <span class="o">(</span><span class="n">dwInW</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">X</span><span class="o">);</span>
-</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>              <span class="n">stop</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">*</span> <span class="mi">2</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">start</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">||</span> <span class="n">stop</span> <span class="o">&lt;</span> <span class="n">nDots</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>              <span class="n">CalTempContrib</span><span class="o">(</span><span class="n">start</span><span class="o">,</span> <span class="n">stop</span><span class="o">);</span>
-</span><span class='line'>              <span class="k">for</span> <span class="o">(</span><span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">dwInH</span><span class="o">;</span> <span class="n">y</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="n">value</span> <span class="o">=</span> <span class="n">HorizontalFilter</span><span class="o">(</span><span class="n">bufImage</span><span class="o">,</span> <span class="n">startX</span><span class="o">,</span> <span class="n">stopX</span><span class="o">,</span> <span class="n">start</span><span class="o">,</span>
-</span><span class='line'>                          <span class="n">stop</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">tmpContrib</span><span class="o">);</span>
-</span><span class='line'>                  <span class="n">pbOut</span><span class="o">.</span><span class="na">setRGB</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>              <span class="k">for</span> <span class="o">(</span><span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">dwInH</span><span class="o">;</span> <span class="n">y</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="n">value</span> <span class="o">=</span> <span class="n">HorizontalFilter</span><span class="o">(</span><span class="n">bufImage</span><span class="o">,</span> <span class="n">startX</span><span class="o">,</span> <span class="n">stopX</span><span class="o">,</span> <span class="n">start</span><span class="o">,</span>
-</span><span class='line'>                          <span class="n">stop</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">normContrib</span><span class="o">);</span>
-</span><span class='line'>                  <span class="n">pbOut</span><span class="o">.</span><span class="na">setRGB</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">pbOut</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of HorizontalFiltering()</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="nf">VerticalFilter</span><span class="o">(</span><span class="n">BufferedImage</span> <span class="n">pbInImage</span><span class="o">,</span> <span class="kt">int</span> <span class="n">startY</span><span class="o">,</span> <span class="kt">int</span> <span class="n">stopY</span><span class="o">,</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">start</span><span class="o">,</span> <span class="kt">int</span> <span class="n">stop</span><span class="o">,</span> <span class="kt">int</span> <span class="n">x</span><span class="o">,</span> <span class="kt">double</span><span class="o">[]</span> <span class="n">pContrib</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="kt">double</span> <span class="n">valueRed</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
-</span><span class='line'>      <span class="kt">double</span> <span class="n">valueGreen</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
-</span><span class='line'>      <span class="kt">double</span> <span class="n">valueBlue</span> <span class="o">=</span> <span class="mf">0.0</span><span class="o">;</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">valueRGB</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">i</span><span class="o">,</span> <span class="n">j</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">startY</span><span class="o">,</span> <span class="n">j</span> <span class="o">=</span> <span class="n">start</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">stopY</span><span class="o">;</span> <span class="n">i</span><span class="o">++,</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">valueRGB</span> <span class="o">=</span> <span class="n">pbInImage</span><span class="o">.</span><span class="na">getRGB</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">i</span><span class="o">);</span>
-</span><span class='line'>          <span class="n">valueRed</span> <span class="o">+=</span> <span class="n">GetRedValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
-</span><span class='line'>          <span class="n">valueGreen</span> <span class="o">+=</span> <span class="n">GetGreenValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
-</span><span class='line'>          <span class="n">valueBlue</span> <span class="o">+=</span> <span class="n">GetBlueValue</span><span class="o">(</span><span class="n">valueRGB</span><span class="o">)</span> <span class="o">*</span> <span class="n">pContrib</span><span class="o">[</span><span class="n">j</span><span class="o">];</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="n">valueRGB</span> <span class="o">=</span> <span class="n">ComRGB</span><span class="o">(</span><span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueRed</span><span class="o">),</span> <span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueGreen</span><span class="o">),</span>
-</span><span class='line'>              <span class="n">Clip</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="n">valueBlue</span><span class="o">));</span>
-</span><span class='line'>      <span class="c1">// System.out.println(valueRGB);</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">valueRGB</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of VerticalFilter()</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="n">BufferedImage</span> <span class="nf">VerticalFiltering</span><span class="o">(</span><span class="n">BufferedImage</span> <span class="n">pbImage</span><span class="o">,</span> <span class="kt">int</span> <span class="n">iOutH</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">iW</span> <span class="o">=</span> <span class="n">pbImage</span><span class="o">.</span><span class="na">getWidth</span><span class="o">();</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">iH</span> <span class="o">=</span> <span class="n">pbImage</span><span class="o">.</span><span class="na">getHeight</span><span class="o">();</span>
-</span><span class='line'>      <span class="kt">int</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>      <span class="n">BufferedImage</span> <span class="n">pbOut</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BufferedImage</span><span class="o">(</span><span class="n">iW</span><span class="o">,</span> <span class="n">iOutH</span><span class="o">,</span>
-</span><span class='line'>              <span class="n">BufferedImage</span><span class="o">.</span><span class="na">TYPE_INT_RGB</span><span class="o">);</span>
-</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">iOutH</span><span class="o">;</span> <span class="n">y</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">startY</span><span class="o">;</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">start</span><span class="o">;</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">Y</span> <span class="o">=</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(((</span><span class="kt">double</span><span class="o">)</span> <span class="n">y</span><span class="o">)</span> <span class="o">*</span> <span class="o">((</span><span class="kt">double</span><span class="o">)</span> <span class="n">iH</span><span class="o">)</span> <span class="o">/</span> <span class="o">((</span><span class="kt">double</span><span class="o">)</span> <span class="n">iOutH</span><span class="o">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">);</span>
-</span><span class='line'>          <span class="n">startY</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">-</span> <span class="n">nHalfDots</span><span class="o">;</span>
-</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">startY</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>              <span class="n">startY</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>              <span class="n">start</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">-</span> <span class="n">Y</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>              <span class="n">start</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">stop</span><span class="o">;</span>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">stopY</span> <span class="o">=</span> <span class="n">Y</span> <span class="o">+</span> <span class="n">nHalfDots</span><span class="o">;</span>
-</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">stopY</span> <span class="o">&gt;</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(</span><span class="n">iH</span> <span class="o">-</span> <span class="mi">1</span><span class="o">))</span> <span class="o">{</span>
-</span><span class='line'>              <span class="n">stopY</span> <span class="o">=</span> <span class="n">iH</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span>
-</span><span class='line'>              <span class="n">stop</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">+</span> <span class="o">(</span><span class="n">iH</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">Y</span><span class="o">);</span>
-</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>              <span class="n">stop</span> <span class="o">=</span> <span class="n">nHalfDots</span> <span class="o">*</span> <span class="mi">2</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">start</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">||</span> <span class="n">stop</span> <span class="o">&lt;</span> <span class="n">nDots</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>              <span class="n">CalTempContrib</span><span class="o">(</span><span class="n">start</span><span class="o">,</span> <span class="n">stop</span><span class="o">);</span>
-</span><span class='line'>              <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">iW</span><span class="o">;</span> <span class="n">x</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="n">value</span> <span class="o">=</span> <span class="n">VerticalFilter</span><span class="o">(</span><span class="n">pbImage</span><span class="o">,</span> <span class="n">startY</span><span class="o">,</span> <span class="n">stopY</span><span class="o">,</span> <span class="n">start</span><span class="o">,</span> <span class="n">stop</span><span class="o">,</span>
-</span><span class='line'>                          <span class="n">x</span><span class="o">,</span> <span class="n">tmpContrib</span><span class="o">);</span>
-</span><span class='line'>                  <span class="n">pbOut</span><span class="o">.</span><span class="na">setRGB</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>              <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">x</span> <span class="o">&lt;</span> <span class="n">iW</span><span class="o">;</span> <span class="n">x</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="n">value</span> <span class="o">=</span> <span class="n">VerticalFilter</span><span class="o">(</span><span class="n">pbImage</span><span class="o">,</span> <span class="n">startY</span><span class="o">,</span> <span class="n">stopY</span><span class="o">,</span> <span class="n">start</span><span class="o">,</span> <span class="n">stop</span><span class="o">,</span>
-</span><span class='line'>                          <span class="n">x</span><span class="o">,</span> <span class="n">normContrib</span><span class="o">);</span>
-</span><span class='line'>                  <span class="n">pbOut</span><span class="o">.</span><span class="na">setRGB</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">pbOut</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span> <span class="c1">// end of VerticalFiltering()</span>
-</span><span class='line'>  <span class="kt">int</span> <span class="nf">Clip</span><span class="o">(</span><span class="kt">int</span> <span class="n">x</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">)</span>
-</span><span class='line'>          <span class="k">return</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="mi">255</span><span class="o">)</span>
-</span><span class='line'>          <span class="k">return</span> <span class="mi">255</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">x</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;代码我也是在网上找的，“拿来主义”，能够满足项目要求就是最终目的，呵呵！</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/24/">&larr; 更多早期老文章</a>
@@ -791,6 +347,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/11/26/my-blog/">我的个人博客再次开放</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
       </li>
     
@@ -804,10 +364,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
   </ul>

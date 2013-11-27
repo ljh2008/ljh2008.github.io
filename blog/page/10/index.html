@@ -9,7 +9,13 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;首先在服务器上把目录结构搭建出来，如下图： svn项目结构 &emsp;&emsp;runk为项目主干，也就是主线，branches中存放分支，tags中为标志（标签），这个对于大、中型项目，需要建立这样的结构，如果是一个小项目，就不必这么兴师动众了。 &emsp;& &hellip;">
+  <meta name="description" content="&emsp;&emsp;计算机自身的硬件特性，决定了对小数计算的不精确性，请看java中的以下代码： 1
+2
+3
+4
+System.out.println(0.05+0.01);
+System.out.println(1.0 - 0.58);
+System.out.println(4.015 * &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +64,983 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/02/26/java-number/">Java中的数值处理</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-26T15:18:00+08:00" pubdate data-updated="true">2013年02月26日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;计算机自身的硬件特性，决定了对小数计算的不精确性，请看java中的以下代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">0.05</span><span class="o">+</span><span class="mf">0.01</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="mf">0.58</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">4.015</span> <span class="o">*</span> <span class="mi">100</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="mf">123.3</span><span class="o">/</span><span class="mi">100</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的计算结果，可能和你想像中的有些不一样：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="mf">0.060000000000000005</span>
+</span><span class='line'><span class="mf">0.42000000000000004</span>
+</span><span class='line'><span class="mf">401.49999999999994</span>
+</span><span class='line'><span class="mf">1.2329999999999999</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果上面的计算，针对的金钱货币的计算，结果将是不正确的。</p>
+
+<p>&emsp;&emsp;那么，在具体的项目中，我们怎么来解决这个问题呢？</p>
+
+<p>&emsp;&emsp;<strong>可选方案一：</strong></p>
+
+<p>&emsp;&emsp;将数值放大处理保存，比如放大100倍，放大1000部，如果是人民币，就已经到了分，粒的精度。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">5</span> <span class="o">+</span> <span class="mi">1</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">50</span> <span class="o">+</span> <span class="mi">10</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">100</span> <span class="o">-</span> <span class="mi">58</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">1000</span> <span class="o">-</span> <span class="mi">580</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mf">401.5</span> <span class="o">*</span> <span class="mi">100</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">4015</span> <span class="o">*</span> <span class="mi">100</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">12330</span><span class="o">/</span><span class="mi">100</span><span class="o">)/</span><span class="mf">100.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">((</span><span class="mi">123300</span><span class="o">/</span><span class="mi">100</span><span class="o">)/</span><span class="mf">1000.0</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码是将计算的数值放大100或1000倍后的处理，结果如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="mf">0.06</span>
+</span><span class='line'><span class="mf">0.06</span>
+</span><span class='line'><span class="mf">0.42</span>
+</span><span class='line'><span class="mf">0.42</span>
+</span><span class='line'><span class="mf">401.5</span>
+</span><span class='line'><span class="mf">401.5</span>
+</span><span class='line'><span class="mf">1.23</span>
+</span><span class='line'><span class="mf">1.233</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，我们可以看到，放大1000倍后，我们是可以应对金额精确到粒的精度的计算。</p>
+
+<p>&emsp;&emsp;<strong>可选方案二：</strong></p>
+
+<p>&emsp;&emsp;使用BigDecimal进行计算，上面的计算，可写成：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">BigDecimal</span> <span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">0.05</span><span class="o">);</span>
+</span><span class='line'><span class="n">BigDecimal</span> <span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">0.01</span><span class="o">);</span>
+</span><span class='line'> <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">1.0</span><span class="o">);</span>
+</span><span class='line'><span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">0.58</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">subtract</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">4.015</span><span class="o">);</span>
+</span><span class='line'><span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">100</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">multiply</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">f1</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mf">123.3</span><span class="o">);</span>
+</span><span class='line'><span class="n">f2</span> <span class="o">=</span> <span class="n">BigDecimal</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">100</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f1</span><span class="o">.</span><span class="na">divide</span><span class="o">(</span><span class="n">f2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">());</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;我们得到了最终的正确运行结果：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="mf">0.06</span>
+</span><span class='line'><span class="mf">0.42</span>
+</span><span class='line'><span class="mf">401.5</span>
+</span><span class='line'><span class="mf">1.233</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;因此，很多人封装了对小数类型操作的方法到一个类中，这样就方便了我们的计算，下面是代码节选：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="mf">0.05</span><span class="o">,</span><span class="mf">0.01</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">sub</span><span class="o">(</span><span class="mf">1.0</span> <span class="o">,</span> <span class="mf">0.58</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">mul</span><span class="o">(</span><span class="mf">4.015</span> <span class="o">,</span> <span class="mi">100</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Money</span><span class="o">.</span><span class="na">div</span><span class="o">(</span><span class="mf">123.3</span><span class="o">,</span><span class="mi">100</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;计算结果也是正确的。</p>
+
+<p>&emsp;&emsp;Money类的代码：</p>
+
+<figure class='code'><figcaption><span>Money.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Money</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//默认除法运算精度</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">DEF_DIV_SCALE</span> <span class="o">=</span> <span class="mi">10</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">//这个类不能实例化</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="nf">Money</span><span class="o">(){</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的加法运算。</span>
+</span><span class='line'><span class="cm">     * @param v1 被加数</span>
+</span><span class='line'><span class="cm">     * @param v2 加数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的和</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">add</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">b2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的减法运算。</span>
+</span><span class='line'><span class="cm">     * @param v1 被减数</span>
+</span><span class='line'><span class="cm">     * @param v2 减数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的差</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">sub</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">subtract</span><span class="o">(</span><span class="n">b2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的乘法运算。</span>
+</span><span class='line'><span class="cm">     * @param v1 被乘数</span>
+</span><span class='line'><span class="cm">     * @param v2 乘数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的积</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">mul</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">multiply</span><span class="o">(</span><span class="n">b2</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供（相对）精确的除法运算，当发生除不尽的情况时，精确到</span>
+</span><span class='line'><span class="cm">     * 小数点以后10位，以后的数字四舍五入。</span>
+</span><span class='line'><span class="cm">     * @param v1 被除数</span>
+</span><span class='line'><span class="cm">     * @param v2 除数</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的商</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">div</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nf">div</span><span class="o">(</span><span class="n">v1</span><span class="o">,</span><span class="n">v2</span><span class="o">,</span><span class="n">DEF_DIV_SCALE</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供（相对）精确的除法运算。当发生除不尽的情况时，由scale参数指</span>
+</span><span class='line'><span class="cm">     * 定精度，以后的数字四舍五入。</span>
+</span><span class='line'><span class="cm">     * @param v1 被除数</span>
+</span><span class='line'><span class="cm">     * @param v2 除数</span>
+</span><span class='line'><span class="cm">     * @param scale 表示表示需要精确到小数点以后几位。</span>
+</span><span class='line'><span class="cm">     * @return 两个参数的商</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">div</span><span class="o">(</span><span class="kt">double</span> <span class="n">v1</span><span class="o">,</span><span class="kt">double</span> <span class="n">v2</span><span class="o">,</span><span class="kt">int</span> <span class="n">scale</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">scale</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">){</span>
+</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span>
+</span><span class='line'>                <span class="s">&quot;The scale must be a positive integer or zero&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v2</span><span class="o">));</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b1</span><span class="o">.</span><span class="na">divide</span><span class="o">(</span><span class="n">b2</span><span class="o">,</span><span class="n">scale</span><span class="o">,</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_HALF_UP</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 提供精确的小数位四舍五入处理。</span>
+</span><span class='line'><span class="cm">     * @param v 需要四舍五入的数字</span>
+</span><span class='line'><span class="cm">     * @param scale 小数点后保留几位</span>
+</span><span class='line'><span class="cm">     * @return 四舍五入后的结果</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">double</span> <span class="nf">round</span><span class="o">(</span><span class="kt">double</span> <span class="n">v</span><span class="o">,</span><span class="kt">int</span> <span class="n">scale</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">if</span><span class="o">(</span><span class="n">scale</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">){</span>
+</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span>
+</span><span class='line'>                <span class="s">&quot;The scale must be a positive integer or zero&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">b</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="n">Double</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">v</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">BigDecimal</span> <span class="n">one</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BigDecimal</span><span class="o">(</span><span class="s">&quot;1&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">b</span><span class="o">.</span><span class="na">divide</span><span class="o">(</span><span class="n">one</span><span class="o">,</span><span class="n">scale</span><span class="o">,</span><span class="n">BigDecimal</span><span class="o">.</span><span class="na">ROUND_HALF_UP</span><span class="o">).</span><span class="na">doubleValue</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，数据库中对数值的型的保存，可以采用数值类型，也可以使用字符类型，也就是说，我们在进行商业计算的时候，要使用上面的方法来进行处理，以便得到正确的结果。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/02/25/ibatis-dyna-sql/">Ibatis动态sql示例</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-25T15:18:00+08:00" pubdate data-updated="true">2013年02月25日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;动态sql是ibatis中非常强大而实用的功能，下面贴出一段分页功能的实现代码，供大家参考：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Page</span> <span class="nf">getEpetByPage</span><span class="o">(</span><span class="kd">final</span> <span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">,</span> <span class="kd">final</span> <span class="n">Map</span> <span class="n">queryParam</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="o">(</span><span class="n">Page</span><span class="o">)</span><span class="k">this</span><span class="o">.</span><span class="na">getSqlMapClientTemplate</span><span class="o">().</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">SqlMapClientCallback</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nd">@Override</span>
+</span><span class='line'>            <span class="kd">public</span> <span class="n">Object</span> <span class="nf">doInSqlMapClient</span><span class="o">(</span><span class="n">SqlMapExecutor</span> <span class="n">sc</span><span class="o">)</span>
+</span><span class='line'>                    <span class="kd">throws</span> <span class="n">SQLException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">Page</span> <span class="n">p</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Page</span><span class="o">();</span>
+</span><span class='line'>                <span class="c1">//构造分页参数</span>
+</span><span class='line'>                <span class="n">Map</span> <span class="n">param</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;start&quot;</span><span class="o">,</span> <span class="o">(</span><span class="n">pageNo</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)*</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;end&quot;</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">putAll</span><span class="o">(</span><span class="n">queryParam</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="c1">//查询当前页数据</span>
+</span><span class='line'>                <span class="n">List</span> <span class="n">data</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="na">queryForList</span><span class="o">(</span><span class="s">&quot;epet.selectEpetsByPage&quot;</span><span class="o">,</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">p</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>                <span class="c1">//查询满足条件的记录数</span>
+</span><span class='line'>                <span class="n">Number</span> <span class="n">count</span> <span class="o">=</span> <span class="o">(</span><span class="n">Number</span><span class="o">)</span><span class="n">sc</span><span class="o">.</span><span class="na">queryForObject</span><span class="o">(</span><span class="s">&quot;epet.selectEpetsCounts&quot;</span><span class="o">,</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">p</span><span class="o">.</span><span class="na">setRowcount</span><span class="o">(</span><span class="n">count</span><span class="o">.</span><span class="na">intValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="k">return</span> <span class="n">p</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;配置中的写法是：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;sql</span> <span class="na">id=</span><span class="s">&quot;epets_where&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;dynamic</span> <span class="na">prepend=</span><span class="s">&quot;where&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;isNotEmpty</span> <span class="na">property=</span><span class="s">&quot;nickName&quot;</span> <span class="na">prepend=</span><span class="s">&quot;and&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                f_nickname = #nickName#
+</span><span class='line'>            <span class="nt">&lt;/isNotEmpty&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;isNotEmpty</span> <span class="na">property=</span><span class="s">&quot;password&quot;</span> <span class="na">prepend=</span><span class="s">&quot;and&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                f_password = #password#
+</span><span class='line'>            <span class="nt">&lt;/isNotEmpty&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/dynamic&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/sql&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectEpetsByPage&quot;</span>
+</span><span class='line'>    <span class="na">resultMap=</span><span class="s">&quot;epetResult&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        select *
+</span><span class='line'>        from t_epet
+</span><span class='line'>        <span class="nt">&lt;include</span> <span class="na">refid=</span><span class="s">&quot;epets_where&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>        limit #start#, #end#
+</span><span class='line'>    <span class="nt">&lt;/select&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;selectEpetsCounts&quot;</span>
+</span><span class='line'>    <span class="na">resultClass=</span><span class="s">&quot;int&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        select count(*)
+</span><span class='line'>        from t_epet
+</span><span class='line'>        <span class="nt">&lt;include</span> <span class="na">refid=</span><span class="s">&quot;epets_where&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/select&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;调用者在调用getEpetByPage(final int pageNo, final int pageSize, final Map queryParam)方法时，传入queryParam,iibatis将根据传入的参数，拼装最终sql语语。</p>
+
+<p>&emsp;&emsp;另附pet对象crud操作全部代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+<span class='line-number'>170</span>
+<span class='line-number'>171</span>
+<span class='line-number'>172</span>
+<span class='line-number'>173</span>
+<span class='line-number'>174</span>
+<span class='line-number'>175</span>
+<span class='line-number'>176</span>
+<span class='line-number'>177</span>
+<span class='line-number'>178</span>
+<span class='line-number'>179</span>
+<span class='line-number'>180</span>
+<span class='line-number'>181</span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+<span class='line-number'>194</span>
+<span class='line-number'>195</span>
+<span class='line-number'>196</span>
+<span class='line-number'>197</span>
+<span class='line-number'>198</span>
+<span class='line-number'>199</span>
+<span class='line-number'>200</span>
+<span class='line-number'>201</span>
+<span class='line-number'>202</span>
+<span class='line-number'>203</span>
+<span class='line-number'>204</span>
+<span class='line-number'>205</span>
+<span class='line-number'>206</span>
+<span class='line-number'>207</span>
+<span class='line-number'>208</span>
+<span class='line-number'>209</span>
+<span class='line-number'>210</span>
+<span class='line-number'>211</span>
+<span class='line-number'>212</span>
+<span class='line-number'>213</span>
+<span class='line-number'>214</span>
+<span class='line-number'>215</span>
+<span class='line-number'>216</span>
+<span class='line-number'>217</span>
+<span class='line-number'>218</span>
+<span class='line-number'>219</span>
+<span class='line-number'>220</span>
+<span class='line-number'>221</span>
+<span class='line-number'>222</span>
+<span class='line-number'>223</span>
+<span class='line-number'>224</span>
+<span class='line-number'>225</span>
+<span class='line-number'>226</span>
+<span class='line-number'>227</span>
+<span class='line-number'>228</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">EpetDaoImpl</span> <span class="kd">extends</span> <span class="n">SqlMapClientDaoSupport</span> <span class="kd">implements</span> <span class="n">IEpetDao</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//    // ibatis核心对象</span>
+</span><span class='line'><span class="c1">//    private SqlMapClient sc;</span>
+</span><span class='line'><span class="c1">//</span>
+</span><span class='line'><span class="c1">//    public void setSc(SqlMapClient sc) {</span>
+</span><span class='line'><span class="c1">//        this.sc = sc;</span>
+</span><span class='line'><span class="c1">//    }</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">EpetDaoImpl</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'><span class="c1">//        // 读取配置文件</span>
+</span><span class='line'><span class="c1">//        Reader conf;</span>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            conf = Resources.getResourceAsReader(&quot;SqlMapConfig.xml&quot;);</span>
+</span><span class='line'><span class="c1">//            // 得到核心对象</span>
+</span><span class='line'><span class="c1">//            sc = SqlMapClientBuilder.buildSqlMapClient(conf);</span>
+</span><span class='line'><span class="c1">//        } catch (IOException e) {</span>
+</span><span class='line'><span class="c1">//            // TODO Auto-generated catch block</span>
+</span><span class='line'><span class="c1">//            e.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Epet</span> <span class="nf">getEpetById</span><span class="o">(</span><span class="kt">int</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="o">(</span><span class="n">Epet</span><span class="o">)</span><span class="k">this</span><span class="o">.</span><span class="na">getSqlMapClientTemplate</span><span class="o">()</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">queryForObject</span><span class="o">(</span><span class="s">&quot;epet.selectEpetById&quot;</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            return (Epet)sc.queryForObject(&quot;epet.selectEpetById&quot;, id);</span>
+</span><span class='line'><span class="c1">//        } catch (SQLException e) {</span>
+</span><span class='line'><span class="c1">//            e.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'><span class="c1">//        return null;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Epet</span> <span class="nf">getEpetByNickname</span><span class="o">(</span><span class="n">String</span> <span class="n">nickName</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="o">(</span><span class="n">Epet</span><span class="o">)</span><span class="k">this</span><span class="o">.</span><span class="na">getSqlMapClientTemplate</span><span class="o">()</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">queryForObject</span><span class="o">(</span><span class="s">&quot;epet.selectEpetsByNickname&quot;</span><span class="o">,</span> <span class="n">nickName</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            return (Epet)sc.queryForObject(&quot;epet.selectEpetsByNickname&quot;, nickName);</span>
+</span><span class='line'><span class="c1">//        } catch (SQLException e) {</span>
+</span><span class='line'><span class="c1">//            e.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'><span class="c1">//        return null;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Page</span> <span class="nf">getEpetByPage</span><span class="o">(</span><span class="kd">final</span> <span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">,</span> <span class="kd">final</span> <span class="n">Map</span> <span class="n">queryParam</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="o">(</span><span class="n">Page</span><span class="o">)</span><span class="k">this</span><span class="o">.</span><span class="na">getSqlMapClientTemplate</span><span class="o">().</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">SqlMapClientCallback</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nd">@Override</span>
+</span><span class='line'>            <span class="kd">public</span> <span class="n">Object</span> <span class="nf">doInSqlMapClient</span><span class="o">(</span><span class="n">SqlMapExecutor</span> <span class="n">sc</span><span class="o">)</span>
+</span><span class='line'>                    <span class="kd">throws</span> <span class="n">SQLException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">Page</span> <span class="n">p</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Page</span><span class="o">();</span>
+</span><span class='line'>                <span class="c1">//构造分页参数</span>
+</span><span class='line'>                <span class="n">Map</span> <span class="n">param</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;start&quot;</span><span class="o">,</span> <span class="o">(</span><span class="n">pageNo</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)*</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;end&quot;</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">param</span><span class="o">.</span><span class="na">putAll</span><span class="o">(</span><span class="n">queryParam</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="c1">//查询当前页数据</span>
+</span><span class='line'>                <span class="n">List</span> <span class="n">data</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="na">queryForList</span><span class="o">(</span><span class="s">&quot;epet.selectEpetsByPage&quot;</span><span class="o">,</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">p</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>                <span class="c1">//查询满足条件的记录数</span>
+</span><span class='line'>                <span class="n">Number</span> <span class="n">count</span> <span class="o">=</span> <span class="o">(</span><span class="n">Number</span><span class="o">)</span><span class="n">sc</span><span class="o">.</span><span class="na">queryForObject</span><span class="o">(</span><span class="s">&quot;epet.selectEpetsCounts&quot;</span><span class="o">,</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">p</span><span class="o">.</span><span class="na">setRowcount</span><span class="o">(</span><span class="n">count</span><span class="o">.</span><span class="na">intValue</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="k">return</span> <span class="n">p</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addEpet</span><span class="o">(</span><span class="n">Epet</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">getSqlMapClientTemplate</span><span class="o">()</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">insert</span><span class="o">(</span><span class="s">&quot;epet.addEpet&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            sc.insert(&quot;epet.addEpet&quot;, e);</span>
+</span><span class='line'><span class="c1">//        } catch (SQLException ex) {</span>
+</span><span class='line'><span class="c1">//            ex.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deleteEpetById</span><span class="o">(</span><span class="kt">int</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">getSqlMapClientTemplate</span><span class="o">()</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">delete</span><span class="o">(</span><span class="s">&quot;epet.deleteEpetById&quot;</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            sc.insert(&quot;epet.deleteEpetById&quot;, id);</span>
+</span><span class='line'><span class="c1">//        } catch (SQLException ex) {</span>
+</span><span class='line'><span class="c1">//            ex.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">updateEpet</span><span class="o">(</span><span class="n">Epet</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">getSqlMapClientTemplate</span><span class="o">()</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">update</span><span class="o">(</span><span class="s">&quot;epet.updateEpet&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+</span><span class='line'><span class="c1">//        try {</span>
+</span><span class='line'><span class="c1">//            sc.insert(&quot;epet.updateEpet&quot;, e);</span>
+</span><span class='line'><span class="c1">//        } catch (SQLException ex) {</span>
+</span><span class='line'><span class="c1">//            ex.printStackTrace();</span>
+</span><span class='line'><span class="c1">//        }</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="err">配置文件：</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">sqlMap</span> <span class="n">namespace</span><span class="o">=</span><span class="s">&quot;epet&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">typeAlias</span> <span class="n">alias</span><span class="o">=</span><span class="s">&quot;mypet&quot;</span> <span class="n">type</span><span class="o">=</span><span class="s">&quot;com.my.demo.model.Epet&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">resultMap</span>  <span class="n">id</span><span class="o">=</span><span class="s">&quot;epetResult&quot;</span> <span class="n">class</span><span class="o">=</span><span class="s">&quot;mypet&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">result</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;id&quot;</span> <span class="n">column</span><span class="o">=</span><span class="s">&quot;pk_id&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">result</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;nickName&quot;</span> <span class="n">column</span><span class="o">=</span><span class="s">&quot;f_nickname&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">result</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="n">column</span><span class="o">=</span><span class="s">&quot;f_password&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">result</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;gender&quot;</span> <span class="n">column</span><span class="o">=</span><span class="s">&quot;f_gender&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">resultMap</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">select</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;selectEpetsByNickname&quot;</span>
+</span><span class='line'>    <span class="n">resultMap</span><span class="o">=</span><span class="s">&quot;epetResult&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>     <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>        <span class="n">select</span> <span class="o">*</span>
+</span><span class='line'>        <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>        <span class="n">where</span> <span class="n">f_nickname</span> <span class="n">like</span> <span class="err">#</span><span class="n">nickName</span><span class="err">#</span>
+</span><span class='line'>        <span class="n">and</span> <span class="n">f_gender</span> <span class="o">=</span> <span class="n">$gender$</span>
+</span><span class='line'>        <span class="n">order</span> <span class="n">by</span> <span class="n">$order_field$</span>
+</span><span class='line'>        <span class="n">desc</span>
+</span><span class='line'>     <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">select</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">sql</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;epets_where&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">dynamic</span> <span class="n">prepend</span><span class="o">=</span><span class="s">&quot;where&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>            <span class="o">&lt;</span><span class="n">isNotEmpty</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;nickName&quot;</span> <span class="n">prepend</span><span class="o">=</span><span class="s">&quot;and&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>                <span class="n">f_nickname</span> <span class="o">=</span> <span class="err">#</span><span class="n">nickName</span><span class="err">#</span>
+</span><span class='line'>            <span class="o">&lt;/</span><span class="n">isNotEmpty</span><span class="o">&gt;</span>
+</span><span class='line'>            <span class="o">&lt;</span><span class="n">isNotEmpty</span> <span class="n">property</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="n">prepend</span><span class="o">=</span><span class="s">&quot;and&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>                <span class="n">f_password</span> <span class="o">=</span> <span class="err">#</span><span class="n">password</span><span class="err">#</span>
+</span><span class='line'>            <span class="o">&lt;/</span><span class="n">isNotEmpty</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;/</span><span class="n">dynamic</span><span class="o">&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">sql</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">select</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;selectEpetsByPage&quot;</span>
+</span><span class='line'>    <span class="n">resultMap</span><span class="o">=</span><span class="s">&quot;epetResult&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">select</span> <span class="o">*</span>
+</span><span class='line'>        <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">include</span> <span class="n">refid</span><span class="o">=</span><span class="s">&quot;epets_where&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">limit</span> <span class="err">#</span><span class="n">start</span><span class="err">#</span><span class="o">,</span> <span class="err">#</span><span class="n">end</span><span class="err">#</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">select</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">select</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;selectEpetsCounts&quot;</span>
+</span><span class='line'>    <span class="n">resultClass</span><span class="o">=</span><span class="s">&quot;int&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">select</span> <span class="nf">count</span><span class="o">(*)</span>
+</span><span class='line'>        <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>        <span class="o">&lt;</span><span class="n">include</span> <span class="n">refid</span><span class="o">=</span><span class="s">&quot;epets_where&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">select</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">select</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;selectEpets&quot;</span>
+</span><span class='line'>    <span class="n">resultMap</span><span class="o">=</span><span class="s">&quot;epetResult&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>     <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>        <span class="n">select</span> <span class="o">*</span>
+</span><span class='line'>        <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>     <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">select</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">select</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;selectEpetById&quot;</span>
+</span><span class='line'>    <span class="n">parameterClass</span><span class="o">=</span><span class="s">&quot;int&quot;</span>
+</span><span class='line'>    <span class="n">resultMap</span><span class="o">=</span><span class="s">&quot;epetResult&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>     <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>        <span class="n">select</span> <span class="o">*</span>
+</span><span class='line'>        <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>        <span class="n">where</span> <span class="n">pk_id</span> <span class="o">=</span> <span class="err">#</span><span class="n">id</span><span class="err">#</span>
+</span><span class='line'>     <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">select</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">insert</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;addEpet&quot;</span> <span class="n">parameterClass</span><span class="o">=</span><span class="s">&quot;mypet&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>            <span class="n">insert</span> <span class="n">into</span> <span class="nf">t_epet</span>
+</span><span class='line'>            <span class="o">(</span><span class="n">f_nickname</span><span class="o">,</span><span class="n">f_password</span><span class="o">,</span><span class="n">f_gender</span><span class="o">)</span>
+</span><span class='line'>            <span class="n">values</span>
+</span><span class='line'>            <span class="o">(</span><span class="err">#</span><span class="n">nickName</span><span class="err">#</span><span class="o">,</span><span class="err">#</span><span class="n">password</span><span class="err">#</span><span class="o">,</span><span class="err">#</span><span class="n">gender</span><span class="err">#</span><span class="o">)</span>
+</span><span class='line'>        <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">insert</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">update</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;updateEpet&quot;</span> <span class="n">parameterClass</span><span class="o">=</span><span class="s">&quot;mypet&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>            <span class="n">update</span>  <span class="n">t_epet</span>
+</span><span class='line'>            <span class="n">set</span> <span class="n">f_nickname</span> <span class="o">=</span> <span class="err">#</span><span class="n">nickName</span><span class="err">#</span> <span class="o">,</span>
+</span><span class='line'>            <span class="n">f_password</span> <span class="o">=</span> <span class="err">#</span><span class="n">password</span><span class="err">#</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">f_gender</span> <span class="o">=</span> <span class="err">#</span><span class="n">gender</span><span class="err">#</span>
+</span><span class='line'>            <span class="n">where</span>
+</span><span class='line'>            <span class="n">pk_id</span> <span class="o">=</span> <span class="err">#</span><span class="n">id</span><span class="err">#</span>
+</span><span class='line'>        <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">update</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">&lt;</span><span class="n">delete</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;deleteEpetById&quot;</span> <span class="n">parameterClass</span><span class="o">=</span><span class="s">&quot;int&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>        <span class="o">&lt;![</span><span class="n">CDATA</span><span class="o">[</span>
+</span><span class='line'>        <span class="n">delete</span> <span class="n">from</span> <span class="n">t_epet</span>
+</span><span class='line'>        <span class="n">where</span>
+</span><span class='line'>            <span class="n">pk_id</span> <span class="o">=</span> <span class="err">#</span><span class="n">id</span><span class="err">#</span>
+</span><span class='line'>        <span class="o">]]&gt;</span>
+</span><span class='line'>    <span class="o">&lt;/</span><span class="n">delete</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -281,355 +1264,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/01/31/hibernate-anntation/">Hibernate关系注解映射</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-01-31T15:18:00+08:00" pubdate data-updated="true">2013年01月31日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>一、一对多</h2>
-
-<p>&emsp;&emsp;(最好不要用单向关联，其实单向本身并无多大意义)：</p>
-
-<p>&emsp;&emsp;<strong>一方：</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@OneToMany</span><span class="o">(</span><span class="n">targetEntity</span><span class="o">=</span><span class="n">Order</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">,</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">EAGER</span><span class="o">)</span>
-</span><span class='line'> <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_customer_id&quot;</span><span class="o">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p></p>
-
-<p>&emsp;&emsp;如果一方加了fetch=FetchType.EAGER，查单一的多方对象时，会多产生一条sql</p>
-
-<p>&emsp;&emsp;targetEntity也可以写成mappedBy=&ldquo;customer&#8221;（这里写的是多多中对一方的引用属性），表示由对方去维护外键关系。</p>
-
-<p>&emsp;&emsp;注：一般会将fetch=FetchType.LAZY</p>
-
-<p>&emsp;&emsp;<strong>多方：</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@ManyToOne</span>
-</span><span class='line'> <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_customer_id&quot;</span><span class="o">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;注：一般需要会将fetch=FetchType.LAZY，默认情况下多方会主动加载一方数据的。</p>
-
-<p>&emsp;&emsp;配置实例（客户&mdash;>客户订单）：</p>
-
-<p>&emsp;&emsp;客户中的集合：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@OneToMany</span><span class="o">(</span><span class="n">targetEntity</span><span class="o">=</span><span class="n">Order</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_customer_id&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;</span> <span class="n">orders</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;客户订单中的客户：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//订单所属客户</span>
-</span><span class='line'><span class="nd">@ManyToOne</span><span class="o">(</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_customer_id&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">private</span> <span class="n">Customer</span> <span class="n">customer</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>二、多对一</h2>
-
-<p>&emsp;&emsp;比较简单，示例：注册用户&mdash;&mdash;>城市</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@ManyToOne</span><span class="o">(</span><span class="n">targetEntity</span><span class="o">=</span><span class="n">City</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_city_id&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">private</span> <span class="n">City</span> <span class="n">city</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>三、多对多</h2>
-
-<p>&emsp;&emsp;示例：游戏用户，用户组</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="c1">//用户参加的组</span>
-</span><span class='line'>    <span class="nd">@ManyToMany</span><span class="o">(</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@Cascade</span><span class="o">(</span><span class="n">value</span><span class="o">={</span><span class="n">org</span><span class="o">.</span><span class="na">hibernate</span><span class="o">.</span><span class="na">annotations</span><span class="o">.</span><span class="na">CascadeType</span><span class="o">.</span><span class="na">SAVE_UPDATE</span><span class="o">})</span>
-</span><span class='line'>    <span class="nd">@JoinTable</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_user_group&quot;</span><span class="o">,</span><span class="n">joinColumns</span><span class="o">={</span><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_user_id&quot;</span><span class="o">)}</span>
-</span><span class='line'>                <span class="o">,</span><span class="n">inverseJoinColumns</span><span class="o">={</span><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_group_id&quot;</span><span class="o">)}</span>
-</span><span class='line'>            <span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">Group</span><span class="o">&gt;</span> <span class="n">groups</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">Group</span><span class="o">&gt;();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;而在用户组中：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//该小组 中所包含的用户</span>
-</span><span class='line'>    <span class="nd">@ManyToMany</span><span class="o">(</span><span class="n">mappedBy</span><span class="o">=</span><span class="s">&quot;groups&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@Cascade</span><span class="o">(</span><span class="n">value</span><span class="o">={</span><span class="n">org</span><span class="o">.</span><span class="na">hibernate</span><span class="o">.</span><span class="na">annotations</span><span class="o">.</span><span class="na">CascadeType</span><span class="o">.</span><span class="na">SAVE_UPDATE</span><span class="o">})</span>
-</span><span class='line'>    <span class="nd">@JoinTable</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_user_group&quot;</span><span class="o">,</span><span class="n">joinColumns</span><span class="o">={</span><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_group_id&quot;</span><span class="o">)}</span>
-</span><span class='line'>                <span class="o">,</span><span class="n">inverseJoinColumns</span><span class="o">={</span><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_user_id&quot;</span><span class="o">)}</span>
-</span><span class='line'><span class="o">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>四、一对一惟一外键关联</h2>
-
-<p>&emsp;&emsp;示例：husband&mdash;&mdash;>wife</p>
-
-<p>&emsp;&emsp;而husband中（外键在t_husband表中）：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@OneToOne</span><span class="o">(</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_wife_id&quot;</span><span class="o">,</span><span class="n">unique</span><span class="o">=</span><span class="kc">true</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Wife</span> <span class="n">wife</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;wife对象中：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@OneToOne</span><span class="o">(</span><span class="n">mappedBy</span><span class="o">=</span><span class="s">&quot;wife&quot;</span><span class="o">,</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">)</span>
-</span><span class='line'> <span class="kd">private</span> <span class="n">Husband</span> <span class="n">husband</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>五、枚举映射示例：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Entity</span>
-</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_husband&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Husband</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//状态</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">enum</span> <span class="n">State</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">haveMoney</span><span class="o">,</span> <span class="n">noMoney</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//状态</span>
-</span><span class='line'>    <span class="nd">@Enumerated</span>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_state&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">State</span> <span class="n">state</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="na">noMoney</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>六、单表继承：</h2>
-
-<p>&emsp;&emsp;父：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Entity</span>
-</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_animal&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@Inheritance</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">InheritanceType</span><span class="o">.</span><span class="na">SINGLE_TABLE</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@DiscriminatorColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_type&quot;</span><span class="o">,</span><span class="n">discriminatorType</span><span class="o">=</span><span class="n">DiscriminatorType</span><span class="o">.</span><span class="na">STRING</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Animal</span> <span class="o">{</span>
-</span><span class='line'>    <span class="nd">@Id</span>
-</span><span class='line'>    <span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="na">IDENTITY</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;pk_id&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_nickname&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">nickName</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;子：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Entity</span>
-</span><span class='line'><span class="nd">@DiscriminatorValue</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;d&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Dog</span> <span class="kd">extends</span> <span class="n">Animal</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_color&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">color</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;注解方式与spring的整合：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="c">&lt;!--  配置sessionFactory--&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;sessionFactory&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">..............&lt;/property</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;packagesToScan&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;value&gt;</span>com.lovo.edu.model<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;value&gt;</span>com.lovo.edu.test<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;关于序列类型主键的配置示例：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Id</span>
-</span><span class='line'>
-</span><span class='line'><span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="na">SEQUENCE</span><span class="o">,</span> <span class="n">generator</span><span class="o">=</span><span class="s">&quot;student_id&quot;</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="nd">@SequenceGenerator</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;student_id&quot;</span><span class="o">,</span> <span class="n">allocationSize</span><span class="o">=</span><span class="mi">1</span><span class="o">,</span> <span class="n">initialValue</span><span class="o">=</span><span class="mi">1</span><span class="o">,</span><span class="n">sequenceName</span><span class="o">=</span><span class="s">&quot;seq_student_id&quot;</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">private</span> <span class="n">Long</span> <span class="n">sid</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;其它的一些主键生成方式：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Id</span>
-</span><span class='line'><span class="nd">@GenericGenerator</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;idGenerator&quot;</span><span class="o">,</span> <span class="n">strategy</span><span class="o">=</span><span class="s">&quot;uuid&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">generator</span><span class="o">=</span><span class="s">&quot;idGenerator&quot;</span><span class="o">)</span> <span class="c1">//使用uuid的生成策略</span>
-</span><span class='line'><span class="c1">//同理：使用assigned策略则在strategy中指定 =&quot;assigned&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/01/09/art/">油画- 听雨复制</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-01-09T15:18:00+08:00" pubdate data-updated="true">2013年01月09日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;布面油画（40X50CM），有人喜欢这张画，我参考原作品《<a href="/blog/2012/11/22/art6/">雨.听雨</a>》，重新绘制了一张。</p>
-
-<p>&emsp;&emsp;这张复制自己的作品，应该是失败了，相比原作品，更加死板、僵硬，当时的感觉完全没有找到。我想，可能是已经没有了当时画第一张时的心境，另外，这张画的油画布过于细腻，我感觉不太适应。</p>
-
-<p>&emsp;&emsp;有空再创作一张这样的画，重温当时感觉，并放大情感。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/01/6.jpg' width='' height='' title='布面油画-听雨'><span class='caption-text'>布面油画-听雨</span></span></p>
-
-<p>&emsp;&emsp;看来，每一张作品，都一定要投入作者感情，能让自己感动的，方能感动观众。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/11/">&larr; 更多早期老文章</a>
@@ -647,6 +1281,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/11/26/my-blog/">我的个人博客再次开放</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
       </li>
     
@@ -660,10 +1298,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a>
       </li>
     
   </ul>

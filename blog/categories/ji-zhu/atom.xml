@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2013-11-27T20:06:39+08:00</updated>
+  <updated>2013-11-28T09:11:54+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -166,7 +166,7 @@ github就是免费的啊，可以随便整
 <p>``` html main.html</p>
 
 <div class="container" ng-init="getState();pageFun(userService.pno);">
-    <div id="welcome"><h3>欢迎<span id="who"></span>登录成功！<span><a href="#" ng-click="logout()">退出系统</a></span></h3></div>
+    <div id="welcome"><h3>欢迎<span id="who">{{loginName}}</span>登录成功！<span><a href="#" ng-click="logout()">退出系统</a></span></h3></div>
     <div class="row"><span>用户名称：</span><input type="text"  ng-model="userService.q_name" class="input-medium search-query">
         <button id="btn_query" class="btn" ng-click="pageFun(1)">搜索</button>
     </div>
@@ -185,14 +185,14 @@ github就是免费的啊，可以随便整
                 </tr>
                 <tbody id="users">
                 <tr ng-repeat="user in users">
-                    <td><input value="" class="uid_c" type="checkbox"></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
+                    <td><input value="{{ user._id }}" class="uid_c" type="checkbox"></td>
+                    <td>{{ user._id }}</td>
+                    <td>{{ user.loginCode }}</td>
+                    <td>{{ user.userName }}</td>
+                    <td>{{ user.birthDay | date:'yyyy年MM月dd日'}}</td>
                     <td class="row_op">
-                        <a href="user/">查看</a>
-                        <a href="to_modifyuser/">修改</a>
+                        <a href="user/{{ user._id }}">查看</a>
+                        <a href="to_modifyuser/{{ user._id }}">修改</a>
                         <a href="#" ng-click="deleteUser(user._id)">删除</a>
                     </td>
                 </tr>
@@ -201,7 +201,7 @@ github就是免费的啊，可以随便整
         </div>
     </div>
     <div style="margin-top: 15px;" class="row">
-        <div id="page_info" class="span4">/  共条记录</div>
+        <div id="page_info" class="span4">{{ page.pno }}/{{ page.pages }}  共{{ page.rows }}条记录</div>
         <div class="span5 page offset3">
             <a  ng-click="pageFun(page.f_no)" >首 页</a>
             <a  ng-click="pageFun(page.p_no)">上一页</a>
@@ -255,9 +255,9 @@ github就是免费的啊，可以随便整
 
 <div class="container" ng-init="loadUser();">
     <div class="alert alert-info">用户名称：<input type="text" ng-model="user.userName"/></div>
-    <div class="alert alert-success">出生日期：<input type="text" ng-model="user.birthDay" value=""/></div>
+    <div class="alert alert-success">出生日期：<input type="text" ng-model="user.birthDay" value="{{ user.birthDay | date:'yyyy-MM-dd'}}"/></div>
     <div class="alert alert-info">登录密码：<input type="password" ng-model="user.password"  placeholder="***"/></div>
-    <div class="alert ">  <input type="hidden" ng-model="user.picPath" value="" id="picPath"/>
+    <div class="alert ">  <input type="hidden" ng-model="user.picPath" value="{{ user.picPath }}" id="picPath"/>
         照片：
         <form action="../commons/upload"
                                  method="post"
@@ -268,7 +268,7 @@ github就是免费的啊，可以随便整
             <input type='hidden' name='cbName' value='parent.showImage'/>
         </form>
         <br/>
-     <img id="pic" src="../"/></div>
+     <img id="pic" src="../{{ user.picPath }}"/></div>
     <iframe name="other_frame" style='display: none;' ></iframe>
     <div>
         <input type="button" value="修改" class="btn" ng-click="updateUser()"/>
@@ -284,9 +284,9 @@ github就是免费的啊，可以随便整
 <p>``` html view_user.html
  <div class="container"  ng-init="loadUser();"></p>
 
-<pre><code>&lt;div class="alert alert-info"&gt;id：&lt;span id="userId"&gt;&lt;/span&gt;&lt;/div&gt;
-&lt;div class="alert alert-success"&gt;用户名称：&lt;span id="userName"&gt;&lt;/span&gt;&lt;/div&gt;
-&lt;div class="alert "&gt;照片：&lt;img src="../" &gt;&lt;/div&gt;
+<pre><code>&lt;div class="alert alert-info"&gt;id：&lt;span id="userId"&gt;{{user._id}}&lt;/span&gt;&lt;/div&gt;
+&lt;div class="alert alert-success"&gt;用户名称：&lt;span id="userName"&gt;{{user.userName}}&lt;/span&gt;&lt;/div&gt;
+&lt;div class="alert "&gt;照片：&lt;img src="../{{user.picPath}}" &gt;&lt;/div&gt;
 &lt;div&gt;&lt;input type="button" value="返回" class="btn btn-large" ng-click="back();"/&gt;&lt;/div&gt;
 </code></pre>
 
@@ -503,7 +503,7 @@ function loginCtrl($rootScope, $scope, $http, $location) {</p>
 
 <p>&emsp;&emsp;5、自己的一些公共js，可以放在commons.js中。</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/09/1.jpg' width='' height='' title='项目文件结构'><span class='caption-text'>项目文件结构</span></span></p>
+<p>{% imgcap /uploads/2013/09/1.jpg 项目文件结构 %}</p>
 
 <p>&emsp;&emsp;好了，先来看主页面index.html，这篇文件中</p>
 
@@ -627,7 +627,7 @@ $rootScope.loginName;
 
 <p>&emsp;&emsp;三、数据的共享，通过$scope作用域实现，直接把从服务端得到的数据，放到该作用域中即可。当然，这个$scope作用域仅仅和本次页面相关，如果想在更大作用域中共享数据，可以使用$rootScope，但我更建议大家使用service，原因后面给大家讲。</p>
 
-<p>四、页面跳转后数据的展示，通过ng-repeat,ng-if，等等一系列指令去实现，这类似于java世界中的JSTL，EL。</p>
+<p>四、页面跳转后数据的展示，通过ng-repeat,ng-if，{{exp}}等等一系列指令去实现，这类似于java世界中的JSTL，EL。</p>
 
 <p>&emsp;&emsp;五、数据绑定，通过ng-model自动完成，java世界中要由框架去完成这个装配及转换。</p>
 

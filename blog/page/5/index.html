@@ -9,29 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;五、接下来，定义业务类： 1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-/** * 借款单 * @author Administrator * */
-public class LoanOrder { &hellip;">
+  <meta name="description" content="&emsp;&emsp;总结： &emsp;&emsp;一、业务对象的设计，可以包含对jbpm中流程定义，流程实例的引用。 &emsp;&emsp;二、jbmp中，可以通过map参数，保存业务方面的东西。 &emsp;&emsp;三、业务对象可以设计流程状态字段，比如： &emsp;&emsp;0 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -80,6 +58,93 @@ public class LoanOrder { &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/25/jbpm3/">Jbpm简单使用（3）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-25T15:18:00+08:00" pubdate data-updated="true">2013年03月25日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;<strong>总结：</strong></p>
+
+<p>&emsp;&emsp;一、业务对象的设计，可以包含对jbpm中流程定义，流程实例的引用。</p>
+
+<p>&emsp;&emsp;二、jbmp中，可以通过map参数，保存业务方面的东西。</p>
+
+<p>&emsp;&emsp;三、业务对象可以设计流程状态字段，比如：</p>
+
+<p>&emsp;&emsp;0、草稿   1、提交审核   2、一审核通过（部门） ，3、二审通过（部门经理）      4、完成付款（财务）      5、驳回</p>
+
+<p>&emsp;&emsp;业务系统根据这个字段，就可了解到本单据的流程状态。</p>
+
+<p>&emsp;&emsp;三、流程细节，都交给jbpm，比如，要查询某人的任务：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">List</span><span class="o">&lt;</span><span class="n">Task</span><span class="o">&gt;</span> <span class="n">tasks</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="na">createTaskQuery</span><span class="o">().</span><span class="na">activityName</span><span class="o">(</span><span class="s">&quot;inputLoan&quot;</span><span class="o">)</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">assignee</span><span class="o">(</span><span class="s">&quot;ljh&quot;</span><span class="o">).</span><span class="na">processDefinitionId</span><span class="o">(</span><span class="s">&quot;loan-1&quot;</span><span class="o">)</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">processInstanceId</span><span class="o">(</span><span class="s">&quot;loan.7&quot;</span><span class="o">)</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">executionId</span><span class="o">(</span><span class="s">&quot;loan.7&quot;</span><span class="o">)</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">orderDesc</span><span class="o">(</span><span class="s">&quot;createTime&quot;</span><span class="o">)</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">page</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">10</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
+</span><span class='line'> <span class="k">for</span> <span class="o">(</span><span class="n">Task</span> <span class="n">t</span> <span class="o">:</span> <span class="n">tasks</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>     <span class="c1">//取业务参数</span>
+</span><span class='line'>     <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">ts</span><span class="o">.</span><span class="na">getVariable</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="s">&quot;biz_id&quot;</span><span class="o">));</span>
+</span><span class='line'> <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="n">tasks</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="na">createTaskQuery</span><span class="o">().</span><span class="na">activityName</span><span class="o">(</span><span class="s">&quot;managerCheck&quot;</span><span class="o">)</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">list</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;查询条件可以自由设定，相当的灵活，当查到某人的task后，就可在业务系统中得到对应的biz_id，再通过biz_id，可得到业务系统中的对象。</p>
+
+<p>&emsp;&emsp;四、jbpm中，先有流程定义，再有流程实例，再有任务，任务可分配给某个指定的人，也可以分配给某个具有相关标识的组、团体等。</p>
+
+<p>&emsp;&emsp;五、jpdl为流程描述语言，里面的东西，大家自己上网查询即可。</p>
+
+<p>&emsp;&emsp;六、流程简单、稳定的项目中，建议自定义类实现，不要引及jbpm之类的流程框架。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2877,71 +2942,6 @@ public class LoanOrder { &hellip;">
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/02/20/java-date-hibernate/">java日期类型在Hibernate中的处理</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-02-20T15:18:00+08:00" pubdate data-updated="true">2013年02月20日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;java中的表示日期时间的类型很多，主要有下面一些：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Calendar</span><span class="err">（和区域有关，可表示年，月，日，时，分，秒）</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">util</span><span class="o">.</span><span class="na">Date</span><span class="err">（可表示年，月，日，时，分，秒）</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Date</span><span class="err">（可表示年，月，日）</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Time</span> <span class="err">（可表示时，分，秒）</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">java</span><span class="o">.</span><span class="na">sql</span><span class="o">.</span><span class="na">Timestamp</span><span class="err">（可表示年，月，日，时，分，秒，纳秒）</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在对象定义时，究竟定义为哪种类型，我们得要求项目需求来选择不同精度的类型。</p>
-
-<p>&emsp;&emsp;Hibernate对上面的时间类型都有很好的支持，但是，不同的类型，数据库中的字段也得选择相应的类型，以mysql为例，就存在date,time,datetime,timestamp等几种。</p>
-
-<p>&emsp;&emsp;hibernate的映射书写时要注意，日期类型一般都要明确予以指定。如果你使用的是注解映射配置，类型选择的又是java.util.Calendar，java.util.Date，此时需要使用@Temporal 明确指定具体类型，对应的取值有TemporalType.DATE,TemporalType.TIME,TemporalType.TIMESTAMP几种。</p>
-
-<p>&emsp;&emsp;最后，hibernate中以时间作为查询条件时，也需要明确指定传入参数类型，大家要选择带有3个参数的那个setParameter方法。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/6/">&larr; 更多早期老文章</a>
@@ -2959,6 +2959,10 @@ public class LoanOrder { &hellip;">
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/05/udisk/">万恶的u盘启动程序</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/11/26/my-blog/">我的独立博客再次开放</a>
       </li>
     
@@ -2972,10 +2976,6 @@ public class LoanOrder { &hellip;">
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用&#8212;第四部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a>
       </li>
     
   </ul>

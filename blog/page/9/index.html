@@ -9,8 +9,8 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;如果你配置了nginx,tomcat集群，请大家要注意，当更新了新的软件，重新启动系统时，最好的做法是先停止nginx，再去重新运行每一个tomcat服务器！ &emsp;&emsp;否则，你可能很难道找到访问缓慢，时而中断的情况。
-">
+  <meta name="description" content="&emsp;&emsp;tomcat在运行几天后，会出现PermGen space溢出错误而无法继续处理请求，解决方法是调整PermGen区域大小： 1
+JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -50,7 +50,7 @@
 <ul class="main-navigation">
   <li><a href="/">博客文章</a></li>
   <li><a href="/blog/archives">全部文章</a></li>
-  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
   <li><a href="/about">关于我</a></li>
 </ul>
 
@@ -59,6 +59,60 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/09/21/jvm-error/">PermGen Space溢出解决方法</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-09-21T15:18:00+08:00" pubdate data-updated="true">2012年09月21日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;tomcat在运行几天后，会出现PermGen space溢出错误而无法继续处理请求，解决方法是调整PermGen区域大小：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m"</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;还有一种说法是使用Jrockit代替sun实现的jdk，但我没有试验。</p>
+
+<p>&emsp;&emsp;下面来看看对PermGen space的解释：</p>
+
+<p>&emsp;&emsp;PermGen space的全称是Permanent Generation space，是指内存的永久保存区域，这个内存区域用于：</p>
+
+<p>&emsp;&emsp;（1）这一部分用于存放Class和Meta的信息，Class在被 Load的时候被放入PermGen space区域，它和和存放Instance的Heap区域不同。</p>
+
+<p>&emsp;&emsp;（2） GC(Garbage Collection)不会在主程序运行期对PermGen space进行清理，所以如果你的APP会LOAD很多CLASS的话,就很可能出现PermGen space错误。</p>
+
+<p>&emsp;&emsp;这种错误常见在web服务器对JSP进行pre compile的时候。</p>
+
+<p>&emsp;&emsp;如果你的WEB APP下都用了大量的第三方jar，其大小超过了jvm默认的大小(4M)那么就会产生此错误信息了。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -797,62 +851,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/09/15/report/">一种报表实现设计方案</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-09-15T15:18:00+08:00" pubdate data-updated="true">2011年09月15日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;报表是每一个MIS系统中的必有功能，我们可以通过一个软件产品中查询统计、报表功能是否丰富来评判一个软件产品的成熟度。报表数据对于客户的日常工作、决策有非常重要的作用，报表也是我们程序员必定要遇到的问题。</p>
-
-<p>&emsp;&emsp;中国式的报表样式复杂，实现起来难度也比较大，而对于系统设计者来说，客户的某些特殊报表可能会影响到我们的系统设计（说具体点就是表结构、加余字段等方面）。</p>
-
-<p>&emsp;&emsp;请看下面的这张报表，这张表的特点是表头、数据行全部是动态生成。表头是一个嵌套结构，由树状考评类别组成（动态生成），而第一列的单位也由参与本考评方案的单位得分生成，每一个类别的得分，是由该类别下所有的考评项最终得分累积得到（当然，上面的是我描述的一个简化流程，具体业务打分过程比这个要复杂）。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/09/1.jpg' width='' height='' title='系统报表样式一'><span class='caption-text'>系统报表样式一</span></span></p>
-
-<p>&emsp;&emsp;上面这种类型的报表，相信很多人都碰到过，如何快捷地实现它呢？最常用的办法就是拼装出符合样式要求的html表格，比如说表头的生成，我们先调用业务方法，生成符合表头的数据结构（自关联的树状结构），使用页面语言（如JSTL，EL）生成出来，最终显示给用户，但问题在于每一行数据体要和表头上的每一列对应起来的代码实现比较复杂，这个过程相当考究一个程序员的逻辑思维能力，特别是跨行、跨列、以及行、列数据对应问题。</p>
-
-<p>&emsp;&emsp;上面我所描述的实现方案是可行的，很多人也是这么在做，但存在的问题也是非常明显：报表的实现代码不好维护，页面上的展示更是复杂，如果要实现另一张样式差不多的报表，我们又得copy头一张报表的代码，进行相应的调整、修改，很多人也是这么在做。</p>
-
-<p>&emsp;&emsp;一种改进的设计是以面向对象的思想来进行封装，比如下面的这张类图，就是上面这种类型报表的一种设计方案：我们将报表拆分成了表头与表行，表头由表头项组成，表行由数据单元格组成，我们把这些抽象成接口，并提供HTML版本的实现类。我们抽取出来的表格、表头、行对象都具有生成自身html代码的功能，并且还有很多辅助方法，这使得最终的代码很容易理解。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/09/2.jpg' width='' height='' title='报表类图设计'><span class='caption-text'>报表类图设计</span></span></p>
-
-<p>&emsp;&emsp;我们接下来的工作就是在service中，查询相应的业务数据来生成这个Report对象，你会发现生成Report的代码非常清晰、好理解。而façade中，页面中的实现就变得非常的简单，只需要调用service中的方法得到Report对象，之后通过generateReportCode()方法就得到了页面要显示的html代码。</p>
-
-<p>&emsp;&emsp;分析上面的类图我们可以发现，报表对象就是一个聚合根（当然也是值对象），而下面的每一个子对象负责自身显示代码的生成，通过service，业务逻辑也得到了很好封装，这就是面向对象带来的好处。只不过，我们要设计很多的小对象来承担各自的职责。这让我想到delphi，pb中报表的超强设计能力，也不禁有些怀念那个年代。</p>
-
-<p>&emsp;&emsp;当然，不同的报表风格会有不同的设计对象设计方案，不同的报表框加也会有不同的设计方案（比如：jFreeChart，jsperReport这种服务器端的报表生成框架，Highcharts、fusioncharts这类客户端报表框架户端的报表生成框架在设计上都会有所不同）。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/10/">&larr; 更多早期老文章</a>
@@ -870,6 +868,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/05/udisk/">万恶的u盘启动程序</a>
       </li>
     
@@ -883,10 +885,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用&#8212;第四部分</a>
       </li>
     
   </ul>

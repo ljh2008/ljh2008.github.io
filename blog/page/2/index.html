@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;页面的展示，jade做为高性能的一个动态页面引擎，在代码的简洁性上也有很大的优势： &emsp;&emsp;先来看user_list.jade的代码： user_list.jade1
+  <meta name="description" content="&emsp;&emsp;定义一个登录验证函数： 1
 2
 3
 4
@@ -23,11 +23,7 @@
 12
 13
 14
-15
-16
-17
-18
-19 &hellip;">
+/** * Created with JetBrains WebStorm. * User: ljh * Date: 13-8-9 * Time: 上午9:06 * 登录验证过滤器 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -67,7 +63,7 @@
 <ul class="main-navigation">
   <li><a href="/">博客文章</a></li>
   <li><a href="/blog/archives">全部文章</a></li>
-  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
   <li><a href="/about">关于我</a></li>
 </ul>
 
@@ -76,6 +72,85 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/08/09/nodejs-express-mysql-crud6/">node.js中基本于expresss、mysql的CRUD之六（过滤器及分页代码）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;定义一个登录验证函数：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * Created with JetBrains WebStorm.</span>
+</span><span class='line'><span class="cm"> * User: ljh</span>
+</span><span class='line'><span class="cm"> * Date: 13-8-9</span>
+</span><span class='line'><span class="cm"> * Time: 上午9:06</span>
+</span><span class='line'><span class="cm"> * 登录验证过滤器</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">authorize</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span> <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">redirect</span><span class="p">(</span><span class="s2">&quot;to_login&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">next</span><span class="p">();</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在需求登录验证的url中，调用些函数，例如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="s1">&#39;/main/user&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">addUser</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/08/09/nodejs-express-mysql-crud6/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -1476,284 +1551,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/06/17/hibernate-many-to-many/">Hibernate多对多查询</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-06-17T15:18:00+08:00" pubdate data-updated="true">2013年06月17日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;在hibernate中，一般情况下要减少多对多关系的存在，主要原因是性能。hibernater中的多对多是采用的内存分页，如果你的数据量比较大，就很杯具了。如果遇到多对多，我们可以为中间表建立新的对象，从而转换为多对一关系。</p>
-
-<p>&emsp;&emsp;下面大家看一个用户和用户组多对多的hql分页写法。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>        <span class="c1">//下面查到的就是当某一页的数据，hibernate使用的是内在分页，使用distinct由hibernate去除重复</span>
-</span><span class='line'>
-</span><span class='line'>          <span class="n">String</span> <span class="n">hql</span> <span class="o">=</span> <span class="s">&quot; select distinct(u) from GameUser u left join fetch &quot;</span> <span class="o">+</span>
-</span><span class='line'>                    <span class="s">&quot;u.groups g where g.name like &#39;%组%&#39;&quot;</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">List</span><span class="o">&lt;</span><span class="n">GameUser</span><span class="o">&gt;</span> <span class="n">gus</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">hql</span><span class="o">)</span>
-</span><span class='line'>                    <span class="o">.</span><span class="na">setFirstResult</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="na">setMaxResults</span><span class="o">(</span><span class="mi">1</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在JPA规范中，你可以看到：</p>
-
-<p>&emsp;&emsp;&ldquo;The effect of applying setMaxResults or setFirstResult to a query involving fetch joins over collections is undefined&rdquo;</p>
-
-<p>&emsp;&emsp;如果细心观察过日志，你也会发现hibernate有如下输出：</p>
-
-<p>&emsp;&emsp;WARNING: firstResult/maxResults specified with collection fetch; applying in memory!</p>
-
-<p>&emsp;&emsp;这就说明，使用了left join的语句无法再使用数据库分页，和多对多关系，没有必然联系。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>
-</span><span class='line'>       <span class="c1">//这是统计总记录条数的hql，需要使用in</span>
-</span><span class='line'>        <span class="n">String</span> <span class="n">hql4cont</span> <span class="o">=</span> <span class="s">&quot;select count(*) from GameUser gu where gu.id in (select u.id from GameUser u left join  &quot;</span> <span class="o">+</span>
-</span><span class='line'>                <span class="s">&quot;u.groups g where g.name like &#39;%组%&#39;)&quot;</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">Number</span> <span class="n">count</span> <span class="o">=</span> <span class="o">(</span><span class="n">Number</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">hql4cont</span><span class="o">).</span><span class="na">uniqueResult</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;那么，如何将上面的多对多关系改造成一对多关系呢，当然是要对中间表建立对象了，如下：</p>
-
-<p>&emsp;&emsp;用户对象：</p>
-
-<figure class='code'><figcaption><span>GameUser.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Entity</span>
-</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_gameuser&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">GameUser</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Id</span>
-</span><span class='line'>    <span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="na">IDENTITY</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;pk_id&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_name&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@OneToMany</span><span class="o">(</span><span class="n">mappedBy</span><span class="o">=</span><span class="s">&quot;user&quot;</span><span class="o">,</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">,</span> <span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_user_id&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@BatchSize</span><span class="o">(</span><span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">UserInGroup</span><span class="o">&gt;</span> <span class="n">userInGroupSet</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">UserInGroup</span><span class="o">&gt;();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;用户组对象：</p>
-
-<figure class='code'><figcaption><span>Group.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Entity</span>
-</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_group&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Group</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Id</span>
-</span><span class='line'>    <span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="na">IDENTITY</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;pk_id&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_name&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@OneToMany</span><span class="o">(</span><span class="n">mappedBy</span><span class="o">=</span><span class="s">&quot;group&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_group_id&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">UserInGroup</span><span class="o">&gt;</span> <span class="n">userInGroupSet</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">UserInGroup</span><span class="o">&gt;();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;中间对象（中间对象中引用对象加载方式，请大家设置为EAGER以提升系统查询效率,cascade须设置为save_update）：</p>
-
-<figure class='code'><figcaption><span>UserInGroup.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Entity</span>
-</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_user_group&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserInGroup</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Id</span>
-</span><span class='line'>    <span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="na">IDENTITY</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;pk_id&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@ManyToOne</span><span class="o">(</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">EAGER</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Cascade</span><span class="o">(</span><span class="n">value</span><span class="o">={</span><span class="n">org</span><span class="o">.</span><span class="na">hibernate</span><span class="o">.</span><span class="na">annotations</span><span class="o">.</span><span class="na">CascadeType</span><span class="o">.</span><span class="na">SAVE_UPDATE</span><span class="o">})</span>
-</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_user_id&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">GameUser</span> <span class="n">user</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@ManyToOne</span><span class="o">(</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">EAGER</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Cascade</span><span class="o">(</span><span class="n">value</span><span class="o">={</span><span class="n">org</span><span class="o">.</span><span class="na">hibernate</span><span class="o">.</span><span class="na">annotations</span><span class="o">.</span><span class="na">CascadeType</span><span class="o">.</span><span class="na">SAVE_UPDATE</span><span class="o">})</span>
-</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_group_id&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Group</span> <span class="n">group</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;大家注意一下，中间对象的主键id实际并无意义，添加上只是为了映射方便，你也可以将两外键建成联合主键（但似乎jap注解方式不支持这种配置， xml中倒是可以做到）。</p>
-
-<p>&emsp;&emsp;最后看分页查询怎么写：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">hql</span> <span class="o">=</span> <span class="s">&quot;select distinct(uig.user) from UserInGroup uig &quot;</span> <span class="o">+</span>
-</span><span class='line'>                    <span class="s">&quot;where uig.group.name like &#39;%组%&#39; and uig.user.name like &#39;%%&#39;&quot;</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>           <span class="n">List</span><span class="o">&lt;</span><span class="n">GameUser</span><span class="o">&gt;</span> <span class="n">gus</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">hql</span><span class="o">)</span>
-</span><span class='line'>            <span class="o">.</span><span class="na">setFirstResult</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="na">setMaxResults</span><span class="o">(</span><span class="mi">100</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
-</span><span class='line'>            <span class="k">for</span> <span class="o">(</span><span class="n">GameUser</span> <span class="n">gu</span> <span class="o">:</span> <span class="n">gus</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">gu</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
-</span><span class='line'>                <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">gu</span><span class="o">.</span><span class="na">getUserInGroupSet</span><span class="o">().</span><span class="na">size</span><span class="o">());</span>
-</span><span class='line'>            <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;这个时候，将是纯正的数据库级分页，很好地满足了我们的要求。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>          <span class="n">String</span> <span class="n">hql4cont</span> <span class="o">=</span> <span class="s">&quot;select distinct(uig.user.id) from UserInGroup uig &quot;</span> <span class="o">+</span>
-</span><span class='line'>                    <span class="s">&quot;where uig.group.name like &#39;%组%&#39; and uig.user.name like &#39;%%&#39;&quot;</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">Number</span> <span class="n">count</span> <span class="o">=</span> <span class="o">(</span><span class="n">Number</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">hql4cont</span><span class="o">).</span><span class="na">list</span><span class="o">().</span><span class="na">size</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;统计总记录数的hql，就像上面这个写法，就ok了，因为只取的id，没有创建完整的对象，性能不存在大的问题。</p>
-
-<p>&emsp;&emsp;但是大家要注意，这个时候我们没有用left join之类的加载方式，意味着查出来的对象，其中的集合属性没有初始化，如果在后续业务中需要访问集合属性，hibernate会再次去查询加载，为了性能考虑，我们一般会加上@BatchSize注解为提高集合加载效率，如果不写@BatchSize，默认是一条一条加载的，写上之后，会有类似下面的sql出现，？的最大个数，就是BatchSize设定的大小：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">select</span>
-</span><span class='line'>        <span class="n">useringrou0_</span><span class="o">.</span><span class="na">fk_user_id</span> <span class="n">as</span> <span class="n">fk3_1_</span><span class="o">,</span>
-</span><span class='line'>        <span class="n">useringrou0_</span><span class="o">.</span><span class="na">pk_id</span> <span class="n">as</span> <span class="n">pk1_1_</span><span class="o">,</span>
-</span><span class='line'>        <span class="n">useringrou0_</span><span class="o">.</span><span class="na">pk_id</span> <span class="n">as</span> <span class="n">pk1_9_0_</span><span class="o">,</span>
-</span><span class='line'>        <span class="n">useringrou0_</span><span class="o">.</span><span class="na">fk_group_id</span> <span class="n">as</span> <span class="n">fk2_9_0_</span><span class="o">,</span>
-</span><span class='line'>        <span class="n">useringrou0_</span><span class="o">.</span><span class="na">fk_user_id</span> <span class="n">as</span> <span class="n">fk3_9_0_</span>
-</span><span class='line'>    <span class="n">from</span>
-</span><span class='line'>        <span class="n">t_user_group</span> <span class="n">useringrou0_</span>
-</span><span class='line'>    <span class="n">where</span>
-</span><span class='line'>        <span class="n">useringrou0_</span><span class="o">.</span><span class="na">fk_user_id</span> <span class="nf">in</span> <span class="o">(</span>
-</span><span class='line'>            <span class="o">?,</span> <span class="o">?</span>
-</span><span class='line'>        <span class="o">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在一般的项目中，我们把@BatchSize设置界面每页显示记录数一致即可,多对多转换为一对多，关系越简单越好。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; 更多早期老文章</a>
@@ -1771,6 +1568,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/05/udisk/">万恶的u盘启动程序</a>
       </li>
     
@@ -1784,10 +1585,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用&#8212;第四部分</a>
       </li>
     
   </ul>

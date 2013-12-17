@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;新增用户，客户端代码 user_add.html： user_add.html1
+  <meta name="description" content="&emsp;&emsp;加入简单的安全控制： &emsp;&emsp;写一个过滤器，对非法用户进行过滤 1
 2
 3
 4
@@ -35,16 +35,7 @@
 24
 25
 26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36 &hellip;">
+/** * @see Filter#doFilter( &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -84,7 +75,7 @@
 <ul class="main-navigation">
   <li><a href="/">博客文章</a></li>
   <li><a href="/blog/archives">全部文章</a></li>
-  <li><a href="/blog/categories/hui-hua-zuo-pin">绘画作品</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
   <li><a href="/about">关于我</a></li>
 </ul>
 
@@ -93,6 +84,124 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/12/28/restful5/">教你一步步做 Restful程序（5）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-28T15:21:00+08:00" pubdate data-updated="true">2012年12月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;加入简单的安全控制：</p>
+
+<p>&emsp;&emsp;写一个过滤器，对非法用户进行过滤</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * @see Filter#doFilter(ServletRequest, ServletResponse, FilterChain)</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">ServletRequest</span> <span class="n">request</span><span class="o">,</span> <span class="n">ServletResponse</span> <span class="n">response</span><span class="o">,</span> <span class="n">FilterChain</span> <span class="n">chain</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span><span class="o">,</span> <span class="n">ServletException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">HttpServletRequest</span> <span class="n">req</span> <span class="o">=</span> <span class="o">(</span><span class="n">HttpServletRequest</span><span class="o">)</span><span class="n">request</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">path</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="na">getRequestURI</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;你访问的资源路径是：&quot;</span> <span class="o">+</span> <span class="n">req</span><span class="o">.</span><span class="na">getRequestURI</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getSession</span><span class="o">().</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;session_key&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">chain</span><span class="o">.</span><span class="na">doFilter</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+</span><span class='line'>            <span class="k">return</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">path</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="s">&quot;/userManager/&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">HttpServletResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="o">(</span><span class="n">HttpServletResponse</span><span class="o">)</span><span class="n">response</span><span class="o">;</span>
+</span><span class='line'>                <span class="n">resp</span><span class="o">.</span><span class="na">sendRedirect</span><span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getContextPath</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;/error.html&quot;</span><span class="o">);</span>
+</span><span class='line'>                <span class="k">return</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">chain</span><span class="o">.</span><span class="na">doFilter</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;并在web.xml中添加：</p>
+
+<figure class='code'><figcaption><span>web.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'> <span class="nt">&lt;filter&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;display-name&gt;</span>AuthFilter<span class="nt">&lt;/display-name&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>AuthFilter<span class="nt">&lt;/filter-name&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-class&gt;</span>com.my.jxc.filter.AuthFilter<span class="nt">&lt;/filter-class&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/filter&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;filter-mapping&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>AuthFilter<span class="nt">&lt;/filter-name&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;url-pattern&gt;</span>/*<span class="nt">&lt;/url-pattern&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/filter-mapping&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2401,136 +2510,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/11/08/spring-test/">基于junit4下的spring测试</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-11-08T15:18:00+08:00" pubdate data-updated="true">2012年11月08日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>基于junit4下的spring测试:</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Transactional</span>
-</span><span class='line'><span class="nd">@RunWith</span><span class="o">(</span><span class="n">SpringJUnit4ClassRunner</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@ContextConfiguration</span><span class="o">(</span><span class="n">locations</span><span class="o">={</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">})</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BizServiceTest</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Resource</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;bizService&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">IIBizService</span> <span class="n">ss</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Test</span>
-</span><span class='line'>    <span class="nd">@Rollback</span><span class="o">(</span><span class="kc">false</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">yourTestMethod</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="c1">//test code here</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="n">Assert</span><span class="o">.</span><span class="na">assertEquals</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>而基于junit3下的测试是这样的：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BizServiceInSpringTest</span> <span class="kd">extends</span>
-</span><span class='line'>        <span class="n">AbstractTransactionalSpringContextTests</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">IBizService</span> <span class="n">sts</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testMethod</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">assertEquals</span><span class="o">(</span><span class="s">&quot;yanwawa&quot;</span><span class="o">,</span> <span class="n">somevalue</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="c1">//this.setComplete();</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">protected</span> <span class="n">String</span><span class="o">[]</span> <span class="nf">getConfigLocations</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">};</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setSts</span><span class="o">(</span><span class="n">IBizService</span> <span class="n">sts</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">sts</span> <span class="o">=</span> <span class="n">sts</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在这两种测试中，注解方式来得很简洁和灵活，建议大家使用。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/8/">&larr; 更多早期老文章</a>
@@ -2548,6 +2527,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/05/udisk/">万恶的u盘启动程序</a>
       </li>
     
@@ -2561,10 +2544,6 @@
     
       <li class="post">
         <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用&#8212;第四部分</a>
       </li>
     
   </ul>

@@ -9,8 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;tomcat在运行几天后，会出现PermGen space溢出错误而无法继续处理请求，解决方法是调整PermGen区域大小： 1
-JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;">
+  <meta name="description" content="&emsp;&emsp;jackson是一个开源的处理json的工具包，spring mvc中的json类型响应就是用这个东西实现的，性能比较优异。我以前最早的项目用的是json-lib，后来因效率问题改为gson，现在看来可以换成jackson了。 &emsp;&emsp; &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -59,6 +58,138 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/10/24/jaskson-json/">使用jackson对json的操作</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-10-24T15:18:00+08:00" pubdate data-updated="true">2012年10月24日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;jackson是一个开源的处理json的工具包，spring mvc中的json类型响应就是用这个东西实现的，性能比较优异。我以前最早的项目用的是json-lib，后来因效率问题改为gson，现在看来可以换成jackson了。</p>
+
+<p>&emsp;&emsp;下面给大家讲讲jackson的使用：</p>
+
+<p>&emsp;&emsp;<strong>一、简单对象转为json</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">StringWriter</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringWriter</span><span class="o">();</span>
+</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">result</span><span class="o">,</span> <span class="err">【这个参数是你要转换的东西，对象或集合都是可以的】</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，如果你不想用StringWriter的话，你可以直接用om.writeValueAsString(obj)直接输出字符串。</p>
+
+<p>&emsp;&emsp;<strong>二、日期的处理</strong></p>
+
+<p>&emsp;&emsp;默认情况下，jackson会把日期处理为毫秒，如果你想处理成字符串，可以：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">setDateFormat</span><span class="o">(</span><span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>三、排除不想要的属性</strong></p>
+
+<p>&emsp;&emsp;这个主要是用来解决对象间循环关联的情况的，使用如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SimpleBeanPropertyFilter</span> <span class="n">filter</span> <span class="o">=</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">serializeAllExcept</span><span class="o">(</span><span class="s">&quot;不要的属性名&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">SimpleFilterProvider</span> <span class="n">fp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">();</span>
+</span><span class='line'><span class="n">fp</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;user_json&quot;</span><span class="o">,</span> <span class="n">filter</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">fp</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，这个设置将对全局的ObjectMapper都起作用，我们也可以使用下面这种：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">writer</span><span class="o">(</span><span class="n">fp</span><span class="o">).</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">obj</span><span class="o">)</span><span class="err">；</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;每次使用前再设置，这个也是全局作用域。</p>
+
+<p>&emsp;&emsp;如果仅仅想要自己需要的属性，如下写法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span> <span class="s">&quot;title&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;注意：addFilter的第一个参数，要用注解指写，比如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@JsonFilter</span><span class="o">(</span><span class="s">&quot;user_json&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">User</span> <span class="o">{}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果持久层使用的是hibernate，需要将hibernateLazyInitializer属性也排除。</p>
+
+<p>&emsp;&emsp;<strong>四、反序列化</strong></p>
+
+<p>&emsp;&emsp;反序列化用的没有序列化多。我们先看普通对象的处理：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">json_str</span><span class="o">,</span> <span class="n">User</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;集合对象，处理方式不同，请看list的处理方式：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span> <span class="n">uss</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">json_str</span><span class="o">,</span> <span class="k">new</span> <span class="n">TypeReference</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;&gt;()</span> <span class="o">{});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>五、图片等二进制类型的json转换</strong></p>
+
+<p>&emsp;&emsp;这个不用担心，jackson可直接完成转换，前提是：</p>
+
+<p>&emsp;&emsp;你要用byte[]类型表示二进制数据，比如：private byte[] photo ;</p>
+
+<p>&emsp;&emsp;当然，上面的的代码都是在线手工操作下的示例，jackson也是支持注解的，比如：排除属性，日期格式的定义等，都可以用注解的方式去实现，请大家自己so一下吧。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -651,206 +782,6 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/07/14/jsoup/">让jsoup支持https,接受任意来源证书</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-07-14T15:18:00+08:00" pubdate data-updated="true">2012年07月14日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;需要修改jsoup源码。</p>
-
-<p>&emsp;&emsp;首先添加单例类：</p>
-
-<figure class='code'><figcaption><span>SSLContextSingleton.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> * 得到SSLContext单例</span>
-</span><span class='line'><span class="cm"> * @author Administrator</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">SSLContextSingleton</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="n">SSLContextSingleton</span> <span class="n">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SSLContextSingleton</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">SSLContext</span> <span class="n">context</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">HostnameVerifier</span> <span class="n">hostnameVerifier</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="nf">SSLContextSingleton</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">context</span> <span class="o">=</span> <span class="n">SSLContext</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;SSL&quot;</span><span class="o">);</span>
-</span><span class='line'>            <span class="c1">//默认可接受所有https验证</span>
-</span><span class='line'>            <span class="n">context</span><span class="o">.</span><span class="na">init</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="k">new</span> <span class="n">TrustManager</span><span class="o">[]{</span>
-</span><span class='line'>                        <span class="k">new</span> <span class="nf">X509TrustManager</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>                            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">checkClientTrusted</span><span class="o">(</span><span class="n">X509Certificate</span><span class="o">[]</span> <span class="n">xcs</span><span class="o">,</span> <span class="n">String</span> <span class="n">string</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">CertificateException</span> <span class="o">{</span>
-</span><span class='line'>                            <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>                            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">checkServerTrusted</span><span class="o">(</span><span class="n">X509Certificate</span><span class="o">[]</span> <span class="n">xcs</span><span class="o">,</span> <span class="n">String</span> <span class="n">string</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">CertificateException</span> <span class="o">{</span>
-</span><span class='line'>                            <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>                            <span class="kd">public</span> <span class="n">X509Certificate</span><span class="o">[]</span> <span class="nf">getAcceptedIssuers</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>                                <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
-</span><span class='line'>                            <span class="o">}</span>
-</span><span class='line'>                        <span class="o">}},</span> <span class="kc">null</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">hostnameVerifier</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HostnameVerifier</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>                <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">verify</span><span class="o">(</span><span class="n">String</span> <span class="n">string</span><span class="o">,</span> <span class="n">SSLSession</span> <span class="n">ssls</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                    <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>                <span class="o">}</span>
-</span><span class='line'>            <span class="o">};</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="c1">//throw e;</span>
-</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;Error,X509Certificate&quot;</span><span class="o">);</span>
-</span><span class='line'>            <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * 创建接受所有https的SSLContext</span>
-</span><span class='line'><span class="cm">     * @return</span>
-</span><span class='line'><span class="cm">     * @throws Exception</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">SSLContext</span> <span class="nf">getSimpleSSLContext</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">context</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">HostnameVerifier</span> <span class="nf">getHostnameVerifier</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">hostnameVerifier</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="n">SSLContextSingleton</span> <span class="nf">getnInstance</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">instance</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>接着修改HttpConnection.java文件中的createConnection部分，添加入下代码：</p>
-
-<figure class='code'><figcaption><span>HttpConnection.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="c1">// set up connection defaults, and details from request</span>
-</span><span class='line'>        <span class="kd">private</span> <span class="kd">static</span> <span class="n">HttpURLConnection</span> <span class="nf">createConnection</span><span class="o">(</span><span class="n">Connection</span><span class="o">.</span><span class="na">Request</span> <span class="n">req</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">HttpURLConnection</span> <span class="n">conn</span> <span class="o">=</span> <span class="o">(</span><span class="n">HttpURLConnection</span><span class="o">)</span> <span class="n">req</span><span class="o">.</span><span class="na">url</span><span class="o">().</span><span class="na">openConnection</span><span class="o">();</span>
-</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">conn</span> <span class="k">instanceof</span> <span class="n">HttpsURLConnection</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">HttpsURLConnection</span> <span class="n">conns</span> <span class="o">=</span> <span class="o">(</span><span class="n">HttpsURLConnection</span><span class="o">)</span> <span class="n">conn</span><span class="o">;</span>
-</span><span class='line'>                <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>                    <span class="n">conns</span><span class="o">.</span><span class="na">setSSLSocketFactory</span><span class="o">(</span><span class="n">SSLContextSingleton</span><span class="o">.</span><span class="na">getnInstance</span><span class="o">().</span><span class="na">getSimpleSSLContext</span><span class="o">().</span><span class="na">getSocketFactory</span><span class="o">());</span>
-</span><span class='line'>                    <span class="n">conns</span><span class="o">.</span><span class="na">setHostnameVerifier</span><span class="o">(</span><span class="n">SSLContextSingleton</span><span class="o">.</span><span class="na">getnInstance</span><span class="o">().</span><span class="na">getHostnameVerifier</span><span class="o">());</span>
-</span><span class='line'>                <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                    <span class="n">Logger</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">HttpConnection</span><span class="o">.</span><span class="na">class</span><span class="o">.</span><span class="na">getName</span><span class="o">()).</span><span class="na">log</span><span class="o">(</span><span class="n">Level</span><span class="o">.</span><span class="na">SEVERE</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
-</span><span class='line'>                <span class="o">}</span>
-</span><span class='line'>                <span class="n">conn</span> <span class="o">=</span> <span class="n">conns</span><span class="o">;</span>
-</span><span class='line'>            <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果要实现jsoup接受指定网站的https访问，需要导入证书，网上文章很多，大家搜搜即可做出来。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/10/">&larr; 更多早期老文章</a>
@@ -868,6 +799,10 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/23/maven/">在项目中使用maven之一&#8211;环境配置</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
       </li>
     
@@ -881,10 +816,6 @@ JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m" &emsp;&emsp; &hellip;"
     
       <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
   </ul>

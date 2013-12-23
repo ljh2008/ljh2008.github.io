@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：javaEE | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/javaee/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2013-12-17T15:11:55+08:00</updated>
+  <updated>2013-12-23T17:51:45+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,129 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[在项目中使用maven之一--环境配置]]></title>
+    <link href="http://yanyaner.com/blog/2013/12/23/maven/"/>
+    <updated>2013-12-23T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2013/12/23/maven</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;Apache Maven是一个软件项目综合管理工具，它基于项目对象模型（POM）的概念来统一管理项目，使用Maven可以更好地管理项目的模块化，更好地管理项目之间的依赖，更好地管理jar包依赖及其版本，也更加贴近项目管理的各个阶段。</p>
+
+<p>&emsp;&emsp;你是否碰到过这样的一些困扰，比如：你现在要搭建一个现今比较流行的SSH javaEE框架原型，按照传统的方式，你得把项目所依赖的第三方框架jar包拷贝到工程的lib目录下再进行整合，但是，在你的架构原型中，每一个框架要用什么版本，各个版本的jar包之间是否会有不兼容的情况？这些都会给整个过程带来麻烦，并花费大量的调试时间。</p>
+
+<p>&emsp;&emsp;如果有了Maven，这个事情会变得简单，你也许只需要声明一个依赖关系，所有的一切都自动完成了。</p>
+
+<p>&emsp;&emsp;例如，我要写一个activeMQ的JMS项目，我的pom.xml中，只要添加如下的一个依赖，即可开始编码了：</p>
+
+<p>``` xml pom.xml
+<dependencies></p>
+
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.activemq&lt;/groupId&gt;
+    &lt;artifactId&gt;activemq-core&lt;/artifactId&gt;
+    &lt;version&gt;5.7.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<p>  </dependencies>
+```</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven1.jpg' width='' height='' title='activeMQ项目中maven依赖的项目包'><span class='caption-text'>activeMQ项目中maven依赖的项目包</span></span></p>
+
+<p>&emsp;&emsp;当然，上面的示例中使用maven也有一点约束，那就是你的开发机器必须要能够连接到互联网上，并且网速不能太卡（这点可能有些开发者的环境无法满足而制约了maven在国内的普及速度），原因显而易见：所有的jar包需要从网上的仓库中下载到本地。<!--more--></p>
+
+<p>&emsp;&emsp;你可能通过上面的那段配置文件已经发现，在maven中世界中，每一个你所依赖的组件都是通过groupId、artifactId、version三个字段来定位的，好比x、y、h可以定位一个三维空间中的目标一样。如果你要问，我怎么知道所依赖的包的三维坐标信息呢，答案是：到<a href="http://mvnrepository.com/">mvnrepository.com</a>上查询。</p>
+
+<p>&emsp;&emsp;如果公司的开发环境处在一个封闭的局域网内，就得需要安装一些工具，另加一些额外的配置了，nexus是值得选择的内网Maven仓库，下面我给大家简单介绍一下nexus的安装、配置以及maven的基本配置。</p>
+
+<p>&emsp;&emsp;步骤如下：
+&ndash; 到nexus官网，下载nexus-2.7.0-04-bundle.zip文件（当然，你下载的版本号可能和我不同）
+&ndash; 解压到自已的一个目录中，比如我放到了D:\dev_tools\nexus-2.7.0-04-bundle\下
+&ndash; 接着，添加到路径变量到path中，注意是bin目录，我添加的是D:\dev_tools\nexus-2.7.0-04-bundle\nexus-2.7.0-04\bin
+&ndash; 安装系统服务，进入cmd中，运行：nexus install，这个时候，你可以在window的系统服务中看到这样的路径信息：D:\dev_tools\nexus-2.7.0-04-bundle\nexus-2.7.0-04\bin\jsw\windows-x86-32\wrapper.exe -s D:\dev_tools\nexus-2.7.0-04-bundle\nexus-2.7.0-04\bin\jsw\conf\wrapper.conf,实际运行的就是这个命令
+&ndash; 启动服务：nexus start，如果不出意外的话，你可以看到下面的界面，这证明安装成功了，。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/nexus1.jpg' width='' height='' title='启动nexus cmd界面'><span class='caption-text'>启动nexus cmd界面</span></span></p>
+
+<p>&emsp;&emsp;在浏览器中，输入 htt p:/ / localhost:8081/nexus/  ，在主页面中输入用户名admin，密码admin123即可完成登录。</p>
+
+<p>&emsp;&emsp;在Repositories中建立自己的仓库，如下图表中的Car ManagerSystem Release、Car ManagerSystem Snapshots就是我为车辆租赁管理系统建立的Release及Snapshort版本（这里注意，一般Repository ID有多个单词的情况下用-连接，我当时的命名并不规范）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/nexus2.jpg' width='' height='' title='我的项目中nexus截图'><span class='caption-text'>我的项目中nexus截图</span></span></p>
+
+<p>&emsp;&emsp;接下来，找到Security菜单项，针对新建的两个仓库分别配置Privileges,Roles,Users。关于nexus的详细教程，大家可以自行在网上搜索，我在这还再详述。</p>
+
+<p>&emsp;&emsp;下面要安装MAVEN了，步骤如下：</p>
+
+<ul>
+<li>到官网上下载apache-maven-3.1.1-bin.zip（你的版本可能跟我不一样），解压到目录D:\dev_tools\maven-3.1.1下（这个目录大家自行决定）。</li>
+<li>在环境变量中，将maven的bin目录加入到path中。</li>
+</ul>
+
+
+<p>&emsp;&emsp;回到命令行下，输入mvn，出现下面界面，说明maven安装成功（当然，添加环境变量，只是为了你可以在命令行手工运行maven）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven2.jpg' width='' height='' title='安装成功的cmd窗口'><span class='caption-text'>安装成功的cmd窗口</span></span></p>
+
+<p>&emsp;&emsp;目前的新版eclipse集成了maven，一般建议大家使用本地安装的maven以达到版本的统一，你可以在eclipse中进行选择配置，界面如下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven3.jpg' width='' height='' title='在eclipse中配置非集成maven'><span class='caption-text'>在eclipse中配置非集成maven</span></span></p>
+
+<p>&emsp;&emsp;接下来，我们对maven进行参数进行配置，一般配置文件位于C:\Documents and Settings\Administrator.m2下，文件名为settings.xml，下面是我节选的部分修改过的配置代码：</p>
+
+<p>``` xml settings.xml</p>
+
+<pre><code> &lt;localRepository&gt;F:/java/maven&lt;/localRepository&gt;
+</code></pre>
+
+<p><servers></p>
+
+<pre><code> &lt;server&gt;
+  &lt;id&gt;carManagerProjectRelease&lt;/id&gt;
+  &lt;username&gt;deployment&lt;/username&gt;
+  &lt;password&gt;deployment123&lt;/password&gt;
+&lt;/server&gt;
+
+&lt;server&gt;
+  &lt;id&gt;carManagerProjectSnapshot&lt;/id&gt;
+  &lt;username&gt;deployment&lt;/username&gt;
+  &lt;password&gt;deployment123&lt;/password&gt;
+&lt;/server&gt;
+</code></pre>
+
+<p></servers></p>
+
+<pre><code>&lt;profiles&gt;
+   &lt;profile&gt;
+   &lt;id&gt;central-repos&lt;/id&gt;
+   &lt;repositories&gt;
+        &lt;repository&gt;
+          &lt;id&gt;central&lt;/id&gt;
+          &lt;name&gt;Central&lt;/name&gt;
+          &lt;url&gt;http://127.0.0.1:8081/nexus/content/groups/public/&lt;/url&gt;
+          &lt;releases&gt;&lt;enabled&gt;true&lt;/enabled&gt;&lt;/releases&gt;
+          &lt;snapshots&gt;
+            &lt;enabled&gt;true&lt;/enabled&gt;
+          &lt;/snapshots&gt;
+        &lt;/repository&gt;
+      &lt;/repositories&gt;
+    &lt;/profile&gt;
+&lt;/profiles&gt;
+
+&lt;activeProfiles&gt;
+    &lt;activeProfile&gt;central-repos&lt;/activeProfile&gt;
+&lt;/activeProfiles&gt;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;上面的文件中，我主要配置了本地仓库所在的位置，maven从网上下载的第三方依赖包，都将存放在这个地方。我放到了F:/java/maven，如果你的这个目录下已经有了非常多的jar包，你可以将这个目录直接copy给其它的开发同事机器上，避免重复下载。</p>
+
+<p>&emsp;&emsp;server部分配置了可以上传到nexus中的相关账户的登录名及密码，这些信息都是在nexus的管理界面中配置的。而http : / /127.0.0.1:8081/nexus/content/groups/public 则是本地maven库所在的服务器路径。</p>
+
+<p>&emsp;&emsp;好了，今天先到这，下一篇文章会详细介绍如何在项目中使用maven.</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[spring aop实现机制]]></title>
@@ -981,270 +1104,6 @@ mt.remove(new Query(Criteria.where("id").lt(5)), Customer.class);
 
 
 <p>&emsp;&emsp;还有，开发中最好准备一个图型化的mongodb管理工具，比如：MongoCola，随时查看保存的数据实况，方便调试。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[highcharts生成pie及bar图]]></title>
-    <link href="http://yanyaner.com/blog/2013/06/05/highcharts-pie-column/"/>
-    <updated>2013-06-05T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/06/05/highcharts-pie-column</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;饼图及柱状图在项目中有比较广泛的应用，而在客户端生成图形化报表的方案中，highcharts又是一个功能十分强大的纯js报表工具，下面我写了demo，给大家演示报表的生成。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/1.jpg' width='' height='' title='学员成绩分布PIE图'><span class='caption-text'>学员成绩分布PIE图</span></span></p>
-
-<p>&emsp;&emsp;上面的饼状图，客户端代码如下：</p>
-
-<p>``` html</p>
-
-<script type="text/javascript" src="js/jquery.min.js"></script>
-
-
-
-
-<script src="js/highcharts.js"></script>
-
-
-<p><script type="text/javascript"></p>
-
-<pre><code>$(document).ready(function () {
-    var options =  {
-        chart: {
-            plotBackgroundColor: null,
-            plotBorderWidth: null,
-            plotShadow: false
-        },
-        title: {
-            text: 't99部学员成绩分布图'
-        },
-        tooltip: {
-            formatter: function (){
-                return this.point.name + ': &lt;b&gt;' + Highcharts.numberFormat(this.percentage, 0) + '%&lt;/b&gt;';
-            },
-            percentageDecimals: 1
-        },
-        plotOptions: {
-            pie: {
-                allowPointSelect: true,
-                cursor: 'pointer',
-                dataLabels: {
-                    enabled: true
-                },
-                showInLegend: true
-            }
-        },
-        series: [{
-            type: 'pie',
-            name: '占比'
-        }]
-    }
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;生成图表的js事件如下：</p>
-
-<p>``` js</p>
-
-<p>$.ajax({</p>
-
-<pre><code>            url:"pie_data",
-            dataType:"json",
-            cache:false,
-            success:function(ajax_data) {
-                options.series[0].data = ajax_data;
-                $('#container').highcharts(options);
-            }
-</code></pre>
-
-<p>});</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;#container是页面上的一个显示报表的控件，服务器端需要返回如下的json数据：</p>
-
-<p>``` json</p>
-
-<p>[[&ldquo;50分以下&rdquo;,65],[&ldquo;50-60&rdquo;,29],[&ldquo;60-70&rdquo;,66],[&ldquo;70-80&rdquo;,98]]</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;服务器端action代码：</p>
-
-<p>``` java
-@RequestMapping(&ldquo;/pie_data&rdquo;)</p>
-
-<pre><code>public void getStudentPie (
-        HttpServletResponse resp) throws Exception {
-    resp.setCharacterEncoding("utf-8");
-    ObjectMapper om = new ObjectMapper();
-
-    String[] cj_rang = new String[]{"50分以下","50-60","60-70","70-80","80-90","90-100"};
-
-    int rang = (int)(Math.random() * cj_rang.length);
-
-    List datas = new ArrayList();
-
-    for (int i = 0; i &lt;= rang; i ++) {
-        List a_rang = new ArrayList();
-        a_rang.add(cj_rang[i]);
-        a_rang.add(Math.round(Math.random() * 100));
-        datas.add(a_rang);
-    }
-
-    om.writeValue(resp.getOutputStream(), datas);
-}
-</code></pre>
-
-<p>```
-&emsp;&emsp;再看柱状图，返回的json数据要复杂些。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/2.jpg' width='' height='' title='班级学员成绩比较bar图'><span class='caption-text'>班级学员成绩比较bar图</span></span></p>
-
-<p>&emsp;&emsp;客户端代码：</p>
-
-<p>``` html</p>
-
-<p><script type="text/javascript" src="js/jquery.min.js"></script>
-<script src="js/highcharts.js"></script></p>
-
-<p><script type="text/javascript"></p>
-
-<pre><code>$(document).ready(function () {
-
-    var options =  {
-            chart: {
-                type: 'column'
-            },
-            title: {
-                text: ''
-            },
-            subtitle: {
-                text: ''
-            },
-            xAxis: {
-                categories: []
-            },
-            yAxis: {
-                min: 0,
-                title: {
-                    text: ' (人)数人'
-                }
-            },
-
-            tooltip: {
-
-                headerFormat: '&lt;span style="font-size:20px"&gt;{point.key}&lt;/span&gt;&lt;table&gt;',
-                pointFormat: '&lt;tr&gt;&lt;td style="color:{series.color};padding:0"&gt;{series.name}: &lt;/td&gt;' +
-                '&lt;td style="padding:0"&gt;&lt;b&gt;{point.y:.0f} 人&lt;/b&gt;&lt;/td&gt;&lt;/tr&gt;',
-                footerFormat: '&lt;/table&gt;',
-                shared: true,
-                useHTML: true,
-                percentageDecimals: 0
-            },
-            plotOptions: {
-                column: {
-                    pointPadding: 0.2,
-                    borderWidth: 0
-                }
-            }
-
-        };
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;js加载数据事件：</p>
-
-<p>``` js
-$.ajax({</p>
-
-<pre><code>            url:"bar_data",
-            dataType:"json",
-            cache:false,
-            success:function(ajax_data) {
-                options.title.text= ajax_data.big_title + '成绩比较图';
-                options.subtitle.text= ajax_data.small_title;
-                options.series = ajax_data.datas;
-                options.xAxis.categories=ajax_data.classes;
-                $('#container').highcharts(options);
-            }
-
-
-        });
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;服务器json数据格式为：</p>
-
-<p>``` json</p>
-
-<p>{&ldquo;small_title&rdquo;:&ldquo;95部, 96部, 97部, 98部&rdquo;,
-&ldquo;datas&rdquo;:[{&ldquo;name&rdquo;:&ldquo;50分以下&rdquo;,&ldquo;data&rdquo;:[5,5,25,29]},
-{&ldquo;name&rdquo;:&ldquo;50-60&rdquo;,&ldquo;data&rdquo;:[22,0,8,22]},
-{&ldquo;name&rdquo;:&ldquo;60-70&rdquo;,&ldquo;data&rdquo;:[8,12,28,28]},
-{&ldquo;name&rdquo;:&ldquo;70-80&rdquo;,&ldquo;data&rdquo;:[26,27,12,5]},
-{&ldquo;name&rdquo;:&ldquo;80-90&rdquo;,&ldquo;data&rdquo;:[10,26,2,20]}],
-&ldquo;classes&rdquo;:[&ldquo;95部&rdquo;,&ldquo;96部&rdquo;,&ldquo;97部&rdquo;,&ldquo;98部&rdquo;],
-&ldquo;big_title&rdquo;:&ldquo;j2ee&rdquo;}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;服务器端action代码：</p>
-
-<p>``` java</p>
-
-<pre><code>    resp.setCharacterEncoding("utf-8");
-    ObjectMapper om = new ObjectMapper();
-
-    String title_classes="";
-
-    String[] class_rang = new String[]{"95部","96部","97部","98部","99部","100部"};
-    String[] fsd_rang = new String[]{"50分以下","50-60","60-70","70-80","80-90","90-100"};
-
-    //分数段个数
-    int fs_rang = (int)(Math.random() * fsd_rang.length);
-
-    //班级个数
-    int classes = (int)(Math.random() * class_rang.length);
-
-    List datas_classes = new ArrayList();
-    for (int i = 0; i &lt;= classes; i++) {
-
-        if (title_classes.equals("")) {
-            title_classes =  class_rang[i];
-        } else {
-            title_classes = title_classes +  ", " + class_rang[i];                
-        }
-        datas_classes.add(class_rang[i]);
-    }
-
-    List datas = new ArrayList();
-
-    for (int i = 0; i &lt;= fs_rang; i ++) {
-
-        Map cat = new HashMap();
-        cat.put("name", fsd_rang[i]);
-        List classes_cjrs = new ArrayList();
-        for (int k = 0; k &lt;= classes; k++) {
-            classes_cjrs.add((int)(Math.random() * 30));
-        }
-        cat.put("data", classes_cjrs);
-
-        datas.add(cat);
-    }
-
-
-    Map result = new HashMap();
-    result.put("classes", datas_classes);
-    result.put("datas", datas);
-    result.put("big_title", "j2ee");
-    result.put("small_title", title_classes);
-    om.writeValue(resp.getOutputStream(), result);
-</code></pre>
-
-<p>```</p>
 ]]></content>
   </entry>
   

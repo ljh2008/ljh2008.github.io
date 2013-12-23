@@ -9,21 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;定义一个登录验证函数： 1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-/** * Created with JetBrains WebStorm. * User: ljh * Date: 13-8-9 * Time: 上午9:06 * 登录验证过滤器 &hellip;">
+  <meta name="description" content="&emsp;&emsp;需求还是基于前面的演示程序，只不过，我们把mysql换成了mongodb，因此，我们把以前的orm2插件更换成mongoose插件。 &emsp;&emsp;首先得下载mongodb文件，并启动服务器，这个过程大家可以参考我前面的spring &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -72,6 +58,111 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/08/15/nodejs-express-mongodb-crud/">node.js中基本于express、mongodb的CRUD</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-15T15:18:00+08:00" pubdate data-updated="true">2013年08月15日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;需求还是基于前面的演示程序，只不过，我们把mysql换成了mongodb，因此，我们把以前的orm2插件更换成mongoose插件。</p>
+
+<p>&emsp;&emsp;首先得下载mongodb文件，并启动服务器，这个过程大家可以参考我前面的spring data操作mongodb的文章。</p>
+
+<p>&emsp;&emsp;在node.js项目中，我们需要先定义对象结构，建议大家把系统所有的对象结构定义到一个文件中，如果系统过大，可考虑按功能模块定义到多个文件中，我把对象结构定义到一个文件中，models.js，代码如下：</p>
+
+<figure class='code'><figcaption><span>models.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 定义所有的对象结构，并通过exports向外导出.</span>
+</span><span class='line'><span class="cm"> * User: ljh</span>
+</span><span class='line'><span class="cm"> * Date: 13-8-13</span>
+</span><span class='line'><span class="cm"> * Time: 下午4:44</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">mongoose</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;mongoose&#39;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//连接是如何管理的，是否在这连接，有待深入研究？？？</span>
+</span><span class='line'><span class="nx">mongoose</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="s1">&#39;mongodb://localhost/mydb&#39;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">Schema</span>  <span class="o">=</span> <span class="nx">mongoose</span><span class="p">.</span><span class="nx">Schema</span><span class="p">;</span>
+</span><span class='line'><span class="c1">//定义对象结构</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">userSchema</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Schema</span><span class="p">({</span>
+</span><span class='line'>    <span class="nx">loginCode</span><span class="o">:</span><span class="p">{</span><span class="nx">type</span><span class="o">:</span><span class="nb">String</span><span class="p">},</span>
+</span><span class='line'>    <span class="nx">userName</span><span class="o">:</span><span class="p">{</span><span class="nx">type</span><span class="o">:</span><span class="nb">String</span><span class="p">},</span>
+</span><span class='line'>    <span class="nx">password</span><span class="o">:</span><span class="p">{</span><span class="nx">type</span><span class="o">:</span><span class="nb">String</span><span class="p">},</span>
+</span><span class='line'>    <span class="nx">picPath</span><span class="o">:</span><span class="p">{</span><span class="nx">type</span><span class="o">:</span><span class="nb">String</span><span class="p">},</span>
+</span><span class='line'>    <span class="nx">birthDay</span><span class="o">:</span><span class="p">{</span><span class="nx">type</span><span class="o">:</span><span class="nb">Date</span><span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//定义集合,其中myUser是数据集的名称</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">User</span> <span class="o">=</span>  <span class="nx">mongoose</span><span class="p">.</span><span class="nx">model</span><span class="p">(</span><span class="s2">&quot;myUser&quot;</span><span class="p">,</span> <span class="nx">userSchema</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;系统中需要操作user的地方，都需要引入models.js文件，例如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">models</span>  <span class="o">=</span>  <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../commons/models&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">User</span> <span class="o">=</span> <span class="nx">models</span><span class="p">.</span><span class="nx">User</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;下面是userAction.js中的核心CRUD代码，相对于orm2的api函数，mongoose的函数设计更为简洁、强大。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/08/15/nodejs-express-mongodb-crud/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -1051,506 +1142,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/06/27/hibernate-transaction/">事务中的并发处理</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-06-27T15:18:00+08:00" pubdate data-updated="true">2013年06月27日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;在项目中，事务是不可缺少的，但是如何在一个业务事务中正确的处理并发，确不是一件容易的事。下面，我通过一个简单的例子来说明这个问题，并给出一些解决办法。</p>
-
-<p>&emsp;&emsp;这个例子也许并不恰当，但足够简单：宠物&mdash;&ndash;>宠物日记，一对多双向关联，持久层使用hibernate框架实现。</p>
-
-<figure class='code'><figcaption><span>Epet.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Epet</span><span class="o">{</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">password</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//日记集合</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">Diary</span><span class="o">&gt;</span> <span class="n">diarys</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">Diary</span><span class="o">&gt;();</span>
-</span><span class='line'>    <span class="c1">//日记的总积分，为了提高效率而设置的冗余字段</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">integralCount</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span>Diary.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Diary</span><span class="o">{</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">title</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">publishDate</span><span class="o">;</span>
-</span><span class='line'>    <span class="c1">//日记积分</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">integral</span><span class="o">;</span>
-</span><span class='line'>    <span class="c1">//日记所属宠物</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Epet</span> <span class="n">epet</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;假设为了提高效率，我们在epet对象中，添加了该宠物所有日记的总积分，我们现在需要一个业务方法，用来计算宠物的总积分，并持久化到数据库中。</p>
-
-<p>&emsp;&emsp;实现代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">Epet</span> <span class="n">e</span> <span class="o">=</span> <span class="o">(</span><span class="n">Epet</span><span class="o">)</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Epet</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">epetId</span><span class="o">,</span> <span class="n">LockMode</span><span class="o">.</span><span class="na">UPGRADE</span><span class="o">);</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>    <span class="k">for</span> <span class="o">(</span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Diary</span><span class="o">&gt;</span> <span class="n">its</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="na">getDiarys</span><span class="o">().</span><span class="na">iterator</span><span class="o">();</span><span class="n">its</span><span class="o">.</span><span class="na">hasNext</span><span class="o">();)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="n">its</span><span class="o">.</span><span class="na">next</span><span class="o">().</span><span class="na">getIntegral</span><span class="o">();</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>    <span class="n">e</span><span class="o">.</span><span class="na">setIntegralCount</span><span class="o">(</span><span class="n">count</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">epetDao</span><span class="o">.</span><span class="na">updateEpet</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的代码，考虑到要修改总积分，首先对读取的epet加锁，然后取出每一篇日记，累加积分，最后更新宠物对象，通过观察输出的sql语句，我们会发现这段代码有问题，并不能保存业务约束的完整性。系统对日记的查询，并没有加锁，也就是说，这段时间内，完全有可能存在其它事务修改日志积分，或添加、删除日记的情况。</p>
-
-<p>&emsp;&emsp;也许你会说，把该方法的数据库隔离级别设置为ISOLATION_REPEATABLE_READ，但经过我的测试，这个级别在mysql,orcle中也是存在问题的，原因是：mysql的可重复读是通过内部缓存实现，也说是说，你在事务中查完的数据，它会缓存起来，事务中再说，返回的是缓存中的数据，在这个过程中，其它事务是可以成功修改数据的；oracle是不支持可重复读的，所以，设置隔离级别不靠谱。</p>
-
-<p>&emsp;&emsp;那我们把代码改进一下，自己来加锁，代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">ht</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">HibernateCallback</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>        <span class="nd">@Override</span>
-</span><span class='line'>        <span class="kd">public</span> <span class="n">Object</span> <span class="nf">doInHibernate</span><span class="o">(</span><span class="n">Session</span> <span class="n">session</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">HibernateException</span><span class="o">,</span>
-</span><span class='line'>                <span class="n">SQLException</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">Epet</span> <span class="n">e</span> <span class="o">=</span> <span class="o">(</span><span class="n">Epet</span><span class="o">)</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Epet</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">epetid</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">List</span><span class="o">&lt;</span><span class="n">Diary</span><span class="o">&gt;</span> <span class="n">ds</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="s">&quot;from Diary d where d.epet.id = ?&quot;</span><span class="o">)</span>
-</span><span class='line'>            <span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="mi">1</span><span class="o">).</span><span class="na">setLockMode</span><span class="o">(</span><span class="s">&quot;d&quot;</span><span class="o">,</span> <span class="n">LockMode</span><span class="o">.</span><span class="na">UPGRADE</span><span class="o">)</span>
-</span><span class='line'>            <span class="o">.</span><span class="na">list</span><span class="o">();</span>
-</span><span class='line'>            <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>            <span class="k">for</span> <span class="o">(</span><span class="n">Diary</span> <span class="n">d</span> <span class="o">:</span> <span class="n">ds</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="n">d</span><span class="o">.</span><span class="na">getIntegral</span><span class="o">();</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>            <span class="n">e</span><span class="o">.</span><span class="na">setIntegralCount</span><span class="o">(</span><span class="n">count</span><span class="o">);</span>
-</span><span class='line'>            <span class="n">epetDao</span><span class="o">.</span><span class="na">updateEpet</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>    <span class="o">});</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;注意setLockMode(&ldquo;d&rdquo;, LockMode.UPGRADE)部分的代码，这段代码可以保证在事务期间，没有人修改日记积分，因此，从业务上说，在事务执行这段期间，统计的总积分是正确的。</p>
-
-<p>&emsp;&emsp;用悲观锁把部分数据锁定，在项目中并不建议使用，因为这样会在并发环境中带来性能问题。</p>
-
-<p>&emsp;&emsp;再次改进，在Epet对象和Diary对象中，都加上version字段，使用乐观锁控制事务，代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">Epet</span> <span class="n">e</span> <span class="o">=</span> <span class="o">(</span><span class="n">Epet</span><span class="o">)</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Epet</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">epetId</span><span class="o">);</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>    <span class="k">for</span> <span class="o">(</span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Diary</span><span class="o">&gt;</span> <span class="n">its</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="na">getDiarys</span><span class="o">().</span><span class="na">iterator</span><span class="o">();</span><span class="n">its</span><span class="o">.</span><span class="na">hasNext</span><span class="o">();)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="n">its</span><span class="o">.</span><span class="na">next</span><span class="o">().</span><span class="na">getIntegral</span><span class="o">();</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>    <span class="n">e</span><span class="o">.</span><span class="na">setIntegralCount</span><span class="o">(</span><span class="n">count</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">epetDao</span><span class="o">.</span><span class="na">updateEpet</span><span class="o">(</span><span class="n">e</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//再次查询状态每个diary的状态，看是否被它人修改过</span>
-</span><span class='line'>    <span class="k">for</span> <span class="o">(</span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Diary</span><span class="o">&gt;</span> <span class="n">its</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="na">getDiarys</span><span class="o">().</span><span class="na">iterator</span><span class="o">();</span><span class="n">its</span><span class="o">.</span><span class="na">hasNext</span><span class="o">();)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">Diary</span> <span class="n">d</span> <span class="o">=</span> <span class="n">its</span><span class="o">.</span><span class="na">next</span><span class="o">();</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">ver</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="na">getVersion</span><span class="o">();</span>
-</span><span class='line'>        <span class="c1">//注意，在mysql中，要想成功refresh得到最新数据，必须设置隔离级别是ISOLATION_READ_COMMITTED</span>
-</span><span class='line'>        <span class="n">ht</span><span class="o">.</span><span class="na">refresh</span><span class="o">(</span><span class="n">d</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">d</span><span class="o">.</span><span class="na">getVersion</span><span class="o">()</span> <span class="o">!=</span> <span class="n">ver</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="s">&quot;订单状态已被改变！&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的这段代码在最后再次检查是否有人修改了日记，如果日记版本号与之前一致，则提交事务，但是，这段代码也并非没有问题，因为在事务最后提交的过程中，还是会存在并发修改日记的情况，所以，业务事务的处理非常麻烦，要考虑到业务规则的满足，并不是我们想像的那么简单。</p>
-
-<p>&emsp;&emsp;从业务上来讲，我们只关心在我的事务中，日记的积分不被它人修改，因此，上面的代码还可以再次修改，只关注积分值，减少并发冲突问题，代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>     <span class="c1">//再次查询状态每个diary的状态，看是否被它人修改过</span>
-</span><span class='line'>    <span class="k">for</span> <span class="o">(</span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Diary</span><span class="o">&gt;</span> <span class="n">its</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="na">getDiarys</span><span class="o">().</span><span class="na">iterator</span><span class="o">();</span><span class="n">its</span><span class="o">.</span><span class="na">hasNext</span><span class="o">();)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">Diary</span> <span class="n">d</span> <span class="o">=</span> <span class="n">its</span><span class="o">.</span><span class="na">next</span><span class="o">();</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">integral</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="na">getIntegral</span><span class="o">();</span>
-</span><span class='line'>        <span class="c1">//注意，在mysql中，要想成功refresh得到最新数据，必须设置隔离级别是ISOLATION_READ_COMMITTED</span>
-</span><span class='line'>        <span class="n">ht</span><span class="o">.</span><span class="na">refresh</span><span class="o">(</span><span class="n">d</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">d</span><span class="o">.</span><span class="na">getIntegral</span><span class="o">()</span> <span class="o">!=</span> <span class="n">integral</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="s">&quot;订单状态已被改变！&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;红色字体部分，取日记的积分，只是为了减少并发冲突出现的可能性，但依然没办法保证业务约束完整，要想保存业务约束及规则的满足，最好的办法是使用富血模型去做，对日记的任何操作，都必须通过它的聚合根，也就是epet对象去实现，示例代码如下：</p>
-
-<p>&emsp;&emsp;以下方法都是写在Epet对象中的：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * 重新计算积分</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">reCalculateIntegral</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Diary</span><span class="o">&gt;</span> <span class="n">its</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">getDiarys</span><span class="o">().</span><span class="na">iterator</span><span class="o">();</span><span class="n">its</span><span class="o">.</span><span class="na">hasNext</span><span class="o">();)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">count</span> <span class="o">=</span> <span class="n">count</span> <span class="o">+</span> <span class="n">its</span><span class="o">.</span><span class="na">next</span><span class="o">().</span><span class="na">getIntegral</span><span class="o">();</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">setIntegralCount</span><span class="o">(</span><span class="n">count</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * 添加日记</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>
-</span><span class='line'>     <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addDiary</span><span class="o">(</span><span class="n">Diary</span> <span class="n">d</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">getBaseDao</span><span class="o">().</span><span class="na">save</span><span class="o">(</span><span class="n">d</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">getDiarys</span><span class="o">().</span><span class="na">add</span><span class="o">(</span><span class="n">d</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">d</span><span class="o">.</span><span class="na">setEpet</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">reCalculateIntegral</span><span class="o">();</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">getBaseDao</span><span class="o">().</span><span class="na">update</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * 修改日记</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">updateDiary</span><span class="o">(</span><span class="n">Diary</span> <span class="n">d</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">getBaseDao</span><span class="o">().</span><span class="na">update</span><span class="o">(</span><span class="n">d</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">reCalculateIntegral</span><span class="o">();</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">getBaseDao</span><span class="o">().</span><span class="na">update</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;而对应的facade中的代码如下（注意：事务是控制在facade上的哦）：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>  <span class="c1">//增删改日记(事务控制在此，乐观锁保证业务约束的完整性)</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addDiary</span><span class="o">(</span><span class="kt">int</span> <span class="n">petId</span><span class="o">,</span> <span class="n">Diary</span> <span class="n">d</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">Epet</span> <span class="n">e</span> <span class="o">=</span> <span class="o">(</span><span class="n">Epet</span><span class="o">)</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Epet</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">petId</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">e</span><span class="o">.</span><span class="na">addDiary</span><span class="o">(</span><span class="n">d</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">updateDiary</span><span class="o">(</span><span class="n">Diary</span> <span class="n">d</span><span class="o">){</span>
-</span><span class='line'>        <span class="c1">//这里再次按id查询epet，无性能损耗，因为有缓存</span>
-</span><span class='line'>        <span class="n">Epet</span> <span class="n">e</span> <span class="o">=</span> <span class="o">(</span><span class="n">Epet</span><span class="o">)</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Epet</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">d</span><span class="o">.</span><span class="na">getEpet</span><span class="o">().</span><span class="na">getId</span><span class="o">());</span>
-</span><span class='line'>        <span class="n">e</span><span class="o">.</span><span class="na">updateDiary</span><span class="o">(</span><span class="n">d</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;从上面的代码可以看到，所有对日记的修改，都必须通过聚合根epet对象，而epet上是有基于version的乐观锁的，因些，最后的这部分代码基本满足了我们的业务约束及事务的并发控制。</p>
-
-<p>&emsp;&emsp;还有一种情况，如果在我们这个场景中，如果事务的失败对用户来说是不能容忍的，比如：添加一篇宠物日记会花费用户30分钟的录入时间，如果最终事务失败，用户无疑非常的沮丧，这种情况该如何应对了？接下来，我给大家继续讲解离线事务锁的示例。</p>
-
-<p>&emsp;&emsp;先看乐观离线事务锁，这种锁不是用来解决事务失败而用户不能接受的情况，而是一个超长的业务事务，比如30分钟，而在最终提交事务时，系统要检测到这种冲突，下面是乐观离线锁的实现示例代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>        <span class="c1">//长事务，离线乐观锁</span>
-</span><span class='line'>        <span class="n">Epet</span> <span class="n">e</span> <span class="o">=</span> <span class="n">ss</span><span class="o">.</span><span class="na">getEpetById</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Epet</span><span class="o">&gt;</span> <span class="n">session</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Epet</span><span class="o">&gt;();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">session</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;epet_in_http_session&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
-</span><span class='line'>        <span class="c1">//给用户发回响应resopnse</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">//长时间的编辑</span>
-</span><span class='line'>        <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">10000</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">//最后一步，提交</span>
-</span><span class='line'>        <span class="c1">//这里不要从数据库中重查，而是直接使用先前保存的那个，可能是httpsession，也可能是序列化至外部</span>
-</span><span class='line'>        <span class="n">Epet</span> <span class="n">e2</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;epet_in_http_session&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">e2</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;小强22&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="c1">//重新保存，version乐观锁会保证并发冲突，如果出现冲突，你会得到类似org.hibernate.StaleObjectStateException: Row was updated or deleted by another transaction (or unsaved-value mapping was incorrect)的错误信息。</span>
-</span><span class='line'>        <span class="n">ss</span><span class="o">.</span><span class="na">updateEpet</span><span class="o">(</span><span class="n">e2</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果用户对事务冲突不可容忍，我们就只能使用悲观离线锁，本质上来就，就是用户自己去实现对象的锁定，代码如下：</p>
-
-<p> &emsp;&emsp;先在epet中加上这三个新的属性：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="c1">//锁定标示： true已锁定，false:未锁定</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">locked</span><span class="o">;</span>
-</span><span class='line'>    <span class="c1">//锁定者</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">locker</span><span class="o">;</span>
-</span><span class='line'>    <span class="c1">//锁定时间</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">lockedTime</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;epet中再加上和悲观锁相关的几个方法：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>   <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * 锁定对象</span>
-</span><span class='line'><span class="cm">     * @param locker</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">lockEpet</span><span class="o">(</span><span class="n">String</span> <span class="n">locker</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">isLockedBy</span><span class="o">(</span><span class="n">locker</span><span class="o">))</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">return</span><span class="o">;</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">isLocked</span><span class="o">())</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="s">&quot;该对象已被&quot;</span><span class="o">+</span><span class="k">this</span><span class="o">.</span><span class="na">getLocker</span><span class="o">()+</span><span class="s">&quot;被锁定！&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">setLocked</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">setLocker</span><span class="o">(</span><span class="n">locker</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">setLockedTime</span><span class="o">(</span><span class="k">new</span> <span class="n">Date</span><span class="o">());</span>
-</span><span class='line'>        <span class="n">getBaseDao</span><span class="o">().</span><span class="na">update</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * 解锁对象</span>
-</span><span class='line'><span class="cm">     * @param locker</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">unLockEpet</span><span class="o">(</span><span class="n">String</span> <span class="n">locker</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(!</span><span class="k">this</span><span class="o">.</span><span class="na">getLocker</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="n">locker</span><span class="o">))</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">RuntimeException</span><span class="o">(</span><span class="s">&quot;解锁失败：解铃还需系铃人！&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">setLocked</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">getBaseDao</span><span class="o">().</span><span class="na">update</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>    <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * 检测对象是否被某人锁定</span>
-</span><span class='line'><span class="cm">     * @param locker</span>
-</span><span class='line'><span class="cm">     * @return</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">isLockedBy</span><span class="o">(</span><span class="n">String</span> <span class="n">locker</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">locker</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">getLocker</span><span class="o">())</span>  <span class="o">&amp;&amp;</span>  <span class="k">this</span><span class="o">.</span><span class="na">isLocked</span><span class="o">())</span> <span class="o">{</span>
-</span><span class='line'>            <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在业务类中，我们也需要加上几个类似的方法实现，事务也控制在这个上面：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">lockEpet</span><span class="o">(</span><span class="kt">int</span> <span class="n">epetid</span><span class="o">,</span> <span class="n">String</span> <span class="n">locker</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">Epet</span> <span class="n">e</span> <span class="o">=</span> <span class="o">(</span><span class="n">Epet</span><span class="o">)</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Epet</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">epetid</span><span class="o">,</span> <span class="n">LockMode</span><span class="o">.</span><span class="na">UPGRADE</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">e</span><span class="o">.</span><span class="na">lockEpet</span><span class="o">(</span><span class="n">locker</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">unLockEpet</span><span class="o">(</span><span class="kt">int</span> <span class="n">epetid</span><span class="o">,</span> <span class="n">String</span> <span class="n">locker</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">Epet</span> <span class="n">e</span> <span class="o">=</span> <span class="o">(</span><span class="n">Epet</span><span class="o">)</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Epet</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">epetid</span><span class="o">,</span> <span class="n">LockMode</span><span class="o">.</span><span class="na">UPGRADE</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">e</span><span class="o">.</span><span class="na">unLockEpet</span><span class="o">(</span><span class="n">locker</span><span class="o">);</span>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在悲观离线锁的使用过程中要特别小心，做某些业务操作时，一定要确保已经成功获得了锁，写相关功能的程序员必须要清楚地知道这一点，因为，这种锁是程序员自己去实现的。</p>
-
-<p>&emsp;&emsp;这种悲观锁的实现中，还需要防止死锁，比如：对多个对象的锁定，还有就是，需要某种检测机制，把超过某个业务时间的锁释放。</p>
-
-<p>&emsp;&emsp;要想解决好事务的并发处理非常的不容易，因为这个问题本来就是和业务领域密切相关的一个问题，需要我们从业务方面去分析解决。转换为一对多，关系越简单越好。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; 更多早期老文章</a>
@@ -1568,6 +1159,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/23/maven/">在项目中使用maven之一&#8211;环境配置</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
       </li>
     
@@ -1581,10 +1176,6 @@
     
       <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
   </ul>

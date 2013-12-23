@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;Velocity是一种基于JAVA的模板引擎，开发人员使用简单的模板语言就可以快速开发显示层，它使得显示层与程序代码分离，struts2自身提供了对velocity的支持，下面讲一下使用上的一些注意事项。 &emsp;&emsp;一、支持包 &emsp;&emsp; &hellip;">
+  <meta name="description" content="&emsp;&emsp;首先在服务器上把目录结构搭建出来，如下图： svn项目结构 &emsp;&emsp;runk为项目主干，也就是主线，branches中存放分支，tags中为标志（标签），这个对于大、中型项目，需要建立这样的结构，如果是一个小项目，就不必这么兴师动众了。 &emsp;& &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,100 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/02/21/svn/">Svn版本控制服务器主干、分支的使用详解</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-21T15:18:00+08:00" pubdate data-updated="true">2013年02月21日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;首先在服务器上把目录结构搭建出来，如下图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/1.jpg' width='' height='' title='svn项目结构'><span class='caption-text'>svn项目结构</span></span></p>
+
+<p>&emsp;&emsp;runk为项目主干，也就是主线，branches中存放分支，tags中为标志（标签），这个对于大、中型项目，需要建立这样的结构，如果是一个小项目，就不必这么兴师动众了。</p>
+
+<p>&emsp;&emsp;项目主干trunk上的代码，一般来说要保证其基本的完整性及可运行，特别是在敏捷开发中更是如此，它是项目的主线。</p>
+
+<p>&emsp;&emsp;branches的存在，有很多的原因，比如：模块间存在并发开发情况，而且模块完成周期较长，如果把没有完成的东西提交到主干上，会影响项目运行；还有可能，程序员可以随时提交自己的东西到自己的分支，而不会对它人产生影响。</p>
+
+<p>&emsp;&emsp;tags是为软件项目打一个标记，比如：1.0稳定版本，建行v1.2发布版，等等，这个标记具有更好的可读性，也是软件周期中的阶段性发布。</p>
+
+<p>&emsp;&emsp;目录结构建立好后，就要准备开发了，首先要将项目上传到trunk中，如图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/2.jpg' width='' height='' title='上传到svn后的项目结构'><span class='caption-text'>上传到svn后的项目结构</span></span></p>
+
+<p>&emsp;&emsp;好了，下面我给大家讲解具体开发中的操作，比如，我现在要进行一个为期一周的模块开发，我要建立自己的分支，在trunk点右键，选择【分支/标记】，选择branches目录，并手工输入分支名称，比如我输入的是mybc1.0。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/3.jpg' width='' height='' title='在svn中建立分支'><span class='caption-text'>在svn中建立分支</span></span></p>
+
+<p>&emsp;&emsp;再回到你检出的主干项目，右键，切换到分支上去，如图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/4.jpg' width='' height='' title='在svn中切换到分支'><span class='caption-text'>在svn中切换到分支</span></span></p>
+
+<p>&emsp;&emsp;这样，你就可以在分支上做功能模块的开发了。</p>
+
+<p>&emsp;&emsp;当然，在分支上提交的历史，在主干上是看不到的，同理，主干上做的提交版本，分支上也是不可见的，既然不可见的话，在分支上做完的东西，就需要合并到主干上去，同理，主干上所做的修改，也应该更新到分支上去，这就是合并。</p>
+
+<p>&emsp;&emsp;下面，我讲一下把分支合并到主干上去的过程，而把主干代码更新到分支的过程，与此类似。从分支&mdash;&ndash;>主干，需要你把当前工程切换到主干，在项目上点右键，选择合并，如图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/5.jpg' width='' height='' title='在svn中分支的合并步骤1'><span class='caption-text'>在svn中分支的合并步骤1</span></span></p>
+
+<p>&emsp;&emsp;接着，在下一步中选择合并模式，我们要选择第二项，如图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/6.jpg' width='' height='' title='在svn中分支的合并步骤2'><span class='caption-text'>在svn中分支的合并步骤2</span></span></p>
+
+<p>&emsp;&emsp;接下来，选择从哪个分支合并过来（eclipse中的svn插件功能没有TortoiseSVN强大，TortoiseSVN可以选择合并的版本范围的哦）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/7.jpg' width='' height='' title='在svn中分支的合并步骤3'><span class='caption-text'>在svn中分支的合并步骤3</span></span></p>
+
+<p>&emsp;&emsp;点完成后，系统会显示合并结果，如图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/8.jpg' width='' height='' title='在svn中分支的合并步骤4之合并结果'><span class='caption-text'>在svn中分支的合并步骤4之合并结果</span></span></p>
+
+<p>&emsp;&emsp;如果没有冲突，你就可以提交主干代码了（如果发现现在还不想合并，可以点 还原 ，退回到合并前状态，当然，前提是还没有提交），这样，分支中所做的工作，已经合并到了主干上。</p>
+
+<p>&emsp;&emsp;如果你是将主干上的代码更新到分支上，过程与之类似，这时，你需要切换到分支上去，然后按提示一步步来做即可。</p>
+
+<p>&emsp;&emsp;再来说一下标签，标签本质上和分支并不区别，只是给版本号取了一个更好理解的名称而已，当然，你也可以切换到 标签下去工作，标签的建立和分支相同（注意：我们一般不会切换到标签工作，因为标签，仅作为有含义的目录更为确切）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/9.jpg' width='' height='' title='svn的最后结构图'><span class='caption-text'>svn的最后结构图</span></span></p>
+
+<p>&emsp;&emsp;好了，基本的操作就讲了这。</p>
+
+<p>&emsp;&emsp;总的来说，版本、分支、标记，就是一棵巨大的历史版本树，这棵树记录了系统代码的一个发展、变迁历程，各个树支干间是不可见的，并且都有自己的一个完整可追朔历史，要实现不同分支之间的数据合并，只好merge了。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/02/10.jpg' width='' height='' title='svn历史'><span class='caption-text'>svn历史</span></span></p>
+
+<p>&emsp;&emsp;最后说一下另一个实际应用情况，比如，我们在写一个产品，同时销售给了很多个客户，每个客户在某些方面又有自己特定的需求，这个时候，我们可以把通用版本上传到主干上，然后建立每个不同客户的分支，如果发现某个客户的某个特有功能具有共性，可以将这个分支上的这部分功能提交到主干，而其它分支，也需要将主干上的新功能再更新下去，操作还有点繁琐哈，当然，要TortoiseSVN可按版本号范围的合并，肯定更有意义些。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -976,56 +1070,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/12/28/restful6/">教你一步步做 Restful程序（6）&#8212;总结</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-12-28T15:22:00+08:00" pubdate data-updated="true">2012年12月28日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;上面的程序非常简单，仅供大家参考，如要运用到生产环境，有些细节问题并没有考虑到，请大家自己完善。</p>
-
-<p>&emsp;&emsp;上面的示例中，状态的控制还是放在服务器端管理的，这和restful理论上有所冲突，另外，提交方式也并没有严格按照标准来做，主要原因是中文参数的处理不方便。</p>
-
-<p>&emsp;&emsp;总之，restful架构将服务端和客户端解耦，确实对现在多客户端的系统来说，服务器的处理更加的方便。但restful在实际生产环境中的使用还得根据项目的需求来具体情况具体再说，比如：</p>
-
-<p>&emsp;&emsp;1、所有的功能都要提供电脑版、其它终端及客户端版吗？</p>
-
-<p>&emsp;&emsp;2、不同客户端，对返回的数据格式要求都一样吗？（比如：一个列表，移动终端可能需要显示的数据量要少得多）</p>
-
-<p>&emsp;&emsp;3、前端开发人员对纯js的操作是否熟悉?(因为页面的生成，跳转都在客户端完成哦)</p>
-
-<p>&emsp;&emsp;4、是否有些业务复杂、严谨到不适合这种模式。</p>
-
-<p>&emsp;&emsp;大家从这，返回我的第一篇关于restful的文章《<a href="/blog/2012/12/28/restful1/">教你一步步做 restful程序（1）为什么要用restful</a>》</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/7/">&larr; 更多早期老文章</a>
@@ -1043,6 +1087,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/23/maven/">在项目中使用maven之一&#8211;环境配置</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
       </li>
     
@@ -1056,10 +1104,6 @@
     
       <li class="post">
         <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/09/28/angular-js5/">一步步教你用angular.js实现一个基本应用&#8212;第五部分</a>
       </li>
     
   </ul>

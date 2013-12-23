@@ -1,0 +1,415 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>在项目中使用maven之一--环境配置 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;Apache Maven是一个软件项目综合管理工具，它基于项目对象模型（POM）的概念来统一管理项目，使用Maven可以更好地管理项目的模块化，更好地管理项目之间的依赖，更好地管理jar包依赖及其版本，也更加贴近项目管理的各个阶段。 &emsp;&emsp; &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2013/12/23/maven">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">在项目中使用maven之一--环境配置</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-12-23T15:18:00+08:00" pubdate data-updated="true">2013年12月23日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;Apache Maven是一个软件项目综合管理工具，它基于项目对象模型（POM）的概念来统一管理项目，使用Maven可以更好地管理项目的模块化，更好地管理项目之间的依赖，更好地管理jar包依赖及其版本，也更加贴近项目管理的各个阶段。</p>
+
+<p>&emsp;&emsp;你是否碰到过这样的一些困扰，比如：你现在要搭建一个现今比较流行的SSH javaEE框架原型，按照传统的方式，你得把项目所依赖的第三方框架jar包拷贝到工程的lib目录下再进行整合，但是，在你的架构原型中，每一个框架要用什么版本，各个版本的jar包之间是否会有不兼容的情况？这些都会给整个过程带来麻烦，并花费大量的调试时间。</p>
+
+<p>&emsp;&emsp;如果有了Maven，这个事情会变得简单，你也许只需要声明一个依赖关系，所有的一切都自动完成了。</p>
+
+<p>&emsp;&emsp;例如，我要写一个activeMQ的JMS项目，我的pom.xml中，只要添加如下的一个依赖，即可开始编码了：</p>
+
+<figure class='code'><figcaption><span>pom.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;dependencies&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;dependency&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;groupId&gt;</span>org.apache.activemq<span class="nt">&lt;/groupId&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;artifactId&gt;</span>activemq-core<span class="nt">&lt;/artifactId&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;version&gt;</span>5.7.0<span class="nt">&lt;/version&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/dependency&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;/dependencies&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven1.jpg' width='' height='' title='activeMQ项目中maven依赖的项目包'><span class='caption-text'>activeMQ项目中maven依赖的项目包</span></span></p>
+
+<p>&emsp;&emsp;当然，上面的示例中使用maven也有一点约束，那就是你的开发机器必须要能够连接到互联网上，并且网速不能太卡（这点可能有些开发者的环境无法满足而制约了maven在国内的普及速度），原因显而易见：所有的jar包需要从网上的仓库中下载到本地。<!--more--></p>
+
+<p>&emsp;&emsp;你可能通过上面的那段配置文件已经发现，在maven中世界中，每一个你所依赖的组件都是通过groupId、artifactId、version三个字段来定位的，好比x、y、h可以定位一个三维空间中的目标一样。如果你要问，我怎么知道所依赖的包的三维坐标信息呢，答案是：到<a href="http://mvnrepository.com/">mvnrepository.com</a>上查询。</p>
+
+<p>&emsp;&emsp;如果公司的开发环境处在一个封闭的局域网内，就得需要安装一些工具，另加一些额外的配置了，nexus是值得选择的内网Maven仓库，下面我给大家简单介绍一下nexus的安装、配置以及maven的基本配置。</p>
+
+<p>&emsp;&emsp;步骤如下：
+&ndash; 到nexus官网，下载nexus-2.7.0-04-bundle.zip文件（当然，你下载的版本号可能和我不同）
+&ndash; 解压到自已的一个目录中，比如我放到了D:\dev_tools\nexus-2.7.0-04-bundle\下
+&ndash; 接着，添加到路径变量到path中，注意是bin目录，我添加的是D:\dev_tools\nexus-2.7.0-04-bundle\nexus-2.7.0-04\bin
+&ndash; 安装系统服务，进入cmd中，运行：nexus install，这个时候，你可以在window的系统服务中看到这样的路径信息：D:\dev_tools\nexus-2.7.0-04-bundle\nexus-2.7.0-04\bin\jsw\windows-x86-32\wrapper.exe -s D:\dev_tools\nexus-2.7.0-04-bundle\nexus-2.7.0-04\bin\jsw\conf\wrapper.conf,实际运行的就是这个命令
+&ndash; 启动服务：nexus start，如果不出意外的话，你可以看到下面的界面，这证明安装成功了，。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/nexus1.jpg' width='' height='' title='启动nexus cmd界面'><span class='caption-text'>启动nexus cmd界面</span></span></p>
+
+<p>&emsp;&emsp;在浏览器中，输入 htt p:/ / localhost:8081/nexus/  ，在主页面中输入用户名admin，密码admin123即可完成登录。</p>
+
+<p>&emsp;&emsp;在Repositories中建立自己的仓库，如下图表中的Car ManagerSystem Release、Car ManagerSystem Snapshots就是我为车辆租赁管理系统建立的Release及Snapshort版本（这里注意，一般Repository ID有多个单词的情况下用-连接，我当时的命名并不规范）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/nexus2.jpg' width='' height='' title='我的项目中nexus截图'><span class='caption-text'>我的项目中nexus截图</span></span></p>
+
+<p>&emsp;&emsp;接下来，找到Security菜单项，针对新建的两个仓库分别配置Privileges,Roles,Users。关于nexus的详细教程，大家可以自行在网上搜索，我在这还再详述。</p>
+
+<p>&emsp;&emsp;下面要安装MAVEN了，步骤如下：</p>
+
+<ul>
+<li>到官网上下载apache-maven-3.1.1-bin.zip（你的版本可能跟我不一样），解压到目录D:\dev_tools\maven-3.1.1下（这个目录大家自行决定）。</li>
+<li>在环境变量中，将maven的bin目录加入到path中。</li>
+</ul>
+
+
+<p>&emsp;&emsp;回到命令行下，输入mvn，出现下面界面，说明maven安装成功（当然，添加环境变量，只是为了你可以在命令行手工运行maven）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven2.jpg' width='' height='' title='安装成功的cmd窗口'><span class='caption-text'>安装成功的cmd窗口</span></span></p>
+
+<p>&emsp;&emsp;目前的新版eclipse集成了maven，一般建议大家使用本地安装的maven以达到版本的统一，你可以在eclipse中进行选择配置，界面如下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven3.jpg' width='' height='' title='在eclipse中配置非集成maven'><span class='caption-text'>在eclipse中配置非集成maven</span></span></p>
+
+<p>&emsp;&emsp;接下来，我们对maven进行参数进行配置，一般配置文件位于C:\Documents and Settings\Administrator.m2下，文件名为settings.xml，下面是我节选的部分修改过的配置代码：</p>
+
+<figure class='code'><figcaption><span>settings.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'> <span class="nt">&lt;localRepository&gt;</span>F:/java/maven<span class="nt">&lt;/localRepository&gt;</span>
+</span><span class='line'><span class="nt">&lt;servers&gt;</span>
+</span><span class='line'> <span class="nt">&lt;server&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;id&gt;</span>carManagerProjectRelease<span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;username&gt;</span>deployment<span class="nt">&lt;/username&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;password&gt;</span>deployment123<span class="nt">&lt;/password&gt;</span>
+</span><span class='line'><span class="nt">&lt;/server&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;server&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;id&gt;</span>carManagerProjectSnapshot<span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;username&gt;</span>deployment<span class="nt">&lt;/username&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;password&gt;</span>deployment123<span class="nt">&lt;/password&gt;</span>
+</span><span class='line'><span class="nt">&lt;/server&gt;</span>
+</span><span class='line'><span class="nt">&lt;/servers&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;profiles&gt;</span>
+</span><span class='line'>   <span class="nt">&lt;profile&gt;</span>
+</span><span class='line'>   <span class="nt">&lt;id&gt;</span>central-repos<span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>   <span class="nt">&lt;repositories&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;repository&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;id&gt;</span>central<span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;name&gt;</span>Central<span class="nt">&lt;/name&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;url&gt;</span>http://127.0.0.1:8081/nexus/content/groups/public/<span class="nt">&lt;/url&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;releases&gt;&lt;enabled&gt;</span>true<span class="nt">&lt;/enabled&gt;&lt;/releases&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;snapshots&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;enabled&gt;</span>true<span class="nt">&lt;/enabled&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/snapshots&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/repository&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/repositories&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/profile&gt;</span>
+</span><span class='line'><span class="nt">&lt;/profiles&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;activeProfiles&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;activeProfile&gt;</span>central-repos<span class="nt">&lt;/activeProfile&gt;</span>
+</span><span class='line'><span class="nt">&lt;/activeProfiles&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的文件中，我主要配置了本地仓库所在的位置，maven从网上下载的第三方依赖包，都将存放在这个地方。我放到了F:/java/maven，如果你的这个目录下已经有了非常多的jar包，你可以将这个目录直接copy给其它的开发同事机器上，避免重复下载。</p>
+
+<p>&emsp;&emsp;server部分配置了可以上传到nexus中的相关账户的登录名及密码，这些信息都是在nexus的管理界面中配置的。而http : / /127.0.0.1:8081/nexus/content/groups/public 则是本地maven库所在的服务器路径。</p>
+
+<p>&emsp;&emsp;好了，今天先到这，下一篇文章会详细介绍如何在项目中使用maven.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-12-23T15:18:00+08:00" pubdate data-updated="true">2013年12月23日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/12/17/talk-about-art-vangogh/" title="上一篇文章: 推荐一个和绘画相关的博客">&laquo;上一篇:&nbsp;&nbsp;推荐一个和绘画相关的博客</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/12/23/maven/">在项目中使用maven之一--环境配置</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/12/05/udisk/">万恶的u盘启动程序</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/11/26/my-blog/">我的独立博客再次开放</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="10">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

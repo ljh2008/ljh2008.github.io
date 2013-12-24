@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;对系统性能的考虑，是一个新手和老手的重要区别之一，面试的时候，问一些性能优化的问题，很容易判断应聘者的工作经验。下面是我对性能优化的考虑，将从表现层、业务层、技术层三个大的方面来阐述。本篇先介绍表现层性能优化要点。 &emsp;&emsp; &hellip;">
+  <meta name="description" content="&emsp;&emsp;业务层的性能优化，可能普通程序员更关注些，我总结了下面几点，仅当抛砖引玉吧。 代码级别：变量的声明范围，for循环或while，++及移位操作等，这方面相当考究一个程序员的基础功力（尹哥在这块很牛的），我认 为对于企业级应用开发，这块应该不是重点， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,56 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/11/08/prof-service/">系统性能优化总结之业务层</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-08T15:18:00+08:00" pubdate data-updated="true">2010年11月08日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;业务层的性能优化，可能普通程序员更关注些，我总结了下面几点，仅当抛砖引玉吧。</p>
+
+<ul>
+<li><p>代码级别：变量的声明范围，for循环或while，++及移位操作等，这方面相当考究一个程序员的基础功力（尹哥在这块很牛的），我认 为对于企业级应用开发，这块应该不是重点，因为现在的服务器性能都非常好，代码写得烂一点，性能影响也不大。当然，项目不同，则要另当另论哦，比如嵌入 式、j2me等的开发要求就比较高，游戏服务器端的代码要求也很严格，甚至list类型集合都不让用，全部用array。</p></li>
+<li><p>针对特点框架的性能优化：在业务实现代码上，可考虑有针对性的优化。比如用hibernate做持久层实现吧，就得认识到load,get,iterator等方法的性能问题，批量sql操作及批量对象操作的性能影响，一级及二级缓存的应用等等。</p></li>
+<li><p>失血领域对象在各层中传递，减少不必要的dto或vo对象。失血模型的广泛应用，可能也和这个有关，简单、高效。</p></li>
+<li><p>合理的业务逻辑实现设计。这点是对设计人员提出的，合理的实现设计，可大幅提高业务执行性能。
+数据库连接池的使用。这点也许可以放到持久层去说合理些，但我觉得和业务的关系更紧密。数据库连接池可以使用容器低层的实现，这也是一种不错的选择，但我们 一般为了项目能够快速简单地布署，都在项目中直接实现。比如：直接将dbcp或proxool配置为spring的数据源（dbcp与proxool的选 择我将在另一文章中进行比较）。</p></li>
+<li><p>缓存的应用。缓存其实是架构级的提升性能之道，主要是对领域对象的缓存，因为一般的性能瓶颈都在数据 库，对域对象的缓存，可以减少和数据库的交互以提高性能。比如用hibernate做持久层实现，就存在一级缓存及二级缓存，一级的我们一般不管，基本是 透明的，二级存存就需要我们根据实际情况设定合理的缓存参数，而且要合理使用好查询缓存。常用的二级缓存有 c3p0，oscached，memcached等，个人偏向memcached。</p></li>
+<li><p>项目发布后，要对日志文件的级别，及sql的输入选择进行重新配置，以符合生产环境（本人曾有深刻教训的）。</p></li>
+<li><p>使用服务器集群（软件或硬件方式，我会在另一篇文章中详细说明），对服务器的性能进行水平扩展。</p></li>
+</ul>
+
+
+<p>&emsp;&emsp;最近一起非常关注周鸿伟与tx之间的战争，全力支持360。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -837,52 +887,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/10/22/discuz/">Discuz、uchome与jquery冲突问题</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-10-22T15:18:00+08:00" pubdate data-updated="true">2010年10月22日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;20日，discuz报重大安全露洞，到官网上下载补丁文件更新后，悬着的心来才放下来。
-接下来，我发现discuz用户激活验证码不显示了，“看不清，换一张”点了也没有任何反映，改用用ie6再次打开页面，发现居然是js在报错，怎么会出现这种情况呢？郁闷！</p>
-
-<p>&emsp;&emsp;想起以前在做uchome及jquery整合过程中，也出现相册、博客操作方面的异常，网上查了一下，说是jquery的js加载顺序与uchome的产生了冲突，将jquery的js放到最前面加载，就没有问题，改过后，果然恢复正常。</p>
-
-<p>&emsp;&emsp;难道这回discuz也是这个原因引起的？</p>
-
-<p>&emsp;&emsp;找到discuz的默认模板文件，将jquery及juqey ui的相关文件统统放到head后面一行马上加载，问题解决。看来不同的客户端的js框架都会有冲突发生的，记得以前jquery与dwr混用，也出现过$冲突问题。</p>
-
-<p>&emsp;&emsp;自从康盛被tencent收购后，康盛加大了x-space的推广力度，并到QQ登录也集成了进来，本人测试过，发现目前还不太稳定，登录速度非常缓慢， 看来还得等一段时间。如果qq的集成登录技术成熟后，那么康盛的sns产品一定会变得非常强大，phpWin将无法与之竟争。
-最后补充一点：冲突后，以前jQuery的$简写，也都要写成全称的jQuery。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/16/">&larr; 更多早期老文章</a>
@@ -900,6 +904,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/24/maven-project/">在项目中使用maven之二&#8211;项目实例</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/23/maven/">在项目中使用maven之一&#8211;环境配置</a>
       </li>
     
@@ -913,10 +921,6 @@
     
       <li class="post">
         <a href="/blog/2013/11/26/my-blog/">我的独立博客再次开放</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
       </li>
     
   </ul>

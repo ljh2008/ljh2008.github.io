@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：java | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2013-12-24T09:06:14+08:00</updated>
+  <updated>2013-12-24T14:18:15+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,426 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[在项目中使用maven之二--项目实例]]></title>
+    <link href="http://yanyaner.com/blog/2013/12/24/maven-project/"/>
+    <updated>2013-12-24T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2013/12/24/maven-project</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;本篇文章介绍如何搭建一个maven工程。</p>
+
+<p>&emsp;&emsp;我们以eclipse kepler为例，kepler版本的eclipse自带有maven插件，可以省去我们自己安装的过程，着实比较方便。</p>
+
+<p>&emsp;&emsp;在新建项目向导中，我们选择maven工程，在Archetype中选择项目类型，要注意的是，一般的项目模块，选择maven-archetype-quickstart类型即可，如果是web项目请选择maven-archetype-webapp，当然你也可以根据个人喜好选择其它的项目模板类型。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_waizd1.jpg' width='' height='' title='选择maven工程类型'><span class='caption-text'>选择maven工程类型</span></span></p>
+
+<p>&emsp;&emsp;接下来输入项目坐标信息，如下图。groupId为组织标识，一般填写公司域名（请倒过来写，呵呵)，artifactId为产品标识，多字母间请用-连接，version是这个产品的版本号，一般有SNAPSHOT快照版与RELEASE稳定版。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_waizd2.jpg' width='' height='' title='输入maven项目的组织、公司、版本信息'><span class='caption-text'>输入maven项目的组织、公司、版本信息</span></span></p>
+
+<p>&emsp;&emsp;接下来，我们来看看如何规划你的项目工程。如果是非常庞大的项目，采用Maven管理会非常的合适，因为在大的项目中，不同的模块，不同的子系统，不同的分层都有可能是不同的团队去完成，请看我下面的一个项目规划。<!--more--></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_struct.jpg' width='' height='' title='管理系统模块划分'><span class='caption-text'>管理系统模块划分</span></span></p>
+
+<p>&emsp;&emsp;在上面的项目结构图中，你可以发现，我对项目模块进行了很好的分配。</p>
+
+<ul>
+<li>car_parents为父项目，其它的子项目都将继承这个项目中的配置，以省去了在每个子项目中都进行重复配置的麻烦。</li>
+<li>framework项目，是整个系统的基础框架封装。</li>
+<li>car-core项目是系统核心，主要是系统的领域对象（也有人叫业务对象）。</li>
+<li>car-dao是项目持久层实现。</li>
+<li>car-service是系统的核心业务逻辑实现。</li>
+<li>car-web是系统对外部的调用接口，取名为car-facade也许更为合适（针对webservice类型），当然，我在这里主要存放的是restful接口及一些前端页面之类的文件。</li>
+</ul>
+
+
+<p>&emsp;&emsp;下面，我展示一个普通项目的目录结构，maven的项目结构和eclipse所建默认工程项目结构有很大的区别，最明显的感觉是目录的划分、规划更为合理、清晰。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_struct2.jpg' width='' height='' title='一个普通maven项目的目录结构'><span class='caption-text'>一个普通maven项目的目录结构</span></span></p>
+
+<p>&emsp;&emsp;上图中的结构我说明如下：</p>
+
+<ul>
+<li>src/main/java，该目录存放项目的源代码。</li>
+<li>src/main/resources，该目录存放项目相关的资源文件，比如：properties文件, xml文件等等。</li>
+<li>src/test/java，此目录下存放测试文件（注意，在maven中的测试类要以test开头或结尾，或以testCase结尾，这是规范要求）</li>
+<li>target，该目录一般会存放编译打包后产生的文件，比如jar或war。</li>
+</ul>
+
+
+<p>&emsp;&emsp;接下来带大家看看具体的配置文件，先看parents这个项目，该项目工程基本上只有一个pom.xml文件，用来定义各个项目共同的东西。</p>
+
+<p>``` xml pom.xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion></p>
+
+<p>  <groupId>com.ljh.ms</groupId>
+  <artifactId>car-parents</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging></p>
+
+<p>  <modules></p>
+
+<pre><code>&lt;module&gt;../framework&lt;/module&gt;
+&lt;module&gt;../car-core&lt;/module&gt;
+&lt;module&gt;../car-dao&lt;/module&gt;
+&lt;module&gt;../car-service&lt;/module&gt;
+&lt;module&gt;../car-web&lt;/module&gt;
+</code></pre>
+
+<p>  </modules></p>
+
+<p>  <!-- 定义发行、快照的打包上传服务器路径 -->
+  <distributionManagement></p>
+
+<pre><code>    &lt;repository&gt;
+        &lt;id&gt;carManagerProjectRelease&lt;/id&gt;
+        &lt;name&gt;Car ManagerSystem Release&lt;/name&gt;
+        &lt;url&gt;http://127.0.0.1:8081/nexus/content/repositories/car_ms_release/&lt;/url&gt;
+    &lt;/repository&gt;
+    &lt;snapshotRepository&gt;
+        &lt;id&gt;carManagerProjectSnapshot&lt;/id&gt;
+        &lt;name&gt;Car ManagerSystem Snapshots&lt;/name&gt;
+        &lt;url&gt;http://127.0.0.1:8081/nexus/content/repositories/car_ms_snapshot/&lt;/url&gt;
+    &lt;/snapshotRepository&gt;
+</code></pre>
+
+<p></distributionManagement></p>
+
+<p>  <name>car-parents</name>
+  <url><a href="http://maven.apache.org">http://maven.apache.org</a></url></p>
+
+<p>  <!-- 定义公共的变量值 -->
+  <properties></p>
+
+<pre><code>&lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+&lt;spring.version&gt;3.2.5.RELEASE&lt;/spring.version&gt;
+</code></pre>
+
+<p>  </properties></p>
+
+<p>  <!-- 定义依赖包 -->
+  <dependencies></p>
+
+<pre><code>&lt;dependency&gt;
+  &lt;groupId&gt;junit&lt;/groupId&gt;
+  &lt;artifactId&gt;junit&lt;/artifactId&gt;
+  &lt;version&gt;4.10&lt;/version&gt;
+  &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;
+
+&lt;!-- =======begin spring 3.2.4.RELEASE========= --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-test&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-orm&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-core&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-aop&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-beans&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-webmvc&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-expression&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-instrument&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-jdbc&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-web&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- =====end spring 3.2.4.RELEASE===== --&gt;
+
+&lt;!-- =====start hibernate3 ====== --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
+    &lt;artifactId&gt;hibernate-core&lt;/artifactId&gt;
+    &lt;version&gt;3.6.10.Final&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+    &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+    &lt;version&gt;1.7.5&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+    &lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;
+    &lt;version&gt;1.7.5&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;javassist&lt;/groupId&gt;
+    &lt;artifactId&gt;javassist&lt;/artifactId&gt;
+    &lt;version&gt;3.12.1.GA&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;antlr&lt;/groupId&gt;
+    &lt;artifactId&gt;antlr&lt;/artifactId&gt;
+    &lt;version&gt;2.7.7&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;cglib&lt;/groupId&gt;
+    &lt;artifactId&gt;cglib-nodep&lt;/artifactId&gt;
+    &lt;version&gt;2.2.2&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- =====end hibernate3 ====== --&gt;
+
+&lt;!-- =====commoms start =====--&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-collections&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-collections&lt;/artifactId&gt;
+    &lt;version&gt;3.2.1&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-io&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-io&lt;/artifactId&gt;
+    &lt;version&gt;2.3&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-logging&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-logging&lt;/artifactId&gt;
+    &lt;version&gt;1.1.1&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-fileupload&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-fileupload&lt;/artifactId&gt;
+    &lt;version&gt;1.2.2&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-dbcp&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-dbcp&lt;/artifactId&gt;
+    &lt;version&gt;1.4&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-digester&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-digester&lt;/artifactId&gt;
+    &lt;version&gt;2.1&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-pool&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-pool&lt;/artifactId&gt;
+    &lt;version&gt;1.6&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;dom4j&lt;/groupId&gt;
+    &lt;artifactId&gt;dom4j&lt;/artifactId&gt;
+    &lt;version&gt;1.6.1&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;log4j&lt;/groupId&gt;
+    &lt;artifactId&gt;log4j&lt;/artifactId&gt;
+    &lt;version&gt;1.2.9&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- =====end commoms  =====--&gt;
+
+&lt;!-- =====database start===== --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;mysql&lt;/groupId&gt;
+    &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
+    &lt;version&gt;5.1.19&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- =====database end===== --&gt;
+
+&lt;!-- ===== start servlet+jstl+jsp ===== --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;servletapi&lt;/groupId&gt;
+    &lt;artifactId&gt;servletapi&lt;/artifactId&gt;
+    &lt;version&gt;2.4&lt;/version&gt;
+    &lt;scope&gt;provided&lt;/scope&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;javax.servlet.jsp&lt;/groupId&gt;
+    &lt;artifactId&gt;jsp-api&lt;/artifactId&gt;
+    &lt;version&gt;2.2&lt;/version&gt;
+    &lt;scope&gt;provided&lt;/scope&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;jstl&lt;/groupId&gt;
+    &lt;artifactId&gt;jstl&lt;/artifactId&gt;
+    &lt;version&gt;1.2&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;taglibs&lt;/groupId&gt;
+    &lt;artifactId&gt;standard&lt;/artifactId&gt;
+    &lt;version&gt;1.1.1&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- ===== end servlet+jstl+jsp ===== --&gt;
+
+&lt;!-- ===== start json ===== --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
+    &lt;artifactId&gt;jackson-core-asl&lt;/artifactId&gt;
+    &lt;version&gt;1.9.6&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
+    &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
+    &lt;version&gt;1.9.6&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- ===== end json ===== --&gt;
+</code></pre>
+
+<p>  </dependencies></p>
+
+<p>  <build></p>
+
+<pre><code>&lt;pluginManagement&gt;
+    &lt;plugins&gt;
+
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+            &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+            &lt;version&gt;2.3.2&lt;/version&gt;
+            &lt;configuration&gt;
+                &lt;source&gt;1.6&lt;/source&gt;
+                &lt;target&gt;1.6&lt;/target&gt;
+            &lt;/configuration&gt;
+        &lt;/plugin&gt;
+
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+            &lt;artifactId&gt;maven-resources-plugin&lt;/artifactId&gt;
+            &lt;version&gt;2.6&lt;/version&gt;
+            &lt;configuration&gt;
+                &lt;encoding&gt;UTF-8&lt;/encoding&gt;
+            &lt;/configuration&gt;
+        &lt;/plugin&gt;
+
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+            &lt;artifactId&gt;maven-jar-plugin&lt;/artifactId&gt;
+            &lt;version&gt;2.4&lt;/version&gt;
+            &lt;inherited&gt;true&lt;/inherited&gt;
+            &lt;configuration&gt;
+                &lt;archive&gt;                   
+                    &lt;manifest&gt;
+                        &lt;addDefaultImplementationEntries&gt;true&lt;/addDefaultImplementationEntries&gt;
+                        &lt;addDefaultSpecificationEntries&gt;true&lt;/addDefaultSpecificationEntries&gt;
+                    &lt;/manifest&gt;
+                &lt;/archive&gt;
+            &lt;/configuration&gt;
+            &lt;!--  定义打war包要排除的文件
+            &lt;executions&gt;
+                &lt;execution&gt;
+                    &lt;phase&gt;package&lt;/phase&gt;
+                    &lt;goals&gt;
+                        &lt;goal&gt;jar&lt;/goal&gt;
+                    &lt;/goals&gt;
+                    &lt;configuration&gt;
+                        &lt;classifier&gt;lib&lt;/classifier&gt;
+                        &lt;excludes&gt;
+                            &lt;exclude&gt;*.properties&lt;/exclude&gt;
+                        &lt;/excludes&gt;
+                    &lt;/configuration&gt;
+                &lt;/execution&gt;
+            &lt;/executions&gt;
+            --&gt;
+        &lt;/plugin&gt;
+
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+            &lt;artifactId&gt;maven-war-plugin&lt;/artifactId&gt;
+            &lt;version&gt;2.4&lt;/version&gt;
+            &lt;configuration&gt;
+                &lt;archive&gt;                   
+                    &lt;manifest&gt;
+                        &lt;addDefaultImplementationEntries&gt;true&lt;/addDefaultImplementationEntries&gt;
+                        &lt;addDefaultSpecificationEntries&gt;true&lt;/addDefaultSpecificationEntries&gt;
+                    &lt;/manifest&gt;
+                &lt;/archive&gt;
+                &lt;archiveClasses&gt;true&lt;/archiveClasses&gt;
+                &lt;warName&gt;car_ms&lt;/warName&gt;
+            &lt;/configuration&gt;
+        &lt;/plugin&gt;
+
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.mortbay.jetty&lt;/groupId&gt;
+            &lt;!-- 使用的是jetty-maven-plugin的插件 --&gt;
+            &lt;artifactId&gt;jetty-maven-plugin&lt;/artifactId&gt;
+            &lt;version&gt;8.1.14.v20131031&lt;/version&gt;
+            &lt;configuration&gt;
+                &lt;scanIntervalSeconds&gt;2000&lt;/scanIntervalSeconds&gt;
+                &lt;webApp&gt;
+                    &lt;!-- 上下文路径 --&gt;
+                    &lt;contextPath&gt;/car_ms&lt;/contextPath&gt;
+                &lt;/webApp&gt;
+                &lt;connectors&gt;
+                    &lt;!-- 注意要使用将implementation 由org.eclipse.jetty.server.nio.SelectChannelConnector --&gt;
+                    &lt;!-- 换为org.eclipse.jetty.server.bio.SocketConnector，否则静态页面无法修改 --&gt;
+
+                    &lt;connector implementation="org.eclipse.jetty.server.bio.SocketConnector"&gt;
+                        &lt;!-- 端口号 --&gt;
+                        &lt;port&gt;8787&lt;/port&gt;
+                        &lt;maxIdleTime&gt;500000&lt;/maxIdleTime&gt;
+                    &lt;/connector&gt;
+                &lt;/connectors&gt;
+            &lt;/configuration&gt;
+        &lt;/plugin&gt;
+    &lt;/plugins&gt;
+ &lt;/pluginManagement&gt;
+</code></pre>
+
+<p>  </build></p>
+
+<p></project>
+```</p>
+
+<p>&emsp;&emsp;当然，这篇配置示例还有优化改进的地方，我没有详细去做。比如，可以把所有的dependencie放入<dependencyManagement>节点中以更好的独立定义每个子项目的依赖关系，比如：把很多重复属性定义成变量以便于统一维护等等，但这个文件也足以说明问题，比如下面这段配置代码：</p>
+
+<p>``` xml
+ <modules></p>
+
+<pre><code>&lt;module&gt;../framework&lt;/module&gt;
+&lt;module&gt;../car-core&lt;/module&gt;
+&lt;module&gt;../car-dao&lt;/module&gt;
+&lt;module&gt;../car-service&lt;/module&gt;
+&lt;module&gt;../car-web&lt;/module&gt;
+</code></pre>
+
+<p>  </modules>
+```
+&emsp;&emsp;这段代码定义了项目间的依赖关系，其中的.. ，表示上一级目录，也就是和本项目同级的项目中定义的model名称，在这个项目上运行test, install, deploy等命令，将会对所有的子项目执行相同的命令。</p>
+
+<p>&emsp;&emsp;好，今天就简单说到这，下篇关于maven的技术细节，敬请期待。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[在项目中使用maven之一--环境配置]]></title>
@@ -831,283 +1251,6 @@ where
 <p>```</p>
 
 <p>&emsp;&emsp;在一般的项目中，我们把@BatchSize设置界面每页显示记录数一致即可,多对多转换为一对多，关系越简单越好。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[使用mongodb做为持久层技术实现]]></title>
-    <link href="http://yanyaner.com/blog/2013/06/06/mongodb-java/"/>
-    <updated>2013-06-06T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/06/06/mongodb-java</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;mongodb是一种基于文档类型的高性能nosql数据库，在高并发下具有优秀的表现，因此，在互联网行业中，mongodb的使用场景将非常广泛。</p>
-
-<p>&emsp;&emsp;当然，mongodb主要对性能关注很多，因而没有提供类似于关系数据库的事务的功能，对于复杂的业务及严格数据一致性要求很高有企业级应用，不建议使用mongodb（网上也有自己去实现事务提交的方案，但实现起来比较繁琐，类似于我们早期dbase,access文件型数据库的事务解决方案）。</p>
-
-<p>&emsp;&emsp;其实，也不排除在企业级应用上把某些访问压力大的，对事务要求不严格的数据保存到nosql数据库中。</p>
-
-<p>&emsp;&emsp;spring data框架，提供了对mongodb的支持，大家可以到<a href="http://mongojack.org/">http://mongojack.org/</a>，及<a href="http://www.springsource.org/spring-data/mongodb">http://www.springsource.org/spring-data/mongodb</a></p>
-
-<p>&emsp;&emsp;上了解更多信息mongodb及sprig data for mongodb相关信息。</p>
-
-<p>&emsp;&emsp;下面，我用一个简单的实例，给大家讲解mongodb的使用，在这之前，你需要下载mongodb java驱动包，spring data commons, spring data for mongodb这些组件包。</p>
-
-<p>&emsp;&emsp;共两个对象，客户，客户订单，一对多关系，单向关联。</p>
-
-<p>&emsp;&emsp;客户：</p>
-
-<p>``` java Customer.java
-@Document
-public class Customer {</p>
-
-<pre><code>@Id
-private int id;
-private String loginCode;
-private String name;
-private String pwd;
-
-@Version
-private long varsion;
-
-private Date birthday = new Date();
-
-private Set&lt;Order&gt; orders = new HashSet&lt;Order&gt;();
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;订单：</p>
-
-<p>``` java Order.java</p>
-
-<p>@Document
-public class Order {</p>
-
-<pre><code>@Id
-private int id;
-private String code;
-private String orderName;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;spring data的配置：</p>
-
-<p>``` java MongoConfiguration.java
-@Configuration
-public class MongoConfiguration {</p>
-
-<pre><code>public @Bean MongoDbFactory mongoDbFactory() throws Exception {
-    //需要用户名、密码验证
-    UserCredentials userCredentials = new UserCredentials("yq", "123");
-    return new SimpleMongoDbFactory(new Mongo(), "exam", userCredentials);
-    //return new SimpleMongoDbFactory(new Mongo(), "exam");
-  }
-
-  public @Bean MongoTemplate mongoTemplate() throws Exception {
-    return new MongoTemplate(mongoDbFactory());
-  }
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;当然，上面这段信息可以配置在xml中，也可以像我上面一样用写在java代码中。</p>
-
-<p>&emsp;&emsp;这里要建立exam库，可以在mongodb命令行下，使用 use 命令建立，比如：use exam，然后随便添点东西在里面，库就建好了。另外，如果要启用认证功能，需要大家通过命令向某个库中添加用户（具体如db.addUser(“用户名”,”密码”)），启动mongodb时使用-auth参数。</p>
-
-<p>&emsp;&emsp;在整合过程中，如果报：</p>
-
-<p>```
-tried to access methodorg.springframework.core.GenericTypeResolver.getTypeVariableMap</p>
-
-<p>```
-&emsp;&emsp;错误，是由于包版本冲突所至，请下载新的spring核心包。</p>
-
-<p>&emsp;&emsp;下面给大家举例说明api的使用：</p>
-
-<p>&emsp;&emsp;我们的所有操作只需要一个MongoTemplate</p>
-
-<p>``` java</p>
-
-<pre><code>@Resource
-private MongoTemplate mt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;（1）检测一个空间是否存在</p>
-
-<p><code>java
-mt.collectionExists(Customer.class);
-</code></p>
-
-<p>&emsp;&emsp;（2）建立新空间</p>
-
-<p><code>java
-mt.createCollection("myCollection");
-</code></p>
-
-<p>&emsp;&emsp;（3）统计总记录条数，其中query可以为null，或一个建好的带条件查数据的query，如需分页，请先count，再查分页数据</p>
-
-<p><code>java
-mt.count(new Query(), Customer.class);
-</code></p>
-
-<p>&emsp;&emsp;（4）删除空间，其中的数据会一并清除
-<code>java
-mt.dropCollection("myCollection");
-</code></p>
-
-<p>&emsp;&emsp;（5）按id号查询
-<code>java
-Customer c = mt.findById(1, Customer.class);
-</code></p>
-
-<p>&emsp;&emsp;（6）删除id号为1的客户
-<code>java
-mt.remove(mt.findById(1, Customer.class));
-</code></p>
-
-<p>&emsp;&emsp;（7）删除id号小于5的客户
-<code>java
-mt.remove(new Query(Criteria.where("id").lt(5)), Customer.class);
-</code></p>
-
-<p>&emsp;&emsp;（8）查询姓名是：张三5，并且密码是：111的用户
-``` java</p>
-
-<pre><code> List&lt;Customer&gt; cc = mt.find(new Query(Criteria.where("name").is("张三5").and("pwd").is("111")), Customer.class);
-或List&lt;Customer&gt; cs = mt.find(new Query(Criteria.where("name").is("张三5").andOperator(Criteria.where("pwd").is("111"))), Customer.class);
-</code></pre>
-
-<p>```
-&emsp;&emsp;要注意，一个criteria中只能有一个andOperator，如果要写并列条件，直接用and就可以了。</p>
-
-<p>&emsp;&emsp;（9）查询姓名是：张三5，或者 密码是：111的用户
-``` java</p>
-
-<pre><code>   List&lt;Customer&gt; cs = mt.find(new Query(new Criteria().orOperator(Criteria.where("name").is("张三5"),Criteria.where("pwd").is("111"))), Customer.class);
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;（10）查询出生日期小于2013年6月6日的客户
-``` java</p>
-
-<pre><code>    List&lt;Customer&gt; cs = mt.find(new Query(Criteria.where("birthday").lt(new Date())), Customer.class);
-</code></pre>
-
-<p><code>     
-&amp;emsp;&amp;emsp;（11）查询出生日期等于2013年6月6日的客户
-</code> java</p>
-
-<pre><code>    SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd-hh:mm:ss");
-    List&lt;Customer&gt; cs = mt.find(new Query(
-            Criteria.where("birthday").gte(sf.parse("2013-06-06-00:00:00"))
-           .andOperator(Criteria.where("birthday").lte(sf.parse("2013-06-09-23:59:59")))
-           ), Customer.class);
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;（12）查询定单编号是0015或者0018的客户
-``` java</p>
-
-<pre><code>    List&lt;Customer&gt; cs = mt.find(new Query(new Criteria()
-          .where("orders.code").in("0015","0018")
-            ), Customer.class);
-</code></pre>
-
-<p>```
-&emsp;&emsp;请注意，mongodb可以直接针对集合查询，比如，上面的orders就是一个set集合。</p>
-
-<p>&emsp;&emsp;（13）查询包含四的，并以0结尾的客户
-``` java</p>
-
-<pre><code>    //(正则表 达式，以XX开头，请用^,以XX结束，请用$,不写这两个，表示任意)
-   List&lt;Customer&gt; cs = mt.find(new Query(new Criteria()
-    .where("name").regex("四.*0$")
-   ), Customer.class);
-</code></pre>
-
-<p>```
-&emsp;&emsp;请注意，mongodb不支持在id上的正则查询。</p>
-
-<p>&emsp;&emsp;（14）修改对象属性名，修改后，要同步修改对象中的属性名，否则，此属性值为null
-``` java</p>
-
-<pre><code>    mt.updateMulti(new Query(), new Update().rename("password", "pwd"), "customer");
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;（15）批量修改，把id为100的客户姓名改为tomcat999,密码改为222
-``` java</p>
-
-<pre><code>    mt.findAndModify(new Query(Criteria.where("id").is(100)), 
-            new Update().set("name", "tomcat999").set("pwd", "222"), 
-            Customer.class);
-</code></pre>
-
-<p><code>
-&amp;emsp;&amp;emsp;（16）修改单个对象
-</code> java</p>
-
-<pre><code>    Customer cc = mt.findById(100, Customer.class);
-    cc.setPwd("333");
-    mt.save(cc);
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;（17）排序及分页实现
-``` java</p>
-
-<pre><code>public Page&lt;Customer&gt; getCustomerByPage(int pageNo, int pageSize, Map params) {
-
-    Page&lt;Customer&gt; page = new Page&lt;Customer&gt;(pageNo, pageSize);
-
-    //查询数据
-    List&lt;Customer&gt;data = mt
-    .find(
-            new Query().skip(page.getRowStartIndex())
-            .limit(pageSize)
-            .with(new Sort(Sort.Direction.DESC, "_id"))
-
-    , Customer.class);
-
-    page.setData(data);
-
-    //统计总记录数
-    long count = mt.count(null, Customer.class);
-    page.setRowcounts(count);
-
-    return page;
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;最后，给出几个使用mongodb，在对象设计实践：</p>
-
-<ul>
-<li><p>对象id最好设计成String类型，在新增时，如果用户没有赋值，mongodb会自动生成的，当然你也可以使用UUID自己赋值。</p></li>
-<li><p>Spring对mongodb的封装在对象间存在循环关联的情况，在新增及查询时都会出现堆栈溢出情况，目前的解决办法是：</p></li>
-</ul>
-
-
-<p>&emsp;&emsp;A、切断双向关联。比如：一对多双向关联，你可以删除一方的集合属性，多方对一方的引用采用dbref注解标注。一对多、多对多也如此，尽可能地简化对象间的关系。</p>
-
-<p>&emsp;&emsp;B、对象间关系，最好直接建立成关系数据库中的外键形式字段，即：以非面向对象的方式去建立，这就是“鱼和熊掌，不可兼得”，在追求性能效率的同时，放弃更好理解的对象模型。</p>
-
-<ul>
-<li><p>有严格事务要求的业务系统，不要用mongodb。</p></li>
-<li><p>如有极端的高并发大数据量查询，请用mongodb，也可以把项目中的部分数据保存在mongodb中。</p></li>
-<li><p>一般的并发修改，可以使用乐观锁解决，spring mongodb支持@Version注解。</p></li>
-</ul>
-
-
-<p>&emsp;&emsp;还有，开发中最好准备一个图型化的mongodb管理工具，比如：MongoCola，随时查看保存的数据实况，方便调试。</p>
 ]]></content>
   </entry>
   

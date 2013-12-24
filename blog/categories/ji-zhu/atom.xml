@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2013-12-24T09:06:14+08:00</updated>
+  <updated>2013-12-24T14:18:15+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,426 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[在项目中使用maven之二--项目实例]]></title>
+    <link href="http://yanyaner.com/blog/2013/12/24/maven-project/"/>
+    <updated>2013-12-24T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2013/12/24/maven-project</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;本篇文章介绍如何搭建一个maven工程。</p>
+
+<p>&emsp;&emsp;我们以eclipse kepler为例，kepler版本的eclipse自带有maven插件，可以省去我们自己安装的过程，着实比较方便。</p>
+
+<p>&emsp;&emsp;在新建项目向导中，我们选择maven工程，在Archetype中选择项目类型，要注意的是，一般的项目模块，选择maven-archetype-quickstart类型即可，如果是web项目请选择maven-archetype-webapp，当然你也可以根据个人喜好选择其它的项目模板类型。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_waizd1.jpg' width='' height='' title='选择maven工程类型'><span class='caption-text'>选择maven工程类型</span></span></p>
+
+<p>&emsp;&emsp;接下来输入项目坐标信息，如下图。groupId为组织标识，一般填写公司域名（请倒过来写，呵呵)，artifactId为产品标识，多字母间请用-连接，version是这个产品的版本号，一般有SNAPSHOT快照版与RELEASE稳定版。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_waizd2.jpg' width='' height='' title='输入maven项目的组织、公司、版本信息'><span class='caption-text'>输入maven项目的组织、公司、版本信息</span></span></p>
+
+<p>&emsp;&emsp;接下来，我们来看看如何规划你的项目工程。如果是非常庞大的项目，采用Maven管理会非常的合适，因为在大的项目中，不同的模块，不同的子系统，不同的分层都有可能是不同的团队去完成，请看我下面的一个项目规划。<!--more--></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_struct.jpg' width='' height='' title='管理系统模块划分'><span class='caption-text'>管理系统模块划分</span></span></p>
+
+<p>&emsp;&emsp;在上面的项目结构图中，你可以发现，我对项目模块进行了很好的分配。</p>
+
+<ul>
+<li>car_parents为父项目，其它的子项目都将继承这个项目中的配置，以省去了在每个子项目中都进行重复配置的麻烦。</li>
+<li>framework项目，是整个系统的基础框架封装。</li>
+<li>car-core项目是系统核心，主要是系统的领域对象（也有人叫业务对象）。</li>
+<li>car-dao是项目持久层实现。</li>
+<li>car-service是系统的核心业务逻辑实现。</li>
+<li>car-web是系统对外部的调用接口，取名为car-facade也许更为合适（针对webservice类型），当然，我在这里主要存放的是restful接口及一些前端页面之类的文件。</li>
+</ul>
+
+
+<p>&emsp;&emsp;下面，我展示一个普通项目的目录结构，maven的项目结构和eclipse所建默认工程项目结构有很大的区别，最明显的感觉是目录的划分、规划更为合理、清晰。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_struct2.jpg' width='' height='' title='一个普通maven项目的目录结构'><span class='caption-text'>一个普通maven项目的目录结构</span></span></p>
+
+<p>&emsp;&emsp;上图中的结构我说明如下：</p>
+
+<ul>
+<li>src/main/java，该目录存放项目的源代码。</li>
+<li>src/main/resources，该目录存放项目相关的资源文件，比如：properties文件, xml文件等等。</li>
+<li>src/test/java，此目录下存放测试文件（注意，在maven中的测试类要以test开头或结尾，或以testCase结尾，这是规范要求）</li>
+<li>target，该目录一般会存放编译打包后产生的文件，比如jar或war。</li>
+</ul>
+
+
+<p>&emsp;&emsp;接下来带大家看看具体的配置文件，先看parents这个项目，该项目工程基本上只有一个pom.xml文件，用来定义各个项目共同的东西。</p>
+
+<p>``` xml pom.xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion></p>
+
+<p>  <groupId>com.ljh.ms</groupId>
+  <artifactId>car-parents</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging></p>
+
+<p>  <modules></p>
+
+<pre><code>&lt;module&gt;../framework&lt;/module&gt;
+&lt;module&gt;../car-core&lt;/module&gt;
+&lt;module&gt;../car-dao&lt;/module&gt;
+&lt;module&gt;../car-service&lt;/module&gt;
+&lt;module&gt;../car-web&lt;/module&gt;
+</code></pre>
+
+<p>  </modules></p>
+
+<p>  <!-- 定义发行、快照的打包上传服务器路径 -->
+  <distributionManagement></p>
+
+<pre><code>    &lt;repository&gt;
+        &lt;id&gt;carManagerProjectRelease&lt;/id&gt;
+        &lt;name&gt;Car ManagerSystem Release&lt;/name&gt;
+        &lt;url&gt;http://127.0.0.1:8081/nexus/content/repositories/car_ms_release/&lt;/url&gt;
+    &lt;/repository&gt;
+    &lt;snapshotRepository&gt;
+        &lt;id&gt;carManagerProjectSnapshot&lt;/id&gt;
+        &lt;name&gt;Car ManagerSystem Snapshots&lt;/name&gt;
+        &lt;url&gt;http://127.0.0.1:8081/nexus/content/repositories/car_ms_snapshot/&lt;/url&gt;
+    &lt;/snapshotRepository&gt;
+</code></pre>
+
+<p></distributionManagement></p>
+
+<p>  <name>car-parents</name>
+  <url><a href="http://maven.apache.org">http://maven.apache.org</a></url></p>
+
+<p>  <!-- 定义公共的变量值 -->
+  <properties></p>
+
+<pre><code>&lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+&lt;spring.version&gt;3.2.5.RELEASE&lt;/spring.version&gt;
+</code></pre>
+
+<p>  </properties></p>
+
+<p>  <!-- 定义依赖包 -->
+  <dependencies></p>
+
+<pre><code>&lt;dependency&gt;
+  &lt;groupId&gt;junit&lt;/groupId&gt;
+  &lt;artifactId&gt;junit&lt;/artifactId&gt;
+  &lt;version&gt;4.10&lt;/version&gt;
+  &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;
+
+&lt;!-- =======begin spring 3.2.4.RELEASE========= --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-test&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-orm&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-core&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-aop&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-beans&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-webmvc&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-expression&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-instrument&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-jdbc&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-web&lt;/artifactId&gt;
+    &lt;version&gt;${spring.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- =====end spring 3.2.4.RELEASE===== --&gt;
+
+&lt;!-- =====start hibernate3 ====== --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
+    &lt;artifactId&gt;hibernate-core&lt;/artifactId&gt;
+    &lt;version&gt;3.6.10.Final&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+    &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
+    &lt;version&gt;1.7.5&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+    &lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;
+    &lt;version&gt;1.7.5&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;javassist&lt;/groupId&gt;
+    &lt;artifactId&gt;javassist&lt;/artifactId&gt;
+    &lt;version&gt;3.12.1.GA&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;antlr&lt;/groupId&gt;
+    &lt;artifactId&gt;antlr&lt;/artifactId&gt;
+    &lt;version&gt;2.7.7&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;cglib&lt;/groupId&gt;
+    &lt;artifactId&gt;cglib-nodep&lt;/artifactId&gt;
+    &lt;version&gt;2.2.2&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- =====end hibernate3 ====== --&gt;
+
+&lt;!-- =====commoms start =====--&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-collections&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-collections&lt;/artifactId&gt;
+    &lt;version&gt;3.2.1&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-io&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-io&lt;/artifactId&gt;
+    &lt;version&gt;2.3&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-logging&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-logging&lt;/artifactId&gt;
+    &lt;version&gt;1.1.1&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-fileupload&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-fileupload&lt;/artifactId&gt;
+    &lt;version&gt;1.2.2&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-dbcp&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-dbcp&lt;/artifactId&gt;
+    &lt;version&gt;1.4&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-digester&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-digester&lt;/artifactId&gt;
+    &lt;version&gt;2.1&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;commons-pool&lt;/groupId&gt;
+    &lt;artifactId&gt;commons-pool&lt;/artifactId&gt;
+    &lt;version&gt;1.6&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;dom4j&lt;/groupId&gt;
+    &lt;artifactId&gt;dom4j&lt;/artifactId&gt;
+    &lt;version&gt;1.6.1&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;log4j&lt;/groupId&gt;
+    &lt;artifactId&gt;log4j&lt;/artifactId&gt;
+    &lt;version&gt;1.2.9&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- =====end commoms  =====--&gt;
+
+&lt;!-- =====database start===== --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;mysql&lt;/groupId&gt;
+    &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
+    &lt;version&gt;5.1.19&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- =====database end===== --&gt;
+
+&lt;!-- ===== start servlet+jstl+jsp ===== --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;servletapi&lt;/groupId&gt;
+    &lt;artifactId&gt;servletapi&lt;/artifactId&gt;
+    &lt;version&gt;2.4&lt;/version&gt;
+    &lt;scope&gt;provided&lt;/scope&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;javax.servlet.jsp&lt;/groupId&gt;
+    &lt;artifactId&gt;jsp-api&lt;/artifactId&gt;
+    &lt;version&gt;2.2&lt;/version&gt;
+    &lt;scope&gt;provided&lt;/scope&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;jstl&lt;/groupId&gt;
+    &lt;artifactId&gt;jstl&lt;/artifactId&gt;
+    &lt;version&gt;1.2&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;taglibs&lt;/groupId&gt;
+    &lt;artifactId&gt;standard&lt;/artifactId&gt;
+    &lt;version&gt;1.1.1&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- ===== end servlet+jstl+jsp ===== --&gt;
+
+&lt;!-- ===== start json ===== --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
+    &lt;artifactId&gt;jackson-core-asl&lt;/artifactId&gt;
+    &lt;version&gt;1.9.6&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
+    &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
+    &lt;version&gt;1.9.6&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- ===== end json ===== --&gt;
+</code></pre>
+
+<p>  </dependencies></p>
+
+<p>  <build></p>
+
+<pre><code>&lt;pluginManagement&gt;
+    &lt;plugins&gt;
+
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+            &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+            &lt;version&gt;2.3.2&lt;/version&gt;
+            &lt;configuration&gt;
+                &lt;source&gt;1.6&lt;/source&gt;
+                &lt;target&gt;1.6&lt;/target&gt;
+            &lt;/configuration&gt;
+        &lt;/plugin&gt;
+
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+            &lt;artifactId&gt;maven-resources-plugin&lt;/artifactId&gt;
+            &lt;version&gt;2.6&lt;/version&gt;
+            &lt;configuration&gt;
+                &lt;encoding&gt;UTF-8&lt;/encoding&gt;
+            &lt;/configuration&gt;
+        &lt;/plugin&gt;
+
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+            &lt;artifactId&gt;maven-jar-plugin&lt;/artifactId&gt;
+            &lt;version&gt;2.4&lt;/version&gt;
+            &lt;inherited&gt;true&lt;/inherited&gt;
+            &lt;configuration&gt;
+                &lt;archive&gt;                   
+                    &lt;manifest&gt;
+                        &lt;addDefaultImplementationEntries&gt;true&lt;/addDefaultImplementationEntries&gt;
+                        &lt;addDefaultSpecificationEntries&gt;true&lt;/addDefaultSpecificationEntries&gt;
+                    &lt;/manifest&gt;
+                &lt;/archive&gt;
+            &lt;/configuration&gt;
+            &lt;!--  定义打war包要排除的文件
+            &lt;executions&gt;
+                &lt;execution&gt;
+                    &lt;phase&gt;package&lt;/phase&gt;
+                    &lt;goals&gt;
+                        &lt;goal&gt;jar&lt;/goal&gt;
+                    &lt;/goals&gt;
+                    &lt;configuration&gt;
+                        &lt;classifier&gt;lib&lt;/classifier&gt;
+                        &lt;excludes&gt;
+                            &lt;exclude&gt;*.properties&lt;/exclude&gt;
+                        &lt;/excludes&gt;
+                    &lt;/configuration&gt;
+                &lt;/execution&gt;
+            &lt;/executions&gt;
+            --&gt;
+        &lt;/plugin&gt;
+
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+            &lt;artifactId&gt;maven-war-plugin&lt;/artifactId&gt;
+            &lt;version&gt;2.4&lt;/version&gt;
+            &lt;configuration&gt;
+                &lt;archive&gt;                   
+                    &lt;manifest&gt;
+                        &lt;addDefaultImplementationEntries&gt;true&lt;/addDefaultImplementationEntries&gt;
+                        &lt;addDefaultSpecificationEntries&gt;true&lt;/addDefaultSpecificationEntries&gt;
+                    &lt;/manifest&gt;
+                &lt;/archive&gt;
+                &lt;archiveClasses&gt;true&lt;/archiveClasses&gt;
+                &lt;warName&gt;car_ms&lt;/warName&gt;
+            &lt;/configuration&gt;
+        &lt;/plugin&gt;
+
+        &lt;plugin&gt;
+            &lt;groupId&gt;org.mortbay.jetty&lt;/groupId&gt;
+            &lt;!-- 使用的是jetty-maven-plugin的插件 --&gt;
+            &lt;artifactId&gt;jetty-maven-plugin&lt;/artifactId&gt;
+            &lt;version&gt;8.1.14.v20131031&lt;/version&gt;
+            &lt;configuration&gt;
+                &lt;scanIntervalSeconds&gt;2000&lt;/scanIntervalSeconds&gt;
+                &lt;webApp&gt;
+                    &lt;!-- 上下文路径 --&gt;
+                    &lt;contextPath&gt;/car_ms&lt;/contextPath&gt;
+                &lt;/webApp&gt;
+                &lt;connectors&gt;
+                    &lt;!-- 注意要使用将implementation 由org.eclipse.jetty.server.nio.SelectChannelConnector --&gt;
+                    &lt;!-- 换为org.eclipse.jetty.server.bio.SocketConnector，否则静态页面无法修改 --&gt;
+
+                    &lt;connector implementation="org.eclipse.jetty.server.bio.SocketConnector"&gt;
+                        &lt;!-- 端口号 --&gt;
+                        &lt;port&gt;8787&lt;/port&gt;
+                        &lt;maxIdleTime&gt;500000&lt;/maxIdleTime&gt;
+                    &lt;/connector&gt;
+                &lt;/connectors&gt;
+            &lt;/configuration&gt;
+        &lt;/plugin&gt;
+    &lt;/plugins&gt;
+ &lt;/pluginManagement&gt;
+</code></pre>
+
+<p>  </build></p>
+
+<p></project>
+```</p>
+
+<p>&emsp;&emsp;当然，这篇配置示例还有优化改进的地方，我没有详细去做。比如，可以把所有的dependencie放入<dependencyManagement>节点中以更好的独立定义每个子项目的依赖关系，比如：把很多重复属性定义成变量以便于统一维护等等，但这个文件也足以说明问题，比如下面这段配置代码：</p>
+
+<p>``` xml
+ <modules></p>
+
+<pre><code>&lt;module&gt;../framework&lt;/module&gt;
+&lt;module&gt;../car-core&lt;/module&gt;
+&lt;module&gt;../car-dao&lt;/module&gt;
+&lt;module&gt;../car-service&lt;/module&gt;
+&lt;module&gt;../car-web&lt;/module&gt;
+</code></pre>
+
+<p>  </modules>
+```
+&emsp;&emsp;这段代码定义了项目间的依赖关系，其中的.. ，表示上一级目录，也就是和本项目同级的项目中定义的model名称，在这个项目上运行test, install, deploy等命令，将会对所有的子项目执行相同的命令。</p>
+
+<p>&emsp;&emsp;好，今天就简单说到这，下篇关于maven的技术细节，敬请期待。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[在项目中使用maven之一--环境配置]]></title>
@@ -503,182 +923,6 @@ github就是免费的啊，可以随便整
 <p>```</p>
 
 <p>&emsp;&emsp;angular.js的入门使用简单介绍到这，随着后期的深入，我会再写一些关于这方面的文章，尽请期待。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[一步步教你用angular.js实现一个基本应用---第四部分]]></title>
-    <link href="http://yanyaner.com/blog/2013/09/28/angular-js4/"/>
-    <updated>2013-09-28T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/09/28/angular-js4</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;控制器中的代码：</p>
-
-<p>&emsp;&emsp;我一共写了两个控制器，一个是和用户相关的，另一个是登录控制器。</p>
-
-<p>&emsp;&emsp;其中，在页面切换时，需要保存的变量，放到了userService中，因为service是单例的。</p>
-
-<!--more-->
-
-
-<p>``` js controllers.js</p>
-
-<p>&lsquo;use strict&rsquo;;</p>
-
-<p>/<em> Controllers </em>/</p>
-
-<p>/<em> 用户CRUD相关控制器 </em>/
-function userCtrl($rootScope, $scope, $http, $routeParams, $window, $location, $route , userService) {</p>
-
-<p>   $scope.userService = userService;</p>
-
-<p>   $scope.logout = function() {</p>
-
-<pre><code>   window.location.href="/logout";
-</code></pre>
-
-<p>   }</p>
-
-<p>   $scope.loadUser = function() {</p>
-
-<pre><code>   $http.get('../main/user/' + $routeParams.uid)
-       .success(function(data){
-           if (data.code == 0) {
-               alert('查询用户失败，原因：' + data.msg);
-           } else {
-               $scope.user = data.data;
-           }
-       }) ;
-</code></pre>
-
-<p>   }</p>
-
-<pre><code>$scope.deleteUsers=function(){
-    var selectedUser = angular.element(".uid_c:checked");
-    if (selectedUser.size() == 0) {
-        alert("请选择要删除的用户!");
-    } else {
-        if (confirm("您确定要删除所选择的用户数据吗?")) {
-            var ids = "";
-            selectedUser.each(function(i){
-                if (i == 0) {
-                    ids = angular.element(this).val();  //此处或者 this.value也可
-                } else {
-                    ids = ids + "-" + angular.element(this).val();
-                }
-            });
-            $http.delete("../main/users/" + ids)
-                .success(function(result) {
-                    alert(result.msg);
-                    if (result.code == 1) {
-                        $route.reload();
-                    }
-                }) ;
-        }
-    }
-}
-
-$scope.deleteUser=function(uid){
-    if (window.confirm('您确定要删除所选择的记录吗？'))  {
-        $http.delete("../main/user/" + uid)
-            .success(function(result) {
-                alert(result.msg);
-                if (result.code == 1) {
-                    $route.reload();
-                }
-            }) ;
-    }
-}
-
-$scope.addUser = function(){
-    $scope.user.pic = angular.element("#picPath").val();
-    $http.post("../main/user", $scope.user )
-        .success(function(result){
-            if (result.code == 1) {
-                alert("添加用户成功！");
-                $location.url('/user_list');
-            } else {
-                alert(result.msg);
-            }
-        });
-}
-
-$scope.updateUser = function(){
-    //后台需要参数有可能和前台不一致，就需要大家重新构建参数 ,添加请求参数
-    $scope.user.pic = angular.element("#picPath").val();
-    $scope.user.birthday = $scope.user.birthDay;
-    $http.put("../main/user/" + $scope.user._id , $scope.user )
-        .success(function(result){
-            if (result.code == 1) {
-                alert("修改成功！");
-                $location.url('/user_list');
-            } else {
-                alert(result.msg);
-            }
-    });
-}
-
-$scope.pageFun = function(pno) {
-    $http.get('main/users/' +  pno ,{params:{q_name:userService.q_name}})
-        .success(function(data){
-            if (data.code == 0) {
-                alert('取用户分页数据失败，原因：' + data.msg);
-            } else {
-                userService.pno = data.page.pno;
-                $scope.page = data.page;
-                $scope.users = data.page.data;
-            }
-        }) ;
-};
-//$scope.pageFun(1);     //可以通过这种方式加载，但最好用ng-init进行首次加载
-$scope.getState = function() {
-    if ($rootScope.loginName) {
-        //已经执行过getState，不用反复取用户状态
-        return;
-    }
-    $http.get('getState')
-        .success(function(data){
-            if (data.code == 1) {
-                $rootScope.loginName = data.name;
-            } else {
-                $location.url('/');
-            }
-        }) ;
-}
-
-$scope.back = function(){
-    //$window.history.back();
-    $location.url('/user_list');
-}
-$scope.test = function() {
-    alert("test:" + $rootScope.allreadyGetState);
-}
-</code></pre>
-
-<p>}</p>
-
-<p>/<em> 登录系统控制器 </em>/
-function loginCtrl($rootScope, $scope, $http, $location) {</p>
-
-<pre><code>   var User = {uname:"0011",pwd:"123"} ;
-   //var User = {uname:"",pwd:""} ;
-   $scope.user = User;
-   $scope.login = function() {
-       $http.get('/login',{params:User})
-           .success(function(data){
-               if (data.code == 0) {
-                   alert('登录失败，原因：' + data.msg);
-               } else {
-                   alert(data.name + '登录成功！');
-                   $rootScope.isLogined = true;
-                   $location.url('/user_list');
-               }
-           }) ;
-   }
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
 ]]></content>
   </entry>
   

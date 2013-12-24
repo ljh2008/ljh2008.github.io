@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;进入详细设计阶段后的一个重要任务是对业务方法进行设计，如果业务逻辑是封装到事务脚本方法中的，那就简单得多了，即根据界面可设计得到事务脚本业务方法。很多事情都是说起来容易，做起来难，下面我结合一个简单的实例，说明业务方法的设计过程。 &emsp;&emsp;一、 &hellip;">
+  <meta name="description" content="&emsp;&emsp;本系列入门文章将结合一个简单的CRUD示例，以我的一篇博文《项目一个迭代周期内的开发流程》为依据，详细讲解开发过程中的流程及关键点环节的注意事项，希望初级程序员、初学者能够举一反三，并以此例为原型，映射到一个完整项目的开发过程，从中悟出一些自己的东西（注： &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,92 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/12/13/jeee-tou-1/">一个简单的j2ee入门教程（第一部分——需求分析 ）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-13T15:18:00+08:00" pubdate data-updated="true">2010年12月13日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;本系列入门文章将结合一个简单的CRUD示例，以我的一篇博文《项目一个迭代周期内的开发流程》为依据，详细讲解开发过程中的流程及关键点环节的注意事项，希望初级程序员、初学者能够举一反三，并以此例为原型，映射到一个完整项目的开发过程，从中悟出一些自己的东西（注：本文中的需求完全是设想的，可能并不符合实际情况）。</p>
+
+<p>&emsp;&emsp;本演示项目是一个学生管理系统，目标客户是某某中学（明确目标客户与用户），该中学委托我们开发一套学生管理系统（可行性分析），我们为此进行前期的需求采集，并进行需求的整理（需求采集、分析、整理），最后形成需求分析说明书，需求分析说明书通过评审后就标志着需求分析完成，一个里程碑已经到达。需求分析说明书中对需求进行了详细的描述，常见需求描述的方式可按照功能模块来，也可以按用例来，我分另写出了两种方式的示例。</p>
+
+<p>&emsp;&emsp;<strong>一、需求描述（按功能模块描述）</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/18.jpg' width='' height='' title='功能分解图'><span class='caption-text'>功能分解图</span></span></p>
+
+<p>&emsp;&emsp;按自顶向下的方法，把整个系统层层分解，直到细分到可实现的最小单元为止，根据功能分解，我们列出如下的功能分解列表：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/17.jpg' width='' height='' title='功能表'><span class='caption-text'>功能表</span></span></p>
+
+<p>&emsp;&emsp;接着给出具体功能的详细需求描述：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/33.jpg' width='' height='' title='学生系统具体功能描述'><span class='caption-text'>学生系统具体功能描述</span></span></p>
+
+<p>&emsp;&emsp;如果业务过于复杂，后面还会加上“数据描述”，“业务约束”这两项，我们的示例很简单，固省略。</p>
+
+<p>&emsp;&emsp;<strong>二、需求描述（按用例描述）</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/46.jpg' width='' height='' title='学生系统用例图'><span class='caption-text'>学生系统用例图</span></span></p>
+
+<p>&emsp;&emsp;根据需求，可以画出本例中的用例图，总共一个角色，两个用例。我要强调的是，用例图是一个宏观的东西，它可以让我们从整体上对系统有一个大致的了解，但是，图是无法说清楚需求的，我们必须借助于用例文本（或叫用例规约）来对需求进行描述。</p>
+
+<p>&emsp;&emsp;下面是“登录系统”用例的描述。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/45.jpg' width='' height='' title='学生系统用例文本'><span class='caption-text'>学生系统用例文本</span></span></p>
+
+<p>&emsp;&emsp;（注：用例文本在不同的软件开发模型，比如RUP、Iconixk中的描述要求和侧重点可能不相同）</p>
+
+<p>&emsp;&emsp;由上面实例中的两种方式对比可以看出，按照功能模块来描述需求的方式有一些明显的缺点，比如：仅仅站在系统的立场来描述功能，隔离了参与者；对复杂业务描述、表达不够顺畅等，如果你是一个软件行业新入门者，建议你在今后的项目中采用“用例”来描述你的需求，这种方式比较自然，更加易懂。</p>
+
+<p>&emsp;&emsp;<strong>三、界面原型法</strong></p>
+
+<p>&emsp;&emsp;在进行需求分析的时候，往往会借助于界面原型法来实现承上启下的过渡，一方面，界面原型可以用来和客户沟通需求，明确地表述我们（软件公司）的意图，另一方面，客户可能对自己的需求表述不清楚，但对界面原型十分的敏感，因些，界面原型在需求分析阶段就已经开始介入；原型确定后，我们又要参照前期的原型进行后面的界面实现以及详细设计，可见界面原型法在整个软件开发活动中的重要性。在我们这个示例中，因为已经有了需求文档，那么我们要做的，就是按照需求文档画出界面原型，如下图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/47.png' width='' height='' title='学生系统界面原型'><span class='caption-text'>学生系统界面原型</span></span></p>
+
+<p>&emsp;&emsp;（如果你在软件开发前已经有了详细的需求说明文档，那么你也是从界面原型开始了解需求，进行下一步的开发的）。</p>
+
+<p>&emsp;&emsp;这一阶段使用工具是Balsamiq Mockups，实现原则是：简单快速，并且要标清楚界面之间的跳转流程。如果界面上遗漏了一些无关紧要的界面元素也是没有关系的。</p>
+
+<p>&emsp;&emsp;<strong>四、领域模型</strong></p>
+
+<p>&emsp;&emsp;除了界面原型法，我们还有一个重要的活动：建立领域模型，这个活动与界面原型法类似，也是前期可以用来和客户沟通，后期可以用于设计、实现。我们在需求分析阶段建立起来的领域模型比较粗糙，属性也是不完整的，但是重要的属性、关系一定要清楚地标出来。本示例中领域模型图如下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/38.jpg' width='' height='' title='学生系统领域模型'><span class='caption-text'>学生系统领域模型</span></span></p>
+
+<p>&emsp;&emsp;本例中使用的uml画图工具是jude，你也可以根据个人喜欢好选择其它自己喜欢的工具（选择标准是该工具支持正向与逆向代码功能），<strong>本阶段画领域模型图的原则是：快速，标清楚域对象主要属性及域对象之间的关系（泛化、组合聚合、数量关系），要抓住问题域的“神”</strong>。</p>
+
+<p>&emsp;&emsp;至此，需求分析阶段就可以告一段落了，接下来是设计，设计分两个过程：概要设计和详细设计，在下篇博文中我会对设计过程进行详细讲解。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -774,56 +860,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/11/08/prof-service/">系统性能优化总结之业务层</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-11-08T15:18:00+08:00" pubdate data-updated="true">2010年11月08日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;业务层的性能优化，可能普通程序员更关注些，我总结了下面几点，仅当抛砖引玉吧。</p>
-
-<ul>
-<li><p>代码级别：变量的声明范围，for循环或while，++及移位操作等，这方面相当考究一个程序员的基础功力（尹哥在这块很牛的），我认 为对于企业级应用开发，这块应该不是重点，因为现在的服务器性能都非常好，代码写得烂一点，性能影响也不大。当然，项目不同，则要另当另论哦，比如嵌入 式、j2me等的开发要求就比较高，游戏服务器端的代码要求也很严格，甚至list类型集合都不让用，全部用array。</p></li>
-<li><p>针对特点框架的性能优化：在业务实现代码上，可考虑有针对性的优化。比如用hibernate做持久层实现吧，就得认识到load,get,iterator等方法的性能问题，批量sql操作及批量对象操作的性能影响，一级及二级缓存的应用等等。</p></li>
-<li><p>失血领域对象在各层中传递，减少不必要的dto或vo对象。失血模型的广泛应用，可能也和这个有关，简单、高效。</p></li>
-<li><p>合理的业务逻辑实现设计。这点是对设计人员提出的，合理的实现设计，可大幅提高业务执行性能。
-数据库连接池的使用。这点也许可以放到持久层去说合理些，但我觉得和业务的关系更紧密。数据库连接池可以使用容器低层的实现，这也是一种不错的选择，但我们 一般为了项目能够快速简单地布署，都在项目中直接实现。比如：直接将dbcp或proxool配置为spring的数据源（dbcp与proxool的选 择我将在另一文章中进行比较）。</p></li>
-<li><p>缓存的应用。缓存其实是架构级的提升性能之道，主要是对领域对象的缓存，因为一般的性能瓶颈都在数据 库，对域对象的缓存，可以减少和数据库的交互以提高性能。比如用hibernate做持久层实现，就存在一级缓存及二级缓存，一级的我们一般不管，基本是 透明的，二级存存就需要我们根据实际情况设定合理的缓存参数，而且要合理使用好查询缓存。常用的二级缓存有 c3p0，oscached，memcached等，个人偏向memcached。</p></li>
-<li><p>项目发布后，要对日志文件的级别，及sql的输入选择进行重新配置，以符合生产环境（本人曾有深刻教训的）。</p></li>
-<li><p>使用服务器集群（软件或硬件方式，我会在另一篇文章中详细说明），对服务器的性能进行水平扩展。</p></li>
-</ul>
-
-
-<p>&emsp;&emsp;最近一起非常关注周鸿伟与tx之间的战争，全力支持360。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/15/">&larr; 更多早期老文章</a>
@@ -841,6 +877,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/24/maven-project/">在项目中使用maven之二&#8211;项目实例</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/23/maven/">在项目中使用maven之一&#8211;环境配置</a>
       </li>
     
@@ -854,10 +894,6 @@
     
       <li class="post">
         <a href="/blog/2013/11/26/my-blog/">我的独立博客再次开放</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a>
       </li>
     
   </ul>

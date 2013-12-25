@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2013-12-24T14:18:15+08:00</updated>
+  <updated>2013-12-25T16:41:37+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,211 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[在项目中使用maven之三--深入细节]]></title>
+    <link href="http://yanyaner.com/blog/2013/12/25/maven-project-detail/"/>
+    <updated>2013-12-25T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2013/12/25/maven-project-detail</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;在我们的子项目中，可以使用parent节点继承父项目的pom，如下：</p>
+
+<p>``` xml
+<parent></p>
+
+<pre><code>  &lt;groupId&gt;com.ljh.ms&lt;/groupId&gt;
+  &lt;artifactId&gt;car-parents&lt;/artifactId&gt;
+  &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
+  &lt;relativePath&gt;../car_parents/pom.xml&lt;/relativePath&gt;
+</code></pre>
+
+<p></parent>
+```</p>
+
+<p>&emsp;&emsp;这段配置文件中，首先定义了我们要继承的父项目坐标信息，再使用relativePath节点具体指明父POM所在的物理路径（要注意：父项目的packaging类型设定的是pom，而不是jar或war哦）。</p>
+
+<p>&emsp;&emsp;接下来，我贴出dao项目模块的pom文件，内容如下：<!--more--></p>
+
+<p>``` xml pom.xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion></p>
+
+<p>  <groupId>com.ljh.ms</groupId>
+  <artifactId>car-dao</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>jar</packaging></p>
+
+<p>  <parent></p>
+
+<pre><code>  &lt;groupId&gt;com.ljh.ms&lt;/groupId&gt;
+  &lt;artifactId&gt;car-parents&lt;/artifactId&gt;
+  &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
+  &lt;relativePath&gt;../car_parents/pom.xml&lt;/relativePath&gt;
+</code></pre>
+
+<p>  </parent></p>
+
+<p>  <name>car-dao</name>
+  <url><a href="http://maven.apache.org">http://maven.apache.org</a></url></p>
+
+<p>  <properties></p>
+
+<pre><code>&lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+</code></pre>
+
+<p>  </properties></p>
+
+<p>  <dependencies></p>
+
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;com.ljh.ms&lt;/groupId&gt;
+    &lt;artifactId&gt;car-core&lt;/artifactId&gt;
+    &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<p>  </dependencies>
+</project>
+```</p>
+
+<p>&emsp;&emsp;大家可以看到，这个pom继承了parent pom中的内容，dependency部分看起来才会这么简洁（当然，也有人不建议这么做，做法是在每个子项目dependency中明确定义了所有的依赖，这样感觉会更严谨些）。</p>
+
+<p>&emsp;&emsp;另外，我们这篇文件中仅定义了对car-core的依赖，car-core又依赖了framework子项目，maven可以正确的处理这样的依赖传递。</p>
+
+<p>&emsp;&emsp;在完成了dao的实现代码后，我们要编写相应的测试代码来验证实现的正确性，部分代码在下面已贴出，大家要注意一下这个文件所在的路径。</p>
+
+<p>``` java /car-dao/src/test/java/com/ljh/ms/car/dao/UserDaoTest.java
+@Transactional
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations={&ldquo;classpath:config/spring/spring*.xml&rdquo;})
+public class UserDaoTest {</p>
+
+<pre><code>@Resource
+private IUserDao userDao;
+
+@Test
+public void testUserDao() {
+    List&lt;User&gt; us = userDao.getAllUsers();
+    Assert.assertEquals(9, us.size());
+.......
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;在这个测试类上，我们可以在文件上点右键，run As JUnit test，即可看到结果。但是，我更加建议大家用maven的统一测试，在pom.xml上，选择run as maven test，如下图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven_run_as.jpg' width='' height='' title='运行maven测试'><span class='caption-text'>运行maven测试</span></span></p>
+
+<p>&emsp;&emsp;通过观察控制台的输出，即可知道测试是否成功。</p>
+
+<p>```
+&hellip;..
+2013-12-25 11:45:08,625 INFO [org.hibernate.impl.SessionFactoryImpl] &ndash; closing</p>
+
+<p>Results :</p>
+
+<p>Tests run: 1, Failures: 0, Errors: 0, Skipped: 0</p>
+
+<p>[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+[INFO] BUILD SUCCESS
+[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+[INFO] Total time: 17.234s
+[INFO] Finished at: Wed Dec 25 11:45:08 CST 2013
+[INFO] Final Memory: 4M/8M
+[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+```</p>
+
+<p>&emsp;&emsp;按照同样的TDD流程，我们完成对service子项目的开发，最近完成对web端的开发。</p>
+
+<p>&emsp;&emsp;maven的web项目目录结构跟eclipse标准Dyna web项目结构不同，下面贴出项目结构图。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_struct3.jpg' width='' height='' title='maven web项目结构'><span class='caption-text'>maven web项目结构</span></span></p>
+
+<p>&emsp;&emsp;在maven web工程项目中，有些目录需要大家手工建立，比如resources，默认建出的web工程中是不存在这个目录的。另外，在maven的web项目中，我们所依赖的其它模块都已打包成jar的形式存放在WEB-INF/lib目录中，而在classes目录下则会没有东西，这样一来，以前的一些配置可能要进行修改，比如，下面是加载spring配置文件的代码。</p>
+
+<p>``` xml web.xml
+&lt;context-param></p>
+
+<pre><code>&lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;
+&lt;param-value&gt;/WEB-INF/classes/config/spring/spring*.xml&lt;/param-value&gt;
+</code></pre>
+
+<p>&lt;/context-param>
+```</p>
+
+<p>&emsp;&emsp;需要改成下面这样，才不会有问题：</p>
+
+<p><code>xml
+&lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;
+&lt;param-value&gt;classpath*:config/spring/spring*.xml&lt;/param-value&gt;
+</code></p>
+
+<p>&emsp;&emsp;另外，如果项目中有对spring文件引用的地方，也要修改为import引入的方式，配置代码如下：</p>
+
+<p><code>xml
+ &lt;!-- 引入其它jar包中的文件，须用这种方式 --&gt;    
+&lt;import resource="classpath*:config/spring/spring-core.xml"/&gt;
+</code>
+&emsp;&emsp;最后，给大家介绍一下maven的常用命令。</p>
+
+<ul>
+<li>编译源代码: mvn compile</li>
+<li>编译测试代码：mvn test-compile</li>
+<li>单元测试: mvn test</li>
+<li>构建并打包： mvn package</li>
+<li>清理： mvn clean</li>
+<li>安装： mvn clean install</li>
+<li>发布： mvn clean deploy</li>
+<li>在服务器上运行： mvn jetty:run</li>
+<li>等等&hellip;&hellip;</li>
+</ul>
+
+
+<p>&emsp;&emsp;上面的命令可以组合使用，大家要注意的是：package只是本地打包，install会部署包到本地仓库，而deploy则会将artifact发布到仓库服务器中，比如：nexus的私有仓库。另外，在命令中还可以加一些参数，比如： -X 会显示更多的信息， -U 会强制从私服上下载SNAPSHOT最新版本。</p>
+
+<p>如果要对整个项目进行打包，发布，我们只需要在car_parents项目中的pom.xml文件上运行相应的maven命令即可，下面是我在总项目中运行instlll的输出，我们可以看到，每个子项目的都进行了test,install：</p>
+
+<p>```
+Tests run: 0, Failures: 0, Errors: 0, Skipped: 0</p>
+
+<p>[INFO]
+[INFO] &mdash;&ndash; maven-war-plugin:2.4:war (default-war) @ car-web &mdash;&ndash;
+[INFO] Packaging webapp
+[INFO] Assembling webapp [car-web] in [F:\lovo\my\car-web\target\car-web]
+[INFO] Processing war project
+[INFO] Copying webapp resources [F:\lovo\my\car-web\src\main\webapp]
+[INFO] Building jar: F:\lovo\my\car-web\target\car-web\WEB-INF\lib\car-web-0.0.1-SNAPSHOT.jar
+[INFO] Webapp assembled in [2375 msecs]
+[INFO] Building war: F:\lovo\my\car-web\target\car_ms.war
+[INFO]
+[INFO] &mdash;&ndash; maven-install-plugin:2.3.1:install (default-install) @ car-web &mdash;&ndash;
+[INFO] Installing F:\lovo\my\car-web\target\car_ms.war to F:\java\maven\com\ljh\ms\car-web\0.0.1-SNAPSHOT\car-web-0.0.1-SNAPSHOT.war
+[INFO] Installing F:\lovo\my\car-web\pom.xml to F:\java\maven\com\ljh\ms\car-web\0.0.1-SNAPSHOT\car-web-0.0.1-SNAPSHOT.pom
+[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+[INFO] Reactor Summary:
+[INFO]
+[INFO] car-parents &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip; SUCCESS [0.719s]
+[INFO] framework &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;.. SUCCESS [1.969s]
+[INFO] car-core &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip; SUCCESS [0.531s]
+[INFO] car-dao &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;. SUCCESS [2.937s]
+[INFO] car-service &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip; SUCCESS [2.719s]
+[INFO] car-web Maven Webapp &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip; SUCCESS [7.203s]
+[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+[INFO] BUILD SUCCESS
+[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
+[INFO] Total time: 16.297s
+[INFO] Finished at: Wed Dec 25 16:31:53 CST 2013
+[INFO] Final Memory: 6M/12M
+[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;总的来说，maven的所有操作都是通过相应插件完成的，而maven本身仅充当了一个平台，大家在实际的工作中可以寻找更多有用的插件来增强maven功能。</p>
+
+<p>&emsp;&emsp;好了，maven的入门介绍先到此为止吧。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[在项目中使用maven之二--项目实例]]></title>
@@ -26,7 +231,7 @@
 
 <p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_waizd1.jpg' width='' height='' title='选择maven工程类型'><span class='caption-text'>选择maven工程类型</span></span></p>
 
-<p>&emsp;&emsp;接下来输入项目坐标信息，如下图。groupId为组织标识，一般填写公司域名（请倒过来写，呵呵)，artifactId为产品标识，多字母间请用-连接，version是这个产品的版本号，一般有SNAPSHOT快照版与RELEASE稳定版。</p>
+<p>&emsp;&emsp;接下来输入项目坐标信息，如下图。groupId为组织标识，一般填写公司域名+项目名（请倒过来写，呵呵)，artifactId为产品标识或模块名、子系统名，多字母间请用-连接，version是这个产品的版本号，一般有SNAPSHOT快照版与RELEASE稳定版（关于maven版本的更多信息请参阅<a href="http://www.blogjava.net/hjh/archive/2009/05/14/270545.html">maven version usage</a>,<a href="http://juvenshun.iteye.com/blog/376422">Maven最佳实践：版本管理</a>）。</p>
 
 <p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_waizd2.jpg' width='' height='' title='输入maven项目的组织、公司、版本信息'><span class='caption-text'>输入maven项目的组织、公司、版本信息</span></span></p>
 
@@ -60,7 +265,7 @@
 </ul>
 
 
-<p>&emsp;&emsp;接下来带大家看看具体的配置文件，先看parents这个项目，该项目工程基本上只有一个pom.xml文件，用来定义各个项目共同的东西。</p>
+<p>&emsp;&emsp;接下来带大家看看具体的配置文件，先看parents这个项目，该项目工程基本上只有一个pom.xml文件，用来定义各个项目共同的东西（该项目的packaging必须是pom类型，因为这个项目是用来继承的）。</p>
 
 <p>``` xml pom.xml
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -716,213 +921,6 @@ github就是免费的啊，可以随便整
 <p>&emsp;&emsp;学习，生活，工作，是人生的组成部分，哪一部分做不好，人生都将存在遗憾。这个新的博客也将记录更多给与工作、技术无关的内容，更多个人生活的内容。</p>
 
 <p>&emsp;&emsp;最后，欢迎各位，有空多来<a href="http://yanyaner.com">yanyaner.com</a>上看看，发现对你有帮助的东西，也希望多多交流。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[一步步教你用angular.js实现一个基本应用---第五部分]]></title>
-    <link href="http://yanyaner.com/blog/2013/09/28/angular-js5/"/>
-    <updated>2013-09-28T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/09/28/angular-js5</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;我们再来看页面中的标签。</p>
-
-<p>&emsp;&emsp;首页，<strong>index.html</strong>,在这个页面中，我们：</p>
-
-<p>&emsp;&emsp;1、使用ng-app来指明，整个页面使用的model名称。</p>
-
-<p>&emsp;&emsp;2、ng-view标签，指名所有子页面加载显示的位置。</p>
-
-<p>&emsp;&emsp;3、最后引入我们需要的js文件，大家要注意依赖关系。（jquery-1.7.2.min.js不是必须的，因为angular也可以完成dom操作，只不过书写起来没有jquery简洁）</p>
-
-<!--more-->
-
-
-<p>``` html index.html</p>
-
-<p>&lt;!DOCTYPE html>
-<html ng-app="myApp">
-<head></p>
-
-<pre><code>&lt;title&gt;&lt;/title&gt;
-&lt;link rel="stylesheet" href="http://yanyaner.com/css/bootstrap.min.css"&gt;
-&lt;link rel="stylesheet" href="http://yanyaner.com/css/my.css"&gt;
-</code></pre>
-
-<p></head>
-<body></p>
-
-<pre><code> &lt;div ng-view&gt;&lt;/div&gt;
-</code></pre>
-
-<p></body></p>
-
-<script src="js/lib/jquery/jquery-1.7.2.min.js"></script>
-
-
-<script src="js/commons.js"  ></script>
-
-
-<script src="js/lib/angular/angular.js"></script>
-
-
-<script src="js/services.js"></script>
-
-
-<script src="js/controllers.js"></script>
-
-
-<script src="js/app.js"></script>
-
-
-<p></html>
-```</p>
-
-<p>&emsp;&emsp;<strong>main.html</strong>，也是用户列表页面：</p>
-
-<p>``` html main.html</p>
-
-<div class="container" ng-init="getState();pageFun(userService.pno);">
-    <div id="welcome"><h3>欢迎<span id="who"></span>登录成功！<span><a href="#" ng-click="logout()">退出系统</a></span></h3></div>
-    <div class="row"><span>用户名称：</span><input type="text"  ng-model="userService.q_name" class="input-medium search-query">
-        <button id="btn_query" class="btn" ng-click="pageFun(1)">搜索</button>
-    </div>
-    <div style="margin-top: 15px;" class="row"><a  ng-href="/to_adduser"  class="btn">新增</a>
-        <a class="btn" ng-click="deleteUsers()">批量删除</a></div>
-    <div class="row">
-        <div class="span12">
-            <table class="table">
-                <tr>
-                    <th>选择</th>
-                    <th>用户id</th>
-                    <th>登录名</th>
-                    <th>姓名</th>
-                    <th>出生日期</th>
-                    <th>操作</th>
-                </tr>
-                <tbody id="users">
-                <tr ng-repeat="user in users">
-                    <td><input value="" class="uid_c" type="checkbox"></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td class="row_op">
-                        <a href="user/">查看</a>
-                        <a href="to_modifyuser/">修改</a>
-                        <a href="#" ng-click="deleteUser(user._id)">删除</a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div style="margin-top: 15px;" class="row">
-        <div id="page_info" class="span4">/  共条记录</div>
-        <div class="span5 page offset3">
-            <a  ng-click="pageFun(page.f_no)" >首 页</a>
-            <a  ng-click="pageFun(page.p_no)">上一页</a>
-            <a  ng-click="pageFun(page.n_no)">下一页</a>
-            <a  ng-click="pageFun(page.l_no)">末 页</a>
-        </div>
-    </div>
-</div>
-
-
-<p>```
-&emsp;&emsp;在主页面中，分页、查询、新增、删除操作的事件，是通过ng-click进行绑定的。</p>
-
-<p>&emsp;&emsp;再来看看具体的CRUD子页面：</p>
-
-<p>&emsp;&emsp;<strong>add_user.html</strong>,添加用户页面</p>
-
-<p>``` html add_user.html</p>
-
-<div class="container" style="margin-top: 20px;" >
-    <div>登录编码：<input type="text" ng-model="user.loginCode"></div>
-    <div>登录姓名：<input type="text" ng-model="user.name"></div>
-    <div>登录密码：<input type="text" ng-model="user.password"></div>
-    <div>出生日期：<input type="text" ng-model="user.birthday"></div>
-    <input type="hidden" ng-model="user.pic"  id="picPath"/>
-    <div class="alert ">
-        照片：
-        <form action="../commons/upload"
-              method="post"
-              enctype="multipart/form-data"
-              id="uploadForm" target="other_frame">
-            <input type='file' name="photo"/>
-            <input type='submit' value="上传" class="btn-large btn-primary"/>
-            <input type='hidden' name='cbName' value='parent.showImage'/>
-        </form>
-        <br/>
-        <img src="" id="pic"></div>
-    <iframe name="other_frame" style='display: none;' ></iframe>
-    <div>
-        <input type="button" value="新增"  class="btn" ng-click="addUser()"/>
-        <input type="button" value="返回"  class="btn" ng-click="back()"/>
-    </div>
-</div>
-
-
-<p>```</p>
-
-<p>&emsp;&emsp;<strong>modify_user.html</strong>，修改用户页面。</p>
-
-<p>``` html modify_user.html</p>
-
-<div class="container" ng-init="loadUser();">
-    <div class="alert alert-info">用户名称：<input type="text" ng-model="user.userName"/></div>
-    <div class="alert alert-success">出生日期：<input type="text" ng-model="user.birthDay" value=""/></div>
-    <div class="alert alert-info">登录密码：<input type="password" ng-model="user.password"  placeholder="***"/></div>
-    <div class="alert ">  <input type="hidden" ng-model="user.picPath" value="" id="picPath"/>
-        照片：
-        <form action="../commons/upload"
-                                 method="post"
-                                 enctype="multipart/form-data"
-                                 id="uploadForm" target="other_frame">
-            <input type='file' name="photo"/>
-            <input type='submit' value="上传" class="btn-large btn-primary"/>
-            <input type='hidden' name='cbName' value='parent.showImage'/>
-        </form>
-        <br/>
-     <img id="pic" src="../"/></div>
-    <iframe name="other_frame" style='display: none;' ></iframe>
-    <div>
-        <input type="button" value="修改" class="btn" ng-click="updateUser()"/>
-        <input type="button" value="返回" class="btn" ng-click="back()" />
-    </div>
-</div>
-
-
-<p>```</p>
-
-<p>&emsp;&emsp;查看用户页面，<strong>view_user.html</strong></p>
-
-<p>``` html view_user.html
- <div class="container"  ng-init="loadUser();"></p>
-
-<pre><code>&lt;div class="alert alert-info"&gt;id：&lt;span id="userId"&gt;&lt;/span&gt;&lt;/div&gt;
-&lt;div class="alert alert-success"&gt;用户名称：&lt;span id="userName"&gt;&lt;/span&gt;&lt;/div&gt;
-&lt;div class="alert "&gt;照片：&lt;img src="../" &gt;&lt;/div&gt;
-&lt;div&gt;&lt;input type="button" value="返回" class="btn btn-large" ng-click="back();"/&gt;&lt;/div&gt;
-</code></pre>
-
-<p></div>
-```</p>
-
-<p>&emsp;&emsp;最后是登录页面，<strong>login.html</strong></p>
-
-<p>``` html login.html</p>
-
-<div class="container">
-    <label>用户名2：</label><input name="uname" type="text" ng-model="user.uname"   class="input-xlarge"><br/>
-    <label>密码：</label><input   name="pwd" type="password" ng-model="user.pwd" class="input-xlarge"><br/>
-    <input type="button" value="登录系统" id="btn_login" class="btn" ng-click="login()">
-</div>
-
-
-<p>```</p>
-
-<p>&emsp;&emsp;angular.js的入门使用简单介绍到这，随着后期的深入，我会再写一些关于这方面的文章，尽请期待。</p>
 ]]></content>
   </entry>
   

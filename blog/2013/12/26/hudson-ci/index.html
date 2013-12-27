@@ -1,0 +1,380 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>为你的项目加入Hudson持续集成 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;Hudson是一个使用非常广泛的持续集成CI服务器，大家可以到Hudson官网上了解更多内容。我们把hudson叫做持续集成服务器，就像官方的描述：Hudson is an extensible Continuous Integration Server， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2013/12/26/hudson-ci">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">为你的项目加入Hudson持续集成</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-12-26T15:18:00+08:00" pubdate data-updated="true">2013年12月26日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-logo.jpg' width='' height='' title=''><span class='caption-text'></span></span></p>
+
+<p>&emsp;&emsp;Hudson是一个使用非常广泛的持续集成CI服务器，大家可以到<a href="http://hudson-ci.org/">Hudson官网</a>上了解更多内容。我们把hudson叫做持续集成服务器，就像官方的描述：Hudson is an extensible Continuous Integration Server，在采用敏捷开发流程的项目中CI几乎是一个必备的工具。</p>
+
+<p>&emsp;&emsp;为什么取hudson这个名字，我想这个系统应该和项目管理密切相关，在软件工程的项目启动流程中，有一种叫哈德森式项目启动方式，说的是要尽早启动一个项目，尽早检测项目后期的资源是否齐备，更早发现一些潜在的风险。</p>
+
+<p>&emsp;&emsp;我们可以试想一下这样的场景：开发团队中，每个成员都在努力完成自己的功能模块，在接近某个迭代周期终点时开始整合，然后再交由测试人员，但对于敏捷开发流程的项目，这似乎有点太慢了。测试人员能否尽早地参与测试？开发成员能否每天看到项目的整体效率、成果?管理人员能否了解每天项目的状况（健康情况）?CI工具可以帮助我们做到这一点。</p>
+
+<p>&emsp;&emsp;简单点来说，CI可以自动化地帮助我们从SCM中check out代码，编译、运行测试、打包、部署到服务器一条龙服务，这样一来，我们就可以及时了解项目的整体状态，比如：编译失败，测试失败，部署后测试人员发现bug等等。我们随时都可以得到可以运行的软件，这对团队成员的信心有很大的鼓舞。</p>
+
+<p>&emsp;&emsp;CI的可供选择软件比较多，除了Hudson外，还有apache continuum等，这些CI同样也具备上面的这些能力，相对来说，Hudson配置起来更为简单，也是更为老牌的CI系统。</p>
+
+<p>&emsp;&emsp;啰嗦了这么多，开始正式的内容吧。先从hudson官网上下载程序包hudson.war（一般都是3.0以上的版本哦），把这个war包直接放在tomcat的webapps目录，启动tomcat即可完成安装，足够简单吧。但要提醒各位的是，最好是下载集成版本的Hudson(即3.0.0-bundled)，这个版本集成了常用的插件，就不再需要在线更新安装插件了，另外，这个集成版程序包是经过测试的，不会出现不兼容的情况发生。我当初就是下载的3.1.1，在线安装了maven的插件，但运行时遇到了包不兼容的问题，花费了很多的调试时间，最后下载了这个集成版本，一切正常。</p>
+
+<p>&emsp;&emsp;运行start.bat启动tomcat，打开浏览器，输入地址http : / / localhost:8080/hudson/，就可以看到Hudson首页面，第一次进入有点缓慢，你可以看到有Please wait while Hudson is getting ready to work..Your browser will reload automatically when Hudson is ready.提示信息。等待片刻后后进入主界面，选择新建一个任务，如下图：<!--more--></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-new-job1.jpg' width='' height='' title='新建一个hudson工作任务'><span class='caption-text'>新建一个hudson工作任务</span></span></p>
+
+<p>&emsp;&emsp;我们选择【构建一个自由风格的软件项目】，输入任务名称、描述等信息，有几个重要的配置地方，我要给大家着重讲解。</p>
+
+<ul>
+<li>配置SCM。我选择的是svn，路径对应到项目的trunk主干目录。如果要输入svn的用户名及密码，请点Update credentials，在弹出的新窗口中填入验证信息。
+<span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-new-job2-scm.jpg' width='' height='' title='Hudson的svn配置界面'><span class='caption-text'>Hudson的svn配置界面</span></span></li>
+</ul>
+
+
+<p>&emsp;&emsp;而我们的svn目录是这样的，要注意的是我们的maven总项目位是car_parents：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/svn_struct.jpg' width='' height='' title='svn中的项目目录结构'><span class='caption-text'>svn中的项目目录结构</span></span></p>
+
+<ul>
+<li>配置任务的触发条件。找到build triggers中的Build periodically选项，输入符合contab格式的时间表达式，如下图，我配置每个小时构建发布一次（一般可设置为下班前半个小时开始构建，团队要约定在这个时间点前向SCM提交当天的工作，在构建完成后查看阶段成果，如果没有通过构建，通过分析命令行输出，找到问题所在并进行修正）：</li>
+</ul>
+
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-build-triggers.jpg' width='' height='' title='配置运行时机'><span class='caption-text'>配置运行时机</span></span></p>
+
+<ul>
+<li>配置maven选项，这里请选择Bundled的maven，以免出现运行失败的情况。另请注意，我们的项目中要运行的pom.xml在主项目中，所以大家要点SAdvanced选择，手动设定POM文件所在路径，如下图。</li>
+</ul>
+
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/Hudson-maven-build.jpg' width='' height='' title='配置maven选择'><span class='caption-text'>配置maven选择</span></span></p>
+
+<ul>
+<li>配置自动部署选项。请在Post-build Actions中，找到Deploy war/ear to a container 部分，输入部署到tomcat中的war包所在路径，以及tomcat的管理账号、密码（tomcat管理信息请到tomcat的conf/server.xml中去配置，在此不再复述），如下图所示：</li>
+</ul>
+
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-tomcat.jpg' width='' height='' title='配置自动部署选项'><span class='caption-text'>配置自动部署选项</span></span></p>
+
+<ul>
+<li>最后保存，即完成该任务的建立。如果你想立即执行一次以观察效果，可以点【立即构建】，系统会出现一个构建进度条，在构建完成后，可以通过点击【  Latest Console output】查看到构建日志，比如观察下面的日志就可以发现构建及部署成功。</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[INFO] Reactor Summary:
+</span><span class='line'>[INFO] 
+</span><span class='line'>[INFO] car-parents ....................................... SUCCESS [0.313s]
+</span><span class='line'>[INFO] framework ......................................... SUCCESS [2.172s]
+</span><span class='line'>[INFO] car-core .......................................... SUCCESS [1.360s]
+</span><span class='line'>[INFO] car-dao ........................................... SUCCESS [3.969s]
+</span><span class='line'>[INFO] car-service ....................................... SUCCESS [4.984s]
+</span><span class='line'>[INFO] car-web Maven Webapp .............................. SUCCESS [4.594s]
+</span><span class='line'>[INFO] ------------------------------------------------------------------------
+</span><span class='line'>[INFO] BUILD SUCCESS
+</span><span class='line'>[INFO] ------------------------------------------------------------------------
+</span><span class='line'>[INFO] Total time: 17.719s
+</span><span class='line'>[INFO] Finished at: Fri Dec 27 11:03:28 CST 2013
+</span><span class='line'>[INFO] Final Memory: 52M/126M
+</span><span class='line'>[INFO] ------------------------------------------------------------------------
+</span><span class='line'>[DEBUG] Closing connection to remote
+</span><span class='line'>[DEBUG] Waiting for process to finish
+</span><span class='line'>[DEBUG] Result: 0
+</span><span class='line'>Deploying C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war to container Tomcat 6.x Remote
+</span><span class='line'>  Redeploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
+</span><span class='line'>  Undeploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
+</span><span class='line'>  Deploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
+</span><span class='line'>[DEBUG] Skipping watched dependency update; build not configured with trigger: mycar_ms #23
+</span><span class='line'>Finished: SUCCESS</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;经过一段时间的运行后，你可以看到很多的构建历史，如下图所示，我们可以通过图标了解到构建的状态：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/Hudson-build-log.jpg' width='' height='' title='Hudson查看构建历史'><span class='caption-text'>Hudson查看构建历史</span></span></p>
+
+<p>&emsp;&emsp;同时，我们的项目也有了睛雨表，你也可理解为这个项目的健康状态。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-icon.jpg' width='' height='' title='Hudson图标示例'><span class='caption-text'>Hudson图标示例</span></span></p>
+
+<p>&emsp;&emsp;暂时写这些吧，以后继续补充。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-12-26T15:18:00+08:00" pubdate data-updated="true">2013年12月26日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/12/25/maven-project-detail/" title="上一篇文章: 在项目中使用maven之三--深入细节">&laquo;上一篇:&nbsp;&nbsp;在项目中使用maven之三--深入细节</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三--深入细节</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/12/24/maven-project/">在项目中使用maven之二--项目实例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/12/23/maven/">在项目中使用maven之一--环境配置</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="60">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2013 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

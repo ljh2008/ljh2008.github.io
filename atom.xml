@@ -4,7 +4,7 @@
   <title><![CDATA[刘江华的博客]]></title>
   <link href="http://yanyaner.com/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2013-12-25T16:59:43+08:00</updated>
+  <updated>2013-12-27T13:37:41+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,129 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[为你的项目加入Hudson持续集成]]></title>
+    <link href="http://yanyaner.com/blog/2013/12/26/hudson-ci/"/>
+    <updated>2013-12-26T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2013/12/26/hudson-ci</id>
+    <content type="html"><![CDATA[<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/hudson-logo.jpg' width='' height='' title=''><span class='caption-text'></span></span></p>
+
+<p>&emsp;&emsp;Hudson是一个使用非常广泛的持续集成CI服务器，大家可以到<a href="http://hudson-ci.org/">Hudson官网</a>上了解更多内容。我们把hudson叫做持续集成服务器，就像官方的描述：Hudson is an extensible Continuous Integration Server，在采用敏捷开发流程的项目中CI几乎是一个必备的工具。</p>
+
+<p>&emsp;&emsp;为什么取hudson这个名字，我想这个系统应该和项目管理密切相关，在软件工程的项目启动流程中，有一种叫哈德森式项目启动方式，说的是要尽早启动一个项目，尽早检测项目后期的资源是否齐备，更早发现一些潜在的风险。</p>
+
+<p>&emsp;&emsp;我们可以试想一下这样的场景：开发团队中，每个成员都在努力完成自己的功能模块，在接近某个迭代周期终点时开始整合，然后再交由测试人员，但对于敏捷开发流程的项目，这似乎有点太慢了。测试人员能否尽早地参与测试？开发成员能否每天看到项目的整体效率、成果?管理人员能否了解每天项目的状况（健康情况）?CI工具可以帮助我们做到这一点。</p>
+
+<p>&emsp;&emsp;简单点来说，CI可以自动化地帮助我们从SCM中check out代码，编译、运行测试、打包、部署到服务器一条龙服务，这样一来，我们就可以及时了解项目的整体状态，比如：编译失败，测试失败，部署后测试人员发现bug等等。我们随时都可以得到可以运行的软件，这对团队成员的信心有很大的鼓舞。</p>
+
+<p>&emsp;&emsp;CI的可供选择软件比较多，除了Hudson外，还有apache continuum等，这些CI同样也具备上面的这些能力，相对来说，Hudson配置起来更为简单，也是更为老牌的CI系统。</p>
+
+<p>&emsp;&emsp;啰嗦了这么多，开始正式的内容吧。先从hudson官网上下载程序包hudson.war（一般都是3.0以上的版本哦），把这个war包直接放在tomcat的webapps目录，启动tomcat即可完成安装，足够简单吧。但要提醒各位的是，最好是下载集成版本的Hudson(即3.0.0-bundled)，这个版本集成了常用的插件，就不再需要在线更新安装插件了，另外，这个集成版程序包是经过测试的，不会出现不兼容的情况发生。我当初就是下载的3.1.1，在线安装了maven的插件，但运行时遇到了包不兼容的问题，花费了很多的调试时间，最后下载了这个集成版本，一切正常。</p>
+
+<p>&emsp;&emsp;运行start.bat启动tomcat，打开浏览器，输入地址http : / / localhost:8080/hudson/，就可以看到Hudson首页面，第一次进入有点缓慢，你可以看到有Please wait while Hudson is getting ready to work..Your browser will reload automatically when Hudson is ready.提示信息。等待片刻后后进入主界面，选择新建一个任务，如下图：<!--more--></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/hudson-new-job1.jpg' width='' height='' title='新建一个hudson工作任务'><span class='caption-text'>新建一个hudson工作任务</span></span></p>
+
+<p>&emsp;&emsp;我们选择【构建一个自由风格的软件项目】，输入任务名称、描述等信息，有几个重要的配置地方，我要给大家着重讲解。</p>
+
+<ul>
+<li>配置SCM。我选择的是svn，路径对应到项目的trunk主干目录。如果要输入svn的用户名及密码，请点Update credentials，在弹出的新窗口中填入验证信息。
+<span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/hudson-new-job2-scm.jpg' width='' height='' title='Hudson的svn配置界面'><span class='caption-text'>Hudson的svn配置界面</span></span></li>
+</ul>
+
+
+<p>&emsp;&emsp;而我们的svn目录是这样的，要注意的是我们的maven总项目位是car_parents：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/svn_struct.jpg' width='' height='' title='svn中的项目目录结构'><span class='caption-text'>svn中的项目目录结构</span></span></p>
+
+<ul>
+<li>配置任务的触发条件。找到build triggers中的Build periodically选项，输入符合contab格式的时间表达式，如下图，我配置每个小时构建发布一次（一般可设置为下班前半个小时开始构建，团队要约定在这个时间点前向SCM提交当天的工作，在构建完成后查看阶段成果，如果没有通过构建，通过分析命令行输出，找到问题所在并进行修正）：</li>
+</ul>
+
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/hudson-build-triggers.jpg' width='' height='' title='配置运行时机'><span class='caption-text'>配置运行时机</span></span></p>
+
+<ul>
+<li>配置maven选项，这里请选择Bundled的maven，以免出现运行失败的情况。另请注意，我们的项目中要运行的pom.xml在主项目中，所以大家要点SAdvanced选择，手动设定POM文件所在路径，如下图。</li>
+</ul>
+
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/Hudson-maven-build.jpg' width='' height='' title='配置maven选择'><span class='caption-text'>配置maven选择</span></span></p>
+
+<ul>
+<li>配置自动部署选项。请在Post-build Actions中，找到Deploy war/ear to a container 部分，输入部署到tomcat中的war包所在路径，以及tomcat的管理账号、密码（tomcat管理信息请到tomcat的conf/server.xml中去配置，在此不再复述），如下图所示：</li>
+</ul>
+
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/hudson-tomcat.jpg' width='' height='' title='配置自动部署选项'><span class='caption-text'>配置自动部署选项</span></span></p>
+
+<ul>
+<li>最后保存，即完成该任务的建立。如果你想立即执行一次以观察效果，可以点【立即构建】，系统会出现一个构建进度条，在构建完成后，可以通过点击【  Latest Console output】查看到构建日志，比如观察下面的日志就可以发现构建及部署成功。</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[INFO] Reactor Summary:
+</span><span class='line'>[INFO] 
+</span><span class='line'>[INFO] car-parents ....................................... SUCCESS [0.313s]
+</span><span class='line'>[INFO] framework ......................................... SUCCESS [2.172s]
+</span><span class='line'>[INFO] car-core .......................................... SUCCESS [1.360s]
+</span><span class='line'>[INFO] car-dao ........................................... SUCCESS [3.969s]
+</span><span class='line'>[INFO] car-service ....................................... SUCCESS [4.984s]
+</span><span class='line'>[INFO] car-web Maven Webapp .............................. SUCCESS [4.594s]
+</span><span class='line'>[INFO] ------------------------------------------------------------------------
+</span><span class='line'>[INFO] BUILD SUCCESS
+</span><span class='line'>[INFO] ------------------------------------------------------------------------
+</span><span class='line'>[INFO] Total time: 17.719s
+</span><span class='line'>[INFO] Finished at: Fri Dec 27 11:03:28 CST 2013
+</span><span class='line'>[INFO] Final Memory: 52M/126M
+</span><span class='line'>[INFO] ------------------------------------------------------------------------
+</span><span class='line'>[DEBUG] Closing connection to remote
+</span><span class='line'>[DEBUG] Waiting for process to finish
+</span><span class='line'>[DEBUG] Result: 0
+</span><span class='line'>Deploying C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war to container Tomcat 6.x Remote
+</span><span class='line'>  Redeploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
+</span><span class='line'>  Undeploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
+</span><span class='line'>  Deploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
+</span><span class='line'>[DEBUG] Skipping watched dependency update; build not configured with trigger: mycar_ms #23
+</span><span class='line'>Finished: SUCCESS</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;经过一段时间的运行后，你可以看到很多的构建历史，如下图所示，我们可以通过图标了解到构建的状态：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/Hudson-build-log.jpg' width='' height='' title='Hudson查看构建历史'><span class='caption-text'>Hudson查看构建历史</span></span></p>
+
+<p>&emsp;&emsp;同时，我们的项目也有了睛雨表，你也可理解为这个项目的健康状态。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/hudson-icon.jpg' width='' height='' title='Hudson图标示例'><span class='caption-text'>Hudson图标示例</span></span></p>
+
+<p>&emsp;&emsp;暂时写这些吧，以后继续补充。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[在项目中使用maven之三--深入细节]]></title>
@@ -3693,7 +3816,7 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p></p>
+<blockquote></blockquote>
 
 <p>&emsp;&emsp;user.js，前台ajax操作部分的核心代码：</p>
 
@@ -4975,111 +5098,6 @@
 <p>&emsp;&emsp;新增用户</p>
 
 <p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/08/5.jpg' width='' height='' title='新增主界面原型参考图'><span class='caption-text'>新增主界面原型参考图</span></span></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[nodejs中的同步之--登录代码]]></title>
-    <link href="http://yanyaner.com/blog/2013/08/01/nodejs-login-sync/"/>
-    <updated>2013-08-01T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/08/01/nodejs-login-sync</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;在我们的业务代码实现中，总有那么一些存在同步操作的情况，为了让写出的代码具有更好的可读性（相对于function层层嵌套而言），我们还得借助一些同步框架来实现，下面以一个简单的登录代码来说明这个问题。现假设有多个相同用户名称密码的情况存在，我们只取一个人的信息完成登录，代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'>     <span class="kd">var</span> <span class="nx">loginUser</span><span class="p">;</span>
-</span><span class='line'>     <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">({</span> <span class="nx">f_login_code</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">f_pwd</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">pwd</span> <span class="p">}).</span><span class="nx">run</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="nx">users</span><span class="p">){</span>
-</span><span class='line'>           <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">&lt;</span> <span class="nx">users</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="c1">//只处理一个</span>
-</span><span class='line'>                    <span class="nx">loginUser</span> <span class="o">=</span> <span class="nx">users</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
-</span><span class='line'>                    <span class="k">break</span><span class="p">;</span>
-</span><span class='line'>                <span class="p">}</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">loginUser</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>         <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">name</span><span class="o">:</span><span class="nx">loginUser</span><span class="p">.</span><span class="nx">f_name</span><span class="p">});</span>
-</span><span class='line'>     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>         <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;用户名或密码错误，请核对！&#39;</span><span class="p">});</span>
-</span><span class='line'>     <span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<!--more-->
-
-
-<p>
-&emsp;&emsp;上面这段代码永远无法登录成功，loginUser总是undefined，因为在执行if (loginUser)检测时，for (var i = 0; i&lt; users.length; i++)这段代码还没有执行到，同步改造如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">loginUser</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nx">Seq</span><span class="p">()</span>
-</span><span class='line'>        <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>            <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">({</span> <span class="nx">f_login_code</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">f_pwd</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">pwd</span> <span class="p">}).</span><span class="nx">run</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}).</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">users</span><span class="p">){</span>
-</span><span class='line'>            <span class="c1">//在此仅假设用户登录编码和名称有重复的情况</span>
-</span><span class='line'>            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">&lt;</span> <span class="nx">users</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="c1">//只处理一个</span>
-</span><span class='line'>                    <span class="nx">loginUser</span> <span class="o">=</span> <span class="nx">users</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
-</span><span class='line'>                    <span class="k">break</span><span class="p">;</span>
-</span><span class='line'>                <span class="p">}</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();</span>
-</span><span class='line'>        <span class="p">}).</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>            <span class="kd">var</span> <span class="nx">resultJson</span><span class="p">;</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">loginUser</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">name</span><span class="o">:</span><span class="nx">loginUser</span><span class="p">.</span><span class="nx">f_name</span><span class="p">});</span>
-</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;用户名或密码错误，请核对！&#39;</span><span class="p">});</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="c1">//发回登录json字串</span>
-</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nx">resultJson</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">});</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;我们使用了seq同步框架，上面的代码可以保证程序执行的顺利，一切正常了。</p>
 ]]></content>
   </entry>
   

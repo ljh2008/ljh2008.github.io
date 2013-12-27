@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;有些人出现了，又走了。 然后，一切回归原点， 只是多了一份沉甸甸的回忆。 时光打磨，没有让它暗淡。那些出现在年华里的人，不论属于爱情，还是友情，都同样叫人怀念，刻骨铭心。 油画-合江亭.爱情斑马线 &emsp;&emsp;合江亭.爱情斑马线（50×60CM）。 &hellip;">
+  <meta name="description" content="&emsp;&emsp;cas与shiro的集成思路是：子系统的登录入口定位到cas，将用户名与密码的验证交由cas服务器去做，在服务器端登录成功后，重定向到子系统，再由子系统验证凭证号，如果通过，则初始化子系统的会话中的内容及权限等。大家要明白这样两点思想： &emsp;&emsp;一、 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,365 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/05/13/shiro-cas/">Cas与shiro集成</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-13T15:18:00+08:00" pubdate data-updated="true">2013年05月13日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;cas与shiro的集成思路是：子系统的登录入口定位到cas，将用户名与密码的验证交由cas服务器去做，在服务器端登录成功后，重定向到子系统，再由子系统验证凭证号，如果通过，则初始化子系统的会话中的内容及权限等。大家要明白这样两点思想：</p>
+
+<p>&emsp;&emsp;一、子系统不需要再做用户名及密码的验证。</p>
+
+<p>&emsp;&emsp;二、子系统需要查询cas服务器，以确保该用户已经成功登录，凭证有效。</p>
+
+<p>&emsp;&emsp;三、子系统去实现原有的会话管理及权限验证。</p>
+
+<p>&emsp;&emsp;好了，下面看看配置上的代码：</p>
+
+<p>&emsp;&emsp;重写cas验证过滤器，请注意，doGetAuthenticationInfo方法中的红色代码部分，是我在原有CasRealm的源码中新加的，而doGetAuthorizationInfo授权代码，将是你原来的授权代码：</p>
+
+<figure class='code'><figcaption><span>CasAuthRealm.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * cas认证类信息</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">CasAuthRealm</span> <span class="kd">extends</span> <span class="n">CasRealm</span>  <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="n">Logger</span> <span class="n">log</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">CasAuthRealm</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Resource</span><span class="o">(</span><span class="n">name</span> <span class="o">=</span> <span class="s">&quot;studentService&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">IStudentService</span> <span class="n">studentService</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 认证</span>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="n">AuthenticationInfo</span> <span class="nf">doGetAuthenticationInfo</span><span class="o">(</span>
+</span><span class='line'>            <span class="n">AuthenticationToken</span> <span class="n">token</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">AuthenticationException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;进入登录认证方法doGetAuthenticationInfo&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">CasToken</span> <span class="n">casToken</span> <span class="o">=</span> <span class="o">(</span><span class="n">CasToken</span><span class="o">)</span> <span class="n">token</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">token</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">String</span> <span class="n">ticket</span> <span class="o">=</span> <span class="o">(</span><span class="n">String</span><span class="o">)</span><span class="n">casToken</span><span class="o">.</span><span class="na">getCredentials</span><span class="o">();</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(!</span><span class="n">StringUtils</span><span class="o">.</span><span class="na">hasText</span><span class="o">(</span><span class="n">ticket</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">TicketValidator</span> <span class="n">ticketValidator</span> <span class="o">=</span> <span class="n">ensureTicketValidator</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="c1">// contact CAS server to validate service ticket</span>
+</span><span class='line'>            <span class="n">Assertion</span> <span class="n">casAssertion</span> <span class="o">=</span> <span class="n">ticketValidator</span><span class="o">.</span><span class="na">validate</span><span class="o">(</span><span class="n">ticket</span><span class="o">,</span> <span class="n">getCasService</span><span class="o">());</span>
+</span><span class='line'>            <span class="c1">// get principal, user id and attributes</span>
+</span><span class='line'>            <span class="n">AttributePrincipal</span> <span class="n">casPrincipal</span> <span class="o">=</span> <span class="n">casAssertion</span><span class="o">.</span><span class="na">getPrincipal</span><span class="o">();</span>
+</span><span class='line'>            <span class="n">String</span> <span class="n">userId</span> <span class="o">=</span> <span class="n">casPrincipal</span><span class="o">.</span><span class="na">getName</span><span class="o">();</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">debug</span><span class="o">(</span><span class="s">&quot;Validate ticket : {} in CAS server : {} to retrieve user : {}&quot;</span><span class="o">,</span> <span class="k">new</span> <span class="n">Object</span><span class="o">[]{</span>
+</span><span class='line'>                    <span class="n">ticket</span><span class="o">,</span> <span class="n">getCasServerUrlPrefix</span><span class="o">(),</span> <span class="n">userId</span>
+</span><span class='line'>            <span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Object</span><span class="o">&gt;</span> <span class="n">attributes</span> <span class="o">=</span> <span class="n">casPrincipal</span><span class="o">.</span><span class="na">getAttributes</span><span class="o">();</span>
+</span><span class='line'>            <span class="c1">// refresh authentication token (user id + remember me)</span>
+</span><span class='line'>            <span class="n">casToken</span><span class="o">.</span><span class="na">setUserId</span><span class="o">(</span><span class="n">userId</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">String</span> <span class="n">rememberMeAttributeName</span> <span class="o">=</span> <span class="n">getRememberMeAttributeName</span><span class="o">();</span>
+</span><span class='line'>            <span class="n">String</span> <span class="n">rememberMeStringValue</span> <span class="o">=</span> <span class="o">(</span><span class="n">String</span><span class="o">)</span><span class="n">attributes</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">rememberMeAttributeName</span><span class="o">);</span>
+</span><span class='line'>            <span class="kt">boolean</span> <span class="n">isRemembered</span> <span class="o">=</span> <span class="n">rememberMeStringValue</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">Boolean</span><span class="o">.</span><span class="na">parseBoolean</span><span class="o">(</span><span class="n">rememberMeStringValue</span><span class="o">);</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">isRemembered</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">casToken</span><span class="o">.</span><span class="na">setRememberMe</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>            <span class="c1">// create simple authentication info</span>
+</span><span class='line'>            <span class="n">List</span><span class="o">&lt;</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">principals</span> <span class="o">=</span> <span class="n">CollectionUtils</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">userId</span><span class="o">,</span> <span class="n">attributes</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">PrincipalCollection</span> <span class="n">principalCollection</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimplePrincipalCollection</span><span class="o">(</span><span class="n">principals</span><span class="o">,</span> <span class="n">getName</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">//*************************自定义处理</span>
+</span><span class='line'>            <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="n">Long</span><span class="o">.</span><span class="na">parseLong</span><span class="o">(</span><span class="n">userId</span><span class="o">));</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">user</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="c1">//要放在作用域中的东西，请在这里进行操作</span>
+</span><span class='line'>                <span class="n">SecurityUtils</span><span class="o">.</span><span class="na">getSubject</span><span class="o">().</span><span class="na">getSession</span><span class="o">().</span><span class="na">setAttribute</span><span class="o">(</span><span class="s">&quot;c_user&quot;</span><span class="o">,</span> <span class="n">user</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="k">return</span> <span class="k">new</span> <span class="nf">SimpleAuthenticationInfo</span><span class="o">(</span><span class="n">principalCollection</span><span class="o">,</span> <span class="n">ticket</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">//认证没有通过</span>
+</span><span class='line'>            <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">TicketValidationException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">CasAuthenticationException</span><span class="o">(</span><span class="s">&quot;Unable to validate ticket [&quot;</span> <span class="o">+</span> <span class="n">ticket</span> <span class="o">+</span> <span class="s">&quot;]&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 授权</span>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="n">AuthorizationInfo</span> <span class="nf">doGetAuthorizationInfo</span><span class="o">(</span>
+</span><span class='line'>            <span class="n">PrincipalCollection</span> <span class="n">principalCollection</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Long</span> <span class="n">loginId</span> <span class="o">=</span> <span class="n">Long</span><span class="o">.</span><span class="na">parseLong</span><span class="o">((</span><span class="n">String</span><span class="o">)</span><span class="n">principalCollection</span><span class="o">.</span><span class="na">fromRealm</span><span class="o">(</span><span class="n">getName</span><span class="o">()).</span><span class="na">iterator</span><span class="o">().</span><span class="na">next</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;doGetAuthorizationInfo: 进行授权，登录id是：&quot;</span> <span class="o">+</span> <span class="n">loginId</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//取当前用户</span>
+</span><span class='line'>        <span class="n">User</span> <span class="n">student</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">getStudentById</span><span class="o">(</span><span class="n">loginId</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;角色标识是：&quot;</span> <span class="o">+</span> <span class="n">student</span><span class="o">.</span><span class="na">getRolesAsString</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;权限标识是：&quot;</span> <span class="o">+</span> <span class="n">student</span><span class="o">.</span><span class="na">getOperationPermissionsAsString</span><span class="o">());</span>
+</span><span class='line'>        <span class="c1">//System.out.println(&quot;用户可操作的菜单：&quot; + student.getMenus());</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//添加角色及权限信息</span>
+</span><span class='line'>        <span class="n">SimpleAuthorizationInfo</span> <span class="n">sazi</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleAuthorizationInfo</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">sazi</span><span class="o">.</span><span class="na">addRoles</span><span class="o">(</span><span class="n">student</span><span class="o">.</span><span class="na">getRolesAsString</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">sazi</span><span class="o">.</span><span class="na">addStringPermissions</span><span class="o">(</span><span class="n">student</span><span class="o">.</span><span class="na">getPermissionsAsString</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">sazi</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在spring配置文件中，配置上面的cas过滤器，其中需要大家注意的地方，是“自定义处理“部分，源代码中我有标注，https : / /localhost:8444/cas 是cas服务器地址，http : / / localhost:8080/shiro_demo 是子系统的项目路径：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;myCasRealm&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.service.impl.CasAuthRealm&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;casServerUrlPrefix&quot;</span> <span class="na">value=</span><span class="s">&quot;https://localhost:8444/cas&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;casService&quot;</span> <span class="na">value=</span><span class="s">&quot;http://localhost:8080/shiro_demo/login&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="c">&lt;!-- 权限管理器 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;securityManager&quot;</span> <span class="na">class=</span><span class="s">&quot;org.apache.shiro.web.mgt.DefaultWebSecurityManager&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;realms&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;myCasRealm&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'> <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;shiroFilter&quot;</span> <span class="na">class=</span><span class="s">&quot;org.apache.shiro.spring.web.ShiroFilterFactoryBean&quot;</span> <span class="na">depends-on=</span><span class="s">&quot;roleOrFilter&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;securityManager&quot;</span> <span class="na">ref=</span><span class="s">&quot;securityManager&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;loginUrl&quot;</span> <span class="na">value=</span><span class="s">&quot;https://localhost:8444/cas/login?service=http://localhost:8080/shiro_demo/login&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;successUrl&quot;</span> <span class="na">value=</span><span class="s">&quot;/main&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;unauthorizedUrl&quot;</span> <span class="na">value=</span><span class="s">&quot;/commons/unauth.jsp&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;filters&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;map&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;entry</span> <span class="na">key=</span><span class="s">&quot;cas&quot;</span> <span class="na">value-ref=</span><span class="s">&quot;myCasFilter&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;entry</span> <span class="na">key=</span><span class="s">&quot;roleOrFilter&quot;</span> <span class="na">value-ref=</span><span class="s">&quot;roleOrFilter&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;/entry&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/map&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，在配置文件中，配置子系统登录入口至cas</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>/js/** = anon
+</span><span class='line'>/css/** = anon
+</span><span class='line'>/logout = anon
+</span><span class='line'>
+</span><span class='line'>/error.jsp = anon
+</span><span class='line'>
+</span><span class='line'>/login.jsp = cas
+</span><span class='line'>/login = cas
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，在进入主页面的时候，要访问session中的对象，如果hibernate的连接已经关闭，你可以重新将session中的对象与新的连接进行绑定，类似代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="o">(</span><span class="n">User</span><span class="o">)</span><span class="n">currentUser</span><span class="o">.</span><span class="na">getSession</span><span class="o">().</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;c_user&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">getHibernateTemplate</span><span class="o">().</span><span class="na">refresh</span><span class="o">(</span><span class="n">u</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;再说一下子系统的退出，如果子系统退出，也要退出cas服务器，可以写如下代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;/logout&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">logout</span><span class="o">(</span><span class="n">HttpServletResponse</span> <span class="n">resp</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">Subject</span> <span class="n">currentUser</span> <span class="o">=</span> <span class="n">SecurityUtils</span><span class="o">.</span><span class="na">getSubject</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">currentUser</span><span class="o">.</span><span class="na">logout</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">resp</span><span class="o">.</span><span class="na">sendRedirect</span><span class="o">(</span><span class="s">&quot;https://localhost:8444/cas/logout&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;文章内容虽少，但调试成功确需要花费大量的时候，网上很多人写资料的都不能运行，有需要源代码的同鞋，请发消息与我。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -4120,52 +4479,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/04/08/art1/">油画-合江亭.安顺廊桥</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-04-08T15:18:00+08:00" pubdate data-updated="true">2013年04月08日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;断桥借伞，白蛇痴情，危桥抱柱，尾生殉情！最使古代伉俪动情者，鹊桥，最使当代恋人钟情者，当属廊桥！。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/14.jpg' width='' height='' title='油画-合江亭.安顺廊桥50×60CM'><span class='caption-text'>油画-合江亭.安顺廊桥50×60CM</span></span></p>
-
-<p>&emsp;&emsp;每次经过廊桥，都会被它的古朴、秀美气质感染而驻足许久，也为桥头沧桑的兽形石雕而感到岁月无情。</p>
-
-<p>&emsp;&emsp;听说很多人的婚宴选择在此，亦是希望两情长久。</p>
-
-<p>&emsp;&emsp;我把廊桥放在一片夕阳中、完全理想化的色彩光影之下。夕阳虽好，已近黄昏，也许一切终属廊桥遗梦。</p>
-
-<p>更多细节请阅《<a href="/blog/2013/04/08/art-step/">合江亭.安顺廊桥-步骤解析</a>》</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; 更多早期老文章</a>
@@ -4183,6 +4496,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三&#8211;深入细节</a>
       </li>
     
@@ -4196,10 +4513,6 @@
     
       <li class="post">
         <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/05/udisk/">万恶的u盘启动程序</a>
       </li>
     
   </ul>

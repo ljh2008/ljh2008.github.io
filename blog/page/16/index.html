@@ -9,7 +9,16 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;网站建成后，根据用户体验及外部竟争条件的变化，网站少不更改，小的更改问题不是很大，如果是大的改动，也就是意味着网站要来个彻底的大换血，改版，那么，网站改版本在技术上应注意些什么呢？我在这里总结几点（当然，我的总结中，并不包括UI体验内容）。 &emsp;&emsp;1、 &hellip;">
+  <meta name="description" content="&emsp;&emsp;定时任务在项目中使用非常普遍，比如说：每天晚上3：00开始执行数据真删除，每个月第四周星期三晚上1：00开始执行报表统计任务等，我们在项目中，可以通过下面三种方式来实现： 一、利用j2se的timer类来实现，非常简单，代码如下： 1
+2
+3
+4
+5
+6
+7
+8
+9
+10 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +67,178 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/26/task/">项目中定时任务实现方式比较</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-26T15:18:00+08:00" pubdate data-updated="true">2010年10月26日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;定时任务在项目中使用非常普遍，比如说：每天晚上3：00开始执行数据真删除，每个月第四周星期三晚上1：00开始执行报表统计任务等，我们在项目中，可以通过下面三种方式来实现：</p>
+
+<p><strong>一、利用j2se的timer类来实现</strong>，非常简单，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">java.util.Timer</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.TimerTask</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">FuduTest</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)...{</span>
+</span><span class='line'>  <span class="n">Timer</span> <span class="n">timer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Timer</span><span class="o">();</span>
+</span><span class='line'>  <span class="n">timer</span><span class="o">.</span><span class="na">schedule</span><span class="o">(</span><span class="k">new</span> <span class="n">FuduTask</span><span class="o">(),</span> <span class="mi">1000</span><span class="o">,</span> <span class="mi">2000</span><span class="o">);</span><span class="c1">//在1秒后执行此任务,每次间隔2秒</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">static</span> <span class="kd">class</span> <span class="nc">FuduTask</span> <span class="kd">extends</span> <span class="n">TimerTask</span><span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="nd">@Override</span>
+</span><span class='line'>      <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">(){</span>
+</span><span class='line'>          <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;开始执行定时任务......&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这种方式可以实现一些简单的定时任务，如果任务的启动条件复杂，就要借助于框架来实现了。</p>
+
+<p><strong>二、使用定时器框架</strong>，我在这仅介绍广泛使用的Quartz框架结合spring的使用。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;mainScheduler&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.SchedulerFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;triggers&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;cronReportTrigger&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c">&lt;!--实际的工作Bean--&gt;</span>
+</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;myService&quot;</span> <span class="na">class=</span><span class="s">&quot;com.spring.helloworld.CourseService&quot;</span><span class="nt">&gt;&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c">&lt;!--jobBean用于设定启动时运用的Bean与方法--&gt;</span>
+</span><span class='line'><span class="nt">&lt;bean</span>  <span class="na">id=</span><span class="s">&quot;scheduledReportJobDetail&quot;</span>  <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;targetObject&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;myService&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;targetMethod&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;value&gt;</span>sendMail2BrithdayCustomer<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c">&lt;!--定时器设定起动表达式，比如下面的是：每5秒起动一次 (0 0 5 * * ?每日五点起动)--&gt;</span>
+</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;cronReportTrigger&quot;</span>
+</span><span class='line'><span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.CronTriggerBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;jobDetail&quot;</span><span class="nt">&gt;&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;scheduledReportJobDetail&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;cronExpression&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;value&gt;</span>10,15,20,25,30,35,40,45,50,55 * * * * ?<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在spring中的配置可谓是相当的简单，你要写的仅仅是一个业务类而已。使用在项目中集成框架的缺点是：和项目服务器的耦合度太高，项目服务器当机，定时任务也就over了，定时任务执行异常，也会影响到服务器的项目，因此，最好的办法，还是采用下面的第三种方式。</p>
+
+<p>&emsp;&emsp;<strong>三、利用操作系统的定时任务</strong></p>
+
+<p>&emsp;&emsp;windows操作系统：在控制面板中的计划任务，按提示一步一步就可以完成，但是前提是你得写好一个批处理文件（.bat的），并确保该批处理可以运行。</p>
+
+<p>&emsp;&emsp;该脚本中，一般是调用java的一个main方法，在main方法中，用代码的方式启动spring容器，得到业务对象引用，调用业务方法即可。</p>
+
+<p>&emsp;&emsp;linux操作系统：
+&emsp;&emsp;使用crontab，一般的linux系统中都有集成，你只需:vim /etc/crontab即可，根据该文件中的example，添加你的任务命令行。</p>
+
+<p>&emsp;&emsp;下面是我的一行配置命令：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="c"># m h dom mon dow user  command</span>
+</span><span class='line'>30 5 * * * root /home/server/run/translate.sh &gt;&gt; /var/log/fudu365/auto_run/tranlate.log
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;加入你的任务行后，crontab会自动生效，不用你重启。</p>
+
+<p>&emsp;&emsp;注意：crontab可，最前面一位不是秒哦，也就是，它只能在0秒开始运行。</p>
+
+<p>&emsp;&emsp;无论你是用框架，还是crontab，有一个东西非常重要，那就是cronExpression，cronExpression怎么写，自己到网上查，<a href="http://en.wikipedia.org/wiki/CRON_expression">http://en.wikipedia.org/wiki/CRON_expression</a>也有一篇，你可以去看看。</p>
+
+<p>&emsp;&emsp;总之，项目中的定时任务，你得根据项目的实际情况进行选择，如果你想要一个稳定、强大的定时任务，还是采用第三种方式吧。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -830,6 +1011,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三&#8211;深入细节</a>
       </li>
     
@@ -843,10 +1028,6 @@
     
       <li class="post">
         <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/05/udisk/">万恶的u盘启动程序</a>
       </li>
     
   </ul>

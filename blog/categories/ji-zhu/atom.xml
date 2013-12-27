@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2013-12-25T16:59:43+08:00</updated>
+  <updated>2013-12-27T13:37:41+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,106 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[为你的项目加入Hudson持续集成]]></title>
+    <link href="http://yanyaner.com/blog/2013/12/26/hudson-ci/"/>
+    <updated>2013-12-26T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2013/12/26/hudson-ci</id>
+    <content type="html"><![CDATA[<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-logo.jpg' width='' height='' title=''><span class='caption-text'></span></span></p>
+
+<p>&emsp;&emsp;Hudson是一个使用非常广泛的持续集成CI服务器，大家可以到<a href="http://hudson-ci.org/">Hudson官网</a>上了解更多内容。我们把hudson叫做持续集成服务器，就像官方的描述：Hudson is an extensible Continuous Integration Server，在采用敏捷开发流程的项目中CI几乎是一个必备的工具。</p>
+
+<p>&emsp;&emsp;为什么取hudson这个名字，我想这个系统应该和项目管理密切相关，在软件工程的项目启动流程中，有一种叫哈德森式项目启动方式，说的是要尽早启动一个项目，尽早检测项目后期的资源是否齐备，更早发现一些潜在的风险。</p>
+
+<p>&emsp;&emsp;我们可以试想一下这样的场景：开发团队中，每个成员都在努力完成自己的功能模块，在接近某个迭代周期终点时开始整合，然后再交由测试人员，但对于敏捷开发流程的项目，这似乎有点太慢了。测试人员能否尽早地参与测试？开发成员能否每天看到项目的整体效率、成果?管理人员能否了解每天项目的状况（健康情况）?CI工具可以帮助我们做到这一点。</p>
+
+<p>&emsp;&emsp;简单点来说，CI可以自动化地帮助我们从SCM中check out代码，编译、运行测试、打包、部署到服务器一条龙服务，这样一来，我们就可以及时了解项目的整体状态，比如：编译失败，测试失败，部署后测试人员发现bug等等。我们随时都可以得到可以运行的软件，这对团队成员的信心有很大的鼓舞。</p>
+
+<p>&emsp;&emsp;CI的可供选择软件比较多，除了Hudson外，还有apache continuum等，这些CI同样也具备上面的这些能力，相对来说，Hudson配置起来更为简单，也是更为老牌的CI系统。</p>
+
+<p>&emsp;&emsp;啰嗦了这么多，开始正式的内容吧。先从hudson官网上下载程序包hudson.war（一般都是3.0以上的版本哦），把这个war包直接放在tomcat的webapps目录，启动tomcat即可完成安装，足够简单吧。但要提醒各位的是，最好是下载集成版本的Hudson(即3.0.0-bundled)，这个版本集成了常用的插件，就不再需要在线更新安装插件了，另外，这个集成版程序包是经过测试的，不会出现不兼容的情况发生。我当初就是下载的3.1.1，在线安装了maven的插件，但运行时遇到了包不兼容的问题，花费了很多的调试时间，最后下载了这个集成版本，一切正常。</p>
+
+<p>&emsp;&emsp;运行start.bat启动tomcat，打开浏览器，输入地址http : / / localhost:8080/hudson/，就可以看到Hudson首页面，第一次进入有点缓慢，你可以看到有Please wait while Hudson is getting ready to work..Your browser will reload automatically when Hudson is ready.提示信息。等待片刻后后进入主界面，选择新建一个任务，如下图：<!--more--></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-new-job1.jpg' width='' height='' title='新建一个hudson工作任务'><span class='caption-text'>新建一个hudson工作任务</span></span></p>
+
+<p>&emsp;&emsp;我们选择【构建一个自由风格的软件项目】，输入任务名称、描述等信息，有几个重要的配置地方，我要给大家着重讲解。</p>
+
+<ul>
+<li>配置SCM。我选择的是svn，路径对应到项目的trunk主干目录。如果要输入svn的用户名及密码，请点Update credentials，在弹出的新窗口中填入验证信息。
+<span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-new-job2-scm.jpg' width='' height='' title='Hudson的svn配置界面'><span class='caption-text'>Hudson的svn配置界面</span></span></li>
+</ul>
+
+
+<p>&emsp;&emsp;而我们的svn目录是这样的，要注意的是我们的maven总项目位是car_parents：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/svn_struct.jpg' width='' height='' title='svn中的项目目录结构'><span class='caption-text'>svn中的项目目录结构</span></span></p>
+
+<ul>
+<li>配置任务的触发条件。找到build triggers中的Build periodically选项，输入符合contab格式的时间表达式，如下图，我配置每个小时构建发布一次（一般可设置为下班前半个小时开始构建，团队要约定在这个时间点前向SCM提交当天的工作，在构建完成后查看阶段成果，如果没有通过构建，通过分析命令行输出，找到问题所在并进行修正）：</li>
+</ul>
+
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-build-triggers.jpg' width='' height='' title='配置运行时机'><span class='caption-text'>配置运行时机</span></span></p>
+
+<ul>
+<li>配置maven选项，这里请选择Bundled的maven，以免出现运行失败的情况。另请注意，我们的项目中要运行的pom.xml在主项目中，所以大家要点SAdvanced选择，手动设定POM文件所在路径，如下图。</li>
+</ul>
+
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/Hudson-maven-build.jpg' width='' height='' title='配置maven选择'><span class='caption-text'>配置maven选择</span></span></p>
+
+<ul>
+<li>配置自动部署选项。请在Post-build Actions中，找到Deploy war/ear to a container 部分，输入部署到tomcat中的war包所在路径，以及tomcat的管理账号、密码（tomcat管理信息请到tomcat的conf/server.xml中去配置，在此不再复述），如下图所示：</li>
+</ul>
+
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-tomcat.jpg' width='' height='' title='配置自动部署选项'><span class='caption-text'>配置自动部署选项</span></span></p>
+
+<ul>
+<li>最后保存，即完成该任务的建立。如果你想立即执行一次以观察效果，可以点【立即构建】，系统会出现一个构建进度条，在构建完成后，可以通过点击【  Latest Console output】查看到构建日志，比如观察下面的日志就可以发现构建及部署成功。</li>
+</ul>
+
+
+<p><code>
+[INFO] Reactor Summary:
+[INFO]
+[INFO] car-parents ....................................... SUCCESS [0.313s]
+[INFO] framework ......................................... SUCCESS [2.172s]
+[INFO] car-core .......................................... SUCCESS [1.360s]
+[INFO] car-dao ........................................... SUCCESS [3.969s]
+[INFO] car-service ....................................... SUCCESS [4.984s]
+[INFO] car-web Maven Webapp .............................. SUCCESS [4.594s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 17.719s
+[INFO] Finished at: Fri Dec 27 11:03:28 CST 2013
+[INFO] Final Memory: 52M/126M
+[INFO] ------------------------------------------------------------------------
+[DEBUG] Closing connection to remote
+[DEBUG] Waiting for process to finish
+[DEBUG] Result: 0
+Deploying C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war to container Tomcat 6.x Remote
+  Redeploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
+  Undeploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
+  Deploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
+[DEBUG] Skipping watched dependency update; build not configured with trigger: mycar_ms #23
+Finished: SUCCESS
+</code></p>
+
+<p>&emsp;&emsp;经过一段时间的运行后，你可以看到很多的构建历史，如下图所示，我们可以通过图标了解到构建的状态：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/Hudson-build-log.jpg' width='' height='' title='Hudson查看构建历史'><span class='caption-text'>Hudson查看构建历史</span></span></p>
+
+<p>&emsp;&emsp;同时，我们的项目也有了睛雨表，你也可理解为这个项目的健康状态。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-icon.jpg' width='' height='' title='Hudson图标示例'><span class='caption-text'>Hudson图标示例</span></span></p>
+
+<p>&emsp;&emsp;暂时写这些吧，以后继续补充。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[在项目中使用maven之三--深入细节]]></title>
@@ -831,96 +931,6 @@ default:
 <p>&emsp;&emsp;更可怕的是，在网上搜到的U盘启动盘制作软件，大部分都是这个300多M的程序，看来，这个病毒式的流氓程序，会在更多人的电脑中流行起来，还我，我们是懂一点计算机程序的专业人士，可以手工清楚这个程序，要是普通的电脑盲的话，将根本找不到问题的症结所在，也就只有默默忍受这一切。而写这个程序的团队，将会从中获益。</p>
 
 <p>&emsp;&emsp;希望看到此文的人，多转发转发，以免更多人上当。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[我的独立博客再次开放]]></title>
-    <link href="http://yanyaner.com/blog/2013/11/26/my-blog/"/>
-    <updated>2013-11-26T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/11/26/my-blog</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;有一天，突然看到山子在群里发了他的个人博客地址，感觉还不错，就多问了几句：</p>
-
-<p>```</p>
-
-<pre><code>冰雨 9:14:05 
-山子，你的github博客，是怎么搭建的呢
-冰雨 9:14:11 
-搞得非常不错呢
-李山 9:14:49 
-就是自己做的静态页面，传到gitHub上了，gitHub  pages可以解析页面的
-冰雨 9:15:11 
-它支持什么？
-冰雨 9:15:18 
-html,php?
-冰雨 9:15:22 
-jsp支持否？
-冰雨 9:15:26 
-mysql呢？
-李山 9:15:36 
-只支持静态的页面
-冰雨 9:16:02 
-你的博客的页面，都是静态的？没有数据库？
-李山 9:16:49 
-没有的啊
-冰雨 9:17:23 
-那就是存手工操作，在本地编辑好，发布上去。
-冰雨 9:17:32 
-它的空间，最大是多少呢？
-冰雨 9:17:49 
-也没看到有广告，难道是存免费的？
-李山 9:17:55 
-空间不限制的
-李山 9:18:20 
-github就是免费的啊，可以随便整
-冰雨 9:19:12 
-我在博客上给你留言,是保存不上的吧？
-李山 9:19:24 
-保存的
-李山 9:19:49 
-评论是用的其他的插件
-冰雨 9:20:01 
-哦。存在哪的？ 
-李山 9:20:48 
-这个我是用的多说的插件，是存在多说的服务器上的
-李山 9:21:00 
-这个插件有好多的
-冰雨 9:21:09 
-哦，我看到了的。
-冰雨 9:21:27 
-那你本地，是用git上传的吧
-李山 9:21:47 
-嗯，做好页面直接传到gitHub上就行了
-冰雨 9:23:20 
-哦，那还不错
-李山 9:24:26 
-刘老，你也做一个啊
-冰雨 9:26:04 
-你的网页模板，用的是那个呢？
-冰雨 9:26:27 
-应该在本地安装一个cms，然后生成html ,再传上去
-冰雨 9:26:33 
-这样，是不是更好一些？
-李山 9:27:31 
-不用的，gitHub支持jekyll模版，可以用markdown做页面传上去后可以自动解析
-冰雨 9:29:56 
-哦，这么复杂
-冰雨 9:30:05 
-看来，要向你多学习才是
-</code></pre>
-
-<p>```
-&emsp;&emsp;我以前的个人博客，是搭建在linode VPS上的，但因为后来的一些原因没再续费，博客也就停了。</p>
-
-<p>&emsp;&emsp;再后来，我的博客都放在了百度空间上，虽然百度空间各种体验都很差，但也只好将就着，忍着。</p>
-
-<p>&emsp;&emsp;当我从山子那了解到github上可以免费托管博客，在网上搜了一下，立即搭建了本地环境（说实话，在windows下搭建octopress还真麻烦，各种出错，还好，都一一解决了），将百度空间上的文章全部转到了新的博客系统上。</p>
-
-<p>&emsp;&emsp;转载几年前的老文章时才发现，近年来写的博客越来越少，而且含金量也越来越低。近期的博客更多的是关注代码、技术，而几年前的更加关注的是项目管理、架构。看来今后还得继续发表些高质量的东西，呵呵。</p>
-
-<p>&emsp;&emsp;学习，生活，工作，是人生的组成部分，哪一部分做不好，人生都将存在遗憾。这个新的博客也将记录更多给与工作、技术无关的内容，更多个人生活的内容。</p>
-
-<p>&emsp;&emsp;最后，欢迎各位，有空多来<a href="http://yanyaner.com">yanyaner.com</a>上看看，发现对你有帮助的东西，也希望多多交流。</p>
 ]]></content>
   </entry>
   

@@ -9,13 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;计算机自身的硬件特性，决定了对小数计算的不精确性，请看java中的以下代码： 1
-2
-3
-4
-System.out.println(0.05+0.01);
-System.out.println(1.0 - 0.58);
-System.out.println(4.015 * &hellip;">
+  <meta name="description" content="&emsp;&emsp;z-tree是基于jquery上的一个功能强大的js树控件，先看项目中的一张效果图： z-tree界面示例 &emsp;&emsp;图中展示了网元类别和网元的关系，类别是树状态结构的，而网元属于一个类别，一个类别下有多个网元，标准一对多关系。 &emsp;&emsp; &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -64,6 +58,693 @@ System.out.println(4.015 * &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/05/ztree-jquery/">Z-tree动态节点生成</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-05T15:18:00+08:00" pubdate data-updated="true">2013年03月05日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;z-tree是基于jquery上的一个功能强大的js树控件，先看项目中的一张效果图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/03/1.jpg' width='' height='' title='z-tree界面示例'><span class='caption-text'>z-tree界面示例</span></span></p>
+
+<p>&emsp;&emsp;图中展示了网元类别和网元的关系，类别是树状态结构的，而网元属于一个类别，一个类别下有多个网元，标准一对多关系。</p>
+
+<p>&emsp;&emsp;下面看源代码：</p>
+
+<figure class='code'><figcaption><span>NetCellCategory.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 网元类别</span>
+</span><span class='line'><span class="cm"> * @author Administrator</span>
+</span><span class='line'><span class="cm"> * @version 1.0</span>
+</span><span class='line'><span class="cm"> * @created 01-二月-2013 13:47:41</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="nd">@Entity</span>
+</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_netCellCategory&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="nd">@JsonFilter</span><span class="o">(</span><span class="s">&quot;netCellCategory&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">NetCellCategory</span> <span class="o">{</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * OID</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     *网元类别</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 父网元类别</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">NetCellCategory</span> <span class="n">parnet</span><span class="o">;</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 该节点下的网元类别集合</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">NetCellCategory</span><span class="o">&gt;</span> <span class="n">children</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">NetCellCategory</span><span class="o">&gt;();</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 预警网元集合</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">NetCell</span><span class="o">&gt;</span> <span class="n">netCelles</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">NetCell</span><span class="o">&gt;();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">NetCellCategory</span><span class="o">(){</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Id</span>
+</span><span class='line'>    <span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="na">SEQUENCE</span><span class="o">,</span><span class="n">generator</span><span class="o">=</span><span class="s">&quot;seq_netCellCategory&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@SequenceGenerator</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;seq_netCellCategory&quot;</span><span class="o">,</span> <span class="n">allocationSize</span><span class="o">=</span><span class="mi">1</span><span class="o">,</span> <span class="n">initialValue</span><span class="o">=</span><span class="mi">1</span><span class="o">,</span><span class="n">sequenceName</span><span class="o">=</span><span class="s">&quot;seq_netCellCategory&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;pk_id&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getId</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setId</span><span class="o">(</span><span class="kt">int</span> <span class="n">id</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">id</span> <span class="o">=</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_name&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getName</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setName</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@ManyToOne</span><span class="o">(</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">EAGER</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_parnet_category_id&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">NetCellCategory</span> <span class="nf">getParnet</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">parnet</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setParnet</span><span class="o">(</span><span class="n">NetCellCategory</span> <span class="n">parnet</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">parnet</span> <span class="o">=</span> <span class="n">parnet</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@OneToMany</span><span class="o">(</span><span class="n">mappedBy</span><span class="o">=</span><span class="s">&quot;children&quot;</span><span class="o">,</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">EAGER</span><span class="o">,</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_parnet_category_id&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">NetCellCategory</span><span class="o">&gt;</span> <span class="nf">getChildren</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">children</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setChildren</span><span class="o">(</span><span class="n">Set</span><span class="o">&lt;</span><span class="n">NetCellCategory</span><span class="o">&gt;</span> <span class="n">children</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">children</span> <span class="o">=</span> <span class="n">children</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@OneToMany</span><span class="o">(</span><span class="n">mappedBy</span><span class="o">=</span><span class="s">&quot;netCellCategory&quot;</span><span class="o">,</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_netCellCategory_id&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">NetCell</span><span class="o">&gt;</span> <span class="nf">getNetCelles</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">netCelles</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setNetCelles</span><span class="o">(</span><span class="n">Set</span><span class="o">&lt;</span><span class="n">NetCell</span><span class="o">&gt;</span> <span class="n">netCelles</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">netCelles</span> <span class="o">=</span> <span class="n">netCelles</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>NetCell.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 预警网元</span>
+</span><span class='line'><span class="cm"> * @author Administrator</span>
+</span><span class='line'><span class="cm"> * @version 1.0</span>
+</span><span class='line'><span class="cm"> * @created 01-二月-2013 13:47:41</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="nd">@Entity</span>
+</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_netCell&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="nd">@JsonFilter</span><span class="o">(</span><span class="s">&quot;netCell&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">NetCell</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * OID</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 网元名称</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 接点对象</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">NetCellCategory</span> <span class="n">netCellCategory</span><span class="o">;</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 任务数据采集对象</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">TaskDataInfo</span><span class="o">&gt;</span> <span class="n">taskDataInfos</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">TaskDataInfo</span><span class="o">&gt;();</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 预警结果明细对象</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">WarningResultItem</span><span class="o">&gt;</span> <span class="n">warningResultItemes</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">WarningResultItem</span><span class="o">&gt;();</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 预警任务对象列表</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">WarningTask</span><span class="o">&gt;</span> <span class="n">warningTaskes</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">WarningTask</span><span class="o">&gt;();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">NetCell</span><span class="o">(){</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Id</span>
+</span><span class='line'>    <span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="na">SEQUENCE</span><span class="o">,</span><span class="n">generator</span><span class="o">=</span><span class="s">&quot;seq_netCell&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@SequenceGenerator</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;seq_netCell&quot;</span><span class="o">,</span> <span class="n">allocationSize</span><span class="o">=</span><span class="mi">1</span><span class="o">,</span> <span class="n">initialValue</span><span class="o">=</span><span class="mi">1</span><span class="o">,</span><span class="n">sequenceName</span><span class="o">=</span><span class="s">&quot;seq_netCell&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;pk_id&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getId</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setId</span><span class="o">(</span><span class="kt">int</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">id</span> <span class="o">=</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_name&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getName</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setName</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@ManyToOne</span><span class="o">(</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_netCellCategory_id&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">NetCellCategory</span> <span class="nf">getNetCellCategory</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">netCellCategory</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setNetCellCategory</span><span class="o">(</span><span class="n">NetCellCategory</span> <span class="n">netCellCategory</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">netCellCategory</span> <span class="o">=</span> <span class="n">netCellCategory</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@OneToMany</span><span class="o">(</span><span class="n">mappedBy</span><span class="o">=</span><span class="s">&quot;netCell&quot;</span><span class="o">,</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_netCell_id&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">TaskDataInfo</span><span class="o">&gt;</span> <span class="nf">getTaskDataInfos</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">taskDataInfos</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setTaskDataInfos</span><span class="o">(</span><span class="n">Set</span><span class="o">&lt;</span><span class="n">TaskDataInfo</span><span class="o">&gt;</span> <span class="n">taskDataInfos</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">taskDataInfos</span> <span class="o">=</span> <span class="n">taskDataInfos</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@OneToMany</span><span class="o">(</span><span class="n">mappedBy</span><span class="o">=</span><span class="s">&quot;warningResult&quot;</span><span class="o">,</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_netCell_id&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">WarningResultItem</span><span class="o">&gt;</span> <span class="nf">getWarningResultItemes</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">warningResultItemes</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setWarningResultItemes</span><span class="o">(</span><span class="n">Set</span><span class="o">&lt;</span><span class="n">WarningResultItem</span><span class="o">&gt;</span> <span class="n">warningResultItemes</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">warningResultItemes</span> <span class="o">=</span> <span class="n">warningResultItemes</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@ManyToMany</span><span class="o">(</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">)</span>
+</span><span class='line'>    <span class="nd">@Cascade</span><span class="o">(</span><span class="n">value</span><span class="o">={</span><span class="n">org</span><span class="o">.</span><span class="na">hibernate</span><span class="o">.</span><span class="na">annotations</span><span class="o">.</span><span class="na">CascadeType</span><span class="o">.</span><span class="na">SAVE_UPDATE</span><span class="o">})</span>
+</span><span class='line'>    <span class="nd">@JoinTable</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_netCell_wTask&quot;</span><span class="o">,</span>
+</span><span class='line'>               <span class="n">joinColumns</span><span class="o">={</span><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_netCell_id&quot;</span><span class="o">)}</span>
+</span><span class='line'>                <span class="o">,</span><span class="n">inverseJoinColumns</span><span class="o">={</span><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_warningTask_id&quot;</span><span class="o">)}</span>
+</span><span class='line'>            <span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">WarningTask</span><span class="o">&gt;</span> <span class="nf">getWarningTaskes</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">warningTaskes</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setWarningTaskes</span><span class="o">(</span><span class="n">Set</span><span class="o">&lt;</span><span class="n">WarningTask</span><span class="o">&gt;</span> <span class="n">warningTaskes</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">warningTaskes</span> <span class="o">=</span> <span class="n">warningTaskes</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面是两个实体对象，一对多双向关联，下面我们来看看如何向客户端返回数据。</p>
+
+<p>&emsp;&emsp;先要定义一个dto对象，按照ztree的要求，返回相应的树结构信息：</p>
+
+<figure class='code'><figcaption><span>TreeNode.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">class</span> <span class="nc">TreeNode</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">pId</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">open</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">isParent</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;action中，需要按照z-tree的要求返回json数据，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="n">PRE_FIX_URL</span> <span class="o">+</span> <span class="s">&quot;getTreeNodes&quot;</span><span class="o">,</span><span class="n">method</span><span class="o">=</span><span class="n">RequestMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getTreeNodes</span><span class="o">(</span>
+</span><span class='line'>            <span class="n">HttpServletResponse</span> <span class="n">response</span>
+</span><span class='line'>    <span class="o">)</span><span class="kd">throws</span> <span class="n">Exception</span><span class="o">{</span>
+</span><span class='line'>        <span class="n">MyResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyResponse</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">NetCellCategory</span> <span class="n">root</span> <span class="o">=</span> <span class="n">netCateg</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">NetCellCategory</span><span class="o">&gt;</span> <span class="n">nccs</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">NetCellCategory</span><span class="o">&gt;();</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">getAllCatetory</span><span class="o">(</span><span class="n">root</span><span class="o">,</span> <span class="n">nccs</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">NetCellCategory</span> <span class="n">nc</span> <span class="o">:</span> <span class="n">nccs</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">nodes</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">createCategoryNode</span><span class="o">(</span><span class="n">nc</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">Iterator</span><span class="o">&lt;</span><span class="n">NetCell</span><span class="o">&gt;</span> <span class="n">its</span> <span class="o">=</span> <span class="n">nc</span><span class="o">.</span><span class="na">getNetCelles</span><span class="o">().</span><span class="na">iterator</span><span class="o">();</span>
+</span><span class='line'>            <span class="k">while</span> <span class="o">(</span><span class="n">its</span><span class="o">.</span><span class="na">hasNext</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">nodes</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">createNetCellNode</span><span class="o">(</span><span class="n">its</span><span class="o">.</span><span class="na">next</span><span class="o">()));</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">resp</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">nodes</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">ob</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">resp</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的action方法调用了以下三个辅助方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">getAllCatetory</span><span class="o">(</span><span class="n">NetCellCategory</span> <span class="n">c</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">NetCellCategory</span><span class="o">&gt;</span> <span class="n">nccs</span> <span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">nccs</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">c</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Iterator</span><span class="o">&lt;</span><span class="n">NetCellCategory</span><span class="o">&gt;</span> <span class="n">its</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="na">getChildren</span><span class="o">().</span><span class="na">iterator</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">while</span> <span class="o">(</span><span class="n">its</span><span class="o">.</span><span class="na">hasNext</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">NetCellCategory</span> <span class="n">nc</span> <span class="o">=</span> <span class="n">its</span><span class="o">.</span><span class="na">next</span><span class="o">();</span>
+</span><span class='line'>            <span class="n">getAllCatetory</span><span class="o">(</span><span class="n">nc</span><span class="o">,</span><span class="n">nccs</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">TreeNode</span> <span class="nf">createNetCellNode</span><span class="o">(</span><span class="n">NetCell</span> <span class="n">nc</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">TreeNode</span> <span class="n">node</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TreeNode</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">node</span><span class="o">.</span><span class="na">setId</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">+</span><span class="n">nc</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">node</span><span class="o">.</span><span class="na">setpId</span><span class="o">(</span><span class="s">&quot;c&quot;</span> <span class="o">+</span> <span class="n">nc</span><span class="o">.</span><span class="na">getNetCellCategory</span><span class="o">().</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">node</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">nc</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">node</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">TreeNode</span> <span class="nf">createCategoryNode</span><span class="o">(</span><span class="n">NetCellCategory</span> <span class="n">ncc</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">TreeNode</span> <span class="n">node</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TreeNode</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">node</span><span class="o">.</span><span class="na">setId</span><span class="o">(</span><span class="s">&quot;c&quot;</span><span class="o">+</span><span class="n">ncc</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">ncc</span><span class="o">.</span><span class="na">getParnet</span><span class="o">()</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>           <span class="c1">//类别id前，我们都统一添加了标示c,以方便前端识别</span>
+</span><span class='line'>            <span class="n">node</span><span class="o">.</span><span class="na">setpId</span><span class="o">(</span><span class="s">&quot;c&quot;</span> <span class="o">+</span> <span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">node</span><span class="o">.</span><span class="na">setpId</span><span class="o">(</span><span class="s">&quot;c&quot;</span> <span class="o">+</span> <span class="n">ncc</span><span class="o">.</span><span class="na">getParnet</span><span class="o">().</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">node</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">ncc</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">node</span><span class="o">.</span><span class="na">setIsParent</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">node</span><span class="o">.</span><span class="na">setOpen</span><span class="o">(</span><span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">node</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后是客户端代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>    <span class="nt">&lt;link</span> <span class="na">type=</span><span class="s">&quot;text/css&quot;</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href=</span><span class="s">&quot;../../css/zTreeStyle.css&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;../../js/jquery-1.6.2.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;../../js/target/jquery.ztree.core-3.5.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;../../js/target/jquery.ztree.excheck-3.5.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>$(function() {
+</span><span class='line'>        var setting = {
+</span><span class='line'>                check: {
+</span><span class='line'>                enable: true
+</span><span class='line'>            },
+</span><span class='line'>            data: {
+</span><span class='line'>                simpleData: {
+</span><span class='line'>                    enable: true
+</span><span class='line'>                }
+</span><span class='line'>            }
+</span><span class='line'>        };
+</span><span class='line'>
+</span><span class='line'>    $.ajax({
+</span><span class='line'>            type:&quot;get&quot;,
+</span><span class='line'>            url:&quot;getTreeNodes&quot;,
+</span><span class='line'>            cache:false,
+</span><span class='line'>            dataType:&quot;json&quot;,
+</span><span class='line'>            success:function(reslut){
+</span><span class='line'>                 if(reslut.code==1){
+</span><span class='line'>                      $.fn.zTree.init($(&quot;#treeDemo&quot;), setting, reslut.data);
+</span><span class='line'>                 }else{
+</span><span class='line'>                     alert(&quot;树节点数据加载失败，原因：&quot; + result.msg);
+</span><span class='line'>                 }
+</span><span class='line'>        }
+</span><span class='line'>        });
+</span><span class='line'>    });
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，要取选中的节点，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'> <span class="nx">$</span><span class="p">(</span><span class="nx">$</span><span class="p">.</span><span class="nx">fn</span><span class="p">.</span><span class="nx">zTree</span><span class="p">.</span><span class="nx">getZTreeObj</span><span class="p">(</span><span class="s2">&quot;treeDemo&quot;</span><span class="p">).</span><span class="nx">getCheckedNodes</span><span class="p">(</span><span class="kc">true</span><span class="p">)).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>          <span class="nx">alert</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">id</span><span class="p">);</span>
+</span><span class='line'> <span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1699,56 +2380,6 @@ System.out.println(4.015 * &hellip;">
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/01/06/art1/">油画- 九寨（系列之一）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-01-06T15:18:00+08:00" pubdate data-updated="true">2013年01月06日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;布面油画（80X100CM），九寨，神话的世界。</p>
-
-<p>&emsp;&emsp;虽然我还没有去过，但通过观察大量的照片，以及言言妈的描述（听说她都去腻）创作了些画，把一些图片上很美的东西，综合到了一起。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/01/1.jpg' width='' height='' title='布面油画-九寨'><span class='caption-text'>布面油画-九寨</span></span></p>
-
-<p>&emsp;&emsp;画面的难点在于，表现枯树在清澈的水中呈现出的岁月沧桑，远山上树木在水面留下的倒映，以及漂亮的水生植物从水下显露出的层次。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/01/3.jpg' width='' height='' title='倒影局部'><span class='caption-text'>倒影局部</span></span></p>
-
-<p>&emsp;&emsp;目前该画挂在了言言舅舅家，做生意的人比较讲究风水，因为该画中的远处隐约可见一些远山，这些意味着生意人未来的宝藏和财富。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/01/2.jpg' width='' height='' title='最后，和我照一张，太颓废了，哈哈'><span class='caption-text'>最后，和我照一张，太颓废了，哈哈</span></span></p>
-
-<p>&emsp;&emsp;最后，再来张合影，墙上贴的是一张水粉色彩稿。道理跟写软件项目一样，先界面原型，再正式界面。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/7/">&larr; 更多早期老文章</a>
@@ -1766,6 +2397,10 @@ System.out.println(4.015 * &hellip;">
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三&#8211;深入细节</a>
       </li>
     
@@ -1779,10 +2414,6 @@ System.out.println(4.015 * &hellip;">
     
       <li class="post">
         <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/05/udisk/">万恶的u盘启动程序</a>
       </li>
     
   </ul>

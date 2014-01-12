@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;ejb3发布来迟了些，否则j2ee开发也许不是现在的spring将一统天下的局面（现在的spring似乎要提供j2ee开发的一站式解决方案了，配置越来越简单，功能越来越强大，涉足范围越来越广）。 &emsp;&emsp;如果项目中用ejb3实体bean实现对象的持久化， &hellip;">
+  <meta name="description" content="&emsp;&emsp;经历了众多项目开发，前端的页面交互实现及前端页面的项目后期维护是开发中的一个考虑重点，在这块花费时间也非常多。中小型网站首选php，asp之类的程序语言来开发，原因何在？除了丰富的函数库外，另一个原因是开发效率非常高，可以采用model1方式，业务代码直接写到页面中， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,359 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/06/05/spring-mvc1/">都spring Mvc了（一）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-05T15:18:00+08:00" pubdate data-updated="true">2011年06月05日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;经历了众多项目开发，前端的页面交互实现及前端页面的项目后期维护是开发中的一个考虑重点，在这块花费时间也非常多。中小型网站首选php，asp之类的程序语言来开发，原因何在？除了丰富的函数库外，另一个原因是开发效率非常高，可以采用model1方式，业务代码直接写到页面中，以这种开发模式，如果对页面进行了很好的规划，后期维护似乎也不存在太大的问题（可以去看看diacuz的php代码）。也许你听说过php、ruby之类的语言开发网站的效率是java的10倍，也难怪互联网上存活着大量php开发的网站（以快速适需求变化迅速的互联网系统，快速开发是首要考虑的因素）。</p>
+
+<p>&emsp;&emsp;java的优势在于服务端业务逻辑的编写，在B/S系统中经过良好的分层架构，java可以很好的适应大型的复杂项目开发，并且分层结构也利于系统性能调优，因此，在企业级应用中java被广泛使用（更确切地说是j2ee）。我们在具体的项目开发中页面的交互这块，我们即要提高开发效率，又要提高后期的可维护性，这也是在表现层框架选型要考虑的两点因素。</p>
+
+<p>&emsp;&emsp;我很反对在项目中引入新的框架、技术、花样，因为新的东西存在不可控因素，会给项目引入风险，除非该项技术的各个点都有了充分的了解并写出架构原型后，方可能在小的项目中小范围引用。也许本人比较守旧。</p>
+
+<p>&emsp;&emsp;struts1.x，webwork，struts2.x，spring mvc，陪伴着项目开发，一步步起过来，最终选择了spring mvc，这也是本人在近期的一个项目小组中实践spring mvc得出的结论。</p>
+
+<p>&emsp;&emsp;表现层肯定会用到mvc这一模式，做为web应用程序，交互步骤无非就是：接收页面数据，进行数据合法性验证，调用相应业务逻辑，最后根据业务执行情况选择相应的视图展现模型状态。下面这个贴图选自spring mvc官方文档，标明了spring mvc的交互流程。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/1.png' width='' height='' title='spring mvc流程'><span class='caption-text'>spring mvc流程</span></span></p>
+
+<p>&emsp;&emsp;在这些交互步骤中有两个重点是，一是请求与业务的调用及最终视图的呈现位置映射关系，二是页面接收到的数据服务器端验证问题。本篇博文先说第一个问题。
+一般的mvc框架，通常将请求与请求处理控制器的关系定义在xml配置文件中，将执行完成后的跳转视图位置也在xml文件中加以描述和定义，这些框架一般对action处理控制器会有一些要求和限制（比如要extends 父类）。程序员在进行开发时，会采用下面的步骤：</p>
+
+<p>&emsp;&emsp;1、 书写action类并定义请求执行的方法。</p>
+
+<p>&emsp;&emsp;2、 在mvc框架xml文件中配置这个action（包括请求path以及跳转视图）。</p>
+
+<p>&emsp;&emsp;3、 如果使用了spring，还需要把action在spring中配置一次（需要容器注入service）。</p>
+
+<p>&emsp;&emsp;4、 从作用域中取出模型对象状态，生成页面，返回给客户呈现。</p>
+
+<p>&emsp;&emsp;后期维护也是这样，修改action类，修改映射配置文件，修改页面代码。页面的交互实现、维护可谓是费时费力，但似乎也没有更好的办法，大部分软件公司都是这么在做。
+在使用spring mvc时，如果也用xml文件配置去实现，也是很麻烦的，spring mvc自身的设计得非常灵活（灵活将意味着不易掌握，比如；c语言中的指针），因此，对于大多数人来说学习起来并不容易，维护也比较困难，这也是我之前的项目中没有使用过spring mvc的原因。
+但是，自从spring2.5中加入spring mvc注解支持后，问题变得简单起来，开发中再也不需要维护那么多的xml配置文件，费话少说，我们先来看实例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Controller</span>
+</span><span class='line'><span class="nd">@SessionAttributes</span><span class="o">(</span><span class="s">&quot;student_session_key&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LoginAction</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//学生业务对象</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">IStudentService</span> <span class="n">studentService</span><span class="o">;</span>
+</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">&quot;/login&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">login</span><span class="o">(</span><span class="n">Map</span> <span class="n">model</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;id&quot;</span><span class="o">)</span> <span class="n">Long</span> <span class="n">id</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;password&quot;</span><span class="o">)</span> <span class="n">String</span> <span class="n">password</span> <span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//进行表单数据合法性验证</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">id</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="s">&quot;学生id号不能为空！&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="k">return</span> <span class="s">&quot;error&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="c1">//调用业务层登录方法</span>
+</span><span class='line'>      <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="n">studentService</span><span class="o">.</span><span class="na">login</span><span class="o">(</span><span class="n">id</span><span class="o">,</span> <span class="n">password</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">&quot;student_session_key&quot;</span><span class="o">,</span> <span class="n">student</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">model</span><span class="o">.</span><span class="na">addAttribute</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+</span><span class='line'>          <span class="k">return</span> <span class="s">&quot;error&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;redirect:student.action?page&quot;</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;从上面的这段控制器代码中，可以发现spring mvc注解配置的特点：</p>
+
+<p>&emsp;&emsp;（1） 控制器不在需要继承其它类，只需要用@Controller注解标明这是一个控制器。</p>
+
+<p>&emsp;&emsp;（2） 不需要有formbean之类的对象了，方法参数中需要的页面值，可通过@RequestParam直接从页面请求中获得。</p>
+
+<p>&emsp;&emsp;（3） 对request，session的作用域访问，只需定义一个Map类型的方法参数即可，这点和struts2比较类似。</p>
+
+<p>&emsp;&emsp;（4） 返回页面直接在方法中指定，可以是Stirng，也可以是其它的，比如：ModelAndView等。</p>
+
+<p>&emsp;&emsp;（5） 请求执行的方法具有多种签名，非常的灵活，程序员想要什么，直接添加方法签名参数即可。
+spirng mvc中方法的定义可谓是非常的灵活，方法签名可任意定义，具体可参考 <a href="http://static.springsource.org/spring/docs/2.5.x/reference/mvc.html">spring官网中的mvc部分的13.3章节</a>方法签名的描述。</p>
+
+<p>&emsp;&emsp;（6） 类中依赖的其它类型变量直接通过spring 容器注入，天生一体。</p>
+
+<p>&emsp;&emsp;一切都变得简单了。下面讲一讲spring mvc在页面中项目中的常用代码实现，算是一个入门级的简单介绍吧。</p>
+
+<hr />
+
+<p>&emsp;&emsp;<strong>（1） 对web作用域request的访问。</strong></p>
+
+<p>&emsp;&emsp;在请求方法签名中加入HttpServletRequest类型参数，比如：String login(HpptServletRequest request)，方法中通过setAttributes(“key”,Object)或getAttributes(“key”)进行访问；</p>
+
+<p>&emsp;&emsp;在请求方法签名中加入Map类型参数，比如：String login(Map request)，方法中通过put，get访问；</p>
+
+<p>&emsp;&emsp;在请求方法签名中加入ModelMap类型参数，比如：String login(ModelMap request) ，方法中通过put，get访问。</p>
+
+<p>&emsp;&emsp;<strong>（2） 对web作用域session的访问。</strong></p>
+
+<p>&emsp;&emsp;在类前用@SessionAttributes(“student_session_key”)注解写明要放入sesssion中的key，程序中往map类型的签名参数中放入key->value的key与注解中写的key相同，spring mvc将把此变量放入session作用域；</p>
+
+<p>&emsp;&emsp;在类前用@SessionAttributes(“student_session_key”)注解写明要访问的session的key，方法签名中定义@ModelAttribute(“student_session_key “) Student stu 类型，spring mvc将从session中取出该变更并注入。</p>
+
+<p>&emsp;&emsp;在方法签字中加入HttpServletRequest类型参数，方法体中通过request.getSession得到Session进行操作。</p>
+
+<p>&emsp;&emsp;<strong>（3） 接收页面提交的参数。</strong></p>
+
+<p>&emsp;&emsp;直接通过@RequestParam中的value与页面输入元素name对应，对象类型的可用ModelAttribute对应，但要注意，页面输入元素的name要与对象属性的get/set方法名称一致，spring mvc将自动填充将页面输入值填充到对象中。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">addStudent</span><span class="o">(</span><span class="n">ModelMap</span> <span class="n">model</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;pno&quot;</span><span class="o">,</span><span class="n">defaultValue</span><span class="o">=</span><span class="s">&quot;1&quot;</span><span class="o">)</span><span class="kt">int</span> <span class="n">pno</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@ModelAttribute</span><span class="o">(</span><span class="s">&quot;student&quot;</span><span class="o">)</span> <span class="nd">@Valid</span> <span class="n">Student</span> <span class="n">stu</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>（4） 对视图资源跳转的访问。</strong>
+可返回String类型的，或ModelAndView类型的跳转，这种自动映射关系可通过配置InternalResourceViewResolver实现。
+比如，return “add_student”，将对应add_studnet.jsp。ModelAndView与之相似。
+当然，也可通过redirect: prefix或者forward: prefix完成重定向及内部其它web资源的跳转。</p>
+
+<p>&emsp;&emsp;<strong>（5） 一个类中多方法的访问。</strong>
+这个类似于struts1中的DispatcherAction，在spring mvc中通过在方法名前加上params 指定，比如：@RequestMapping(params=”add”)写在某个方法前，将处理前台页面类似xxx.action?add的请求。</p>
+
+<p>&emsp;&emsp;<strong>（6） 国际化支持</strong>
+通过在ReloadableResourceBundleMessageSource配置资源文件实现I18N，简单明了。</p>
+
+<p>&emsp;&emsp;<strong>（7） 数据转换。</strong>
+spring mvc提供了基本的一些数据类型的自动转换功能，这通常是不能满足项目需求的，我们需要通过@InitBinder定义数据绑定方法，而一些类型的转换要自己去完成，比如，对日期类型的转换，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@InitBinder</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">myInitBinder</span><span class="o">(</span><span class="n">WebDataBinder</span> <span class="n">binder</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">SimpleDateFormat</span> <span class="n">dateFormat</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">dateFormat</span><span class="o">.</span><span class="na">setLenient</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span> <span class="c1">//非精确匹配</span>
+</span><span class='line'>      <span class="n">binder</span><span class="o">.</span><span class="na">registerCustomEditor</span><span class="o">(</span><span class="n">Date</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="k">new</span> <span class="n">CustomDateEditor</span><span class="o">(</span><span class="n">dateFormat</span><span class="o">,</span> <span class="kc">true</span><span class="o">));</span>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;（8） <strong>reset风格程序的支持.</strong></p>
+
+<p>要用到@PathVariable注解，具体见：<a href="http://blog.springsource.com/2009/03/08/rest-in-spring-3-mvc">spring3 对rest风格程序的支持</a>。
+知道上在这些，已经可以胜任日常的开发了，你可以参阅 spring官网中的mvc部分的<a href="http://static.springsource.org/spring/docs/2.5.x/reference/mvc.html">13.11章节对spring mvc注解</a>的描述，讲得非常的详细。</p>
+
+<p>&emsp;&emsp;“都spring mvc了”，如果你还没有用过尝试过，就有点out了。</p>
+
+<p>&emsp;&emsp;下一篇，我讲解spring mvc中的数据验证问题，你将再次看到spring mvc强大这处。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/06/03/enum/">用枚举类型增强代码的可维护性</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-03T15:18:00+08:00" pubdate data-updated="true">2011年06月03日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;每一个项目中，都会有很多的状态变量，比如资料状态，资料类型，贷款业务状态，审批状态等等，我们可以从下面几种情况来考虑代码实现：</p>
+
+<p>&emsp;&emsp;一、如果业务状态变量取值可由客户动态添加，可考虑将状态变量持久化到数据库中（其实这种方式已经不太像是业务状态变量了，用户添加了自定义类型，业务代码可能要修改，呵呵）。</p>
+
+<p>&emsp;&emsp;二、将业务状态变量定义到常量接口中，比如，我们的学生状态对象，有在读与已毕业状态，这两种状态在业务实现过程中会有不同的处理逻辑，先看看接口的定义：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 学生状态接口</span>
+</span><span class='line'><span class="cm"> * @author yanwawa</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">IStudentState</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//在读</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">STUDING</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>  <span class="c1">//已毕业</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">GRADUATE</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;我们将状态数据变量类型声明为int，也就是说，在所有的业务方法参数及实现代码中都要声明为int，比如：public List getAllHiStudentByState(int state)，业务实现中也会出现如下代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">state</span> <span class="o">==</span> <span class="n">IStudentState</span><span class="o">.</span> <span class="n">GRADUATE</span><span class="o">)</span> <span class="o">{</span><span class="c1">// do some operate}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;很显然，将业务状态数据定义到常量接口中可以增强代码的表达能力，但是，我们没有办法对代码的进行更好的规范，如果有程序员写出 if (state == 5 ) {// do some operate 5是非法数据}的代码，将难以理解、维护和错误排查。</p>
+
+<p>&emsp;&emsp;三、 用枚举类型来定义业务状态类型，上例中的学生状态在枚举中的定义如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 学生状态</span>
+</span><span class='line'><span class="cm"> * @author yanwawa</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">enum</span> <span class="n">StudentState</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//在读</span>
+</span><span class='line'>  <span class="n">STUDING</span><span class="o">(</span><span class="mi">0</span><span class="o">),</span>
+</span><span class='line'>  <span class="c1">//毕业</span>
+</span><span class='line'>  <span class="n">GRADUATE</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">StudentState</span><span class="o">(</span><span class="kt">int</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">value</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getValue</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">value</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在业务代码中，方法定义为public List getAllHiStudentByState(StudentState state)，业务实现中if (state == StudentState.STUDING) {// do some operate}，这样改过后，代码的可读性、可维护性都非常不错，而且避免了程序员的随意赋值、乱添状态的情况的发生，这也是我建议大家所使用的方式的原因。</p>
+
+<p>&emsp;&emsp;最后，给出一段hibernate中对枚举类型的配置示例代码，当然，数据库中f_state字段可设计为int类型：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">&quot;com.my.domain.HightSchoolStudent&quot;</span>
+</span><span class='line'>      <span class="na">table=</span><span class="s">&quot;t_hi_student&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">unsaved-value=</span><span class="s">&quot;0&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">&quot;identity&quot;</span><span class="nt">&gt;&lt;/generator&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span> <span class="na">type=</span><span class="s">&quot;string&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;state&quot;</span> <span class="na">column=</span><span class="s">&quot;f_state&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;type</span> <span class="na">name=</span><span class="s">&quot;org.hibernate.type.EnumType&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;param</span> <span class="na">name=</span><span class="s">&quot;enumClass&quot;</span><span class="nt">&gt;</span>com.my.domain.enumeType.StudentState<span class="nt">&lt;/param&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/type&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'> <span class="cp">&lt;!—其它属性配置略去  -&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;HQL中的查询与普通类型属性没有区别，比如：我们要查询所有在校学生，可以写出下面的查询代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Query</span> <span class="n">query</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="s">&quot;from HightSchoolStudent hs where hs.state = ?&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">List</span> <span class="n">HightSchoolStudent</span><span class="o">&gt;</span> <span class="n">sts</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">StudentState</span><span class="o">.</span><span class="na">STUDING</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1481,114 +1834,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/03/17/seo/">SEO的形像比喻</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-03-17T15:18:00+08:00" pubdate data-updated="true">2011年03月17日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;搜索引擎如何决定众多站点的权重及页面的排名？搞计算机的都知道，搜索引擎本质上是一个程序，是开发人员将算法规则用程序来进行模拟。我们可以把的网站比做社会中一个一个的人，搜索引擎要做的，就是要识别这些人，并按照要求，快速地找到你需要的人。</p>
-
-<p>&emsp;&emsp;我们知道，很多站点下都有友情链接，这个将被视为站外导出，如果一个站被其它站在友情链接中引用较多，权重就会高一些。就好比一个人被其它人提及得越多，就说明这个人社会关系网越广泛，社交能力强，受到大家的欢迎。</p>
-
-<p>&emsp;&emsp;当然，如果你被一些“垃圾”站点大量引用，可能会降低你的权重。就好比一个人的朋友都是些臭名昭著的人，也就说明这个人不是什么好人，中国有句话叫“近朱者赤，近墨者黑”。反之，如果你被一些大人物、名人时常提起，那么你的地位也一定很高。</p>
-
-<p>&emsp;&emsp;站点的外链也和上面讲的同理，如果有很多站都引用你的站点或站内页面地址，也将证明这个站点或站内页面权重高。你可以看看开心网，虽然只有一个简单的首页，但权重很高，还有一个例子，工信部的网站是中国惟一一个google pr达到9的站点，原因也在于众多的网站都有这个站的外链。当然，搜索引擎也会判断是哪些类型的网站引用了你，就好比你是搞IT的，但是被一些搞艺术的人经常提起，这就说明有问题，网站排名会受到影响。“物以类聚，人以群分”就是这个道理。</p>
-
-<p>&emsp;&emsp;说完了一个人的社会关系，再来看看一个人自身的人品。首先是一个网站的结构要清晰，重点突出，让人一目了然，这就好比一个人，要把自己推销出去，自身的素质要提高 ，要有良好的表达，着装工整，要有亲和力。站内的内部链接要做好，这个是结构的问题，但可以提高与搜索引擎的亲和力。站点的美化要做好，也就是美工、用户体验，现在搜索引擎越来越重视这个了，google即然有自己的浏览器，也一定可以评测出站点在浏览器中的显示效果，最近baidu也出浏览器了，搜索引擎从技术上已经可以给页面的美观评级了。</p>
-
-<p>&emsp;&emsp;网站内容原创最好，不要从其它网站抄过来再改改（伪原创），也就是一个人，要有自己的性格和魅力，要有自己的特点、气质，如果硬是从其它地方搬过来一些东西再包装一下，但这些东西终究不属于自己，骗得了一时骗不了一世。抄袭，也证明了这个人的人品有问题，如果人品出现问题，这个人将很难在社会中立足。</p>
-
-<p>&emsp;&emsp;站点要经常更新（更新频率），如果一个人“顽固不化，一成不变”，自然得不到其它人的关注。“喜新厌旧”的道理大家都应该明白。</p>
-
-<p>&emsp;&emsp;搜索引擎就好像根据这些规则去相识、相知一个人，直至建立起信任关系，只不过这一切是程序自动做的，当你要找某人时，搜索引擎将尽可能找到最符合条件的人给你，这也就是搜索引擎公平、公正的原则。</p>
-
-<p>&emsp;&emsp;暂时先写上面几条，以后想起了，再补充上去。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/03/13/flower/">植物园春暖花开</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-03-13T15:18:00+08:00" pubdate data-updated="true">2011年03月13日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;06年和老婆去过一次植物园，时隔5年后的2011，我们又去了植物园，其实主要是去看一个老朋友，下午顺便去的植物园。朋友虽都在成都，但我们平日里也疏于来往，偶尔会有电话、QQ联系，也许城市大了就是这样，只适合于工作。</p>
-
-<p>&emsp;&emsp;朋友家就在植物园对面的小区，中间仅隔一条马路，在楼上就可以看到403路公交车摆放在植物园门口。这次去，梨花已经开过了，但海棠花开得正艳。</p>
-
-<p>&emsp;&emsp;5年前时候，还只有我和老婆（那个时候是GF）两个人，现在可是多了个言言娃了，变化真的很大，朋友家的女儿也出生了，比我们家的这个小1个月。。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/21.jpg' width='' height='' title='朋友女儿'><span class='caption-text'>朋友女儿</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/10.jpg' width='' height='' title='言言'><span class='caption-text'>言言</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/35.jpg' width='' height='' title='海棠1'><span class='caption-text'>海棠1</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/36.jpg' width='' height='' title='海棠2'><span class='caption-text'>海棠2</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/37.jpg' width='' height='' title='海棠3'><span class='caption-text'>海棠3</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/11.jpg' width='' height='' title='言娃娃想睡觉了'><span class='caption-text'>言娃娃想睡觉了</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/30.jpg' width='' height='' title='粉色花'><span class='caption-text'>粉色花</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/34.jpg' width='' height='' title='路边小黄花'><span class='caption-text'>路边小黄花</span></span></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/13/">&larr; 更多早期老文章</a>
@@ -1606,6 +1851,14 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/01/12/art-rose-rain-step/">油画-听雨终稿-步骤</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
       </li>
     
@@ -1615,14 +1868,6 @@
     
       <li class="post">
         <a href="/blog/2013/12/24/maven-project/">在项目中使用maven之二&#8211;项目实例</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/23/maven/">在项目中使用maven之一&#8211;环境配置</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
       </li>
     
   </ul>
@@ -1681,7 +1926,7 @@ var duoshuoQuery = {short_name:"ljh2008"};
     </div>
   </div>
   <footer role="contentinfo"><p>
-  版权所有 &copy; 2013 - 冰雨 -
+  版权所有 &copy; 2014 - 冰雨 -
   <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
   <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>

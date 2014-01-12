@@ -9,16 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;定时任务在项目中使用非常普遍，比如说：每天晚上3：00开始执行数据真删除，每个月第四周星期三晚上1：00开始执行报表统计任务等，我们在项目中，可以通过下面三种方式来实现： 一、利用j2se的timer类来实现，非常简单，代码如下： 1
-2
-3
-4
-5
-6
-7
-8
-9
-10 &hellip;">
+  <meta name="description" content="&emsp;&emsp;最近要给一朋友分配ftp账号，才发现以前是非常熟悉的配置流程全忘记了，没得法，又去google了一下，找回了原来的感觉，赶紧记下来一些东西，供以后查阅。 &emsp;&emsp;我用的是pure-ftp，该ftp服务器具有非常好的安全性，首先要加一个ftp用户组， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -67,6 +58,229 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/27/pure-ftp/">Pure-ftp备忘录</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-27T15:18:00+08:00" pubdate data-updated="true">2010年10月27日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;最近要给一朋友分配ftp账号，才发现以前是非常熟悉的配置流程全忘记了，没得法，又去google了一下，找回了原来的感觉，赶紧记下来一些东西，供以后查阅。</p>
+
+<p>&emsp;&emsp;我用的是pure-ftp，该ftp服务器具有非常好的安全性，首先要加一个ftp用户组，再添加ftp用户，这两个用是linux系统中实实在在的用户组和用户，你可以用基本的linux命令搞定（但要注意，为了安全性考虑，请不要分配实际可操作的home目录与 bin目录权限给用户），组名和用户名随便取就是了。其实，你也可以不建，完全用系统中现有的用户和组，但是，为了ftp的统一管理，还是建议专门为 ftp建一个。</p>
+
+<p>&emsp;&emsp;下面是要建立pure-ftp虚拟用户，并将该用户绑定到系统中的一个实际用户上，并设置该ftp用户的可操作目录就完成了，但是，这个可操作目录，真实用户一定要有可操作的权限，比如读，写，或读写。</p>
+
+<p>&emsp;&emsp;我是直接修改以前的一个pure-ftp账号，改变目录用户组，给用户组赋写入权限，命令如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>sudo pure-pw usermod 虚拟用户名 -d /var/XXX目录
+</span><span class='line'>
+</span><span class='line'>sudo chown xx:ftpgroups -r /var/XXX目录
+</span><span class='line'>
+</span><span class='line'>sudo chmod -r g+w /var/XXX目录
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;成功后，要重新生成信息库，并重启pure-ftp服务器，命令如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>sudo pure-pw mkdb
+</span><span class='line'>
+</span><span class='line'>sudo /etc/init.d/pure-ftpd restart
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好，到此一切搞定，可能还要重新启动一下项目服务器，检查一下项目的文件上传，图片上传，页面图片显示是否正常，有问题的话，还得调整其它用户的权限，有些麻烦。</p>
+
+<p>&emsp;&emsp;一般情况下，项目应用服务器tomcat我都不会轻易重启，记得有一次生启后造成ucenter同步登录解析超慢。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/27/nginx/">Nginx转换手记</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-27T15:18:00+08:00" pubdate data-updated="true">2010年10月27日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;首先说一下为什么要把apache换成nginx。</p>
+
+<p>&emsp;&emsp;在目前的web服务器市场，apache的市场占有率应该在70%左右，可见其应用之广泛。apache有不错的性能及强大的模块配置功能，安全性也不 错。后来发现，很多访问量比较大的网站，都换成了nginx，一个由俄罗斯人开发的开源项目，就下载下为研究了一下，发现其配置上比apache更加简 洁，且可控制项也非常丰富，就决定采用nginx了。至于效率是否会比apache高10倍，本人没有测试过，没有发言权。</p>
+
+<p>&emsp;&emsp;首先安装，sudo apt-get install ngnix，版本是0.6.02，应该是一个比较稳定的版本。</p>
+
+<p>&emsp;&emsp;其次，安装与php5-cgispawn-fcgi，php5服务器上本来就有，所以不必再安装一次。（前段时候nginx报重大安全漏洞，其实并不是ngnix的漏洞，而是spawn-fcgi上的问题，怎么修改以避免该漏同，大家google一下哈）。</p>
+
+<p>&emsp;&emsp;经过上面的操作，就完成了安装，ngnix已经加入到自动启动配置中，接下来，我们要做的，就是修改配置文件，建立虚拟主机。</p>
+
+<p>&emsp;&emsp;ubuntu集成nginx与apache后的目录结构非常的相似，在/etc/nginx目录下就是所有需要的东西了。nginx.conf是主配置文 件，一般不用改动，sites-available目录下，是站点虚拟主机配置文件，sites-enabled下是生效的配置（直接建立起sites- available目录下文件的软链接，软链接是我发现的linux下最强大、最有效的功能，如果换为win 平台，我不晓得该怎么做，呵呵）。
+下面是一个主机配置示例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='nginx'><span class='line'><span class="k">server</span> <span class="p">{</span>
+</span><span class='line'><span class="kn">listen</span>   <span class="mi">80</span><span class="p">;</span>
+</span><span class='line'><span class="kn">server_name</span>  <span class="s">yourdomain.com</span><span class="p">;</span>
+</span><span class='line'><span class="kn">root</span> <span class="s">/var/www/yousite_doc_root</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">access_log</span>  <span class="s">/var/log/nginx/localhost.access.log</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span><span class='line'>  <span class="kn">root</span> <span class="s">/var/www/yousite_doc_root</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">index</span> <span class="s">index.html</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kn">location</span> <span class="p">~</span> <span class="sr">\.(jsp|htm|do)$</span> <span class="p">{</span>
+</span><span class='line'>  <span class="kn">proxy_pass</span> <span class="s">http://youdomain.com</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">proxy_set_header</span> <span class="s">X-Real-IP</span> <span class="nv">$remote_addr</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">proxy_read_timeout</span> <span class="mi">480</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">proxy_send_timeout</span> <span class="mi">480</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kn">location</span> <span class="p">~</span><span class="sr">*</span> <span class="s">\.(mp3|wmv|png|jpg|gif|swf)</span>$ <span class="p">{</span>
+</span><span class='line'>  <span class="kn">valid_referers</span>  <span class="s">none</span>  <span class="s">blocked</span> <span class="s">server_names</span> <span class="s">*.yourdomain.com</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">if</span> <span class="s">(</span><span class="nv">$invalid_referer</span><span class="s">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="kn">rewrite</span> <span class="s">^/</span> <span class="s">http://image.yourdomain.com/dl.jpg</span><span class="p">;</span>
+</span><span class='line'>      <span class="c1">#return 403;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;ubuntu在上面的配置中，要注意的是：</p>
+
+<p>&emsp;&emsp;1、location / {}中，请配置上root，虽然上面已经配置过一次。如果不配置，资源访盗链将无法实现，网上的很多配置都是误人子弟的，请大家一定要小心。</p>
+
+<p>&emsp;&emsp;2、 proxy_pass <a href="http://youdomain.com">http://youdomain.com</a> 是到jsp和*.do的，转到一个后台tomcat集群配置中，效率可能会比apache的ajp13低一些，我会在另一篇文章中介绍。</p>
+
+<p>&emsp;&emsp;3、proxy_read_timeout 480;与 proxy_send_timeout 480配置，有助于解决业务执行过程较长的长请求。</p>
+
+<p>&emsp;&emsp;4、 proxy_set_header X-Real-IP $remote_addr用于在程序中获得客户真实的ip，当然切换成nginx后，你程序中取ip的代码也得改。</p>
+
+<p>php站点的一个配置实例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='nginx'><span class='line'><span class="k">server</span> <span class="p">{</span>
+</span><span class='line'>  <span class="kn">listen</span> <span class="mi">80</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">server_name</span> <span class="s">yourdomain.com</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">access_log</span>  <span class="s">/var/log/nginx/localhost.access.log</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span><span class='line'>      <span class="kn">root</span>   <span class="s">/var/www/bbs_doc_root/subdir</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">index</span>  <span class="s">index.html</span> <span class="s">index.php</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kn">location</span> <span class="p">~</span> <span class="sr">\.php$</span> <span class="p">{</span>
+</span><span class='line'>      <span class="kn">fastcgi_pass</span>   <span class="n">127.0.0.1</span><span class="p">:</span><span class="mi">9000</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">fastcgi_index</span>  <span class="s">index.php</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">fastcgi_param</span>  <span class="s">SCRIPT_FILENAME</span>  <span class="s">/var/www/bbs_yousitedomain/ucenter</span><span class="nv">$fastcgi_script_name</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">include</span> <span class="s">fastcgi_params</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，还需要修改nginx配置文件，将nginx版本号隐藏起来，以访止自动扫描软件发现特定版本的安全露洞。</p>
+
+<p>&emsp;&emsp;如有问题，请与我讨论。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -956,47 +1170,9 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/10/10/hello-world/">活在这个世上，应该留下点什么</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-10-10T15:18:00+08:00" pubdate data-updated="true">2010年10月10日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;今天我的独立博客正式开通了。</p>
-
-<p>&emsp;&emsp;我想，人来到这个世上，应该留下一些自已的东西，比如在互联网上，博客就是一种很好的方式。</p>
-
-<p>&emsp;&emsp;本博从今天起，将记录我的工作、生活、学习中的点滴和任何我想留下的东西，欢迎大家常来这里看看。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
+    
+      <a class="prev" href="/blog/page/17/">&larr; 更多早期老文章</a>
     
     <a href="/blog/archives">所有文章</a>
     
@@ -1011,6 +1187,14 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/01/12/art-rose-rain-step/">油画-听雨终稿-步骤</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
       </li>
     
@@ -1020,14 +1204,6 @@
     
       <li class="post">
         <a href="/blog/2013/12/24/maven-project/">在项目中使用maven之二&#8211;项目实例</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/23/maven/">在项目中使用maven之一&#8211;环境配置</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a>
       </li>
     
   </ul>
@@ -1086,7 +1262,7 @@ var duoshuoQuery = {short_name:"ljh2008"};
     </div>
   </div>
   <footer role="contentinfo"><p>
-  版权所有 &copy; 2013 - 冰雨 -
+  版权所有 &copy; 2014 - 冰雨 -
   <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
   <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
 </p>

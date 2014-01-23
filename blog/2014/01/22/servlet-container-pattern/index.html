@@ -1,0 +1,1021 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>关于servlet规范中的几个设计模式解析 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;本文属于入门类型文章，给大家简单介绍一下javax.servlet中用到的几个设计模式。 先看职责链模式 &emsp;&emsp;这个模式的应用就是大家所熟悉的filter过滤器,演示代码如下： Filter.java1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2014/01/22/servlet-container-pattern">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">关于servlet规范中的几个设计模式解析</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-01-22T12:18:00+08:00" pubdate data-updated="true">2014年01月22日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;本文属于入门类型文章，给大家简单介绍一下javax.servlet中用到的几个设计模式。</p>
+
+<h3>先看职责链模式</h3>
+
+<p>&emsp;&emsp;这个模式的应用就是大家所熟悉的filter过滤器,演示代码如下：</p>
+
+<figure class='code'><figcaption><span>Filter.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">filter</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 定义每一个处理者的通用行为，即对传入的参数进行处理</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Filter</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">String</span> <span class="n">param</span><span class="o">,</span> <span class="n">FilterChain</span> <span class="n">fc</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;接下来定义一个职责链接口，以规范形为（当然，这个接口也可以不定义，直接给出实现类即可）。</p>
+
+<figure class='code'><figcaption><span>FilterChain.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">filter</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 过滤器链接口定义</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">FilterChain</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 将请求传给下一个处理者</span>
+</span><span class='line'><span class="cm">  * @param param</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">String</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;一个具体的责任链实现（注：这个通常是由服务器去实现的，比如tomcat），里面包含了所有的要承担处理责任的处理者（也就是过滤器）。</p>
+
+<figure class='code'><figcaption><span>ConcreteFilterChain.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">server</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.ArrayList</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.biz.Processor</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.filter.Filter</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.filter.FilterChain</span><span class="o">;</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 一个职责链具体实现</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ConcreteFilterChain</span> <span class="kd">implements</span> <span class="n">FilterChain</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//链集合</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Filter</span><span class="o">&gt;</span> <span class="n">filters</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">Filter</span><span class="o">&gt;();</span>
+</span><span class='line'>  <span class="c1">//初始已处理过滤器下标</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">processIndex</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">ConcreteFilterChain</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Filter</span><span class="o">&gt;</span> <span class="n">filters</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">filters</span> <span class="o">=</span> <span class="n">filters</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">String</span> <span class="n">param</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//处理的过滤器下标</span>
+</span><span class='line'>      <span class="n">processIndex</span> <span class="o">=</span> <span class="n">processIndex</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">processIndex</span> <span class="o">&gt;=</span> <span class="n">filters</span><span class="o">.</span><span class="na">size</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">Processor</span> <span class="n">p</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Processor</span><span class="o">();</span>
+</span><span class='line'>          <span class="n">p</span><span class="o">.</span><span class="na">working</span><span class="o">(</span><span class="n">param</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">filters</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">processIndex</span><span class="o">).</span><span class="na">doFilter</span><span class="o">(</span><span class="n">param</span><span class="o">,</span> <span class="k">this</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 返回一个新的FilterChain（这个方法保留待用）</span>
+</span><span class='line'><span class="cm">  * 因为在多线程环境下，每一个请求会有自己的processIndex</span>
+</span><span class='line'><span class="cm">  * 这个新建的processIndex将设置为初始值-1，表示还没有进入任何一个过滤器</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">FilterChain</span> <span class="nf">cloneFilterChain</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">new</span> <span class="nf">ConcreteFilterChain</span><span class="o">(</span><span class="n">filters</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好了，到这里，服务器上该做的事都已经做完，来看看程序员要做的事吧。<!--more-->我们先写一个业务处理类，模拟最终要进行的操作，如下：</p>
+
+<figure class='code'><figcaption><span>Processor.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">biz</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Processor</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">working</span><span class="o">(</span><span class="n">String</span> <span class="n">param</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;最后的业务执行与处理....:&quot;</span> <span class="o">+</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在working处理消息前，我定义了两个过滤器。在第一个过滤器中，进行了参数检测，如果参数是&#8221;abc&#8221;，将终止后续业务的执行。同时，两个过滤器都对消息进行了处理，在消息中添加了自己的东西。</p>
+
+<figure class='code'><figcaption><span>MyFilter1.java与MyFilter2.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">concretefilter</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.filter.Filter</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.filter.FilterChain</span><span class="o">;</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 第一个过滤器,会对消息进行处理</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyFilter1</span> <span class="kd">implements</span> <span class="n">Filter</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">String</span> <span class="n">param</span><span class="o">,</span> <span class="n">FilterChain</span> <span class="n">fc</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;进入MyFilter1的处理 ....&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="s">&quot;abc&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">param</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;发现参数是abc，终止执行!!!!&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="k">return</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="n">fc</span><span class="o">.</span><span class="na">doFilter</span><span class="o">(</span><span class="n">param</span> <span class="o">+</span> <span class="s">&quot;[●modify by MyFilter1●]&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;离开MyFilter1的处理 ....&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 第一个过滤器,会对消息进行处理</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyFilter2</span> <span class="kd">implements</span> <span class="n">Filter</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">String</span> <span class="n">param</span><span class="o">,</span> <span class="n">FilterChain</span> <span class="n">fc</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;进入MyFilter2的处理 ....&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">fc</span><span class="o">.</span><span class="na">doFilter</span><span class="o">(</span><span class="n">param</span> <span class="o">+</span> <span class="s">&quot;[★modify by MyFilter2★]&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;离开MyFilter2的处理 ....&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;接下来又是服务器上的处理代码了，我直接写出简单示例，生产环境中的服务器，肯定是读取web.xml反射创建过滤器对象。</p>
+
+<figure class='code'><figcaption><span>Server.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="c1">//链集合(读取配置文件，反射创建filter，并加入过滤器链)</span>
+</span><span class='line'>  <span class="n">List</span><span class="o">&lt;</span><span class="n">Filter</span><span class="o">&gt;</span> <span class="n">filters</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">Filter</span><span class="o">&gt;();</span>
+</span><span class='line'>  <span class="n">filters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">MyFilter1</span><span class="o">());</span>
+</span><span class='line'>  <span class="n">filters</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">MyFilter2</span><span class="o">());</span>
+</span><span class='line'>  <span class="n">FilterChain</span> <span class="n">fc</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ConcreteFilterChain</span><span class="o">(</span><span class="n">filters</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//派发请求</span>
+</span><span class='line'>  <span class="n">fc</span><span class="o">.</span><span class="na">doFilter</span><span class="o">(</span><span class="s">&quot;abcd&quot;</span><span class="o">);</span>
+</span><span class='line'>  
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;输出的结果是如下，和我们的预期相同。</p>
+
+<figure class='code'><figcaption><span>Server.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="err">进入</span><span class="n">MyFilter1</span><span class="err">的处理</span> <span class="o">....</span>
+</span><span class='line'><span class="err">进入</span><span class="n">MyFilter2</span><span class="err">的处理</span> <span class="o">....</span>
+</span><span class='line'><span class="err">最后的业务执行与处理</span><span class="o">....:</span><span class="n">abcd</span><span class="o">[</span><span class="err">●</span><span class="n">modify</span> <span class="n">by</span> <span class="n">MyFilter1</span><span class="err">●</span><span class="o">][</span><span class="err">★</span><span class="n">modify</span> <span class="n">by</span> <span class="n">MyFilter2</span><span class="err">★</span><span class="o">]</span>
+</span><span class='line'><span class="err">离开</span><span class="n">MyFilter2</span><span class="err">的处理</span> <span class="o">....</span>
+</span><span class='line'><span class="err">离开</span><span class="n">MyFilter1</span><span class="err">的处理</span> <span class="o">....</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果用户的输入参数是abc，即fc.doFilter(&ldquo;abc&rdquo;);，执行输出是：</p>
+
+<figure class='code'><figcaption><span>Server.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="err">进入</span><span class="n">MyFilter1</span><span class="err">的处理</span> <span class="o">....</span>
+</span><span class='line'><span class="err">发现参数是</span><span class="n">abc</span><span class="err">，终止执行</span><span class="o">!!!!</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这就有点类似于权限检测的filter一样，呵呵。</p>
+
+<h3>另一个是监听器（观察者模式）</h3>
+
+<p>&emsp;&emsp;通过监听器，容器会把我们感兴趣的事告诉我们，当然前提是我们必须先向服务器注册。监听器使用了观察者模式。下面我定义了一个会话监听器。</p>
+
+<figure class='code'><figcaption><span>HttpSessionListener.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">listener</span><span class="o">;</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 会话监听器</span>
+</span><span class='line'><span class="cm"> * @author Administrator</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">HttpSessionListener</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sessionCreated</span><span class="o">(</span><span class="n">String</span>  <span class="n">event</span><span class="o">);</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sessionDestroyed</span><span class="o">(</span><span class="n">String</span>  <span class="n">event</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;接下来由程序员定义自己的监听器，并在配置文件中进行配置。</p>
+
+<figure class='code'><figcaption><span>MyHttpSessionListener1.java和MyHttpSessionListener2.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">concretelistener</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.listener.HttpSessionListener</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 我的会话监听器1</span>
+</span><span class='line'><span class="cm"> * @author Administrator</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyHttpSessionListener1</span> <span class="kd">implements</span> <span class="n">HttpSessionListener</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">myName</span> <span class="o">=</span> <span class="s">&quot;监听器1&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sessionCreated</span><span class="o">(</span><span class="n">String</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">myName</span> <span class="o">+</span> <span class="s">&quot; 监听到创建事件：&quot;</span> <span class="o">+</span> <span class="n">event</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sessionDestroyed</span><span class="o">(</span><span class="n">String</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">myName</span> <span class="o">+</span> <span class="s">&quot;监听到销毁事件：&quot;</span> <span class="o">+</span> <span class="n">event</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 我的会话监听器2</span>
+</span><span class='line'><span class="cm"> * @author Administrator</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyHttpSessionListener2</span> <span class="kd">implements</span> <span class="n">HttpSessionListener</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">myName</span> <span class="o">=</span> <span class="s">&quot;监听器2&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sessionCreated</span><span class="o">(</span><span class="n">String</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">myName</span> <span class="o">+</span> <span class="s">&quot; 监听到创建事件：&quot;</span> <span class="o">+</span> <span class="n">event</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sessionDestroyed</span><span class="o">(</span><span class="n">String</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">myName</span> <span class="o">+</span> <span class="s">&quot;监听到销毁事件：&quot;</span> <span class="o">+</span> <span class="n">event</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;服务器上的处理代码如下：</p>
+
+<figure class='code'><figcaption><span>Server.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>     <span class="c1">//监听器对队</span>
+</span><span class='line'>      <span class="n">HttpSessionListener</span><span class="o">[]</span> <span class="n">listeners</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HttpSessionListener</span><span class="o">[</span><span class="mi">2</span><span class="o">];</span>
+</span><span class='line'>      <span class="n">listeners</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyHttpSessionListener1</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">listeners</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyHttpSessionListener2</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//当容器中发生事件的时候，进行通知</span>
+</span><span class='line'>      <span class="c1">//比如：创建事件</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;服务器发生创建事件！&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="n">HttpSessionListener</span> <span class="n">listener</span> <span class="o">:</span> <span class="n">listeners</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">listener</span><span class="o">.</span><span class="na">sessionCreated</span><span class="o">(</span><span class="k">new</span> <span class="n">Date</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;创建事件发生了！&quot;</span> <span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;下面就是运行的结果，我们可以发现，这就是一个观察者模式的标准应用。</p>
+
+<figure class='code'><figcaption><span>Server.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="err">服务器发生创建事件！</span>
+</span><span class='line'><span class="err">监听器</span><span class="mi">1</span> <span class="err">监听到创建事件：</span><span class="n">Thu</span> <span class="n">Jan</span> <span class="mi">23</span> <span class="mi">15</span><span class="o">:</span><span class="mi">34</span><span class="o">:</span><span class="mi">14</span> <span class="n">CST</span> <span class="mi">2014</span><span class="err">创建事件发生了！</span>
+</span><span class='line'><span class="err">监听器</span><span class="mi">2</span> <span class="err">监听到创建事件：</span><span class="n">Thu</span> <span class="n">Jan</span> <span class="mi">23</span> <span class="mi">15</span><span class="o">:</span><span class="mi">34</span><span class="o">:</span><span class="mi">14</span> <span class="n">CST</span> <span class="mi">2014</span><span class="err">创建事件发生了！</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>最后，给大家说一下包装器</h3>
+
+<p>&emsp;&emsp;包装器，也叫装饰器，这个模式的本意是在不改变原有类的情况下，增强类的功能（包括添加行为或添加状态）。</p>
+
+<figure class='code'><figcaption><span>Request.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">wrapper</span><span class="o">;</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 抽象请求对象</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Request</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//得到内容</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getContent</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>OriginalRequest.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">wrapper</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 原始请求</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">OriginalRequest</span> <span class="kd">implements</span> <span class="n">Request</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">content</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">OriginalRequest</span><span class="o">(</span><span class="n">String</span> <span class="n">content</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getContent</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">// TODO Auto-generated method stub</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">content</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>RequestWrapper.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">wrapper</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 包装对象，其它的包装类，都从这个类继承</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">RequestWrapper</span> <span class="kd">implements</span> <span class="n">Request</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">Request</span> <span class="n">request</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">RequestWrapper</span><span class="o">(</span><span class="n">Request</span> <span class="n">request</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kd">super</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">request</span> <span class="o">=</span> <span class="n">request</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getContent</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//此处暂时不做任何处理，直接返回</span>
+</span><span class='line'>      <span class="n">String</span> <span class="n">content</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getContent</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">content</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面三个类，都是由服务器端已经定义好的（也就是先把基本的架子搭起来）。下面这个方法才是我最终要执行的一个目标业务方法。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 此访求接收request接口类型，并感知不到对象已被包装</span>
+</span><span class='line'><span class="cm">  * @param req</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">display</span><span class="o">(</span><span class="n">Request</span> <span class="n">req</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getContent</span><span class="o">());</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;接下来，大家看看我实现了一个对敏感关键词进行处理的包装器：</p>
+
+<figure class='code'><figcaption><span>MyRequestWrapper.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">concretewrapper</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.wrapper.Request</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.wrapper.RequestWrapper</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyRequestWrapper</span> <span class="kd">extends</span> <span class="n">RequestWrapper</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">MyRequestWrapper</span><span class="o">(</span><span class="n">Request</span> <span class="n">request</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kd">super</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//添加行为或改变现在行为，或新的属性</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//比如：我下面进行敏感字符过滤</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getContent</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">String</span> <span class="n">content</span> <span class="o">=</span> <span class="kd">super</span><span class="o">.</span><span class="na">getContent</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">content</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&quot;江泽民&quot;</span><span class="o">,</span> <span class="s">&quot;***&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">content</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后是对目标方法的调用了，输入结果是：我是国家主席***。</p>
+
+<figure class='code'><figcaption><span>MyRequestWrapper.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">Request</span> <span class="n">req</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyRequestWrapper</span><span class="o">(</span><span class="k">new</span> <span class="n">OriginalRequest</span><span class="o">(</span><span class="s">&quot;我是国家主席江泽民&quot;</span><span class="o">));</span>
+</span><span class='line'>  <span class="c1">//目标方法的调用</span>
+</span><span class='line'>  <span class="n">display</span><span class="o">(</span><span class="n">req</span><span class="o">);</span>
+</span><span class='line'>  
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好，此篇文章就到此吧，2014春节马上就到了，假期临近，一切都显示得非常冷清，很多人已经心不在焉。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-01-22T12:18:00+08:00" pubdate data-updated="true">2014年01月22日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/01/12/art-rose-rain/" title="上一篇文章: 油画-听雨终稿">&laquo;上一篇:&nbsp;&nbsp;油画-听雨终稿</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/01/12/art-rose-rain-step/">油画-听雨终稿-步骤</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三--深入细节</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="60">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2014 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

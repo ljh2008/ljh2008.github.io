@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-01-12T20:41:27+08:00</updated>
+  <updated>2014-01-23T16:32:51+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,469 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[关于servlet规范中的几个设计模式解析]]></title>
+    <link href="http://yanyaner.com/blog/2014/01/22/servlet-container-pattern/"/>
+    <updated>2014-01-22T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/01/22/servlet-container-pattern</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;本文属于入门类型文章，给大家简单介绍一下javax.servlet中用到的几个设计模式。</p>
+
+<h3>先看职责链模式</h3>
+
+<p>&emsp;&emsp;这个模式的应用就是大家所熟悉的filter过滤器,演示代码如下：</p>
+
+<p>``` java  Filter.java
+package com.my.filter;</p>
+
+<p>/<em>*
+ * 定义每一个处理者的通用行为，即对传入的参数进行处理
+ * @author ljh
+ *
+ </em>/
+public interface Filter {</p>
+
+<pre><code>public void doFilter(String param, FilterChain fc);
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;接下来定义一个职责链接口，以规范形为（当然，这个接口也可以不定义，直接给出实现类即可）。</p>
+
+<p>``` java  FilterChain.java
+package com.my.filter;</p>
+
+<p>/<em>*
+ * 过滤器链接口定义
+ * @author ljh
+ *
+ </em>/
+public interface FilterChain {</p>
+
+<pre><code>/**
+ * 将请求传给下一个处理者
+ * @param param
+ */
+public void doFilter(String param);
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;一个具体的责任链实现（注：这个通常是由服务器去实现的，比如tomcat），里面包含了所有的要承担处理责任的处理者（也就是过滤器）。</p>
+
+<p>``` java ConcreteFilterChain.java
+package com.my.server;</p>
+
+<p>import java.util.ArrayList;
+import java.util.List;</p>
+
+<p>import com.my.biz.Processor;
+import com.my.filter.Filter;
+import com.my.filter.FilterChain;
+/<em>*
+ * 一个职责链具体实现
+ * @author ljh
+ *
+ </em>/
+public class ConcreteFilterChain implements FilterChain {</p>
+
+<pre><code>//链集合
+private List&lt;Filter&gt; filters = new ArrayList&lt;Filter&gt;();
+//初始已处理过滤器下标
+private int processIndex = -1;
+
+public ConcreteFilterChain(List&lt;Filter&gt; filters) {
+    this.filters = filters;
+}
+
+@Override
+public void doFilter(String param) {
+    //处理的过滤器下标
+    processIndex = processIndex + 1;
+
+    if (processIndex &gt;= filters.size()) {
+        Processor p = new Processor();
+        p.working(param);
+    } else {
+        filters.get(processIndex).doFilter(param, this);
+    }
+
+}
+
+/**
+ * 返回一个新的FilterChain（这个方法保留待用）
+ * 因为在多线程环境下，每一个请求会有自己的processIndex
+ * 这个新建的processIndex将设置为初始值-1，表示还没有进入任何一个过滤器
+ * @return
+ */
+public FilterChain cloneFilterChain() {
+    return new ConcreteFilterChain(filters);
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;好了，到这里，服务器上该做的事都已经做完，来看看程序员要做的事吧。<!--more-->我们先写一个业务处理类，模拟最终要进行的操作，如下：</p>
+
+<p>``` java Processor.java
+package com.my.biz;</p>
+
+<p>public class Processor {</p>
+
+<pre><code>public void working(String param) {
+
+    System.out.println("最后的业务执行与处理....:" + param);
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;在working处理消息前，我定义了两个过滤器。在第一个过滤器中，进行了参数检测，如果参数是"abc"，将终止后续业务的执行。同时，两个过滤器都对消息进行了处理，在消息中添加了自己的东西。</p>
+
+<p>``` java MyFilter1.java与MyFilter2.java
+package com.my.concretefilter;</p>
+
+<p>import com.my.filter.Filter;
+import com.my.filter.FilterChain;
+/<em>*
+ * 第一个过滤器,会对消息进行处理
+ * @author ljh
+ *
+ </em>/
+public class MyFilter1 implements Filter {</p>
+
+<pre><code>@Override
+public void doFilter(String param, FilterChain fc) {
+
+    System.out.println("进入MyFilter1的处理 ....");
+    if ("abc".equals(param)) {
+        System.out.println("发现参数是abc，终止执行!!!!");
+        return;
+    }
+    fc.doFilter(param + "[●modify by MyFilter1●]");
+    System.out.println("离开MyFilter1的处理 ....");
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>/<em>*
+ * 第一个过滤器,会对消息进行处理
+ * @author ljh
+ *
+ </em>/
+public class MyFilter2 implements Filter {</p>
+
+<pre><code>@Override
+public void doFilter(String param, FilterChain fc) {
+
+    System.out.println("进入MyFilter2的处理 ....");
+    fc.doFilter(param + "[★modify by MyFilter2★]");
+    System.out.println("离开MyFilter2的处理 ....");
+
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;接下来又是服务器上的处理代码了，我直接写出简单示例，生产环境中的服务器，肯定是读取web.xml反射创建过滤器对象。</p>
+
+<p>``` java Server.java</p>
+
+<pre><code>    //链集合(读取配置文件，反射创建filter，并加入过滤器链)
+    List&lt;Filter&gt; filters = new ArrayList&lt;Filter&gt;();
+    filters.add(new MyFilter1());
+    filters.add(new MyFilter2());
+    FilterChain fc = new ConcreteFilterChain(filters);
+
+    //派发请求
+    fc.doFilter("abcd");
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;输出的结果是如下，和我们的预期相同。</p>
+
+<p><code>
+进入MyFilter1的处理 ....
+进入MyFilter2的处理 ....
+最后的业务执行与处理....:abcd[●modify by MyFilter1●][★modify by MyFilter2★]
+离开MyFilter2的处理 ....
+离开MyFilter1的处理 ....
+</code></p>
+
+<p>&emsp;&emsp;如果用户的输入参数是abc，即fc.doFilter(&ldquo;abc&rdquo;);，执行输出是：</p>
+
+<p><code>
+进入MyFilter1的处理 ....
+发现参数是abc，终止执行!!!!
+</code></p>
+
+<p>&emsp;&emsp;这就有点类似于权限检测的filter一样，呵呵。</p>
+
+<h3>另一个是监听器（观察者模式）</h3>
+
+<p>&emsp;&emsp;通过监听器，容器会把我们感兴趣的事告诉我们，当然前提是我们必须先向服务器注册。监听器使用了观察者模式。下面我定义了一个会话监听器。</p>
+
+<p>``` java HttpSessionListener.java</p>
+
+<p>package com.my.listener;
+/<em>*
+ * 会话监听器
+ * @author Administrator
+ *
+ </em>/
+public interface HttpSessionListener {</p>
+
+<pre><code>public void sessionCreated(String  event);
+public void sessionDestroyed(String  event);
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;接下来由程序员定义自己的监听器，并在配置文件中进行配置。</p>
+
+<p>``` java MyHttpSessionListener1.java和MyHttpSessionListener2.java
+package com.my.concretelistener;</p>
+
+<p>import com.my.listener.HttpSessionListener;</p>
+
+<p>/<em>*
+ * 我的会话监听器1
+ * @author Administrator
+ *
+ </em>/
+public class MyHttpSessionListener1 implements HttpSessionListener {</p>
+
+<pre><code>private String myName = "监听器1";
+
+@Override
+public void sessionCreated(String event) {
+
+    System.out.println(myName + " 监听到创建事件：" + event);
+
+}
+
+@Override
+public void sessionDestroyed(String event) {
+
+    System.out.println(myName + "监听到销毁事件：" + event);
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>/<em>*
+ * 我的会话监听器2
+ * @author Administrator
+ *
+ </em>/
+public class MyHttpSessionListener2 implements HttpSessionListener {</p>
+
+<pre><code>private String myName = "监听器2";
+
+@Override
+public void sessionCreated(String event) {
+
+    System.out.println(myName + " 监听到创建事件：" + event);
+
+}
+
+@Override
+public void sessionDestroyed(String event) {
+
+    System.out.println(myName + "监听到销毁事件：" + event);
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;服务器上的处理代码如下：</p>
+
+<p>``` java Server.java</p>
+
+<pre><code>    //监听器对队
+    HttpSessionListener[] listeners = new HttpSessionListener[2];
+    listeners[0] = new MyHttpSessionListener1();
+    listeners[1] = new MyHttpSessionListener2();
+
+    //当容器中发生事件的时候，进行通知
+    //比如：创建事件
+    System.out.println("服务器发生创建事件！");
+    for (HttpSessionListener listener : listeners) {
+        listener.sessionCreated(new Date() + "创建事件发生了！" );
+    }
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;下面就是运行的结果，我们可以发现，这就是一个观察者模式的标准应用。</p>
+
+<p>```</p>
+
+<p>服务器发生创建事件！
+监听器1 监听到创建事件：Thu Jan 23 15:34:14 CST 2014创建事件发生了！
+监听器2 监听到创建事件：Thu Jan 23 15:34:14 CST 2014创建事件发生了！</p>
+
+<p>```</p>
+
+<h3>最后，给大家说一下包装器</h3>
+
+<p>&emsp;&emsp;包装器，也叫装饰器，这个模式的本意是在不改变原有类的情况下，增强类的功能（包括添加行为或添加状态）。</p>
+
+<p>``` java  Request.java</p>
+
+<p>package com.my.wrapper;
+/<em>*
+ * 抽象请求对象
+ * @author ljh
+ *
+ </em>/
+public interface Request {</p>
+
+<pre><code>//得到内容
+public String getContent();
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>``` java OriginalRequest.java</p>
+
+<p>package com.my.wrapper;</p>
+
+<p>/<em>*
+ * 原始请求
+ * @author ljh
+ *
+ </em>/
+public class OriginalRequest implements Request {</p>
+
+<pre><code>private String content;
+
+public OriginalRequest(String content) {
+    this.content = content;
+}
+
+@Override
+public String getContent() {
+    // TODO Auto-generated method stub
+    return content;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>``` java RequestWrapper.java</p>
+
+<p>package com.my.wrapper;</p>
+
+<p>/<em>*
+ * 包装对象，其它的包装类，都从这个类继承
+ * @author ljh
+ *
+ </em>/
+public class RequestWrapper implements Request {</p>
+
+<pre><code>private Request request;
+
+
+
+public RequestWrapper(Request request) {
+    super();
+    this.request = request;
+}
+
+
+
+@Override
+public String getContent() {
+    //此处暂时不做任何处理，直接返回
+    String content = request.getContent();
+    return content;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;上面三个类，都是由服务器端已经定义好的（也就是先把基本的架子搭起来）。下面这个方法才是我最终要执行的一个目标业务方法。</p>
+
+<p>``` java</p>
+
+<pre><code>/**
+ * 此访求接收request接口类型，并感知不到对象已被包装
+ * @param req
+ */
+public static void display(Request req) {
+    System.out.println(req.getContent());
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;接下来，大家看看我实现了一个对敏感关键词进行处理的包装器：</p>
+
+<p>``` java MyRequestWrapper.java</p>
+
+<p>package com.my.concretewrapper;</p>
+
+<p>import com.my.wrapper.Request;
+import com.my.wrapper.RequestWrapper;</p>
+
+<p>public class MyRequestWrapper extends RequestWrapper {</p>
+
+<pre><code>public MyRequestWrapper(Request request) {
+    super(request);
+}
+
+//添加行为或改变现在行为，或新的属性
+
+//比如：我下面进行敏感字符过滤
+@Override
+public String getContent() {
+    String content = super.getContent();
+    content = content.replaceAll("江泽民", "***");
+    return content;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;最后是对目标方法的调用了，输入结果是：我是国家主席***。</p>
+
+<p>```</p>
+
+<pre><code>    Request req = new MyRequestWrapper(new OriginalRequest("我是国家主席江泽民"));
+    //目标方法的调用
+    display(req);
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;好，此篇文章就到此吧，2014春节马上就到了，假期临近，一切都显示得非常冷清，很多人已经心不在焉。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[为你的项目加入Hudson持续集成]]></title>
@@ -331,6 +794,34 @@ mvn install:install-file -DgroupId=com.my.nio -DartifactId=mynio -Dversion=0.1.1
 </code></pre>
 
 <p></dependency>
+```</p>
+
+<p>```
+2013-1-16再补充：
+有这样的应用场景，在打war过程中，需要将一些配置文件
+（比如数据库连接信息的properties文件）打包到WEB-INF/classes下。
+而这些配置文件又在另一个maven工程中，解决办法如下：
+<plugin></p>
+
+<pre><code>            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+            &lt;artifactId&gt;maven-war-plugin&lt;/artifactId&gt;
+            &lt;version&gt;2.4&lt;/version&gt;
+            &lt;configuration&gt; 
+                &lt;webResources&gt;
+                    &lt;resource&gt;
+                        &lt;directory&gt;../car-core/src/main/resources&lt;/directory&gt;
+                        &lt;includes&gt;
+                           &lt;include&gt;**/*.*&lt;/include&gt;
+                        &lt;/includes&gt;
+                        &lt;targetPath&gt;WEB-INF/classes&lt;/targetPath&gt;
+                    &lt;/resource&gt;
+                &lt;/webResources&gt;
+
+                &lt;archive&gt;              
+                ..............以下略去
+</code></pre>
+
+<p>请注意上面的resource节点中的内容。
 ```</p>
 ]]></content>
   </entry>
@@ -879,75 +1370,6 @@ mvn install:install-file -DgroupId=com.my.nio -DartifactId=mynio -Dversion=0.1.1
 <p>&emsp;&emsp;server部分配置了可以上传到nexus中的相关账户的登录名及密码，这些信息都是在nexus的管理界面中配置的。而http : / /127.0.0.1:8081/nexus/content/groups/public 则是本地maven库所在的服务器路径。</p>
 
 <p>&emsp;&emsp;好了，今天先到这，下一篇文章会详细介绍如何在项目中使用maven.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[万恶的u盘启动程序]]></title>
-    <link href="http://yanyaner.com/blog/2013/12/05/udisk/"/>
-    <updated>2013-12-05T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/12/05/udisk</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;前两天给一邻居家安装操作系统，由于他家的电脑没有光驱，只好自己做一个启动U盘。</p>
-
-<p>&emsp;&emsp;网上搜索了一下U盘启动盘制作程序，进入排名首位的站点是：www.uqidong.com ，名字就叫“U启动”，原来有专门做这个的网站，看来还真够专业的，不得暗暗佩服！</p>
-
-<p>&emsp;&emsp;马上download这个程序，居然有300多M，这是一个什么样的功能强大的程序呢？我记得以前下载的U盘启动盘制作程序，也就只有区区1~2M就搞定了啊。好不容易下载完成，点击安装，一路下一步，下一步直至完成，还算顺利。</p>
-
-<p>&emsp;&emsp;当我回到桌面一看，吃了一惊，冒出来好多个快捷网址链接，都是一些不相关的网站，并且还默默地在后台安装了一个新的浏览器，原来，www.uqidong.com 上的东西，是一个垃圾软件，流氓软件。</p>
-
-<p>&emsp;&emsp;启动软件，开始启动盘的制作，发现制作速度非常慢，其中，有些选项会提示将hao123设置为主页，真是垃圾中的垃圾，一个小小的启动盘制作软件，居然捆绑了这么多的无关软件和设置项在里面。</p>
-
-<p>&emsp;&emsp;这还没算完。我随后发现，IE，360浏览器，火狐浏览器的主页，全部被修改成了260260.com，并且访问localhost本地路径，也会跳转到260260.com，而260260.com则会跳转到hao123.com，随即，我将所有的浏览器主页恢复成原来的页面。</p>
-
-<p>&emsp;&emsp;紧接着，用360卫士进行插件扫描，发现又多扫描出4个广告相关插件，随即重新启动电脑。</p>
-
-<p>&emsp;&emsp;电脑重启后，我以为已经清除干净，但一访问本地localhost，又转到了hao123导航，看来，还有残余存在。我进入注册表编辑器，搜索所有的260260.com,hao123.com相关的项，全部删除，但问题依旧。</p>
-
-<p>&emsp;&emsp;后来，找到windows/system32/etc/host文件，打开一看，吓了一跳，里面被改得面目全非，添加了几十个localhost的网址映射，260260.com也在里面，我一个个删除，保存，问题依旧。</p>
-
-<p>&emsp;&emsp;再次打开host文件，发现刚才删除的内容，又被写回，只有再次删除，并将文件设置为只读，host文件的写入才被禁止，这真是一个病毒程序，如此之顽固。</p>
-
-<p>&emsp;&emsp;再访问本地localhost，又转到了hao123导航，还是老样子啊。这才发现，原来程序在本机安装了一个apache服务器，并且集成了php环境，我通过httpd.conf找到它的web目录，在index.php文件中，终于看到了源代码：<!--more--></p>
-
-<p>``` php
-&lt;?php<br/>
-  $name1 = &ldquo;www.2345.com,2345.com,www.tao123.com,tao123.com&rdquo;;
-  $name2 = &ldquo;www.xp519.com,xp519.com,www.xitongzhijia.net,xitongzhijia.net,www.386w.com,386w.com,www.xitong8.com,xitong8.com,www.hyghost.com,hyghost.com,moguxz.com,www.moguxz.com,www.xpxtzj.com,xpxtzj.com&rdquo;;
-  $name3 = &ldquo;www.22mm.cc,www.mnsfz.com,www.4493.com,www.7160.com,www.youzi4.com,www.juemei.cc,www.mm131com,www.xiaojiuwo.com,www.tpdq.net,www.920mm.com,www.169pp.com,www.xgmm.cc,www.kmeitu.com,www.qq360x.com,www.123kmm.com,www.09218.com,www.mm3.cc,www.b4mm.com,www.tuku.com,www.xiaomm.cc,www.84420.com,www.gunianger.com,www.ii6i.com,www.mmkaixin.com,www.06324.com,www.6188.net,www.8mei.cc,www.mzitu.com,www.mmlin.com,www.mm588.com,www.meiniu.cc,www.t8a8.com,www.99521.com,www.kmeitu.com,www.909mm.com,www.169meitu.com,www.xiezhenku.com,www.yangyanmm.com,22mm.cc,mnsfz.com,4493.com,7160.com,youzi4.com,juemei.cc,mm131com,xiaojiuwo.com,tpdq.net,920mm.com,169pp.com,xgmm.cc,kmeitu.com,qq360x.com,123kmm.com,09218.com,mm3.cc,b4mm.com,tuku.com,xiaomm.cc,84420.com,gunianger.com,ii6i.com,mmkaixin.com,06324.com,6188.net,8mei.cc,mzitu.com,mmlin.com,mm588.com,meiniu.cc,t8a8.com,99521.com,kmeitu.com,909mm.com,169meitu.com,xiezhenku.com,yangyanmm.com,p.39yst.com,pic.39yst.com,tu.dddddd.net,tu.5239.com,pic.qm120.com,tuku.0789.net,meinv.nvxingku.com,tuku.meinv.com,tuku.0789.net,meinv.xinggan.com,tuku.piaoliang.com,mm.raorao.com,tuku.guimi.com&rdquo;;</p>
-
-<p>  $name1_404 = &ldquo;<a href="http://www.260260.com/?4">http://www.260260.com/?4</a>&rdquo;;
-  $name2_404 = &ldquo;<a href="http://www.xpxtw.com/?4">http://www.xpxtw.com/?4</a>&rdquo;;
-  $name3_404 = &ldquo;<a href="http://www.xgxz.com/?4">http://www.xgxz.com/?4</a>&rdquo;;
-  $default_404 = &ldquo;<a href="http://www.260260.com/?4">http://www.260260.com/?4</a>&rdquo;;</p>
-
-<p>  $server_name = $_SERVER[&ldquo;HTTP_HOST&rdquo;];
-   switch($server_name){</p>
-
-<pre><code>case strpos($name1,$server_name)!==false:
-    header("Location:$name1_404");
-    break;
-   case strpos($name2,$server_name)!==false:
-    header("Location:$name2_404");
-    break;
-case strpos($name3,$server_name)!==false:
-    header("Location:$name3_404");
-    break;
-default:
-    header("Location:$default_404");
-        break;
-} 
-    ?&gt;&lt;meta http-equiv="refresh" content="0;url=http://www.260260.com/?301"&gt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;源码中可以发现很多的无关网址，并且首页还通过refresh自动跳到260260上去，真的很无耻。</p>
-
-<p>&emsp;&emsp;停止这个apache服务（它已经做成了自启动），并删除服务器目录，问题得到解决。</p>
-
-<p>&emsp;&emsp;更可怕的是，在网上搜到的U盘启动盘制作软件，大部分都是这个300多M的程序，看来，这个病毒式的流氓程序，会在更多人的电脑中流行起来，还我，我们是懂一点计算机程序的专业人士，可以手工清楚这个程序，要是普通的电脑盲的话，将根本找不到问题的症结所在，也就只有默默忍受这一切。而写这个程序的团队，将会从中获益。</p>
-
-<p>&emsp;&emsp;希望看到此文的人，多转发转发，以免更多人上当。</p>
 ]]></content>
   </entry>
   

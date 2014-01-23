@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;页面交互实现是一个非常费时间、费精力的过程，如果这个过程做得不好，会影响到项目工期以及系统非功能性需求，我感觉这一块的工作用软件行业的一句话“没有银弹”来形容比较贴切。 &emsp;&emsp;表现层会用到MVC模式，通过引入控制器将视图与业务模型解耦， &hellip;">
+  <meta name="description" content="&emsp;&emsp;在项目的主要功能都完成后，我们会对表现层代码进行一个测试，重点是页面的跳转流程是否正确。当然，国内很多小公司的项目可能并不会做这项测试。 &emsp;&emsp;表现层的测试要做到和容器解耦合才能进行下去（顺便提一下，ejb2有一个最大的弊病是不能和容器解耦）： &emsp &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,130 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/12/28/jeee-tou-6/">一个简单的j2ee入门教程（第六部分—细节完善及测试）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-28T15:18:00+08:00" pubdate data-updated="true">2010年12月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;在项目的主要功能都完成后，我们会对表现层代码进行一个测试，重点是页面的跳转流程是否正确。当然，国内很多小公司的项目可能并不会做这项测试。</p>
+
+<p>&emsp;&emsp;表现层的测试要做到和容器解耦合才能进行下去（顺便提一下，ejb2有一个最大的弊病是不能和容器解耦）：</p>
+
+<p>&emsp;&emsp;如果你用的是struts1.x，可以选择使用StrutsTestCase开源框架的来做表现层的测试，在 <a href="http://strutstestcase.sourceforge.net">http://strutstestcase.sourceforge.net</a>官网上有使用详细说明，看看例子你就明白该怎么做了；如果你用的是 Struts2就十分的方便了，我们从spring容器中得到action对象后，调用相应的方法并验证返回结果字符串就可知道测试结果；单纯 servlet要实现测试可能比较复杂些。页面间的跳转流程测试通过后，就需要对页面的交互细节进一步的完善，我们先来考虑页面数据合法性验证问题。页面的数据合法性验证，可以用下面三种方式为实现：</p>
+
+<p>&emsp;&emsp;1、一种是采用客户端js实现，优点是可以快速对用户输入的非法数据以友好的提示，提高交互效率，缺点是容易被绕过；</p>
+
+<p>&emsp;&emsp;2、第二种是采用框架的验证功能实现，这种方式优点是配置配置就可完成，和框架本身集成紧密，缺点是配置繁琐；</p>
+
+<p>&emsp;&emsp;3、最后一种是程序员在后台人工验证，优点是灵活，缺点是对大数据字段表单操作起来极为不便，而且对验证没通过后的数据回填也比较麻烦。</p>
+
+<p>&emsp;&emsp;上面的三种验证方式，第一种是客户端验证，后两种中服务器端验证，服务器端的验证在任何情况下都是必不可少的。我们在这个示例中，采用jQuery完成对客户端数据的验证，有些好看的显示效果使用jQuery ui插件完成；服务器端采用程序验证的方式。</p>
+
+<p>&emsp;&emsp;使用jQuery的原因是：常简单、高效，而且插件众多，可以大幅度提高前台页面的开发效率。首先将jQuery的js文下载到本地，引入到页面文件中，其次还要有一份jQuery API在手，按API上的示例去写js代码即可。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="o">&lt;</span><span class="nx">link</span> <span class="nx">type</span><span class="o">=</span><span class="err">”</span><span class="nx">text</span><span class="o">/</span><span class="nx">css</span><span class="err">”</span> <span class="nx">rel</span><span class="o">=</span><span class="err">”</span><span class="nx">stylesheet</span><span class="err">”</span> <span class="nx">href</span><span class="o">=</span><span class="err">”</span><span class="nx">css</span><span class="o">/</span><span class="nx">ui</span><span class="o">-</span><span class="nx">lightness</span><span class="o">/</span><span class="nx">jquery</span><span class="o">-</span><span class="nx">ui</span><span class="o">-</span><span class="mf">1.8</span><span class="p">.</span><span class="mi">5</span><span class="p">.</span><span class="nx">custom</span><span class="p">.</span><span class="nx">css</span><span class="err">”</span> <span class="o">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="err">”</span><span class="nx">text</span><span class="o">/</span><span class="nx">javascript</span><span class="err">”</span> <span class="nx">src</span><span class="o">=</span><span class="err">”</span><span class="nx">js</span><span class="o">/</span><span class="nx">jquery</span><span class="o">-</span><span class="mf">1.4</span><span class="p">.</span><span class="mi">2</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">js</span><span class="err">”</span><span class="o">&gt;&lt;</span><span class="err">/script&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="err">”</span><span class="nx">text</span><span class="o">/</span><span class="nx">javascript</span><span class="err">”</span> <span class="nx">src</span><span class="o">=</span><span class="err">”</span><span class="nx">js</span><span class="o">/</span><span class="nx">jquery</span><span class="o">-</span><span class="nx">ui</span><span class="o">-</span><span class="mf">1.8</span><span class="p">.</span><span class="mi">5</span><span class="p">.</span><span class="nx">custom</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">js</span><span class="err">”</span><span class="o">&gt;&lt;</span><span class="err">/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;大家要注意的是js引入的顺序问题，一般是先引入jQuery核心库文件，再引入插件库文件，如果插件库自身带有样式，还要引入css样式文件。还要注意js和css都要分目录存入（我在页面规则中写得有）。下面贴出在登录页面中加入的js验证代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#login_btn&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="k">if</span> <span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=id]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;学生编码不能为空！&quot;</span><span class="p">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=password]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      
+</span><span class='line'>        <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;登录密码不能为空！&quot;</span><span class="p">);</span>
+</span><span class='line'>      
+</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>  
+</span><span class='line'>   <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果想提示信息更加友好，可使用jQuery ui的Dialog，具体做法你去查询jQuery ui的api文档，这些东西说起来很简单，但要熟悉掌握仍然需要我们大量的实践。可参阅我的&lt;写好登录注册-向商业软件的蜕变>，页面交互这一块内容还很多。</p>
+
+<p>&emsp;&emsp;最看来看看集成测试，大致分为功能性（需求）测试和性能测试两个部分，先来看功能性测试：</p>
+
+<p>&emsp;&emsp;1、最简单、有效的办法是按照功能说明书，用人工的方式逐一测试页面功能，发现错误记录下来。人工方式也是最强、最灵活的，有些功能测试必须由人工来做，比如webgame；如果前期的详细设计非常到位，可以采用自动化工具对需求进行测试，比如Selenium。</p>
+
+<p>&emsp;&emsp;2、性能测试，主要针对有问题的模块进行，常用工具有loadrunner,jmeter,ab等，测试发现系统不满足非功能性需求就要对系统性能进行调优（可参阅我<a href="/blog/2010/11/05/prof-web/">&lt;系统性能优化总结之表现层></a>、<a href="/blog/2010/11/08/prof-service/">&lt;系统性能优化总结之业务层></a>、<a href="/blog/2010/11/09/prof-dao/">&lt;系统性能优化总结之持久层篇></a>）。关于测试这块，我计划用另一篇文章详细讲述。</p>
+
+<p>&emsp;&emsp;j2ee入门教程至此暂告一段落，写作的过程比较艰辛。希望初学者能从这个简单的例子中，真正悟到一个项目究竟是按什么样的流程来做的，每个流程中要注意些什么事项，并能够在实际工作中做到举一反三，这就是本入门系列文章的目的所在。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2062,70 +2186,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/11/23/pay/">项目集成第三方支付设计方案</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-11-23T15:18:00+08:00" pubdate data-updated="true">2010年11月23日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;现在越来越多的项目都要求集成第三方的支付平台，特别是在互联网项目中，下面简单说说项目中集成第三方支付平台的设计实现思路。</p>
-
-<p>&emsp;&emsp;目前用得比较多的 第三方支付平台有支付宝、易宝、财付通、移动支付等，每种支付平台都提供了详细的支付接口文档及示例代码，要在自己的项目中实现集成第三方支付还是比较容 易的，但主要的问题在于，一个项目中一般都会集成多种支付方式，以方便用户的选择，那么，我们的项目中如何设计才能即保存业务层的稳定，又能方便地加入新的 支付方式（开闭原则体现哦）。设计的思路就是抽象定不变的东西封装起来，变化的部分设计为接口单独封装，以达到灵活的扩展的目的。</p>
-
-<p>&emsp;&emsp;对一些平台的支付流程进行研究总结后，我们发现，无论支付工具的接口怎么的不相同，但总的支付流程几乎是一样的，这个支付流程应该可以抽象出来，下面是一个支付过程的活动图：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/22.png' width='' height='' title='支付流程图'><span class='caption-text'>支付流程图</span></span></p>
-
-<p>&emsp;&emsp;在 这个活动图中，首先用户要选择购买的服务（虚拟点卡、金币、或会员服务等）；在接下来进入支付方式（支付宝、易宝等）选择页面，服务器将根据用户选择的不 同支付方式，生成要向第三方支付服务器的请求参数，放回响应页面中；在新的页面中显示用户要支付的款项金额等信息，要求用户再次确认，如果用户确认后，用 户界面将转到第三方支付服务器，这个支付的过程我们就不用管了；如果用户在第三方支付服务器上付款成功，第三方服务器将会通知我们的服务器，告知我们一些 支付细节，这个时候，我们再在项目中再进行业务处理，比如：更改用户的业务状态。（注：支付参数提交过程可用get或post，参数后都要附加md5签名 字符串，安全性不用担忧，本人建议以get方式提交。）</p>
-
-<p>&emsp;&emsp;经过上面的流程分析，我们可以把支付过程进一步总结为：支付请求参数的提交，以及支付成功回调的业务处理两个过程，根据这两个过程，我设计了类图(原图高清晰，请右键单独查看图片)，并对之进行解释。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/23.jpg' width='' height='' title='支付后台设计图'><span class='caption-text'>支付后台设计图</span></span></p>
-
-<p>&emsp;&emsp;领域对象：</p>
-
-<p>&emsp;&emsp;A、服务项目：可供用户选择的服务项目，包括名称、金额、时长等信息，这些信息在用户支付前进行选择；</p>
-
-<p>&emsp;&emsp;B、用户：保存用户支付成功后的一些业务状态；</p>
-
-<p>&emsp;&emsp;C、 支付记录：在用户离开我们的网站到第三支付界面前，我们的系统必须要保存一份支付记录，这个记录中有我方系统产生的唯一交易编号，交易状态为未成功；在支 付成功的回调中，我们从回调参数中取出我方系统产生的唯一交易编号，找到这条没有成功的交易记录，再填上第三方系统产生的唯一交易号（对账时要用），更改 支付记录状态为成功，最后更改用户业务状态。支付记录中会聚合服务项目及用户信息这两个对象，以方便在回调时找到支付的一些情况。</p>
-
-<p>&emsp;&emsp;业务类设计：</p>
-
-<p>&emsp;&emsp;PaymentAction 为支付处理控制器(可选择struts action或servlet做为父类)，preparePay方法的主要作用是生成向第三方支付服务器提交的URL（有很多的支付信息要拼接），代码实 现步骤我已在图中进行了注明。其中有一点我要强调一下：我们页面中的付款金额，名称，描述等信息是固定的，而用户选择了不同的支付方式后，要生成不同支付 平台的参数，我的实现思路是，在控制器中通过request.getParameterMap()得到我们页面中输入的键值对，再转换成目标支付平台的参 数键值对，由于每个支付平台参数不同，我们就得把这个对应关系找一个地方单独存起来。</p>
-
-<p>&emsp;&emsp;我设计了一个PayConfigurationReader 接口，里面包括读取键值映射、得到商户（我们系统）的ID，密钥等方法，这些方法都是通过对多个平台支付流程的理解后设计出来的，每个平台有一个自己的 properties参数存储文件，用来存放这个平台的配置信息，刚才我们所说的键值映射关系，就写在这个配置文件中。</p>
-
-<p>&emsp;&emsp;具体支付平台实现类将实现PayConfigurationReader接口，完成自身平台相关操作。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/15/">&larr; 更多早期老文章</a>
@@ -2143,6 +2203,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
       </li>
     
@@ -2156,10 +2220,6 @@
     
       <li class="post">
         <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三&#8211;深入细节</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/24/maven-project/">在项目中使用maven之二&#8211;项目实例</a>
       </li>
     
   </ul>

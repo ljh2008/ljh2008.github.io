@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：javaEE | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/javaee/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-01-12T20:41:27+08:00</updated>
+  <updated>2014-01-23T16:32:51+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,469 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[关于servlet规范中的几个设计模式解析]]></title>
+    <link href="http://yanyaner.com/blog/2014/01/22/servlet-container-pattern/"/>
+    <updated>2014-01-22T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/01/22/servlet-container-pattern</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;本文属于入门类型文章，给大家简单介绍一下javax.servlet中用到的几个设计模式。</p>
+
+<h3>先看职责链模式</h3>
+
+<p>&emsp;&emsp;这个模式的应用就是大家所熟悉的filter过滤器,演示代码如下：</p>
+
+<p>``` java  Filter.java
+package com.my.filter;</p>
+
+<p>/<em>*
+ * 定义每一个处理者的通用行为，即对传入的参数进行处理
+ * @author ljh
+ *
+ </em>/
+public interface Filter {</p>
+
+<pre><code>public void doFilter(String param, FilterChain fc);
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;接下来定义一个职责链接口，以规范形为（当然，这个接口也可以不定义，直接给出实现类即可）。</p>
+
+<p>``` java  FilterChain.java
+package com.my.filter;</p>
+
+<p>/<em>*
+ * 过滤器链接口定义
+ * @author ljh
+ *
+ </em>/
+public interface FilterChain {</p>
+
+<pre><code>/**
+ * 将请求传给下一个处理者
+ * @param param
+ */
+public void doFilter(String param);
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;一个具体的责任链实现（注：这个通常是由服务器去实现的，比如tomcat），里面包含了所有的要承担处理责任的处理者（也就是过滤器）。</p>
+
+<p>``` java ConcreteFilterChain.java
+package com.my.server;</p>
+
+<p>import java.util.ArrayList;
+import java.util.List;</p>
+
+<p>import com.my.biz.Processor;
+import com.my.filter.Filter;
+import com.my.filter.FilterChain;
+/<em>*
+ * 一个职责链具体实现
+ * @author ljh
+ *
+ </em>/
+public class ConcreteFilterChain implements FilterChain {</p>
+
+<pre><code>//链集合
+private List&lt;Filter&gt; filters = new ArrayList&lt;Filter&gt;();
+//初始已处理过滤器下标
+private int processIndex = -1;
+
+public ConcreteFilterChain(List&lt;Filter&gt; filters) {
+    this.filters = filters;
+}
+
+@Override
+public void doFilter(String param) {
+    //处理的过滤器下标
+    processIndex = processIndex + 1;
+
+    if (processIndex &gt;= filters.size()) {
+        Processor p = new Processor();
+        p.working(param);
+    } else {
+        filters.get(processIndex).doFilter(param, this);
+    }
+
+}
+
+/**
+ * 返回一个新的FilterChain（这个方法保留待用）
+ * 因为在多线程环境下，每一个请求会有自己的processIndex
+ * 这个新建的processIndex将设置为初始值-1，表示还没有进入任何一个过滤器
+ * @return
+ */
+public FilterChain cloneFilterChain() {
+    return new ConcreteFilterChain(filters);
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;好了，到这里，服务器上该做的事都已经做完，来看看程序员要做的事吧。<!--more-->我们先写一个业务处理类，模拟最终要进行的操作，如下：</p>
+
+<p>``` java Processor.java
+package com.my.biz;</p>
+
+<p>public class Processor {</p>
+
+<pre><code>public void working(String param) {
+
+    System.out.println("最后的业务执行与处理....:" + param);
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;在working处理消息前，我定义了两个过滤器。在第一个过滤器中，进行了参数检测，如果参数是"abc"，将终止后续业务的执行。同时，两个过滤器都对消息进行了处理，在消息中添加了自己的东西。</p>
+
+<p>``` java MyFilter1.java与MyFilter2.java
+package com.my.concretefilter;</p>
+
+<p>import com.my.filter.Filter;
+import com.my.filter.FilterChain;
+/<em>*
+ * 第一个过滤器,会对消息进行处理
+ * @author ljh
+ *
+ </em>/
+public class MyFilter1 implements Filter {</p>
+
+<pre><code>@Override
+public void doFilter(String param, FilterChain fc) {
+
+    System.out.println("进入MyFilter1的处理 ....");
+    if ("abc".equals(param)) {
+        System.out.println("发现参数是abc，终止执行!!!!");
+        return;
+    }
+    fc.doFilter(param + "[●modify by MyFilter1●]");
+    System.out.println("离开MyFilter1的处理 ....");
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>/<em>*
+ * 第一个过滤器,会对消息进行处理
+ * @author ljh
+ *
+ </em>/
+public class MyFilter2 implements Filter {</p>
+
+<pre><code>@Override
+public void doFilter(String param, FilterChain fc) {
+
+    System.out.println("进入MyFilter2的处理 ....");
+    fc.doFilter(param + "[★modify by MyFilter2★]");
+    System.out.println("离开MyFilter2的处理 ....");
+
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;接下来又是服务器上的处理代码了，我直接写出简单示例，生产环境中的服务器，肯定是读取web.xml反射创建过滤器对象。</p>
+
+<p>``` java Server.java</p>
+
+<pre><code>    //链集合(读取配置文件，反射创建filter，并加入过滤器链)
+    List&lt;Filter&gt; filters = new ArrayList&lt;Filter&gt;();
+    filters.add(new MyFilter1());
+    filters.add(new MyFilter2());
+    FilterChain fc = new ConcreteFilterChain(filters);
+
+    //派发请求
+    fc.doFilter("abcd");
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;输出的结果是如下，和我们的预期相同。</p>
+
+<p><code>
+进入MyFilter1的处理 ....
+进入MyFilter2的处理 ....
+最后的业务执行与处理....:abcd[●modify by MyFilter1●][★modify by MyFilter2★]
+离开MyFilter2的处理 ....
+离开MyFilter1的处理 ....
+</code></p>
+
+<p>&emsp;&emsp;如果用户的输入参数是abc，即fc.doFilter(&ldquo;abc&rdquo;);，执行输出是：</p>
+
+<p><code>
+进入MyFilter1的处理 ....
+发现参数是abc，终止执行!!!!
+</code></p>
+
+<p>&emsp;&emsp;这就有点类似于权限检测的filter一样，呵呵。</p>
+
+<h3>另一个是监听器（观察者模式）</h3>
+
+<p>&emsp;&emsp;通过监听器，容器会把我们感兴趣的事告诉我们，当然前提是我们必须先向服务器注册。监听器使用了观察者模式。下面我定义了一个会话监听器。</p>
+
+<p>``` java HttpSessionListener.java</p>
+
+<p>package com.my.listener;
+/<em>*
+ * 会话监听器
+ * @author Administrator
+ *
+ </em>/
+public interface HttpSessionListener {</p>
+
+<pre><code>public void sessionCreated(String  event);
+public void sessionDestroyed(String  event);
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;接下来由程序员定义自己的监听器，并在配置文件中进行配置。</p>
+
+<p>``` java MyHttpSessionListener1.java和MyHttpSessionListener2.java
+package com.my.concretelistener;</p>
+
+<p>import com.my.listener.HttpSessionListener;</p>
+
+<p>/<em>*
+ * 我的会话监听器1
+ * @author Administrator
+ *
+ </em>/
+public class MyHttpSessionListener1 implements HttpSessionListener {</p>
+
+<pre><code>private String myName = "监听器1";
+
+@Override
+public void sessionCreated(String event) {
+
+    System.out.println(myName + " 监听到创建事件：" + event);
+
+}
+
+@Override
+public void sessionDestroyed(String event) {
+
+    System.out.println(myName + "监听到销毁事件：" + event);
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>/<em>*
+ * 我的会话监听器2
+ * @author Administrator
+ *
+ </em>/
+public class MyHttpSessionListener2 implements HttpSessionListener {</p>
+
+<pre><code>private String myName = "监听器2";
+
+@Override
+public void sessionCreated(String event) {
+
+    System.out.println(myName + " 监听到创建事件：" + event);
+
+}
+
+@Override
+public void sessionDestroyed(String event) {
+
+    System.out.println(myName + "监听到销毁事件：" + event);
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;服务器上的处理代码如下：</p>
+
+<p>``` java Server.java</p>
+
+<pre><code>    //监听器对队
+    HttpSessionListener[] listeners = new HttpSessionListener[2];
+    listeners[0] = new MyHttpSessionListener1();
+    listeners[1] = new MyHttpSessionListener2();
+
+    //当容器中发生事件的时候，进行通知
+    //比如：创建事件
+    System.out.println("服务器发生创建事件！");
+    for (HttpSessionListener listener : listeners) {
+        listener.sessionCreated(new Date() + "创建事件发生了！" );
+    }
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;下面就是运行的结果，我们可以发现，这就是一个观察者模式的标准应用。</p>
+
+<p>```</p>
+
+<p>服务器发生创建事件！
+监听器1 监听到创建事件：Thu Jan 23 15:34:14 CST 2014创建事件发生了！
+监听器2 监听到创建事件：Thu Jan 23 15:34:14 CST 2014创建事件发生了！</p>
+
+<p>```</p>
+
+<h3>最后，给大家说一下包装器</h3>
+
+<p>&emsp;&emsp;包装器，也叫装饰器，这个模式的本意是在不改变原有类的情况下，增强类的功能（包括添加行为或添加状态）。</p>
+
+<p>``` java  Request.java</p>
+
+<p>package com.my.wrapper;
+/<em>*
+ * 抽象请求对象
+ * @author ljh
+ *
+ </em>/
+public interface Request {</p>
+
+<pre><code>//得到内容
+public String getContent();
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>``` java OriginalRequest.java</p>
+
+<p>package com.my.wrapper;</p>
+
+<p>/<em>*
+ * 原始请求
+ * @author ljh
+ *
+ </em>/
+public class OriginalRequest implements Request {</p>
+
+<pre><code>private String content;
+
+public OriginalRequest(String content) {
+    this.content = content;
+}
+
+@Override
+public String getContent() {
+    // TODO Auto-generated method stub
+    return content;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>``` java RequestWrapper.java</p>
+
+<p>package com.my.wrapper;</p>
+
+<p>/<em>*
+ * 包装对象，其它的包装类，都从这个类继承
+ * @author ljh
+ *
+ </em>/
+public class RequestWrapper implements Request {</p>
+
+<pre><code>private Request request;
+
+
+
+public RequestWrapper(Request request) {
+    super();
+    this.request = request;
+}
+
+
+
+@Override
+public String getContent() {
+    //此处暂时不做任何处理，直接返回
+    String content = request.getContent();
+    return content;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;上面三个类，都是由服务器端已经定义好的（也就是先把基本的架子搭起来）。下面这个方法才是我最终要执行的一个目标业务方法。</p>
+
+<p>``` java</p>
+
+<pre><code>/**
+ * 此访求接收request接口类型，并感知不到对象已被包装
+ * @param req
+ */
+public static void display(Request req) {
+    System.out.println(req.getContent());
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;接下来，大家看看我实现了一个对敏感关键词进行处理的包装器：</p>
+
+<p>``` java MyRequestWrapper.java</p>
+
+<p>package com.my.concretewrapper;</p>
+
+<p>import com.my.wrapper.Request;
+import com.my.wrapper.RequestWrapper;</p>
+
+<p>public class MyRequestWrapper extends RequestWrapper {</p>
+
+<pre><code>public MyRequestWrapper(Request request) {
+    super(request);
+}
+
+//添加行为或改变现在行为，或新的属性
+
+//比如：我下面进行敏感字符过滤
+@Override
+public String getContent() {
+    String content = super.getContent();
+    content = content.replaceAll("江泽民", "***");
+    return content;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;最后是对目标方法的调用了，输入结果是：我是国家主席***。</p>
+
+<p>```</p>
+
+<pre><code>    Request req = new MyRequestWrapper(new OriginalRequest("我是国家主席江泽民"));
+    //目标方法的调用
+    display(req);
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;好，此篇文章就到此吧，2014春节马上就到了，假期临近，一切都显示得非常冷清，很多人已经心不在焉。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[为你的项目加入Hudson持续集成]]></title>
@@ -331,6 +794,34 @@ mvn install:install-file -DgroupId=com.my.nio -DartifactId=mynio -Dversion=0.1.1
 </code></pre>
 
 <p></dependency>
+```</p>
+
+<p>```
+2013-1-16再补充：
+有这样的应用场景，在打war过程中，需要将一些配置文件
+（比如数据库连接信息的properties文件）打包到WEB-INF/classes下。
+而这些配置文件又在另一个maven工程中，解决办法如下：
+<plugin></p>
+
+<pre><code>            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+            &lt;artifactId&gt;maven-war-plugin&lt;/artifactId&gt;
+            &lt;version&gt;2.4&lt;/version&gt;
+            &lt;configuration&gt; 
+                &lt;webResources&gt;
+                    &lt;resource&gt;
+                        &lt;directory&gt;../car-core/src/main/resources&lt;/directory&gt;
+                        &lt;includes&gt;
+                           &lt;include&gt;**/*.*&lt;/include&gt;
+                        &lt;/includes&gt;
+                        &lt;targetPath&gt;WEB-INF/classes&lt;/targetPath&gt;
+                    &lt;/resource&gt;
+                &lt;/webResources&gt;
+
+                &lt;archive&gt;              
+                ..............以下略去
+</code></pre>
+
+<p>请注意上面的resource节点中的内容。
 ```</p>
 ]]></content>
   </entry>
@@ -879,203 +1370,6 @@ mvn install:install-file -DgroupId=com.my.nio -DartifactId=mynio -Dversion=0.1.1
 <p>&emsp;&emsp;server部分配置了可以上传到nexus中的相关账户的登录名及密码，这些信息都是在nexus的管理界面中配置的。而http : / /127.0.0.1:8081/nexus/content/groups/public 则是本地maven库所在的服务器路径。</p>
 
 <p>&emsp;&emsp;好了，今天先到这，下一篇文章会详细介绍如何在项目中使用maven.</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[spring aop实现机制]]></title>
-    <link href="http://yanyaner.com/blog/2013/07/01/spring-aop/"/>
-    <updated>2013-07-01T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/07/01/spring-aop</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;spring对持久层的事务管理采用的aop实现，在spring底层，aop是使用的代理模式实现的，代理模式在java中一般有jdk 动态代理以及cglib实现的更为高效的代理，jdk动态代理采用的是标准代理模式（大家可以看看标准代理模式的uml图），被代理对象必须要实现接口，而cglib就没有这一强制性要求了。</p>
-
-<p>&emsp;&emsp;下面，我要实现一个环绕通知，分别用jdk动态代理，cglib，以及在spring中的配置实现。</p>
-
-<p>&emsp;&emsp;我有两个接口，IMyService1，IMyService2，实现类MyServiceImpl实现了这两个接口，另外，还写了一个没有实现任何接口的service ,NoInterfaceService。</p>
-
-<p>&emsp;&emsp;<strong>一、jdk动态代理</strong></p>
-
-<p>``` java MyInvocationHandler.java</p>
-
-<p>//调用处理程序，相当于aop中的环绕通知
-public class MyInvocationHandler implements java.lang.reflect.InvocationHandler {</p>
-
-<pre><code>//被代理的对象
-private Object target;
-
-//构造方法传入被代理的对象
-public MyInvocationHandler(Object target) {
-    this.target = target;
-}
-
-@Override
-public Object invoke(Object proxy, Method method, Object[] args)
-        throws Throwable {
-    //proxy就是$proxy0,里面包含一个target属性，为代理的目标对象
-
-    System.out.println(method.getName() + "方法调用前！");
-
-    Object result = method.invoke(target, args);
-
-    System.out.println(method.getName() + "方法调用后！");
-    return result;
-}
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;测试代码：</p>
-
-<p>``` java</p>
-
-<p>//目标对象</p>
-
-<pre><code>    MyServiceImpl ms = new MyServiceImpl();
-
-    //创建代理对象，interface是代理要
-    IMyService1 ms1 = 
-            (IMyService1)Proxy.newProxyInstance(ms.getClass().getClassLoader(),
-            ms.getClass().getInterfaces(), new MyInvocationHandler(ms));
-
-    ms1.biz1();
-
-    IMyService2 ms2 = (IMyService2)ms1;
-    ms2.biz2();
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;请大家注意，需要动态代理的接口，由上面ms.getClass().getInterfaces()的代码传入，并且，我们可以发现，代理产生的对象，可以强转为其中任意一个接口，但如果强转为MyServiceImpl会报错：$proxy0不能转换为MyServiceImpl。</p>
-
-<p>&emsp;&emsp;<strong>二、cglib实现</strong></p>
-
-<p>``` java MyAdvice.java</p>
-
-<p>//这个是通知类</p>
-
-<p>class MyAdvice implements MethodInterceptor {</p>
-
-<pre><code>@Override
-public Object intercept(Object object, Method method, Object[] args,
-        MethodProxy methodProxy) throws Throwable {
-
-    System.out.println(method.getName() + "执行之前..............");
-    Object result = methodProxy.invokeSuper(object, args);
-    System.out.println(method.getName() + "执行之后..............");
-    return result;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;产生代理的测试类：</p>
-
-<p>``` java</p>
-
-<pre><code>    Enhancer eh = new Enhancer();
-    eh.setSuperclass(NoInterfaceService.class);
-    //如果不需要通知代码
-    //eh.setCallback(NoOp.INSTANCE);
-    eh.setCallback(new MyAdvice());
-
-    NoInterfaceService ns = (NoInterfaceService)eh.create();
-    ns.hello();
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;上面的代理，可以对无接口对象实现代理，有接口的当然也是不存在问题的。</p>
-
-<p>&emsp;&emsp;<strong>三、spring代理配置实现</strong></p>
-
-<p>``` java LoggerAdvice.java</p>
-
-<p>public class LoggerAdvice implements MethodInterceptor {</p>
-
-<pre><code>@Override
-public Object invoke(MethodInvocation mi) throws Throwable {
-    System.out.println(mi.getMethod().getName() + "开始执行！！！");
-    Object result = mi.proceed();
-    System.out.println(mi.getMethod().getName() + "执行完毕！！！");
-    return result;
-}
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;配置文件：</p>
-
-<p>``` xml</p>
-
-<pre><code>&lt;!-- 代理对象 --&gt;
-&lt;bean id="myServiceProxy"
-    class="org.springframework.aop.framework.ProxyFactoryBean"
-&gt;
-    &lt;property name="target" ref="myService"&gt;&lt;/property&gt;
-    &lt;property name="interceptorNames"&gt;
-        &lt;list&gt;
-            &lt;value&gt;loggerAdvice&lt;/value&gt;
-        &lt;/list&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;测试代码：</p>
-
-<p>``` java</p>
-
-<p>BeanFactory bf</p>
-
-<pre><code>    = new ClassPathXmlApplicationContext("beans.xml");
-
-    IMyService1 ms1 = (IMyService1)bf.getBean("myServiceProxy");
-    ms1.biz1();
-
-    IMyService2 ms2 = (IMyService2)bf.getBean("myServiceProxy");
-    ms2.biz2();
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;如果被代理对象实现了接口，默认情况下spring会使用jdk动态代理，因此，如果代把上面取到的对象强转为MyServiceImpl会报错：$proxy0不能转换为MyServiceImpl，但转换为其它所实现的两个接口，都不会存在问题。</p>
-
-<p>&emsp;&emsp;我们也可以通过proxyInterfaces指定，代理哪个接口（默认情况下，会自动代理该类所实现的所有接口）。</p>
-
-<p>``` xml</p>
-
-<pre><code>    &lt;property name="proxyInterfaces"&gt;
-        &lt;list&gt;
-            &lt;value&gt;com.my.service.IMyService1&lt;/value&gt;
-        &lt;/list&gt;
-    &lt;/property&gt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;如果被代理的类没有实现接口，spring会自动使用cblib作为底层代理实现，如果你的lib下没有该jar包，系统会报错。</p>
-
-<p>&emsp;&emsp;当然，在被代理的类有接口的情况下，你也可以通过配置，强制使用cglib代理，配置如下：</p>
-
-<p>``` xml</p>
-
-<p><property name="proxyTargetClass" value="true"></property></p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;以下代码中可以看出，代理对象可直接强转为实现类：</p>
-
-<p>``` java</p>
-
-<p>NoInterfaceService is =  (NoInterfaceService)bf.getBean(&ldquo;myServiceProxy&rdquo;);
-is.hello();</p>
-
-<p>```</p>
 ]]></content>
   </entry>
   

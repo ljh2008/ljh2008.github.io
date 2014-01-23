@@ -405,6 +405,55 @@
 </span><span class='line'><span class="nt">&lt;/dependency&gt;</span>
 </span></code></pre></td></tr></table></div></figure>
 
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>2013-1-16再补充：
+</span><span class='line'>有这样的应用场景，在打war过程中，需要将一些配置文件
+</span><span class='line'>（比如数据库连接信息的properties文件）打包到WEB-INF/classes下。
+</span><span class='line'>而这些配置文件又在另一个maven工程中，解决办法如下：
+</span><span class='line'><span class="nt">&lt;plugin&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="nt">&lt;/groupId&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;artifactId&gt;</span>maven-war-plugin<span class="nt">&lt;/artifactId&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;version&gt;</span>2.4<span class="nt">&lt;/version&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;configuration&gt;</span>   
+</span><span class='line'>                  <span class="nt">&lt;webResources&gt;</span>
+</span><span class='line'>                      <span class="nt">&lt;resource&gt;</span>
+</span><span class='line'>                          <span class="nt">&lt;directory&gt;</span>../car-core/src/main/resources<span class="nt">&lt;/directory&gt;</span>
+</span><span class='line'>                          <span class="nt">&lt;includes&gt;</span>
+</span><span class='line'>                             <span class="nt">&lt;include&gt;</span>**/*.*<span class="nt">&lt;/include&gt;</span>
+</span><span class='line'>                          <span class="nt">&lt;/includes&gt;</span>
+</span><span class='line'>                          <span class="nt">&lt;targetPath&gt;</span>WEB-INF/classes<span class="nt">&lt;/targetPath&gt;</span>
+</span><span class='line'>                      <span class="nt">&lt;/resource&gt;</span>
+</span><span class='line'>                  <span class="nt">&lt;/webResources&gt;</span>
+</span><span class='line'>                  
+</span><span class='line'>                  <span class="nt">&lt;archive&gt;</span>
+</span><span class='line'>                  ..............以下略去
+</span><span class='line'>请注意上面的resource节点中的内容。
+</span></code></pre></td></tr></table></div></figure>
+
 </div>
 
 
@@ -489,6 +538,10 @@ var duoshuoQuery = {short_name:"ljh2008"};
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
       </li>
     
@@ -502,10 +555,6 @@ var duoshuoQuery = {short_name:"ljh2008"};
     
       <li class="post">
         <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三--深入细节</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/24/maven-project/">在项目中使用maven之二--项目实例</a>
       </li>
     
   </ul>

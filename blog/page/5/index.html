@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;Restful中的put请求，一般表示对原有对象的修改，但是在spring mvc中，通过@RequestParam、@ModelAttribute注解均不能得到请求数据（虽然可以通过@RequestBody得到请求字符串，但必须要自己在spring mvc中解析封装， &hellip;">
+  <meta name="description" content="&emsp;&emsp;Shiro是一个功能强大的轻量级权限框架，相对其它权限框架（比如spring security）来说，要易用得很，下面，我给大家讲讲如何在一个项目中简单整合shiro。 &emsp;&emsp;我们通常所说的权限，就是要判断某个操作者是否有操作某个资源的权限，而资源， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,92 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/04/26/shiro1/">在项目中集成shiro权限框架(1)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-26T15:18:00+08:00" pubdate data-updated="true">2013年04月26日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;Shiro是一个功能强大的轻量级权限框架，相对其它权限框架（比如spring security）来说，要易用得很，下面，我给大家讲讲如何在一个项目中简单整合shiro。</p>
+
+<p>&emsp;&emsp;我们通常所说的权限，就是要判断某个操作者是否有操作某个资源的权限，而资源，可以是菜单、链接、功能按钮、业务方法、某类型的数据等等，根据需求，每个项目的权限可能都有所不同，通用万能权限系统是不存在的。</p>
+
+<p>&emsp;&emsp;Shrio的权限包括认证、授权、密码管理、会话管理等四个部分，每一个部分，shrio都进行了抽象，以做到和具体应用平台、环境的无关。关于shiro的基础了解，大家可到这里去看看：<a href="http://www.infoq.com/cn/articles/apache-shiro">http://www.infoq.com/cn/articles/apache-shiro</a></p>
+
+<p>&emsp;&emsp;权限系统的设计，根据不同的权限粒度，会用所不同，比如：有的系统到菜单级，而有的到每一个功能按钮级，有的到方法级，有的到业务数据级，我在这仅仅讨论前两类。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/1.jpg' width='' height='' title='权限类图设计1'><span class='caption-text'>权限类图设计1</span></span></p>
+
+<p>&emsp;&emsp;上面是一个对象关系图，模块在此处仅仅为菜单进行逻辑归类，当然，也可以建立菜单和功能的一对多关系，为功能进行逻辑归类。当然，菜单也可以建成关联的树状结构，以更好扩展。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/2.jpg' width='' height='' title='权限类图设计2'><span class='caption-text'>权限类图设计2</span></span></p>
+
+<p>&emsp;&emsp;根据对象关系，可以设计出表结构，我直接贴出数据截图：</p>
+
+<p>&emsp;&emsp;<strong>模块表</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/3.jpg' width='' height='' title='模块表结构'><span class='caption-text'>模块表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>菜单表</strong>：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/8.jpg' width='' height='' title='菜单表结构'><span class='caption-text'>菜单表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>操作表</strong>，一般对应页面中的按钮，其中f_action_flag对应于restful中的增、删、查、改：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/4.jpg' width='' height='' title='操作表结构'><span class='caption-text'>操作表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>角色表：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/9.jpg' width='' height='' title='角色表结构'><span class='caption-text'>角色表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>角色-菜单关系表</strong>：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/5.jpg' width='' height='' title='角色-菜单关系表结构'><span class='caption-text'>角色-菜单关系表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>角色-功能表：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/6.jpg' width='' height='' title='角色-功能表结构'><span class='caption-text'>角色-功能表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>用户表：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/10.jpg' width='' height='' title='用户表结构'><span class='caption-text'>用户表结构</span></span></p>
+
+<p>&emsp;&emsp;<strong>用户-角色关系表：</strong></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/04/7.jpg' width='' height='' title='用户-角色关系表结构'><span class='caption-text'>用户-角色关系表结构</span></span></p>
+
+<p>&emsp;&emsp;上面截图中，真正有效的表7张，权限控制到页面及功能上。</p>
+
+<p>&emsp;&emsp;下篇，贴出上面的类代码及class映射文件。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1828,146 +1914,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/03/25/jbpm1/">Jbpm简单使用（1）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-03-25T15:18:00+08:00" pubdate data-updated="true">2013年03月25日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;工作流是一些项目的核心所在，比如OA系统，如何让工作流变得更加的简单、灵活、有效，是开发人员必须要考虑的。</p>
-
-<p>&emsp;&emsp;如果你项目的流程比较简单，而且流程稳定，很少变化，你可以通过自定义几个类来实现工作流（比如：WorkFlow,AduitNode,AduitInstance等等），但对于以工作流为核心的项目，最好使用第三方工作流框架。简单项目引入工作流框架是出力不讨好，所以，最好别用，再说每引入一个第三方框架，都增加了项目的不可控因素，也更加容易出现问题，也就是不到万不得已，不要冒然引入第三方的东西。</p>
-
-<p>&emsp;&emsp;jbpm是一个非常成熟的工作流框架，并且和spring有很好的集成，当然，jbmp本身比较复杂，学习曲线并不平坦。下面，我简单给大家讲讲jbpm4.4的使用，以及如何与现在业务进行整合。</p>
-
-<p>&emsp;&emsp;<strong>一、建表。</strong></p>
-
-<p>&emsp;&emsp;jbpm自身有一套表结构来持久化流程相关对象，大家可在\jbpm-4.4\install\src\db\create中找到相关数据库的建表脚本。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/03/2.jpg' width='' height='' title='jbpm生成的表结构'><span class='caption-text'>jbpm生成的表结构</span></span></p>
-
-<p>&emsp;&emsp;jbpm的持久化使用的是hibernate，所以，在配置sessionFactory时要注意，bean的id不能乱取。至于每张表中存的是什么，我们大可不必深究，除非你要研究jbpm，封装自己的工程流。</p>
-
-<p>&emsp;&emsp;<strong>二、在spring中加入jbpm核心对象。</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="c">&lt;!-- jbpm配置 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;springHelper&quot;</span> <span class="na">class=</span><span class="s">&quot;org.jbpm.pvm.internal.processengine.SpringHelper&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;processEngine&quot;</span> <span class="na">factory-bean=</span><span class="s">&quot;springHelper&quot;</span> <span class="na">factory-method=</span><span class="s">&quot;createProcessEngine&quot;</span><span class="nt">/&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;其中的processEngine为jbpm核心对象，有了它，几乎可以完成我们所有的工作。</p>
-
-<p>&emsp;&emsp;<strong>三、与业务的整合的方式</strong></p>
-
-<p>&emsp;&emsp;业务和jbpm的整合，我们需要明确业务和jbmp如何关联，主要有两种方式：第一种是在业务中保存流程定义、流程实例相对应的id，另一种是在jbpm中保存业务相关的主健（如果是hibernate，采用uuid主键比较适合），这两种方式大家任选一种即可。</p>
-
-<p>&emsp;&emsp;<strong>四、根据业务书写jpdl文件。</strong></p>
-
-<p>&emsp;&emsp;流程定义文件，可以采用jbpm的eclispe图形化插件来编写，也可以自己手工编写。</p>
-
-<p>&emsp;&emsp;下面是一个借款流程文：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="cp">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="nt">&lt;process</span> <span class="na">name=</span><span class="s">&quot;loan&quot;</span> <span class="na">xmlns=</span><span class="s">&quot;http://jbpm.org/4.4/jpdl&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>
-</span><span class='line'> <span class="nt">&lt;start</span> <span class="na">name=</span><span class="s">&quot;start&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;startLoan&quot;</span> <span class="na">to=</span><span class="s">&quot;inputLoan&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'> <span class="nt">&lt;/start&gt;</span>
-</span><span class='line'>
-</span><span class='line'> <span class="nt">&lt;task</span> <span class="na">assignee=</span><span class="s">&quot;#{submiter}&quot;</span> <span class="na">name=</span><span class="s">&quot;inputLoan&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;submitApplication&quot;</span> <span class="na">to=</span><span class="s">&quot;managerCheck&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'> <span class="nt">&lt;/task&gt;</span>
-</span><span class='line'>
-</span><span class='line'> <span class="nt">&lt;task</span> <span class="na">assignee=</span><span class="s">&quot;manager&quot;</span> <span class="na">name=</span><span class="s">&quot;managerCheck&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;managerNotPass&quot;</span> <span class="na">to=</span><span class="s">&quot;cancel&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;managerPass&quot;</span> <span class="na">to=</span><span class="s">&quot;moneyCheck&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'> <span class="nt">&lt;/task&gt;</span>
-</span><span class='line'>
-</span><span class='line'> <span class="nt">&lt;decision</span> <span class="na">name=</span><span class="s">&quot;moneyCheck&quot;</span> <span class="na">expr=</span><span class="s">&quot;#{money&amp;gt;=5000?&#39;x1&#39;:&#39;x2&#39;}&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;x1&quot;</span> <span class="na">to=</span><span class="s">&quot;ceoCheck&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;x2&quot;</span> <span class="na">to=</span><span class="s">&quot;financeGet&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'> <span class="nt">&lt;/decision&gt;</span>
-</span><span class='line'>
-</span><span class='line'> <span class="nt">&lt;task</span> <span class="na">assignee=</span><span class="s">&quot;ceo&quot;</span> <span class="na">name=</span><span class="s">&quot;ceoCheck&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;ceoPass&quot;</span> <span class="na">to=</span><span class="s">&quot;financeGet&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;ceoNotPass&quot;</span> <span class="na">to=</span><span class="s">&quot;cancel&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'> <span class="nt">&lt;/task&gt;</span>
-</span><span class='line'>
-</span><span class='line'> <span class="nt">&lt;task</span> <span class="na">assignee=</span><span class="s">&quot;finance&quot;</span> <span class="na">name=</span><span class="s">&quot;financeGet&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;finishFinance&quot;</span>  <span class="na">to=</span><span class="s">&quot;end&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'> <span class="nt">&lt;/task&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="nt">&lt;end</span> <span class="na">name=</span><span class="s">&quot;end&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'> <span class="nt">&lt;end-cancel</span> <span class="na">name=</span><span class="s">&quot;cancel&quot;</span> <span class="nt">/&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/6/">&larr; 更多早期老文章</a>
@@ -1985,6 +1931,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
       </li>
     
@@ -1998,10 +1948,6 @@
     
       <li class="post">
         <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三&#8211;深入细节</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/24/maven-project/">在项目中使用maven之二&#8211;项目实例</a>
       </li>
     
   </ul>

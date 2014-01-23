@@ -9,8 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;今天我的独立博客正式开通了。 &emsp;&emsp;我想，人来到这个世上，应该留下一些自已的东西，比如在互联网上，博客就是一种很好的方式。 &emsp;&emsp;本博从今天起，将记录我的工作、生活、学习中的点滴和任何我想留下的东西，欢迎大家常来这里看看。
-">
+  <meta name="description" content="&emsp;&emsp;tor是本人很早就使用的一个翻越长城的工具，下面介绍我在linux上的安装过程及步骤： &emsp;&emsp;一、服务器采用ubuntu 9.10版本，由于tor并没有在9.10发行软件更新列表中，所以，我们首先要在更新列表中加入tor的更新地址，修改修改/etc/apt &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -59,6 +58,83 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/17/tor-man/">Tor的安装与配置</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-17T15:18:00+08:00" pubdate data-updated="true">2010年10月17日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;tor是本人很早就使用的一个翻越长城的工具，下面介绍我在linux上的安装过程及步骤：</p>
+
+<p>&emsp;&emsp;一、服务器采用ubuntu 9.10版本，由于tor并没有在9.10发行软件更新列表中，所以，我们首先要在更新列表中加入tor的更新地址，修改修改/etc/apt/sources.list，加入：</p>
+
+<p>deb <a href="http://mirror.noreply.org/pub/tor">http://mirror.noreply.org/pub/tor</a> etch main</p>
+
+<p>deb-src <a href="http://mirror.noreply.org/pub/tor">http://mirror.noreply.org/pub/tor</a> etch main</p>
+
+<p>再sudo apt-get update，更新源。</p>
+
+<p>&emsp;&emsp;二、系统提示需要libevent1包，再网上搜寻到libevent1_1.3e-3_amd64.deb安装包（这里请注意服务器cpu位数，32 or 64），用sudo dpkg -i libevent1_1.3e-3_amd64.deb命令完成libevent1包的安装。</p>
+
+<p>&emsp;&emsp;三、安装privoxy，这个非常简单，直接命令sudo –apt-get install tor privoxy搞定。</p>
+
+<p>&emsp;&emsp;四、配置tor文件。具体编辑/etc/tor/下的配置文件，主要是加入连接桥，原因是GF屏蔽了tor的直连端口。桥接服务器地址及端口获得，大家可参考网上文章，一般采用向tor邮件服务器发一封get bridge的邮件，几秒钟后，你就可以收到加信，信中会列出3个桥接服务器地址。</p>
+
+<p>&emsp;&emsp;五、重启tor软件</p>
+
+<p>sudo /etc/init.d/tor restart</p>
+
+<p>sudo /etc/init.d/privoxy restart</p>
+
+<p>&emsp;&emsp;最后，说一下java服务器软件如何访问被和诣网站。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Properties</span> <span class="n">prop</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">getProperties</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">prop</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;http.proxyHost&quot;</span><span class="o">,</span><span class="s">&quot;127.0.0.1&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">prop</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;http.proxyPort&quot;</span><span class="o">,</span><span class="s">&quot;8118&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;8118就是tor的默认代理端口号，经过上面的系统属性设置后，你的网络http访问，都将通过tor代理完成，访问网页，下载资源，都没有任何问题。</p>
+
+<p>&emsp;&emsp;tor在运行一段时间后，可用原已经连接的外部转发端口无法使用，需要重新启动一次tor服务器，此时最有可能出现的情况是桥接服务器已经被封，你又得重新去获得新的桥接服务器地址及端口号。</p>
+
+<p>&emsp;&emsp;由于2010世博会期间，很多网站已经解封，如果再通过tor去访问，效率不一定高，所以，建议大家将是否使用代理写入一个配置文件中，要使用代理时，只需修改一下配置文件；解禁时，也修改一下配置文件，非常的简单，有效。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -115,6 +191,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
       </li>
     
@@ -128,10 +208,6 @@
     
       <li class="post">
         <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三&#8211;深入细节</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/24/maven-project/">在项目中使用maven之二&#8211;项目实例</a>
       </li>
     
   </ul>

@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;经历了众多项目开发，前端的页面交互实现及前端页面的项目后期维护是开发中的一个考虑重点，在这块花费时间也非常多。中小型网站首选php，asp之类的程序语言来开发，原因何在？除了丰富的函数库外，另一个原因是开发效率非常高，可以采用model1方式，业务代码直接写到页面中， &hellip;">
+  <meta name="description" content="&emsp;&emsp;任何软件系统的开发，都必须考虑输入数据的有效性问题，即要保证非法的数据不被系统接收，又要有较好的用户操作体验。B/S系统的开发更是如此，数据的验证至少都要建立起：客户端和服务器端两道防线。建立客户端验证机制是为了加快验证速度，提高用户交互效率，而服务器端验证将是数据必经之路 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,293 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/06/06/spring-mvc2/">都spring Mvc了（二）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-06T15:18:00+08:00" pubdate data-updated="true">2011年06月06日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;任何软件系统的开发，都必须考虑输入数据的有效性问题，即要保证非法的数据不被系统接收，又要有较好的用户操作体验。B/S系统的开发更是如此，数据的验证至少都要建立起：客户端和服务器端两道防线。建立客户端验证机制是为了加快验证速度，提高用户交互效率，而服务器端验证将是数据必经之路，这道关卡是必不可少的。</p>
+
+<p>&emsp;&emsp;B/S系统中的表现层框架中，struts2是一个即能自动生成客户端，又能生成服务器端数据验证代码的框架，这点非常可贵，但是必须要引用struts2的自定标记库。struts1和struts2的验证，都是通过在xml文件中配置formbean的中每一个字段的验证规则以及出错提示消息，结合相应的标记库，可以显示服务器端的验证结果，并且通过标记库，可以保留（回填）用户之前输入的数据。</p>
+
+<p>&emsp;&emsp;因此，我们在开发中要考虑三个问题，一是页面上哪些输入元素用什么样的验证规则，二是出错后如何在页面上显示出错信息，三是用户之前输入的数据回填（避免用户重新再输入）。</p>
+
+<p>&emsp;&emsp;我之前在一些小项目中都是不主张引入验证框架的，输入表单不算太复杂，由程序员手工if esle 做验证，并将验证信息放入request中。但对于大、中型项目，这种做法显然并不规范。我们用DTO(VO)接收页面表单数据，之后根据配置的验证规则对表单数据进行验证，如果满足验证规则执行后面的业务处理，否则回填数据，并向用户报告未通过验证的原因。</p>
+
+<p>&emsp;&emsp;下面我们一起来看看spring mvc中是如何做的。spring mvc通过JSR 303规范对java bean字段验证定义，通过注解配置来实现对数据的合法性验证。JSR 303目前有jboss和hibernate的两个实现，我们在这里采用hibernate的实现。</p>
+
+<p>&emsp;&emsp;先要在项目中导入validation-api-1.0.0.GA.jar和hibernate-validator-4.1.0.Final.jar两个包，之后就在DTO(VO)中对需要验证的字段进行配置了（如果页面字段内容和领域模型中的POJO字段一致，可以不必定义新的DTO(VO)对象，直接使用POJO即可），示例代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Student</span> <span class="kd">implements</span> <span class="n">Serializable</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//姓名</span>
+</span><span class='line'>  <span class="nd">@NotEmpty</span><span class="o">(</span><span class="n">message</span><span class="o">=</span><span class="s">&quot;姓名不可以为空！&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="nd">@Length</span><span class="o">(</span><span class="n">min</span><span class="o">=</span><span class="mi">2</span><span class="o">,</span><span class="n">max</span><span class="o">=</span><span class="mi">5</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>  <span class="c1">//出生日期</span>
+</span><span class='line'>  <span class="nd">@Past</span><span class="o">(</span><span class="n">message</span><span class="o">=</span><span class="s">&quot;生日输入不正确，请核对！&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;先来看上面代码中的name字段，我们用了@NotEmpty注解，标明此字段不能为空，如果为空将显示由message指定的消息，如果想指定资源文件中的消息key，可以用NotEmpty.modelname.fieldname指定，modelname是DTO对象在spring mvc作用域中的名称，fieldname是字段属性名。</p>
+
+<p>&emsp;&emsp;@Length指定该字段的长度区间，在这里我没有指定默认消息，系统将使用内置的默认消息（英文的），当然你可以在资源文件中指定消息key，比如，在资源文件中定义：Length.student.name = 用户的姓名长度必须在 2 到 5之间!。</p>
+
+<p>&emsp;&emsp;@Past注解标明该日期必须在今天以后。
+更多更复杂的验证规则配置，大家可参考下面表格的描述（转自hiberante validator官网）：</p>
+
+<table>
+<thead>
+<tr>
+<th align="center">Annotation</th>
+<th align="center"> Part of Bean Validation Specification</th>
+<th align="left"> Apply on</th>
+<th align="left"> Use</th>
+<th align="center"> Hibernate Metadata impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">@AssertFalse</td>
+<td align="center"> yes</td>
+<td align="left"> field/property</td>
+<td align="left"> check that the annotated element is false.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@AssertTrue</td>
+<td align="center"> yes</td>
+<td align="left"> field/property</td>
+<td align="left"> check that the annotated element is true.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@DecimalMax</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> The annotated element must be a number whose value must be lower or equal to the specified maximum. The parameter value is the string representation of the max value according to the BigDecimal string representation.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@DecimalMin</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> The annotated element must be a number whose value must be higher or equal to the specified minimum. The parameter value is the string representation of the min value according to the BigDecimal string representation.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">&ldquo;@Digits(integer=, fraction=)&rdquo;</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> Check whether the property is a number having up to integer digits and fraction fractional digits.</td>
+<td align="center"> Define column precision and scale.</td>
+</tr>
+<tr>
+<td align="center">@Email</td>
+<td align="center"> no</td>
+<td align="left"> field/property. Needs to be a string.</td>
+<td align="left"> Check whether the specified string is a valid email address.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@Future</td>
+<td align="center"> yes</td>
+<td align="left"> field/property. Supported types are java.util.Date and java.util.Calendar.</td>
+<td align="left"> Checks whether the annotated date is in the future.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">&ldquo;@Length(min=, max=)&rdquo;</td>
+<td align="center"> no</td>
+<td align="left"> field/property. Needs to be a string.</td>
+<td align="left"> Validate that the annotated string is between min and max included.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@Max</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> Checks whether the annotated value is less than or equal to the specified maximum.</td>
+<td align="center"> Add a check constraint on the column.</td>
+</tr>
+<tr>
+<td align="center">@Min</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> Check whether the annotated value is higher than or equal to the specified minimum.</td>
+<td align="center"> Add a check constraint on the column.</td>
+</tr>
+<tr>
+<td align="center">@NotNull</td>
+<td align="center"> yes</td>
+<td align="left"> field/property</td>
+<td align="left"> Check that the annotated value is not null.</td>
+<td align="center"> Column(s) are not null.</td>
+</tr>
+<tr>
+<td align="center">@NotEmpty</td>
+<td align="center"> no</td>
+<td align="left"> field/property. Needs to be a string.</td>
+<td align="left"> Check if the string is not null nor empty.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@Null</td>
+<td align="center"> yes</td>
+<td align="left"> field/property</td>
+<td align="left"> Check that the annotated value is null.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">@Past</td>
+<td align="center"> yes</td>
+<td align="left"> field/property. Supported types are java.util.Date and java.util.Calendar.</td>
+<td align="left"> Checks whether the annotated date is in the past.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">&ldquo;@Pattern(regex=, flag=)&rdquo;</td>
+<td align="center"> yes</td>
+<td align="left"> field/property. Needs to be a string.</td>
+<td align="left"> Check if the annotated string match the regular expression regex.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">&ldquo;@Range(min=, max=)&rdquo;</td>
+<td align="center"> no</td>
+<td align="left"> &ldquo;field/property. Supported types are BigDecimal, BigInteger, String, byte, short, int, long and the respective wrappers of the primitive types.&rdquo;</td>
+<td align="left"> Check whether the annotated value lies between (inclusive) the specified minimum and maximum.</td>
+<td align="center"> none</td>
+</tr>
+<tr>
+<td align="center">&ldquo;@Size(min=, max=)&rdquo;</td>
+<td align="center"> yes</td>
+<td align="left"> &ldquo;field/property. Supported types are String, Collection, Map and arrays.&rdquo;</td>
+<td align="left"> Check if the annotated element size is between min and max (inclusive).</td>
+<td align="center"> Column length will be set to max.</td>
+</tr>
+<tr>
+<td align="center">@Valid</td>
+<td align="center"> yes</td>
+<td align="left"> field/property</td>
+<td align="left"> Perform validation recursively on the associated object.</td>
+<td align="center"> none</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>&emsp;&emsp;再来看看action中新增学生的代码中，是如何进行数据验证的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 添加学生信息</span>
+</span><span class='line'><span class="cm"> * @return String</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">params</span><span class="o">=</span><span class="s">&quot;add&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="n">String</span> <span class="nf">addStudent</span><span class="o">(</span><span class="n">ModelMap</span> <span class="n">model</span><span class="o">,</span>
+</span><span class='line'>      <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;pno&quot;</span><span class="o">,</span><span class="n">defaultValue</span><span class="o">=</span><span class="s">&quot;1&quot;</span><span class="o">)</span><span class="kt">int</span> <span class="n">pno</span><span class="o">,</span>
+</span><span class='line'>      <span class="nd">@ModelAttribute</span><span class="o">(</span><span class="s">&quot;student&quot;</span><span class="o">)</span> <span class="nd">@Valid</span> <span class="n">Student</span> <span class="n">stu</span><span class="o">,</span>
+</span><span class='line'>      <span class="n">BindingResult</span> <span class="n">result</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">result</span><span class="o">.</span><span class="na">hasErrors</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;add_student&quot;</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
+</span><span class='line'>  <span class="c1">//将页面属性拷贝到student中</span>
+</span><span class='line'>  <span class="n">BeanUtils</span><span class="o">.</span><span class="na">copyProperties</span><span class="o">(</span><span class="n">stu</span><span class="o">,</span> <span class="n">student</span><span class="o">,</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{});</span>
+</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">studentService</span><span class="o">.</span><span class="na">addStudent</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">BizException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">model</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error_key&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">());</span>
+</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;error&quot;</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="k">return</span> <span class="s">&quot;redirect:student.action?page&amp;pno=&quot;</span> <span class="o">+</span> <span class="n">pno</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码@ModelAttribute(“student”) @Valid Student stu中，我们用@Valid注解标明，页面传入的 Student stu必须要验证，规则当然是我们前面用注解定义过的了。
+如果验证没有通过，我们怎么能够知道呢？BindingResult result，看到这个参数了么，这个里面有验证是否通过的信息，我们用result.hasErrors()就可以知道验证是否通过，如果没有通过，则转到出错的页面。</p>
+
+<p>&emsp;&emsp;最后一个问题，页面中如果显示这个错误信息呢？需要引入&lt;%@ taglib uri=&ldquo;/WEB-INF/spring-form.tld&rdquo; prefix=&ldquo;form&rdquo; %>标记库，这个是spring mvc定义的。比如对姓名的错误显示，我们通过</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form:errors</span> <span class="na">path=</span><span class="s">&quot;student.name&quot;</span><span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;就可以显示这个字段的验证出错信息了。</p>
+
+<p>&emsp;&emsp;有人说，引入spring mvc的标签库，似乎在jsp中产生了和spring mvc的耦合。确实如此，天下没有免费的午餐，你想想，其它的mvc验证框架，不是也要引入相应的视图标签库么。spring mvc将org.springframework.validation.BindingResult.modelAttributeName名作为key保存出错的信息，本例中用org.springframework.validation.BindingResult.student为key保存了一个org.springframework.validation.BeanPropertyBindingResult的错误对象，如果用EL表达式来取出错的信息，还真取不出来。</p>
+
+<p>&emsp;&emsp;数据的回填问题非常简单，直接访问作用域中的modelAttributeName的对象就可以了，本例中是studnet，姓名的页面元素，就可以写成：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">value=</span><span class="s">&quot;${student.name}&quot;</span><span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好了，就这么多，这就是spring mvc，够简单，够强大的吧。如果你还有什么问题，请给我留言。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1768,72 +2055,6 @@ spring mvc提供了基本的一些数据类型的自动转换功能，这通常�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/03/22/cy/">艰难的互联网创业</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-03-22T15:18:00+08:00" pubdate data-updated="true">2011年03月22日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;中国的互联网已经进行几大巨头独霸的局面，中小创业者在夹缝中艰难地生存着，创新很容易被模仿，即时有创新，凭自己的力量实现并推广也是比较困难的。总体来说，中国互联网缺少法律保护，抄袭、同质化问题比较严重。下面说说我身边发生的一些事情，有些是几年前的。从这些事情中，你也许可以读到想要做好一件事，哪些因素比较关键。</p>
-
-<p>&emsp;&emsp;先说老彭，老彭的思路非常灵活，而且很多东西有自己的想法，但由于种种原因，这些创意都没能实现。他先是提出要做一个站点实时监控网站，专门为中国互联网的广大站长提供站点实时监测，比如：每日浏览，故障次数，平均响应时间等，这些信息会通过手机短信的方式发送给付费站长，普通用户仅有邮件通知。这个想法提出来时，最大的问题如何采集到不同操作系统服务器上的数据，以及如何开发更深层次的扩展应用，比如：站点流量，新增注册用户数等插件开发。想法是好，经过网上查询，当时admin5已经有一个类似的项目，也应该有不错的用户数量，再做一个同类的项目，可以说无法和admin5竞争，我们都知道，“先入为主”这句话在互联网来说非常合适，别人即使比你先推出来一天，效果都是非常不一样的，这个想法就这样被否定。现在，“监控宝”是这类站点中的佼佼者，admin5的监控已经落败，监控宝是有的强大的后台财力支撑，而且做了很多创新，以当时老彭的实力，实现也比较困难。后来，老彭提出做一个saas类的项目，专门供美容美发店使用（会员卡、每日运营情况等），按店收取年费，我都见他设计完了整个项目，包括领域，er，详细设计，后面不知什么原因放弃了，也许问题在推广上。再后来，想做艺术品交易网站，连盈利模式这些都已经想得比较清楚了，但后来也放弃了，原因在于网上有同质化的网站，你想嘛，如果淘宝也开一个这样的版块，那我们就没得搞头了。再后来，想做一个星巴克的网上门店，这个想法因盈利模式有问题放弃。再后来，计划做一个gay交流网站，兼gay物品交易，这个想法应该是做过前期调查的，不知什么原因没了消息。再后来，想做客运站的一个物流系统，也没听到有消息。</p>
-
-<p>&emsp;&emsp;老杨，先是做团购网站，但线下营销能力不足，效果不好，最后网站因备案问题进入电信机房黑白名单过滤而关闭。后来想做外包网站，我说已经有这样的网站了，但他说在很多地方可以改进及创新，当时考虑到开发效率，用php实现，最后也没听到他的这个网站的消息了。看来做技术的人大多都是重技术而不精营销的。前段时间，我还听说某些软件公司的技术人员想用业余时间做团购网站，也许他们真的不知道什么是线下营销，我们要知道，挣钱的网站，大多是用站点做门户辅助配合线下营销，一个团购网，技术上应该是很容易实现的。</p>
-
-<p>&emsp;&emsp;我们老大，有很多不错的创意。首先是小孩防疫情况通知的这个系统，全国有小孩的家庭应该还是很多的，这个项目要是做成并成功推广，应该是非常不错的。网络智能发贴跟贴（自动注册，发贴，跟贴，而且要有一定的人工智能性），这个做好了也会有收不错收入。电子书平台，进行在线学习，可以将各种格式文档转换为网站内部统一格式，实现在线教育培训，这个项目好像进行了一段时间就终止了，有点可惜。</p>
-
-<p>&emsp;&emsp;肖老二写了一个“烂笔头”，收取注册费，也似乎在互联网上推广过一段时间，最后没了消息。其实，这类软件一定要有功能亮点，否则无法盈利。还有一点，中国网民已经习惯了免费，不想掏钱（玩游戏除外哈），这点根深蒂固。</p>
-
-<p>&emsp;&emsp;军哥，技术牛人，狂人，本人很佩服他，也有一些不错的想法，最后都未能被实现，我们也知道，人家的主业可是专业炒股，专业做投资的哦。我身边有投资意识的人，目前仅此一人，我遇到一些问题，都还得向他咨询。</p>
-
-<p>我的一个做互联网的朋友，也比较有想法。一年前申请了一个域名（墓地网），准备做网上墓地销售，不知什么原因，该域名如今还空着的。后来还做过一个比较有前途的“二手工程机械交易网”，但由于线下营销能力跟不上来，最后没了消息。</p>
-
-<p>&emsp;&emsp;我的另一个朋友，非常精于运营和营销，自己带团队做过网页游戏，最终失败于技术。此人的运营营销能力非常强，就像天生是为这行而生的，我从那里学到了很多的东西，也深刻地意识到，技术如何快速适应需求，为需求服务，如果按“软件工程”思想按部就班地做互联网项目，只有死路一条。</p>
-
-<p>&emsp;&emsp;最近一同事向我提起曾今想做一个旅游网站，专为外国人提供散客或组团导游服务，我觉得这里面很多事情没有考虑清楚，盈利方式不明确。我还有一个新疆的同学，上回QQ上给我说想做一个闭路电视在线交费系统，要和广电上做接口什么的，说了很多，感觉信心很大，但我认为这个项目对现在的广电来说基本上没有什么利益和好处，也行无法推广，这个想法也是“虎头蛇尾”，没了下文。</p>
-
-<p>&emsp;&emsp;我也有很多想法，但实现的不多，我对互联网本来就缺乏敏锐性，但我认为互联网上创业的机会还是有的，在互联网上做事情，可能比现实社会中做事要单纯得多，更适合技术人员一些，但是要做强做大，技术人员就不适合了。我认为要将自己的创意变为现实，要注意下面几点。</p>
-
-<p>&emsp;&emsp;1、想好盈利模式；</p>
-
-<p>&emsp;&emsp;2、务实，脚踏实地，避免不必要的投入（比如计算后期用户量有多大，流量有多大，等等，），避免好高骛远；</p>
-
-<p>&emsp;&emsp;3、有想法，要有实现的动力，要用恒心；</p>
-
-<p>&emsp;&emsp;4、如果有团队，一定要统一每个人的预期目标，这点很重要；</p>
-
-<p>&emsp;&emsp;5、要有合作精神，靠一个人的力量很难做成大事；</p>
-
-<p>&emsp;&emsp;6、坚持，坚持，再坚持。在目标没有达到之前，请不要轻言放弃。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/13/">&larr; 更多早期老文章</a>
@@ -1851,6 +2072,10 @@ spring mvc提供了基本的一些数据类型的自动转换功能，这通常�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
       </li>
     
@@ -1864,10 +2089,6 @@ spring mvc提供了基本的一些数据类型的自动转换功能，这通常�
     
       <li class="post">
         <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三&#8211;深入细节</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/24/maven-project/">在项目中使用maven之二&#8211;项目实例</a>
       </li>
     
   </ul>

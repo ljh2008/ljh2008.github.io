@@ -4,7 +4,7 @@
   <title><![CDATA[刘江华的博客]]></title>
   <link href="http://yanyaner.com/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-01-23T21:33:05+08:00</updated>
+  <updated>2014-02-26T15:28:35+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,870 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[http长连接在java中的应用示例]]></title>
+    <link href="http://yanyaner.com/blog/2014/02/17/comet-java/"/>
+    <updated>2014-02-17T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/02/17/comet-java</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;在WEB应用中，我们可能会遇到实时性要求很高的交互场景，浏览器需要及时地显示服务器上的数据变化，服务器也需要知道客户端的一些状况，比如：下面的示例中，我给出了一个简易的在线聊天系统。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2014/02/chat_login.jpg' width='' height='' title='聊天室登录界面'><span class='caption-text'>聊天室登录界面</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2014/02/chating.jpg' width='' height='' title='正在聊天的界面'><span class='caption-text'>正在聊天的界面</span></span></p>
+
+<p>&emsp;&emsp;上面的在线聊天演示程序中，先通过用户名登录，登录成功后即可即可发送自己的聊天消息，界面中的在线用户列表中可以看到每一个用户的状态，比如：在线，离开，掉线等。</p>
+
+<p>&emsp;&emsp;好，请大家先思考一下如何去实现这样的一个系统？</p>
+
+<p>&emsp;&emsp;其实，实现的办法很多，下面我给出一些参考：</p>
+
+<p>&emsp;&emsp;一、服务器端用java写一个socket服务器，flash或flex实现聊天客户端(当然也可以用applet之类的技术)，通过socket连接服务器实现实时通讯。这种实现方式我曾经在一个项目中用过，效果还不错。目前的html5中的web socket也可以实现这个功能（具体请参考<a href="http://www.ibm.com/developerworks/cn/web/1112_huangxa_websocket/">http://www.ibm.com/developerworks/cn/web/1112_huangxa_websocket/</a>）。</p>
+
+<p>&emsp;&emsp;二、浏览器中写一定时器，不断发送ajax请求向服务器请求数据，服务器用一个servlet处理请求。在服务器上保存聊天室的内容，每一个用户发言后都将消息内容保存在一个集合中。</p>
+
+<p>&emsp;&emsp;方式二，由客户端按固定的时间发起请求，这种方式虽然可以实现我们的功能，但有一些缺陷，主要表现在：1、在用户并发量大、频率高的时候，网络会拥堵，性能存在问题；2、实时性不高，比如：用户离开，掉线等状态都是要等到下一次请求才能知道，并且服务器上要有某种机制检测到某个用户已经断线；3、如果服务器端数据没有发生变更，那么这个请求只会消耗更多系统资源。</p>
+
+<p>&emsp;&emsp;三、基于http长连接技术。这种方式中可以实现较高的实时性，当有数据发生变化时，服务器主动将数据推送到客户端。</p>
+
+<p>&emsp;&emsp;comet长连接大致有两种实现，第一种是采用长轮询机制实现，大致过程是：由客户端发起http请求，服务器收到这个请求后，进入一个 while(ture)的循环，当有数据需要告知客户端时，将数据响应给客户端，并断开连接。客户端收到信息后进行处理，处理完成后再次发起新的请求，这就是长轮询的长连接实现。当然，客户端一般都采用ajax方式发起请求。</p>
+
+<p>&emsp;&emsp;comet另一种采用基于流的方式实现，利用ajax的readystate为3时表示数据正在传输而保持连接不中断，服务器端可以使用基于NIO的方式提高处理效率，而不是while(true)的多线程方式。 更多关于comet的实现细节，大家可以参阅<a href="http://software.intel.com/zh-cn/articles/comet-java-realtime-system-essay/">http://software.intel.com/zh-cn/articles/comet-java-realtime-system-essay/</a>。</p>
+
+<p>&emsp;&emsp;我这里采用comt4j框架实现http长连接（不要去重复发明轮子哦，直接用现成的）。首先要准备相应的jar包comet4j-tomcat6.jar，将其添加到你的classpath中，大家要根据不同的服务器版本添加不同的实现，因为comet4j使用的是服务器的comet之nio实现。comt4j目前仅提供了tomcat6,tomcat7的支持。<!-- More --></p>
+
+<p>&emsp;&emsp;接下来要修改服务器的server.xml中Connector部分，以启用nio的socket方式，代码如下：</p>
+
+<figure class='code'><figcaption><span>server.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;Connector</span> <span class="na">connectionTimeout=</span><span class="s">&quot;20000&quot;</span>
+</span><span class='line'><span class="na">port=</span><span class="s">&quot;8080&quot;</span>
+</span><span class='line'><span class="na">protocol=</span><span class="s">&quot;org.apache.coyote.http11.Http11NioProtocol&quot;</span>
+</span><span class='line'><span class="na">redirectPort=</span><span class="s">&quot;8443&quot;</span><span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在web.xml中加入comet的支持：</p>
+
+<figure class='code'><figcaption><span>web.xml </span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="c">&lt;!-- Comet4J长连接请求处理servlet --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;servlet&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;servlet-name&gt;</span>comet4Memory<span class="nt">&lt;/servlet-name&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;servlet-class&gt;</span>org.comet4j.core.CometServlet<span class="nt">&lt;/servlet-class&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/servlet&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;servlet-mapping&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;servlet-name&gt;</span>comet4Memory<span class="nt">&lt;/servlet-name&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;url-pattern&gt;</span>/state<span class="nt">&lt;/url-pattern&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/servlet-mapping&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c">&lt;!--Comet4J容器侦听 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;listener&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;listener-class&gt;</span>org.comet4j.core.CometAppListener<span class="nt">&lt;/listener-class&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/listener&gt;</span>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;接下来是服务器端的代码，下面的这段代码用来进行初始化，使用Component将对象放入spring容器，并在构造中进行comet初始化：</p>
+
+<figure class='code'><figcaption><span>CometInit.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Component</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">CometInit</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@Resource</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">IMyService</span> <span class="n">ms</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">CHANNEL_USER_INFO</span> <span class="o">=</span> <span class="s">&quot;onlineUsers&quot;</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">CHANNEL_USER_CHATING_CONTENT</span> <span class="o">=</span> <span class="s">&quot;user_chating_content&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">CometInit</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">CometContext</span> <span class="n">context</span> <span class="o">=</span> <span class="n">CometContext</span><span class="o">.</span><span class="na">getInstance</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">CometEngine</span> <span class="n">engine</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="na">getEngine</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1">//添加连接监听</span>
+</span><span class='line'>      <span class="n">engine</span><span class="o">.</span><span class="na">addConnectListener</span><span class="o">(</span><span class="k">new</span> <span class="n">ConnectListener</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>          <span class="nd">@Override</span>
+</span><span class='line'>          <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">handleEvent</span><span class="o">(</span><span class="n">ConnectEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>              <span class="n">CometConnection</span> <span class="n">connection</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="na">getConn</span><span class="o">();</span>
+</span><span class='line'>              <span class="n">String</span> <span class="n">ip</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getClientIp</span><span class="o">();</span>
+</span><span class='line'>              <span class="n">String</span> <span class="n">id</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getId</span><span class="o">();</span>
+</span><span class='line'>              
+</span><span class='line'>              <span class="n">HttpServletRequest</span> <span class="n">request</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getRequest</span><span class="o">();</span>
+</span><span class='line'>              
+</span><span class='line'>              <span class="n">String</span> <span class="n">userName</span> <span class="o">=</span> <span class="n">getCookieValue</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getCookies</span><span class="o">(),</span> <span class="s">&quot;userName-chating-client&quot;</span><span class="o">,</span> <span class="s">&quot;&quot;</span><span class="o">);</span>
+</span><span class='line'>              
+</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">userName</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>                          
+</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">userName</span> <span class="o">=</span> <span class="n">URLDecoder</span><span class="o">.</span><span class="na">decode</span><span class="o">(</span><span class="n">userName</span><span class="o">,</span> <span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">UnsupportedEncodingException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="c1">// TODO Auto-generated catch block</span>
+</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>              
+</span><span class='line'>              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;id是：&quot;</span> <span class="o">+</span> <span class="n">id</span> <span class="o">+</span> <span class="s">&quot;的用户连接服务器，ip是：&quot;</span> <span class="o">+</span> <span class="n">ip</span> <span class="o">+</span> <span class="s">&quot;,用户名是：&quot;</span> <span class="o">+</span> <span class="n">userName</span><span class="o">);</span>
+</span><span class='line'>              <span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="n">UserAction</span><span class="o">.</span><span class="na">onlineUsers</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">userName</span><span class="o">);</span>
+</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">u</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>              <span class="n">u</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="n">UserAction</span><span class="o">.</span><span class="na">STATE_ONLINE</span><span class="o">);</span>
+</span><span class='line'>              <span class="n">u</span><span class="o">.</span><span class="na">setClientId</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>              
+</span><span class='line'>              <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">event</span><span class="o">.</span><span class="na">getTarget</span><span class="o">().</span><span class="na">sendToAll</span><span class="o">(</span><span class="n">CometInit</span><span class="o">.</span><span class="na">CHANNEL_USER_INFO</span><span class="o">,</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">UserAction</span><span class="o">.</span><span class="na">onlineUsers</span><span class="o">.</span><span class="na">values</span><span class="o">()));</span>
+</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="c1">// TODO Auto-generated catch block</span>
+</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>              
+</span><span class='line'>              <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>      <span class="o">});</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//添加离线、断线监听</span>
+</span><span class='line'>      <span class="n">engine</span><span class="o">.</span><span class="na">addDropListener</span><span class="o">(</span><span class="k">new</span> <span class="n">DropListener</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="nd">@Override</span>
+</span><span class='line'>          <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">handleEvent</span><span class="o">(</span><span class="n">DropEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>              <span class="n">CometConnection</span> <span class="n">connection</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="na">getConn</span><span class="o">();</span>
+</span><span class='line'>              <span class="n">String</span> <span class="n">ip</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getClientIp</span><span class="o">();</span>
+</span><span class='line'>              <span class="n">String</span> <span class="n">id</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getId</span><span class="o">();</span>
+</span><span class='line'>              <span class="n">HttpServletRequest</span> <span class="n">request</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getRequest</span><span class="o">();</span>
+</span><span class='line'>              <span class="n">String</span> <span class="n">userName</span> <span class="o">=</span> <span class="n">getCookieValue</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getCookies</span><span class="o">(),</span> <span class="s">&quot;userName-chating-client&quot;</span><span class="o">,</span> <span class="s">&quot;&quot;</span><span class="o">);</span>
+</span><span class='line'>              
+</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">userName</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>              
+</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">userName</span> <span class="o">=</span> <span class="n">URLDecoder</span><span class="o">.</span><span class="na">decode</span><span class="o">(</span><span class="n">userName</span><span class="o">,</span> <span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">UnsupportedEncodingException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="c1">// TODO Auto-generated catch block</span>
+</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;id是：&quot;</span> <span class="o">+</span> <span class="n">id</span> <span class="o">+</span> <span class="s">&quot;的用户断开与服务器的连接，ip是：&quot;</span><span class="o">+</span> <span class="n">ip</span> <span class="o">+</span> <span class="s">&quot;,用户名是：&quot;</span> <span class="o">+</span> <span class="n">userName</span><span class="o">);</span>
+</span><span class='line'>              <span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="n">UserAction</span><span class="o">.</span><span class="na">onlineUsers</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">userName</span><span class="o">);</span>
+</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">u</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>              <span class="n">u</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="n">UserAction</span><span class="o">.</span><span class="na">STATE_MISSING</span><span class="o">);</span>
+</span><span class='line'>              
+</span><span class='line'>              <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">event</span><span class="o">.</span><span class="na">getTarget</span><span class="o">().</span><span class="na">sendToAll</span><span class="o">(</span><span class="n">CometInit</span><span class="o">.</span><span class="na">CHANNEL_USER_INFO</span><span class="o">,</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">UserAction</span><span class="o">.</span><span class="na">onlineUsers</span><span class="o">.</span><span class="na">values</span><span class="o">()));</span>
+</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="c1">// TODO Auto-generated catch block</span>
+</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>              <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>      <span class="o">});</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//注册信道 </span>
+</span><span class='line'>      <span class="n">context</span><span class="o">.</span><span class="na">registChannel</span><span class="o">(</span><span class="n">CHANNEL_USER_INFO</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">context</span><span class="o">.</span><span class="na">registChannel</span><span class="o">(</span><span class="n">CHANNEL_USER_CHATING_CONTENT</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 从cookiek中得到某个 key的取值</span>
+</span><span class='line'><span class="cm">  * @param cookies</span>
+</span><span class='line'><span class="cm">  * @param cookieName</span>
+</span><span class='line'><span class="cm">  * @param defaultValue</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getCookieValue</span><span class="o">(</span><span class="n">Cookie</span><span class="o">[]</span> <span class="n">cookies</span><span class="o">,</span> <span class="n">String</span> <span class="n">cookieName</span><span class="o">,</span> <span class="n">String</span> <span class="n">defaultValue</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">String</span> <span class="n">result</span> <span class="o">=</span> <span class="n">defaultValue</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">cookies</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">cookies</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">Cookie</span> <span class="n">cookie</span> <span class="o">=</span> <span class="n">cookies</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
+</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">cookieName</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">cookie</span><span class="o">.</span><span class="na">getName</span><span class="o">()))</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="k">return</span> <span class="n">cookie</span><span class="o">.</span><span class="na">getValue</span><span class="o">();</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;服务器端处理用户聊天请求的Action代码如下：</p>
+
+<figure class='code'><figcaption><span>ChatingAction.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Controller</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ChatingAction</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">STATE_LOGINING</span> <span class="o">=</span> <span class="s">&quot;登录中&quot;</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">STATE_ONLINE</span> <span class="o">=</span> <span class="s">&quot;在线&quot;</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">STATE_MISSING</span> <span class="o">=</span> <span class="s">&quot;掉线&quot;</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">STATE_LEAVE</span> <span class="o">=</span> <span class="s">&quot;离开&quot;</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="n">CometEngine</span> <span class="n">engine</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">UserAction</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">engine</span> <span class="o">=</span> <span class="n">CometContext</span><span class="o">.</span><span class="na">getInstance</span><span class="o">().</span><span class="na">getEngine</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//保存在线用户集合，在些比做持久化的用户数据</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">User</span><span class="o">&gt;</span> <span class="n">onlineUsers</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">User</span><span class="o">&gt;();</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">&quot;loginChat&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">login</span><span class="o">(</span>
+</span><span class='line'>          <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;name&quot;</span><span class="o">)</span> <span class="n">String</span> <span class="n">name</span><span class="o">,</span>
+</span><span class='line'>          <span class="n">HttpSession</span> <span class="n">session</span><span class="o">,</span>
+</span><span class='line'>          <span class="n">HttpServletResponse</span> <span class="n">response</span>
+</span><span class='line'>          <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="n">onlineUsers</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">user</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="c1">//更新状态信息</span>
+</span><span class='line'>          <span class="n">user</span> <span class="o">=</span> <span class="k">new</span> <span class="n">User</span><span class="o">();</span>
+</span><span class='line'>          <span class="n">user</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">onlineUsers</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">user</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="c1">//设置为正在登录状态</span>
+</span><span class='line'>      <span class="n">user</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="n">STATE_LOGINING</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">session</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="s">&quot;user_key&quot;</span><span class="o">,</span> <span class="n">user</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//如果是json方式返回，也可由客户端通过js添加cookie</span>
+</span><span class='line'>      <span class="n">Cookie</span> <span class="n">cookie</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Cookie</span><span class="o">(</span><span class="s">&quot;userName-chating-client&quot;</span><span class="o">,</span><span class="n">URLEncoder</span><span class="o">.</span><span class="na">encode</span><span class="o">(</span><span class="n">name</span><span class="o">,</span><span class="s">&quot;utf-8&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">cookie</span><span class="o">.</span><span class="na">setMaxAge</span><span class="o">(</span><span class="mi">60</span><span class="o">*</span><span class="mi">60</span><span class="o">*</span><span class="mi">24</span><span class="o">*</span><span class="mi">7</span><span class="o">);</span><span class="c1">//保留7天  </span>
+</span><span class='line'>      <span class="n">response</span><span class="o">.</span><span class="na">addCookie</span><span class="o">(</span><span class="n">cookie</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="c1">//更新在线用户列表</span>
+</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">engine</span><span class="o">.</span><span class="na">sendToAll</span><span class="o">(</span><span class="n">CometInit</span><span class="o">.</span><span class="na">CHANNEL_USER_INFO</span><span class="o">,</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">onlineUsers</span><span class="o">.</span><span class="na">values</span><span class="o">()));</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//进入主页面</span>
+</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;chating&quot;</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      
+</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">&quot;getState&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getState</span><span class="o">(</span>
+</span><span class='line'>          <span class="n">HttpSession</span> <span class="n">session</span><span class="o">,</span>
+</span><span class='line'>          <span class="n">HttpServletResponse</span> <span class="n">response</span>
+</span><span class='line'>          <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="o">(</span><span class="n">User</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;user_key&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">user</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="c1">//返回所有的在线用户</span>
+</span><span class='line'>          <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">(),</span> <span class="n">user</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">(),</span> <span class="s">&quot;{code:0}&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">&quot;onlineUser&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">allUsers</span><span class="o">(</span>
+</span><span class='line'>          <span class="n">HttpServletResponse</span> <span class="n">response</span>
+</span><span class='line'>          <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="c1">//返回所有的在线用户</span>
+</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">(),</span> <span class="n">onlineUsers</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">&quot;logout&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">logout</span><span class="o">(</span>
+</span><span class='line'>          <span class="n">HttpSession</span> <span class="n">session</span><span class="o">,</span>
+</span><span class='line'>          <span class="n">HttpServletResponse</span> <span class="n">response</span>
+</span><span class='line'>          <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="o">(</span><span class="n">User</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;user_key&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">user</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>          <span class="n">onlineUsers</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">user</span><span class="o">.</span><span class="na">getName</span><span class="o">()).</span><span class="na">setState</span><span class="o">(</span><span class="n">STATE_LEAVE</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">engine</span><span class="o">.</span><span class="na">sendToAll</span><span class="o">(</span><span class="n">CometInit</span><span class="o">.</span><span class="na">CHANNEL_USER_INFO</span><span class="o">,</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">onlineUsers</span><span class="o">.</span><span class="na">values</span><span class="o">()));</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;chat_login&quot;</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">&quot;sendMsg&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sendMsg</span><span class="o">(</span>
+</span><span class='line'>          <span class="n">HttpSession</span> <span class="n">session</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;msg&quot;</span><span class="o">)</span> <span class="n">String</span> <span class="n">msg</span><span class="o">,</span>
+</span><span class='line'>          <span class="n">HttpServletResponse</span> <span class="n">response</span>
+</span><span class='line'>          <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">SimpleDateFormat</span> <span class="n">sf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd hh:mm:ss&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="o">(</span><span class="n">User</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;user_key&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">user</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>          <span class="n">Map</span> <span class="n">respBody</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
+</span><span class='line'>          <span class="n">respBody</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;date&quot;</span><span class="o">,</span> <span class="n">sf</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="k">new</span> <span class="n">Date</span><span class="o">()));</span>
+</span><span class='line'>          <span class="n">respBody</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;user&quot;</span><span class="o">,</span> <span class="n">user</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>          <span class="n">respBody</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;msg&quot;</span><span class="o">,</span> <span class="n">msg</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">engine</span><span class="o">.</span><span class="na">sendToAll</span><span class="o">(</span><span class="n">CometInit</span><span class="o">.</span><span class="na">CHANNEL_USER_CHATING_CONTENT</span><span class="o">,</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">respBody</span><span class="o">));</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">print</span><span class="o">(</span><span class="s">&quot;over&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//用户</span>
+</span><span class='line'><span class="kd">class</span> <span class="nc">User</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//昵称</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>  <span class="c1">//状态(登录中，在线，掉线，已录出)</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">state</span><span class="o">;</span>
+</span><span class='line'>  <span class="c1">//长连接id,由comet4j自行分配</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">clientId</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getName</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setName</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getState</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">state</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setState</span><span class="o">(</span><span class="n">String</span> <span class="n">state</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">state</span> <span class="o">=</span> <span class="n">state</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getClientId</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">clientId</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setClientId</span><span class="o">(</span><span class="n">String</span> <span class="n">clientId</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">clientId</span> <span class="o">=</span> <span class="n">clientId</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;comet4j客户端已经封装了相应的js，以简化我们的编码，我们需要做的是引入comet4j.js到需要的页面中。</p>
+
+<figure class='code'><figcaption><span>chat_login.jsp</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='jsp'><span class='line'><span class="k">&lt;%@</span> <span class="n">page</span> <span class="n">language</span><span class="o">=</span><span class="s">&quot;java&quot;</span> <span class="n">contentType</span><span class="o">=</span><span class="s">&quot;text/html; charset=UTF-8&quot;</span>
+</span><span class='line'>    <span class="n">pageEncoding</span><span class="o">=</span><span class="s">&quot;UTF-8&quot;</span><span class="k">%&gt;</span>
+</span><span class='line'><span class="cp">&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD HTML 4.01 Transitional//EN&quot; &quot;http://www.w3.org/TR/html4/loose.dtd&quot;&gt;</span>
+</span><span class='line'><span class="nt">&lt;html&gt;</span>
+</span><span class='line'><span class="nt">&lt;head&gt;</span>
+</span><span class='line'><span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">&quot;Content-Type&quot;</span> <span class="na">content=</span><span class="s">&quot;text/html; charset=UTF-8&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;title&gt;</span>Insert title here<span class="nt">&lt;/title&gt;</span>
+</span><span class='line'><span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href=</span><span class="s">&quot;lib/bootstrap/css/bootstrap.min.css&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;/head&gt;</span>
+</span><span class='line'><span class="nt">&lt;body&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;p</span> <span class="na">class=</span><span class="s">&quot;text-warning&quot;</span><span class="nt">&gt;</span>假设本系统以用户名作为用户的业务主键。<span class="nt">&lt;/p&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&quot;loginChat&quot;</span> <span class="na">method=</span><span class="s">&quot;post&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      用户名：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;进入聊天室&quot;</span> <span class="na">class=</span><span class="s">&quot;btn btn-success&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/form&gt;</span>
+</span><span class='line'><span class="nt">&lt;/body&gt;</span>
+</span><span class='line'><span class="nt">&lt;/html&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>chating.jsp</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+</pre></td><td class='code'><pre><code class='jsp'><span class='line'><span class="k">&lt;%@</span> <span class="n">page</span> <span class="n">language</span><span class="o">=</span><span class="s">&quot;java&quot;</span> <span class="n">contentType</span><span class="o">=</span><span class="s">&quot;text/html; charset=UTF-8&quot;</span>
+</span><span class='line'>    <span class="n">pageEncoding</span><span class="o">=</span><span class="s">&quot;UTF-8&quot;</span><span class="k">%&gt;</span>
+</span><span class='line'><span class="cp">&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD HTML 4.01 Transitional//EN&quot; &quot;http://www.w3.org/TR/html4/loose.dtd&quot;&gt;</span>
+</span><span class='line'><span class="nt">&lt;html&gt;</span>
+</span><span class='line'><span class="nt">&lt;head&gt;</span>
+</span><span class='line'><span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">&quot;Content-Type&quot;</span> <span class="na">content=</span><span class="s">&quot;text/html; charset=UTF-8&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;title&gt;</span>在线聊天<span class="nt">&lt;/title&gt;</span>
+</span><span class='line'><span class="nt">&lt;script</span> <span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;lib/jquery/jquery-1.7.2.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href=</span><span class="s">&quot;lib/bootstrap/css/bootstrap.min.css&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;script</span> <span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;lib/jquery-timer/jquery.timer.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script</span> <span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;lib/comet4j/comet4j.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;script</span> <span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  $(function(){
+</span><span class='line'>      
+</span><span class='line'>      $(&quot;#btn_send&quot;).click(function() {
+</span><span class='line'>          $.ajax({
+</span><span class='line'>              url:&quot;sendMsg&quot;,
+</span><span class='line'>              type:&quot;post&quot;,
+</span><span class='line'>              data:{msg:$(&quot;#msg&quot;).val()},
+</span><span class='line'>              success:function(){
+</span><span class='line'>                  $(&quot;#msg&quot;).val(&quot;&quot;);
+</span><span class='line'>              }
+</span><span class='line'>          });
+</span><span class='line'>      });
+</span><span class='line'>      
+</span><span class='line'>      JS.Engine.on({
+</span><span class='line'>          user_chating_content:function(data){//侦听聊天内容
+</span><span class='line'>              var result = $.parseJSON(data);
+</span><span class='line'>              $(&quot;<span class="nt">&lt;p&gt;&lt;b&gt;</span>&quot;+result.date+&quot;<span class="nt">&lt;/b&gt;&lt;/p&gt;</span>&quot;).appendTo(&quot;#msgs&quot;);
+</span><span class='line'>              $(&quot;<span class="nt">&lt;p</span> <span class="nt">&gt;&lt;b</span> <span class="na">style=</span><span class="s">&#39;color:red;&#39;</span><span class="nt">&gt;</span>&quot;+result.user+&quot;<span class="nt">&lt;/b&gt;</span>: &quot;+result.msg+&quot;<span class="nt">&lt;/p&gt;</span>&quot;).appendTo(&quot;#msgs&quot;);
+</span><span class='line'>          },
+</span><span class='line'>          onlineUsers: function(data){//侦听在线用户
+</span><span class='line'>                  var result = $.parseJSON(data);
+</span><span class='line'>                  $(&quot;#onlineUsers option&quot;).remove();
+</span><span class='line'>                  $(result).each(function(){
+</span><span class='line'>                      $(&quot;<span class="nt">&lt;option&gt;</span>&quot; + this.name + &quot;:&quot; + this.state + &quot;<span class="nt">&lt;/option&gt;</span>&quot;).appendTo(&quot;#onlineUsers&quot;);
+</span><span class='line'>                  });
+</span><span class='line'>
+</span><span class='line'>            }
+</span><span class='line'>      });
+</span><span class='line'>      JS.Engine.start(&#39;state&#39;);
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>     var timer = $.timer(
+</span><span class='line'>          function() {
+</span><span class='line'>              $.ajax({
+</span><span class='line'>              url:&quot;getState&quot;,
+</span><span class='line'>              type:&quot;get&quot;,
+</span><span class='line'>              dataType:&quot;json&quot;,
+</span><span class='line'>              success:function(user) {
+</span><span class='line'>                  $(&quot;#uid&quot;).html(user.clientId);
+</span><span class='line'>                  $(&quot;#nickName&quot;).html(user.name);
+</span><span class='line'>              }
+</span><span class='line'>          });
+</span><span class='line'>          }
+</span><span class='line'>      );  
+</span><span class='line'>     timer.once(5000);
+</span><span class='line'>          
+</span><span class='line'>  });
+</span><span class='line'><span class="nt">&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;/head&gt;</span>
+</span><span class='line'><span class="nt">&lt;body&gt;</span>
+</span><span class='line'><span class="nt">&lt;div</span> <span class="na">style=</span><span class="s">&quot;background-color: silver;width:650px;&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  当前用户长连接id:<span class="nt">&lt;span</span> <span class="na">id=</span><span class="s">&quot;uid&quot;</span><span class="nt">&gt;&lt;/span&gt;</span><span class="ni">&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;</span>
+</span><span class='line'>  当前用户昵称  :<span class="nt">&lt;span</span> <span class="na">id=</span><span class="s">&quot;nickName&quot;</span><span class="nt">&gt;&lt;/span&gt;</span>
+</span><span class='line'><span class="nt">&lt;/div&gt;</span>
+</span><span class='line'><span class="nt">&lt;div</span> <span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;msgs&quot;</span> <span class="na">style=</span><span class="s">&quot;height: 200px; width:650px; overflow: scroll;&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
+</span><span class='line'><span class="nt">&lt;select</span> <span class="na">multiple=</span><span class="s">&quot;multiple&quot;</span> <span class="na">id=</span><span class="s">&quot;onlineUsers&quot;</span> <span class="na">style=</span><span class="s">&quot;width: 650px;&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;/select&gt;</span>
+</span><span class='line'><span class="nt">&lt;br&gt;</span>
+</span><span class='line'><span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&quot;logout&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>请输入要发送的消息：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">id=</span><span class="s">&quot;msg&quot;</span> <span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;    发        送    &quot;</span> <span class="na">id=</span><span class="s">&quot;btn_send&quot;</span> <span class="na">class=</span><span class="s">&quot;btn btn-success btn-large&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;离开聊天室&quot;</span> <span class="na">class=</span><span class="s">&quot;btn btn-warning btn-large&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;/form&gt;</span>
+</span><span class='line'><span class="nt">&lt;/div&gt;</span>
+</span><span class='line'><span class="nt">&lt;/body&gt;</span>
+</span><span class='line'><span class="nt">&lt;/html&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;运行上面的代码，即可进行实时聊天了。我们近期的一个实时监控功能就是基于comet做的。</p>
+
+<p>&emsp;&emsp;最后给大家强调几点：</p>
+
+<ol>
+<li>在没有深入研究的情况下，引入任何一项新的技术，都会给项目带来风险，comet也如此。</li>
+<li>服务器能够接受的comet长连接并发数有待测试，如果并发过高，将考虑使用其它的解决方案。</li>
+<li>comet4j上线、下线等监听器中如果注入了service，在service中查询出的hibernate实体bean,必须要主动加载后面需要用到的lazy对象（原因：和openSessionInView失效有关哦）。</li>
+</ol>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[关于servlet规范中的几个设计模式解析]]></title>
@@ -4983,702 +5847,6 @@
 
 
 <p>&emsp;&emsp;如果上面的代码换成AngularJS，一定会简单很多，当然，这是我的其它博文中要给大家讲解的内容。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[node.js中基本于expresss、mysql的CRUD之四（代码实现）]]></title>
-    <link href="http://yanyaner.com/blog/2013/08/09/nodejs-express-mysql-crud4/"/>
-    <updated>2013-08-09T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/08/09/nodejs-express-mysql-crud4</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;路由中的代码：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/08/8.jpg' width='' height='' title='路由中的代码目录结构图'><span class='caption-text'>路由中的代码目录结构图</span></span></p>
-
-<p>&emsp;&emsp;userAction.js中封装了用户相关的操作，取名为Action结尾，只是从ssh转型的命名习惯，直接上代码，并有注释：</p>
-
-<!--more-->
-
-
-
-
-<figure class='code'><figcaption><span>userAction.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-<span class='line-number'>75</span>
-<span class='line-number'>76</span>
-<span class='line-number'>77</span>
-<span class='line-number'>78</span>
-<span class='line-number'>79</span>
-<span class='line-number'>80</span>
-<span class='line-number'>81</span>
-<span class='line-number'>82</span>
-<span class='line-number'>83</span>
-<span class='line-number'>84</span>
-<span class='line-number'>85</span>
-<span class='line-number'>86</span>
-<span class='line-number'>87</span>
-<span class='line-number'>88</span>
-<span class='line-number'>89</span>
-<span class='line-number'>90</span>
-<span class='line-number'>91</span>
-<span class='line-number'>92</span>
-<span class='line-number'>93</span>
-<span class='line-number'>94</span>
-<span class='line-number'>95</span>
-<span class='line-number'>96</span>
-<span class='line-number'>97</span>
-<span class='line-number'>98</span>
-<span class='line-number'>99</span>
-<span class='line-number'>100</span>
-<span class='line-number'>101</span>
-<span class='line-number'>102</span>
-<span class='line-number'>103</span>
-<span class='line-number'>104</span>
-<span class='line-number'>105</span>
-<span class='line-number'>106</span>
-<span class='line-number'>107</span>
-<span class='line-number'>108</span>
-<span class='line-number'>109</span>
-<span class='line-number'>110</span>
-<span class='line-number'>111</span>
-<span class='line-number'>112</span>
-<span class='line-number'>113</span>
-<span class='line-number'>114</span>
-<span class='line-number'>115</span>
-<span class='line-number'>116</span>
-<span class='line-number'>117</span>
-<span class='line-number'>118</span>
-<span class='line-number'>119</span>
-<span class='line-number'>120</span>
-<span class='line-number'>121</span>
-<span class='line-number'>122</span>
-<span class='line-number'>123</span>
-<span class='line-number'>124</span>
-<span class='line-number'>125</span>
-<span class='line-number'>126</span>
-<span class='line-number'>127</span>
-<span class='line-number'>128</span>
-<span class='line-number'>129</span>
-<span class='line-number'>130</span>
-<span class='line-number'>131</span>
-<span class='line-number'>132</span>
-<span class='line-number'>133</span>
-<span class='line-number'>134</span>
-<span class='line-number'>135</span>
-<span class='line-number'>136</span>
-<span class='line-number'>137</span>
-<span class='line-number'>138</span>
-<span class='line-number'>139</span>
-<span class='line-number'>140</span>
-<span class='line-number'>141</span>
-<span class='line-number'>142</span>
-<span class='line-number'>143</span>
-<span class='line-number'>144</span>
-<span class='line-number'>145</span>
-<span class='line-number'>146</span>
-<span class='line-number'>147</span>
-<span class='line-number'>148</span>
-<span class='line-number'>149</span>
-<span class='line-number'>150</span>
-<span class='line-number'>151</span>
-<span class='line-number'>152</span>
-<span class='line-number'>153</span>
-<span class='line-number'>154</span>
-<span class='line-number'>155</span>
-<span class='line-number'>156</span>
-<span class='line-number'>157</span>
-<span class='line-number'>158</span>
-<span class='line-number'>159</span>
-<span class='line-number'>160</span>
-<span class='line-number'>161</span>
-<span class='line-number'>162</span>
-<span class='line-number'>163</span>
-<span class='line-number'>164</span>
-<span class='line-number'>165</span>
-<span class='line-number'>166</span>
-<span class='line-number'>167</span>
-<span class='line-number'>168</span>
-<span class='line-number'>169</span>
-<span class='line-number'>170</span>
-<span class='line-number'>171</span>
-<span class='line-number'>172</span>
-<span class='line-number'>173</span>
-<span class='line-number'>174</span>
-<span class='line-number'>175</span>
-<span class='line-number'>176</span>
-<span class='line-number'>177</span>
-<span class='line-number'>178</span>
-<span class='line-number'>179</span>
-<span class='line-number'>180</span>
-<span class='line-number'>181</span>
-<span class='line-number'>182</span>
-<span class='line-number'>183</span>
-<span class='line-number'>184</span>
-<span class='line-number'>185</span>
-<span class='line-number'>186</span>
-<span class='line-number'>187</span>
-<span class='line-number'>188</span>
-<span class='line-number'>189</span>
-<span class='line-number'>190</span>
-<span class='line-number'>191</span>
-<span class='line-number'>192</span>
-<span class='line-number'>193</span>
-<span class='line-number'>194</span>
-<span class='line-number'>195</span>
-<span class='line-number'>196</span>
-<span class='line-number'>197</span>
-<span class='line-number'>198</span>
-<span class='line-number'>199</span>
-<span class='line-number'>200</span>
-<span class='line-number'>201</span>
-<span class='line-number'>202</span>
-<span class='line-number'>203</span>
-<span class='line-number'>204</span>
-<span class='line-number'>205</span>
-<span class='line-number'>206</span>
-<span class='line-number'>207</span>
-<span class='line-number'>208</span>
-<span class='line-number'>209</span>
-<span class='line-number'>210</span>
-<span class='line-number'>211</span>
-<span class='line-number'>212</span>
-<span class='line-number'>213</span>
-<span class='line-number'>214</span>
-<span class='line-number'>215</span>
-<span class='line-number'>216</span>
-<span class='line-number'>217</span>
-<span class='line-number'>218</span>
-<span class='line-number'>219</span>
-<span class='line-number'>220</span>
-<span class='line-number'>221</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="cm">/*</span>
-</span><span class='line'><span class="cm"> * User operations</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="kd">var</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">),</span>
-</span><span class='line'>    <span class="nx">fs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;fs-extra&#39;</span><span class="p">),</span>
-</span><span class='line'>    <span class="nx">uuid</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;node-uuid&#39;</span><span class="p">),</span>
-</span><span class='line'>    <span class="nx">Seq</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;seq&#39;</span><span class="p">),</span>
-</span><span class='line'>    <span class="nx">orm</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;orm&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="c1">//引及分页全局定义对象</span>
-</span><span class='line'>    <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../commons/page&quot;</span><span class="p">);</span>
-</span><span class='line'><span class="c1">//首页</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">index</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
-</span><span class='line'>    <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;login&#39;</span><span class="p">);</span>
-</span><span class='line'><span class="p">};</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//添加用户</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">addUser</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">picPath</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">pic</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">picPath</span> <span class="o">||</span> <span class="nx">picPath</span><span class="p">.</span><span class="nx">trim</span><span class="p">()</span><span class="o">==</span><span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">picPath</span> <span class="o">=</span> <span class="s2">&quot;upload/photo.jpg&quot;</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">create</span><span class="p">([{</span>
-</span><span class='line'>        <span class="nx">f_name</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">f_login_code</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">loginCode</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">f_birthday</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">birthday</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">f_pwd</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">password</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">pic</span><span class="o">:</span><span class="nx">picPath</span>
-</span><span class='line'>    <span class="p">}],</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">items</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;添加用户失败：&#39;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">};</span>
-</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>  <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>            <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;添加用户成功！&#39;</span><span class="p">};</span>
-</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//批量删除用户 (uids为id字串，用-拼接，比如：1-3-4-5 )</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">deleteUsers</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">({</span><span class="nx">pk_id</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uids</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)}).</span><span class="nx">remove</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;批量删除用户失败：&#39;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">};</span>
-</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>  <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>            <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;批量删除用户成功！&#39;</span><span class="p">};</span>
-</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//删除用户</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">deleteUser</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uid</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">user</span><span class="p">){</span>
-</span><span class='line'>       <span class="nx">user</span><span class="p">.</span><span class="nx">remove</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
-</span><span class='line'>           <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>               <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;删除用户失败：&#39;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">};</span>
-</span><span class='line'>               <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>           <span class="p">}</span>  <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>               <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;删除用户成功！&#39;</span><span class="p">};</span>
-</span><span class='line'>               <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>           <span class="p">}</span>
-</span><span class='line'>       <span class="p">});</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//修改用户</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">modifyUser</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uid</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">user</span><span class="p">){</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>            <span class="k">return</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">f_name</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">userName</span><span class="p">;</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">f_pwd</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">password</span><span class="p">;</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">f_birthday</span> <span class="o">=</span>  <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">birthday</span><span class="p">;</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">pic</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">pic</span><span class="p">;</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
-</span><span class='line'>              <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                  <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;修改用户失败：&#39;</span> <span class="o">+</span> <span class="nx">err</span><span class="p">};</span>
-</span><span class='line'>                  <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>              <span class="p">}</span>  <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                  <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;修改用户成功！&#39;</span><span class="p">};</span>
-</span><span class='line'>                  <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>              <span class="p">}</span>
-</span><span class='line'>            <span class="p">});</span>
-</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>            <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;要修改的用户可能不存在！&#39;</span><span class="p">};</span>
-</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//根据id查询用户</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">getUserById</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">uid</span> <span class="o">=</span>  <span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uid</span><span class="p">;</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;msg&#39;</span><span class="o">:</span><span class="s1">&#39;查询用户失败！&#39;</span><span class="p">};</span>
-</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="nx">uid</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">user</span><span class="p">){</span>
-</span><span class='line'>          <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>              <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>              <span class="k">return</span><span class="p">;</span>
-</span><span class='line'>          <span class="p">}</span>
-</span><span class='line'>          <span class="k">if</span> <span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>              <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;data&#39;</span><span class="o">:</span><span class="nx">user</span><span class="p">};</span>
-</span><span class='line'>              <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>          <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>              <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>          <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//显示用户列表</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">user_list</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">pno</span> <span class="o">=</span>  <span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">pno</span><span class="p">;</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">queryName</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">q_name</span><span class="p">;</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">pageSize</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">queryParm</span> <span class="o">=</span> <span class="p">{};</span>
-</span><span class='line'>    <span class="c1">//进行多条件的拼装</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">queryName</span> <span class="o">&amp;&amp;</span> <span class="nx">queryName</span><span class="p">.</span><span class="nx">trim</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>         <span class="c1">//如果用户输入了姓名</span>
-</span><span class='line'>        <span class="nx">queryParm</span><span class="p">.</span><span class="nx">f_name</span> <span class="o">=</span> <span class="nx">orm</span><span class="p">.</span><span class="nx">like</span><span class="p">(</span><span class="s2">&quot;%&quot;</span> <span class="o">+</span> <span class="nx">queryName</span> <span class="o">+</span> <span class="s2">&quot;%&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>     <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">queryParm</span><span class="p">)</span>
-</span><span class='line'>         <span class="p">.</span><span class="nx">limit</span><span class="p">(</span><span class="nx">pageSize</span><span class="p">)</span>
-</span><span class='line'>         <span class="p">.</span><span class="nx">offset</span><span class="p">((</span><span class="nx">pno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="nx">pageSize</span><span class="p">)</span>
-</span><span class='line'>        <span class="c1">// .only(&quot;pk_id&quot;,&quot;f_name&quot;,&quot;f_login_code&quot;,&quot;f_birthday&quot;)   //不需要密码字段</span>
-</span><span class='line'>         <span class="p">.</span><span class="nx">run</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">users</span><span class="p">){</span>
-</span><span class='line'>         <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>             <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
-</span><span class='line'>             <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;取用户分页数据失败！&#39;</span><span class="p">});</span>
-</span><span class='line'>         <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>             <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">queryParm</span><span class="p">).</span><span class="nx">count</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">userCount</span><span class="p">){</span>
-</span><span class='line'>                 <span class="kd">var</span> <span class="nx">p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Page</span><span class="p">(</span><span class="nx">pno</span><span class="p">,</span> <span class="nx">pageSize</span><span class="p">,</span> <span class="nx">userCount</span><span class="p">,</span> <span class="nx">users</span><span class="p">);</span>
-</span><span class='line'>                 <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;page&#39;</span><span class="o">:</span><span class="nx">p</span><span class="p">};</span>
-</span><span class='line'>                 <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>             <span class="p">});</span>
-</span><span class='line'>         <span class="p">}</span>
-</span><span class='line'>     <span class="p">});</span>
-</span><span class='line'><span class="p">};</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//得到登录用户状态</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">getState</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">user</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span><span class="p">;</span>
-</span><span class='line'>    <span class="kd">var</span>  <span class="nx">resultJson</span> <span class="p">;</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">user</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">resultJson</span> <span class="o">=</span> <span class="p">{</span><span class="nx">code</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">name</span><span class="o">:</span><span class="nx">user</span><span class="p">.</span><span class="nx">f_name</span><span class="p">};</span>
-</span><span class='line'>        <span class="c1">//resultJson = JSON.stringify({code:1,name:user.f_name});</span>
-</span><span class='line'>    <span class="p">}</span>  <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">resultJson</span> <span class="o">=</span>  <span class="p">{</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;对不起，您没有登录！&#39;</span><span class="p">};</span>
-</span><span class='line'>        <span class="c1">//resultJson = JSON.stringify({code:0,msg:&#39;对不起，您没有登录！&#39;});</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">resultJson</span><span class="p">);</span>
-</span><span class='line'><span class="p">};</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//用户注册，可上传照片</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">reg</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">files</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">files</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">dir</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;public&quot;</span><span class="p">,</span> <span class="s2">&quot;upload&quot;</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">filename</span> <span class="o">=</span> <span class="nx">uuid</span><span class="p">.</span><span class="nx">v4</span><span class="p">()</span><span class="o">+</span><span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">fs</span><span class="p">.</span><span class="nx">copy</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">path</span><span class="p">,</span> <span class="nx">dir</span> <span class="o">+</span> <span class="s1">&#39;\\&#39;</span> <span class="o">+</span> <span class="nx">filename</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
-</span><span class='line'>                <span class="c1">//返回出错页面</span>
-</span><span class='line'>                <span class="c1">//res.render(&#39;reg/reg_success&#39;, { regName: req.body.uname,photo:&#39;upload/default.jpeg&#39;  });</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;copy file success!&quot;</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/&#39;</span> <span class="o">+</span> <span class="nx">filename</span>  <span class="p">});</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">});</span>
-</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>        <span class="c1">//返回默认图片</span>
-</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/default.jpeg&#39;</span>  <span class="p">});</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//退出系统</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">logout</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
-</span><span class='line'>    <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
-</span><span class='line'>    <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;login&#39;</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//登录系统</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">login</span><span class="o">=</span><span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
-</span><span class='line'>    <span class="c1">//express中得到参数req.body.uname或req.query.uname，其中，req.body可支持post,delete,put等方式</span>
-</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;user login, name is:&quot;</span> <span class="o">+</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">uname</span> <span class="o">+</span> <span class="s2">&quot;,pwd is:&quot;</span> <span class="o">+</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">pwd</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">loginUser</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nx">Seq</span><span class="p">()</span>
-</span><span class='line'>        <span class="p">.</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>            <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">({</span> <span class="nx">f_login_code</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">f_pwd</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">pwd</span> <span class="p">}).</span><span class="nx">run</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}).</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">users</span><span class="p">){</span>
-</span><span class='line'>            <span class="c1">//在此仅假设用户登录编码和名称有重复的情况</span>
-</span><span class='line'>            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">&lt;</span> <span class="nx">users</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="c1">//只处理一个</span>
-</span><span class='line'>                    <span class="nx">loginUser</span> <span class="o">=</span> <span class="nx">users</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
-</span><span class='line'>                    <span class="k">break</span><span class="p">;</span>
-</span><span class='line'>                <span class="p">}</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="k">this</span><span class="p">.</span><span class="nx">next</span><span class="p">();</span>
-</span><span class='line'>        <span class="p">}).</span><span class="nx">seq</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>            <span class="kd">var</span> <span class="nx">resultJson</span><span class="p">;</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">loginUser</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">name</span><span class="o">:</span><span class="nx">loginUser</span><span class="p">.</span><span class="nx">f_name</span><span class="p">});</span>
-</span><span class='line'>                <span class="c1">//保存登录用户状态信息至session中</span>
-</span><span class='line'>                <span class="c1">//var s = req.session;</span>
-</span><span class='line'>                <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span> <span class="o">=</span> <span class="nx">loginUser</span><span class="p">;</span>
-</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;用户名或密码错误，请核对！&#39;</span><span class="p">});</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="c1">//发回登录json字串</span>
-</span><span class='line'>            <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nx">resultJson</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">};</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;uploadFileAction.js是一个通用的文件上传action，专门用于ajax的文件上专使用，代码如下：</p>
-
-<figure class='code'><figcaption><span>uploadFileAction.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">),</span>
-</span><span class='line'>    <span class="nx">fs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;fs-extra&#39;</span><span class="p">),</span>
-</span><span class='line'>    <span class="nx">uuid</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;node-uuid&#39;</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//上传文件，可上传照片</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">uploadFile</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">files</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">files</span><span class="p">;</span>
-</span><span class='line'>    <span class="c1">//回调函数名</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">callbackFunctionName</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">cbName</span><span class="p">;</span>
-</span><span class='line'>    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">callbackFunctionName</span><span class="p">);</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">dir</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;public&quot;</span><span class="p">,</span> <span class="s2">&quot;upload&quot;</span><span class="p">)</span> <span class="p">;</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">filename</span> <span class="o">=</span> <span class="nx">uuid</span><span class="p">.</span><span class="nx">v4</span><span class="p">()</span><span class="o">+</span><span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">fs</span><span class="p">.</span><span class="nx">copy</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">path</span><span class="p">,</span> <span class="nx">dir</span> <span class="o">+</span> <span class="s1">&#39;\\&#39;</span> <span class="o">+</span> <span class="nx">filename</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="s2">&quot;&lt;script&gt;&quot;</span><span class="o">+</span><span class="nx">callbackFunctionName</span> <span class="o">+</span> <span class="s2">&quot;(0,&#39;upload/error.jpg&#39;);&lt;/script&gt;&quot;</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;copy file success!&quot;</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="s2">&quot;&lt;script&gt;&quot;</span><span class="o">+</span><span class="nx">callbackFunctionName</span> <span class="o">+</span> <span class="s2">&quot;(1,&#39;upload/&quot;</span> <span class="o">+</span> <span class="nx">filename</span> <span class="o">+</span> <span class="s2">&quot;&#39;);&lt;/script&gt;&quot;</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">});</span>
-</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>        <span class="c1">//返回默认图片</span>
-</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="s2">&quot;&lt;script&gt;&quot;</span><span class="o">+</span><span class="nx">callbackFunctionName</span> <span class="o">+</span> <span class="s2">&quot;(0,&#39;upload/error.jpg&#39;);&lt;/script&gt;&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;从上面两个文件的代码实现中，我们可以发现，node.js的代码写java代码相比，实现同样的功能，代码查将更简洁、更少。但有一些要点，我需要给大家指出，这也是我花了一定时间和精力才得到的：</p>
-
-<p>&emsp;&emsp;<strong>1、请求参数的获取：</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="err">参数名</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="err">参数名</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;这两种方式中，body是支持post,delete,put等方式，功能更为强大。</p>
-
-<p>&emsp;&emsp;<strong>2、路径参数的获取</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="err">参数占位符名，其中参数占位符名必须和路由表中的名称一致，比如：</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">uid</span><span class="err">对应路由表中的</span><span class="nx">app</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/main/user/:uid&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">getUserById</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>3、session的访问</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="err">自定义</span><span class="nx">key</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;比如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span> <span class="o">=</span> <span class="nx">loginUser</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;获取时：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">u</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>4、页面的跳转</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="err">，参数为路转的表现层页面文件路径，以及放在作用域中的参数，这些参数可以在页面模板中取到。比如：</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/&#39;</span> <span class="o">+</span> <span class="nx">filename</span>  <span class="p">});</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;而jade中的代码是：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'> <span class="nx">body</span>
-</span><span class='line'>   <span class="nx">div</span><span class="p">.</span><span class="nx">container</span>
-</span><span class='line'>    <span class="nx">p</span><span class="p">.</span><span class="nx">alert</span> <span class="err">注册成功</span>
-</span><span class='line'>    <span class="nx">p</span><span class="p">.</span><span class="nx">alert</span><span class="p">.</span><span class="nx">alert</span><span class="o">-</span><span class="nx">info</span> <span class="err">注册用户名是：#</span><span class="p">{</span><span class="nx">regName</span><span class="p">}</span>
-</span><span class='line'>    <span class="nx">p</span><span class="p">.</span><span class="nx">alert</span><span class="p">.</span><span class="nx">alert</span><span class="o">-</span><span class="nx">info</span> <span class="err">照片是</span>
-</span><span class='line'>     <span class="nx">img</span><span class="p">(</span><span class="nx">src</span><span class="o">=</span><span class="s1">&#39;#{photo}&#39;</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;这样，就得到了regName以及photo参数了。</p>
-
-<p>&emsp;&emsp;<strong>5、页面重定向</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">redirect</span><span class="p">(</span><span class="s1">&#39;你的url地址&#39;</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;注意是response的方法。</p>
-
-<p>&emsp;&emsp;<strong>6、自定义响应</strong></p>
-
-<p>&emsp;&emsp;写数据方式1：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s2">&quot;&lt;h1&gt;ok!&lt;/h1&gt;&quot;</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">end</span><span class="p">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;写数据方式2：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="s2">&quot;&lt;h1&gt;ok!&lt;/h1&gt;&quot;</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>7、json数据的输出</strong></p>
-
-<p>&emsp;&emsp;可以用第6条的方式输出，比如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;用户名或密码错误，请核对！&#39;</span><span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">res</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="nx">resultJson</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;也可以用json方法输出：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'> <span class="kd">var</span> <span class="nx">p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Page</span><span class="p">(</span><span class="nx">pno</span><span class="p">,</span> <span class="nx">pageSize</span><span class="p">,</span> <span class="nx">userCount</span><span class="p">,</span> <span class="nx">users</span><span class="p">);</span>
-</span><span class='line'> <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;page&#39;</span><span class="o">:</span><span class="nx">p</span><span class="p">};</span>
-</span><span class='line'> <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;对于如果控制输入对象中的哪几个字段至json，我还没有找到方法，知道的同学请告知我。</p>
-
-<p>&emsp;&emsp;<strong>8、同步</strong></p>
-
-<p>&emsp;&emsp;Seq，请看上面的登录代码中我写的演示。当然，一般简单的操作，你可将代码直接写到回调中即可。</p>
-
-<p>&emsp;&emsp;最后，说点关于orm2的东西</p>
-
-<p>&emsp;&emsp;<strong>1、分页查询</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">queryParm</span><span class="p">)</span>
-</span><span class='line'>         <span class="p">.</span><span class="nx">limit</span><span class="p">(</span><span class="nx">pageSize</span><span class="p">)</span>
-</span><span class='line'>         <span class="p">.</span><span class="nx">offset</span><span class="p">((</span><span class="nx">pno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="nx">pageSize</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;这是orm2的分页，但是要注意 .only(&ldquo;pk_id&rdquo;,&ldquo;f_name&rdquo;,&ldquo;f_login_code&rdquo;,&ldquo;f_birthday&rdquo;)，可以指定需要哪些字段，但这个设置是全局的，会影响到其它查询，所以最后不要用only。</p>
-
-<p>&emsp;&emsp;2、多条件的自动拼装，将更加的简单：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">queryParm</span> <span class="o">=</span> <span class="p">{};</span>
-</span><span class='line'>    <span class="c1">//进行多条件的拼装</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">queryName</span> <span class="o">&amp;&amp;</span> <span class="nx">queryName</span><span class="p">.</span><span class="nx">trim</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>         <span class="c1">//如果用户输入了姓名</span>
-</span><span class='line'>        <span class="nx">queryParm</span><span class="p">.</span><span class="nx">f_name</span> <span class="o">=</span> <span class="nx">orm</span><span class="p">.</span><span class="nx">like</span><span class="p">(</span><span class="s2">&quot;%&quot;</span> <span class="o">+</span> <span class="nx">queryName</span> <span class="o">+</span> <span class="s2">&quot;%&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;orm2更详细的用法，请大家参考：<a href="https://github.com/dresende/node-orm2">https://github.com/dresende/node-orm2</a></p>
-
-<p>&emsp;&emsp;如果你需要事务，需要用到orm-transaction包，需要通过npm来安装。</p>
 ]]></content>
   </entry>
   

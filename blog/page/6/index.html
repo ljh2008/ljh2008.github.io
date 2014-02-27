@@ -9,7 +9,29 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;工作流是一些项目的核心所在，比如OA系统，如何让工作流变得更加的简单、灵活、有效，是开发人员必须要考虑的。 &emsp;&emsp;如果你项目的流程比较简单，而且流程稳定，很少变化，你可以通过自定义几个类来实现工作流（比如：WorkFlow,AduitNode, &hellip;">
+  <meta name="description" content="&emsp;&emsp;五、接下来，定义业务类： 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+/** * 借款单 * @author Administrator * */
+public class LoanOrder { &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +80,513 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/25/jbpm2/">Jbpm简单使用（2）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-25T15:18:00+08:00" pubdate data-updated="true">2013年03月25日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;<strong>五、接下来，定义业务类：</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 借款单</span>
+</span><span class='line'><span class="cm"> * @author Administrator</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LoanOrder</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">//0、草稿   1、提交审核   2、一审核通过（部门） ，3、二审通过（ceo）      4、完成付款（财务）      5、驳回</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">state</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">//借款单名称</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">//借款金额</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">money</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">//备注</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">comment</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">//操作者</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">operater</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//对应的流程实例id</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">processsInstanceId</span><span class="o">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>六、发布流程</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">processEngine</span><span class="o">.</span><span class="na">getRepositoryService</span><span class="o">().</span><span class="na">createDeployment</span><span class="o">().</span><span class="na">addResourceFromClasspath</span><span class="o">(</span><span class="n">filePath</span><span class="o">)</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">deploy</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>七、以面是我写的流程测试代码，模拟了各种情况 </strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+<span class='line-number'>170</span>
+<span class='line-number'>171</span>
+<span class='line-number'>172</span>
+<span class='line-number'>173</span>
+<span class='line-number'>174</span>
+<span class='line-number'>175</span>
+<span class='line-number'>176</span>
+<span class='line-number'>177</span>
+<span class='line-number'>178</span>
+<span class='line-number'>179</span>
+<span class='line-number'>180</span>
+<span class='line-number'>181</span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+<span class='line-number'>194</span>
+<span class='line-number'>195</span>
+<span class='line-number'>196</span>
+<span class='line-number'>197</span>
+<span class='line-number'>198</span>
+<span class='line-number'>199</span>
+<span class='line-number'>200</span>
+<span class='line-number'>201</span>
+<span class='line-number'>202</span>
+<span class='line-number'>203</span>
+<span class='line-number'>204</span>
+<span class='line-number'>205</span>
+<span class='line-number'>206</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Transactional</span>
+</span><span class='line'><span class="nd">@RunWith</span><span class="o">(</span><span class="n">SpringJUnit4ClassRunner</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+</span><span class='line'><span class="nd">@ContextConfiguration</span><span class="o">(</span><span class="n">locations</span> <span class="o">=</span> <span class="o">{</span> <span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span> <span class="o">})</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">SystemManagerTest</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Resource</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">ProcessEngine</span> <span class="n">processEngine</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">RepositoryService</span> <span class="n">rs</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">ExecutionService</span> <span class="n">es</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">TaskService</span> <span class="n">ts</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">HistoryService</span> <span class="n">hs</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Resource</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">HibernateTemplate</span> <span class="n">ht</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Before</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">init</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">rs</span> <span class="o">=</span> <span class="n">processEngine</span><span class="o">.</span><span class="na">getRepositoryService</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">es</span> <span class="o">=</span> <span class="n">processEngine</span><span class="o">.</span><span class="na">getExecutionService</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">ts</span> <span class="o">=</span> <span class="n">processEngine</span><span class="o">.</span><span class="na">getTaskService</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">hs</span> <span class="o">=</span> <span class="n">processEngine</span><span class="o">.</span><span class="na">getHistoryService</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 发布新流程</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">delployeeFlow</span><span class="o">(</span><span class="n">String</span> <span class="n">filePath</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">rs</span><span class="o">.</span><span class="na">createDeployment</span><span class="o">().</span><span class="na">addResourceFromClasspath</span><span class="o">(</span><span class="n">filePath</span><span class="o">)</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">deploy</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 得到所有已发布的流程定义</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">ProcessDefinition</span><span class="o">&gt;</span> <span class="nf">getAllProcessDefinition</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">ProcessDefinition</span><span class="o">&gt;</span> <span class="n">pds</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="na">createProcessDefinitionQuery</span><span class="o">().</span><span class="na">list</span><span class="o">();</span>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">ProcessDefinition</span> <span class="n">pd</span> <span class="o">:</span> <span class="n">pds</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">pd</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">pds</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 按id获取流程定义</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">ProcessDefinition</span> <span class="nf">getProcessDefinitionById</span><span class="o">(</span><span class="n">String</span> <span class="n">pd_id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ProcessDefinition</span> <span class="n">pd</span> <span class="o">=</span> <span class="n">rs</span><span class="o">.</span><span class="na">createProcessDefinitionQuery</span><span class="o">()</span>
+</span><span class='line'>                <span class="o">.</span><span class="na">processDefinitionId</span><span class="o">(</span><span class="n">pd_id</span><span class="o">).</span><span class="na">uniqueResult</span><span class="o">();</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">pd</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 根据一个流程定义，启动一个流程实例，map中为附加参数，可用于传递变量参数</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">ProcessInstance</span> <span class="nf">startProcessInstanceById</span><span class="o">(</span><span class="n">String</span> <span class="n">pd_id</span><span class="o">,</span> <span class="n">Map</span> <span class="n">param</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">es</span><span class="o">.</span><span class="na">startProcessInstanceById</span><span class="o">(</span><span class="n">pd_id</span><span class="o">,</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 根据id攻取流程实例</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">ProcessInstance</span> <span class="nf">getProcessInstanceById</span><span class="o">(</span><span class="n">String</span> <span class="n">pi_id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">es</span><span class="o">.</span><span class="na">findProcessInstanceById</span><span class="o">(</span><span class="n">pi_id</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 根据应用参数，得到某个人的所有任务</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Task</span><span class="o">&gt;</span> <span class="nf">getTasksbyAppUserId</span><span class="o">(</span><span class="n">String</span> <span class="n">app_user_id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">ts</span><span class="o">.</span><span class="na">findPersonalTasks</span><span class="o">(</span><span class="n">app_user_id</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 根据应用参数，得到某个人的和某个实例id相关的任务</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Task</span> <span class="nf">getTasksbyAppUserId</span><span class="o">(</span><span class="n">String</span> <span class="n">app_user_id</span><span class="o">,</span> <span class="n">String</span> <span class="n">pi_id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">Task</span><span class="o">&gt;</span> <span class="n">tasks</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="na">findPersonalTasks</span><span class="o">(</span><span class="n">app_user_id</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Task</span> <span class="n">currentTask</span> <span class="o">=</span> <span class="kc">null</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">Task</span> <span class="n">t</span> <span class="o">:</span> <span class="n">tasks</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="c1">// 取与当前流程实例对应的任务</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getExecutionId</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="n">pi_id</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">currentTask</span> <span class="o">=</span> <span class="n">t</span><span class="o">;</span>
+</span><span class='line'>                <span class="k">break</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">currentTask</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//填单据，根据流程定义id，启动流程</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">submitLoanOrder</span><span class="o">(</span><span class="n">String</span> <span class="n">pd_id</span><span class="o">,</span> <span class="n">String</span> <span class="n">submiter</span><span class="o">,</span> <span class="kt">int</span> <span class="n">money</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">Map</span> <span class="n">param</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
+</span><span class='line'>        <span class="c1">//此参数和assignee=&quot;#{submiter}&quot;相对应，由jbpm持久化</span>
+</span><span class='line'>        <span class="n">param</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;submiter&quot;</span><span class="o">,</span> <span class="n">submiter</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">param</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;money&quot;</span><span class="o">,</span> <span class="n">money</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">LoanOrder</span> <span class="n">lo</span> <span class="o">=</span> <span class="k">new</span> <span class="n">LoanOrder</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">lo</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">submiter</span> <span class="o">+</span> <span class="s">&quot;借款&quot;</span> <span class="o">+</span> <span class="n">money</span> <span class="o">+</span> <span class="s">&quot;元的借款单&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">lo</span><span class="o">.</span><span class="na">setMoney</span><span class="o">(</span><span class="n">money</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">lo</span><span class="o">.</span><span class="na">setOperater</span><span class="o">(</span><span class="n">submiter</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//0、草稿</span>
+</span><span class='line'>        <span class="n">lo</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">lo</span><span class="o">.</span><span class="na">setComment</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ht</span><span class="o">.</span><span class="na">save</span><span class="o">(</span><span class="n">lo</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//带入业务id参数</span>
+</span><span class='line'>        <span class="n">param</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;biz_id&quot;</span><span class="o">,</span> <span class="n">lo</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ProcessInstance</span> <span class="n">pi</span> <span class="o">=</span> <span class="k">this</span><span class="o">.</span><span class="na">startProcessInstanceById</span><span class="o">(</span><span class="n">pd_id</span><span class="o">,</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//关联任务实例id</span>
+</span><span class='line'>        <span class="n">lo</span><span class="o">.</span><span class="na">setProcesssInstanceId</span><span class="o">(</span><span class="n">pi</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">ht</span><span class="o">.</span><span class="na">update</span><span class="o">(</span><span class="n">lo</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//提交借款单审核</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">submitAduit</span><span class="o">(</span><span class="n">LoanOrder</span> <span class="n">lo</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Task</span> <span class="n">t</span> <span class="o">=</span> <span class="n">getTasksbyAppUserId</span><span class="o">(</span><span class="n">lo</span><span class="o">.</span><span class="na">getOperater</span><span class="o">(),</span> <span class="n">lo</span><span class="o">.</span><span class="na">getProcesssInstanceId</span><span class="o">());</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">t</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">completeTask</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>            <span class="c1">//1、提交审核</span>
+</span><span class='line'>            <span class="n">lo</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">ht</span><span class="o">.</span><span class="na">update</span><span class="o">(</span><span class="n">lo</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalStateException</span><span class="o">(</span><span class="s">&quot;借款单状态出错！&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//部门经理审核</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">managerCheck</span><span class="o">(</span><span class="n">LoanOrder</span> <span class="n">lo</span><span class="o">,</span> <span class="n">String</span> <span class="n">user</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">isPass</span><span class="o">,</span> <span class="n">String</span> <span class="n">comment</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">Task</span> <span class="n">t</span> <span class="o">=</span> <span class="n">getTasksbyAppUserId</span><span class="o">(</span><span class="n">user</span><span class="o">,</span> <span class="n">lo</span><span class="o">.</span><span class="na">getProcesssInstanceId</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">ts</span><span class="o">.</span><span class="na">addTaskComment</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="n">comment</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">isPass</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="c1">//2、一审核通过（部门）</span>
+</span><span class='line'>            <span class="n">lo</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">completeTask</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="s">&quot;managerPass&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>            <span class="c1">//5、驳回</span>
+</span><span class='line'>            <span class="n">lo</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="mi">5</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">completeTask</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="s">&quot;managerNotPass&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">ht</span><span class="o">.</span><span class="na">update</span><span class="o">(</span><span class="n">lo</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//总经理审核</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">ceoCheck</span><span class="o">(</span><span class="n">LoanOrder</span> <span class="n">lo</span><span class="o">,</span> <span class="n">String</span> <span class="n">user</span><span class="o">,</span> <span class="kt">boolean</span> <span class="n">isPass</span><span class="o">,</span> <span class="n">String</span> <span class="n">comment</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">Task</span> <span class="n">t</span> <span class="o">=</span> <span class="n">getTasksbyAppUserId</span><span class="o">(</span><span class="n">user</span><span class="o">,</span> <span class="n">lo</span><span class="o">.</span><span class="na">getProcesssInstanceId</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">ts</span><span class="o">.</span><span class="na">addTaskComment</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="n">comment</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">isPass</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="c1">//3、二审通过（ceo）</span>
+</span><span class='line'>            <span class="n">lo</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="mi">3</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">completeTask</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="s">&quot;ceoPass&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>            <span class="c1">//5、驳回</span>
+</span><span class='line'>            <span class="n">lo</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="mi">5</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">completeTask</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="s">&quot;ceoNotPass&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">ht</span><span class="o">.</span><span class="na">update</span><span class="o">(</span><span class="n">lo</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//财务付款</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">financeFinish</span><span class="o">(</span><span class="n">LoanOrder</span> <span class="n">lo</span><span class="o">,</span> <span class="n">String</span> <span class="n">user</span><span class="o">,</span> <span class="n">String</span> <span class="n">comment</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">Task</span> <span class="n">t</span> <span class="o">=</span> <span class="n">getTasksbyAppUserId</span><span class="o">(</span><span class="n">user</span><span class="o">,</span> <span class="n">lo</span><span class="o">.</span><span class="na">getProcesssInstanceId</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">ts</span><span class="o">.</span><span class="na">addTaskComment</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">(),</span> <span class="n">comment</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">completeTask</span><span class="o">(</span><span class="n">t</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>        <span class="c1">//完成付款（财务）</span>
+</span><span class='line'>        <span class="n">lo</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="mi">4</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">ht</span><span class="o">.</span><span class="na">update</span><span class="o">(</span><span class="n">lo</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//这里可能会生成付款对象，并存储</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//结束某个任务</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">completeTask</span><span class="o">(</span><span class="n">String</span> <span class="n">tid</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">ts</span><span class="o">.</span><span class="na">completeTask</span><span class="o">(</span><span class="n">tid</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//结束某个任务,并指定下一个流程名称</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">completeTask</span><span class="o">(</span><span class="n">String</span> <span class="n">tid</span><span class="o">,</span> <span class="n">String</span> <span class="n">nextTaskName</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">ts</span><span class="o">.</span><span class="na">completeTask</span><span class="o">(</span><span class="n">tid</span><span class="o">,</span> <span class="n">nextTaskName</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Test</span>
+</span><span class='line'>    <span class="nd">@Rollback</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">test</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//填单，开启流程</span>
+</span><span class='line'>        <span class="n">submitLoanOrder</span><span class="o">(</span><span class="s">&quot;loan-1&quot;</span><span class="o">,</span><span class="s">&quot;ljh&quot;</span><span class="o">,</span><span class="mi">4000</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">submitLoanOrder</span><span class="o">(</span><span class="s">&quot;loan-1&quot;</span><span class="o">,</span><span class="s">&quot;cg&quot;</span><span class="o">,</span><span class="mi">4000</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">submitLoanOrder</span><span class="o">(</span><span class="s">&quot;loan-1&quot;</span><span class="o">,</span><span class="s">&quot;yy&quot;</span><span class="o">,</span><span class="mi">8000</span><span class="o">);</span>
+</span><span class='line'>       <span class="n">submitLoanOrder</span><span class="o">(</span><span class="s">&quot;loan-1&quot;</span><span class="o">,</span><span class="s">&quot;dz&quot;</span><span class="o">,</span><span class="mi">18000</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//提交审核</span>
+</span><span class='line'>        <span class="n">submitAduit</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">1</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">submitAduit</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">2</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">submitAduit</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">3</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">submitAduit</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">4</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//部门经理审核</span>
+</span><span class='line'>        <span class="n">managerCheck</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">1</span><span class="o">),</span> <span class="s">&quot;manager&quot;</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="s">&quot;资金紧张，不批准！&quot;</span><span class="o">);</span>
+</span><span class='line'>       <span class="n">managerCheck</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">2</span><span class="o">),</span> <span class="s">&quot;manager&quot;</span><span class="o">,</span> <span class="kc">true</span><span class="o">,</span> <span class="s">&quot;同意！&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">managerCheck</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">3</span><span class="o">),</span> <span class="s">&quot;manager&quot;</span><span class="o">,</span> <span class="kc">true</span><span class="o">,</span> <span class="s">&quot;同意！！！&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">managerCheck</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">4</span><span class="o">),</span> <span class="s">&quot;manager&quot;</span><span class="o">,</span> <span class="kc">true</span><span class="o">,</span> <span class="s">&quot;同意！！！&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//ceo审批</span>
+</span><span class='line'>        <span class="n">ceoCheck</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">3</span><span class="o">),</span> <span class="s">&quot;ceo&quot;</span><span class="o">,</span> <span class="kc">true</span><span class="o">,</span> <span class="s">&quot;同意！！！&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">ceoCheck</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">4</span><span class="o">),</span> <span class="s">&quot;ceo&quot;</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="s">&quot;不同意！！！&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">//财务付款</span>
+</span><span class='line'>       <span class="n">financeFinish</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">2</span><span class="o">),</span> <span class="s">&quot;finance&quot;</span><span class="o">,</span> <span class="s">&quot;同意付款！！！&quot;</span><span class="o">);</span>
+</span><span class='line'>       <span class="n">financeFinish</span><span class="o">(</span><span class="n">ht</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">LoanOrder</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">3</span><span class="o">),</span> <span class="s">&quot;finance&quot;</span><span class="o">,</span> <span class="s">&quot;同意付款！！！&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2413,311 +2942,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/01/31/hibernate-anntation/">Hibernate关系注解映射</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-01-31T15:18:00+08:00" pubdate data-updated="true">2013年01月31日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>一、一对多</h2>
-
-<p>&emsp;&emsp;(最好不要用单向关联，其实单向本身并无多大意义)：</p>
-
-<p>&emsp;&emsp;<strong>一方：</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@OneToMany</span><span class="o">(</span><span class="n">targetEntity</span><span class="o">=</span><span class="n">Order</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">,</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">EAGER</span><span class="o">)</span>
-</span><span class='line'> <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_customer_id&quot;</span><span class="o">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p></p>
-
-<p>&emsp;&emsp;如果一方加了fetch=FetchType.EAGER，查单一的多方对象时，会多产生一条sql</p>
-
-<p>&emsp;&emsp;targetEntity也可以写成mappedBy=&ldquo;customer&#8221;（这里写的是多多中对一方的引用属性），表示由对方去维护外键关系。</p>
-
-<p>&emsp;&emsp;注：一般会将fetch=FetchType.LAZY</p>
-
-<p>&emsp;&emsp;<strong>多方：</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@ManyToOne</span>
-</span><span class='line'> <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_customer_id&quot;</span><span class="o">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;注：一般需要会将fetch=FetchType.LAZY，默认情况下多方会主动加载一方数据的。</p>
-
-<p>&emsp;&emsp;配置实例（客户&mdash;>客户订单）：</p>
-
-<p>&emsp;&emsp;客户中的集合：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@OneToMany</span><span class="o">(</span><span class="n">targetEntity</span><span class="o">=</span><span class="n">Order</span><span class="o">.</span><span class="na">class</span><span class="o">,</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_customer_id&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;</span> <span class="n">orders</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;客户订单中的客户：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//订单所属客户</span>
-</span><span class='line'><span class="nd">@ManyToOne</span><span class="o">(</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_customer_id&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">private</span> <span class="n">Customer</span> <span class="n">customer</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>二、多对一</h2>
-
-<p>&emsp;&emsp;比较简单，示例：注册用户&mdash;&mdash;>城市</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@ManyToOne</span><span class="o">(</span><span class="n">targetEntity</span><span class="o">=</span><span class="n">City</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_city_id&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">private</span> <span class="n">City</span> <span class="n">city</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>三、多对多</h2>
-
-<p>&emsp;&emsp;示例：游戏用户，用户组</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="c1">//用户参加的组</span>
-</span><span class='line'>    <span class="nd">@ManyToMany</span><span class="o">(</span><span class="n">fetch</span><span class="o">=</span><span class="n">FetchType</span><span class="o">.</span><span class="na">LAZY</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@Cascade</span><span class="o">(</span><span class="n">value</span><span class="o">={</span><span class="n">org</span><span class="o">.</span><span class="na">hibernate</span><span class="o">.</span><span class="na">annotations</span><span class="o">.</span><span class="na">CascadeType</span><span class="o">.</span><span class="na">SAVE_UPDATE</span><span class="o">})</span>
-</span><span class='line'>    <span class="nd">@JoinTable</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_user_group&quot;</span><span class="o">,</span><span class="n">joinColumns</span><span class="o">={</span><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_user_id&quot;</span><span class="o">)}</span>
-</span><span class='line'>                <span class="o">,</span><span class="n">inverseJoinColumns</span><span class="o">={</span><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_group_id&quot;</span><span class="o">)}</span>
-</span><span class='line'>            <span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">Group</span><span class="o">&gt;</span> <span class="n">groups</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">Group</span><span class="o">&gt;();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;而在用户组中：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//该小组 中所包含的用户</span>
-</span><span class='line'>    <span class="nd">@ManyToMany</span><span class="o">(</span><span class="n">mappedBy</span><span class="o">=</span><span class="s">&quot;groups&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@Cascade</span><span class="o">(</span><span class="n">value</span><span class="o">={</span><span class="n">org</span><span class="o">.</span><span class="na">hibernate</span><span class="o">.</span><span class="na">annotations</span><span class="o">.</span><span class="na">CascadeType</span><span class="o">.</span><span class="na">SAVE_UPDATE</span><span class="o">})</span>
-</span><span class='line'>    <span class="nd">@JoinTable</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_user_group&quot;</span><span class="o">,</span><span class="n">joinColumns</span><span class="o">={</span><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_group_id&quot;</span><span class="o">)}</span>
-</span><span class='line'>                <span class="o">,</span><span class="n">inverseJoinColumns</span><span class="o">={</span><span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_user_id&quot;</span><span class="o">)}</span>
-</span><span class='line'><span class="o">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>四、一对一惟一外键关联</h2>
-
-<p>&emsp;&emsp;示例：husband&mdash;&mdash;>wife</p>
-
-<p>&emsp;&emsp;而husband中（外键在t_husband表中）：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@OneToOne</span><span class="o">(</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@JoinColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fk_wife_id&quot;</span><span class="o">,</span><span class="n">unique</span><span class="o">=</span><span class="kc">true</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Wife</span> <span class="n">wife</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;wife对象中：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@OneToOne</span><span class="o">(</span><span class="n">mappedBy</span><span class="o">=</span><span class="s">&quot;wife&quot;</span><span class="o">,</span><span class="n">cascade</span><span class="o">=</span><span class="n">CascadeType</span><span class="o">.</span><span class="na">ALL</span><span class="o">)</span>
-</span><span class='line'> <span class="kd">private</span> <span class="n">Husband</span> <span class="n">husband</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>五、枚举映射示例：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Entity</span>
-</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_husband&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Husband</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//状态</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kd">enum</span> <span class="n">State</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">haveMoney</span><span class="o">,</span> <span class="n">noMoney</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//状态</span>
-</span><span class='line'>    <span class="nd">@Enumerated</span>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_state&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">State</span> <span class="n">state</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="na">noMoney</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>六、单表继承：</h2>
-
-<p>&emsp;&emsp;父：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Entity</span>
-</span><span class='line'><span class="nd">@Table</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;t_animal&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@Inheritance</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">InheritanceType</span><span class="o">.</span><span class="na">SINGLE_TABLE</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@DiscriminatorColumn</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_type&quot;</span><span class="o">,</span><span class="n">discriminatorType</span><span class="o">=</span><span class="n">DiscriminatorType</span><span class="o">.</span><span class="na">STRING</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Animal</span> <span class="o">{</span>
-</span><span class='line'>    <span class="nd">@Id</span>
-</span><span class='line'>    <span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="na">IDENTITY</span><span class="o">)</span>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;pk_id&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_nickname&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">nickName</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;子：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Entity</span>
-</span><span class='line'><span class="nd">@DiscriminatorValue</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;d&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Dog</span> <span class="kd">extends</span> <span class="n">Animal</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Column</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;f_color&quot;</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">color</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;注解方式与spring的整合：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="c">&lt;!--  配置sessionFactory--&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;sessionFactory&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">..............&lt;/property</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;packagesToScan&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;value&gt;</span>com.lovo.edu.model<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;value&gt;</span>com.lovo.edu.test<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;关于序列类型主键的配置示例：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Id</span>
-</span><span class='line'>
-</span><span class='line'><span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">strategy</span><span class="o">=</span><span class="n">GenerationType</span><span class="o">.</span><span class="na">SEQUENCE</span><span class="o">,</span> <span class="n">generator</span><span class="o">=</span><span class="s">&quot;student_id&quot;</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="nd">@SequenceGenerator</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;student_id&quot;</span><span class="o">,</span> <span class="n">allocationSize</span><span class="o">=</span><span class="mi">1</span><span class="o">,</span> <span class="n">initialValue</span><span class="o">=</span><span class="mi">1</span><span class="o">,</span><span class="n">sequenceName</span><span class="o">=</span><span class="s">&quot;seq_student_id&quot;</span><span class="o">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">private</span> <span class="n">Long</span> <span class="n">sid</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;其它的一些主键生成方式：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Id</span>
-</span><span class='line'><span class="nd">@GenericGenerator</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;idGenerator&quot;</span><span class="o">,</span> <span class="n">strategy</span><span class="o">=</span><span class="s">&quot;uuid&quot;</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@GeneratedValue</span><span class="o">(</span><span class="n">generator</span><span class="o">=</span><span class="s">&quot;idGenerator&quot;</span><span class="o">)</span> <span class="c1">//使用uuid的生成策略</span>
-</span><span class='line'><span class="c1">//同理：使用assigned策略则在strategy中指定 =&quot;assigned&quot;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/7/">&larr; 更多早期老文章</a>
@@ -2735,6 +2959,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
       </li>
     
@@ -2748,10 +2976,6 @@
     
       <li class="post">
         <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三&#8211;深入细节</a>
       </li>
     
   </ul>

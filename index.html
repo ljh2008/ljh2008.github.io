@@ -9,18 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;本文属于入门类型文章，给大家简单介绍一下javax.servlet中用到的几个设计模式。 先看职责链模式 &emsp;&emsp;这个模式的应用就是大家所熟悉的filter过滤器,演示代码如下： Filter.java1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12 &hellip;">
+  <meta name="description" content="&emsp;&emsp;在WEB应用中，我们可能会遇到实时性要求很高的交互场景，浏览器需要及时地显示服务器上的数据变化，服务器也需要知道客户端的一些状况，比如：下面的示例中，我给出了一个简易的在线聊天系统。 聊天室登录界面 正在聊天的界面 &emsp;&emsp;上面的在线聊天演示程序中， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -69,6 +58,69 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-02-17T12:18:00+08:00" pubdate data-updated="true">2014年02月17日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;在WEB应用中，我们可能会遇到实时性要求很高的交互场景，浏览器需要及时地显示服务器上的数据变化，服务器也需要知道客户端的一些状况，比如：下面的示例中，我给出了一个简易的在线聊天系统。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/02/chat_login.jpg' width='' height='' title='聊天室登录界面'><span class='caption-text'>聊天室登录界面</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/02/chating.jpg' width='' height='' title='正在聊天的界面'><span class='caption-text'>正在聊天的界面</span></span></p>
+
+<p>&emsp;&emsp;上面的在线聊天演示程序中，先通过用户名登录，登录成功后即可即可发送自己的聊天消息，界面中的在线用户列表中可以看到每一个用户的状态，比如：在线，离开，掉线等。</p>
+
+<p>&emsp;&emsp;好，请大家先思考一下如何去实现这样的一个系统？</p>
+
+<p>&emsp;&emsp;其实，实现的办法很多，下面我给出一些参考：</p>
+
+<p>&emsp;&emsp;一、服务器端用java写一个socket服务器，flash或flex实现聊天客户端(当然也可以用applet之类的技术)，通过socket连接服务器实现实时通讯。这种实现方式我曾经在一个项目中用过，效果还不错。目前的html5中的web socket也可以实现这个功能（具体请参考<a href="http://www.ibm.com/developerworks/cn/web/1112_huangxa_websocket/">http://www.ibm.com/developerworks/cn/web/1112_huangxa_websocket/</a>）。</p>
+
+<p>&emsp;&emsp;二、浏览器中写一定时器，不断发送ajax请求向服务器请求数据，服务器用一个servlet处理请求。在服务器上保存聊天室的内容，每一个用户发言后都将消息内容保存在一个集合中。</p>
+
+<p>&emsp;&emsp;方式二，由客户端按固定的时间发起请求，这种方式虽然可以实现我们的功能，但有一些缺陷，主要表现在：1、在用户并发量大、频率高的时候，网络会拥堵，性能存在问题；2、实时性不高，比如：用户离开，掉线等状态都是要等到下一次请求才能知道，并且服务器上要有某种机制检测到某个用户已经断线；3、如果服务器端数据没有发生变更，那么这个请求只会消耗更多系统资源。</p>
+
+<p>&emsp;&emsp;三、基于http长连接技术。这种方式中可以实现较高的实时性，当有数据发生变化时，服务器主动将数据推送到客户端。</p>
+
+<p>&emsp;&emsp;comet长连接大致有两种实现，第一种是采用长轮询机制实现，大致过程是：由客户端发起http请求，服务器收到这个请求后，进入一个 while(ture)的循环，当有数据需要告知客户端时，将数据响应给客户端，并断开连接。客户端收到信息后进行处理，处理完成后再次发起新的请求，这就是长轮询的长连接实现。当然，客户端一般都采用ajax方式发起请求。</p>
+
+<p>&emsp;&emsp;comet另一种采用基于流的方式实现，利用ajax的readystate为3时表示数据正在传输而保持连接不中断，服务器端可以使用基于NIO的方式提高处理效率，而不是while(true)的多线程方式。 更多关于comet的实现细节，大家可以参阅<a href="http://software.intel.com/zh-cn/articles/comet-java-realtime-system-essay/">http://software.intel.com/zh-cn/articles/comet-java-realtime-system-essay/</a>。</p>
+
+<p>&emsp;&emsp;我这里采用comt4j框架实现http长连接（不要去重复发明轮子哦，直接用现成的）。首先要准备相应的jar包comet4j-tomcat6.jar，将其添加到你的classpath中，大家要根据不同的服务器版本添加不同的实现，因为comet4j使用的是服务器的comet之nio实现。comt4j目前仅提供了tomcat6,tomcat7的支持。</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/02/17/comet-java/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -726,185 +778,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/11/26/my-blog/">我的独立博客再次开放</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-11-26T15:18:00+08:00" pubdate data-updated="true">2013年11月26日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;有一天，突然看到山子在群里发了他的个人博客地址，感觉还不错，就多问了几句：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>冰雨 9:14:05 
-</span><span class='line'>山子，你的github博客，是怎么搭建的呢
-</span><span class='line'>冰雨 9:14:11 
-</span><span class='line'>搞得非常不错呢
-</span><span class='line'>李山 9:14:49 
-</span><span class='line'>就是自己做的静态页面，传到gitHub上了，gitHub  pages可以解析页面的
-</span><span class='line'>冰雨 9:15:11 
-</span><span class='line'>它支持什么？
-</span><span class='line'>冰雨 9:15:18 
-</span><span class='line'>html,php?
-</span><span class='line'>冰雨 9:15:22 
-</span><span class='line'>jsp支持否？
-</span><span class='line'>冰雨 9:15:26 
-</span><span class='line'>mysql呢？
-</span><span class='line'>李山 9:15:36 
-</span><span class='line'>只支持静态的页面
-</span><span class='line'>冰雨 9:16:02 
-</span><span class='line'>你的博客的页面，都是静态的？没有数据库？
-</span><span class='line'>李山 9:16:49 
-</span><span class='line'>没有的啊
-</span><span class='line'>冰雨 9:17:23 
-</span><span class='line'>那就是存手工操作，在本地编辑好，发布上去。
-</span><span class='line'>冰雨 9:17:32 
-</span><span class='line'>它的空间，最大是多少呢？
-</span><span class='line'>冰雨 9:17:49 
-</span><span class='line'>也没看到有广告，难道是存免费的？
-</span><span class='line'>李山 9:17:55 
-</span><span class='line'>空间不限制的
-</span><span class='line'>李山 9:18:20 
-</span><span class='line'>github就是免费的啊，可以随便整
-</span><span class='line'>冰雨 9:19:12 
-</span><span class='line'>我在博客上给你留言,是保存不上的吧？
-</span><span class='line'>李山 9:19:24 
-</span><span class='line'>保存的
-</span><span class='line'>李山 9:19:49 
-</span><span class='line'>评论是用的其他的插件
-</span><span class='line'>冰雨 9:20:01 
-</span><span class='line'>哦。存在哪的？ 
-</span><span class='line'>李山 9:20:48 
-</span><span class='line'>这个我是用的多说的插件，是存在多说的服务器上的
-</span><span class='line'>李山 9:21:00 
-</span><span class='line'>这个插件有好多的
-</span><span class='line'>冰雨 9:21:09 
-</span><span class='line'>哦，我看到了的。
-</span><span class='line'>冰雨 9:21:27 
-</span><span class='line'>那你本地，是用git上传的吧
-</span><span class='line'>李山 9:21:47 
-</span><span class='line'>嗯，做好页面直接传到gitHub上就行了
-</span><span class='line'>冰雨 9:23:20 
-</span><span class='line'>哦，那还不错
-</span><span class='line'>李山 9:24:26 
-</span><span class='line'>刘老，你也做一个啊
-</span><span class='line'>冰雨 9:26:04 
-</span><span class='line'>你的网页模板，用的是那个呢？
-</span><span class='line'>冰雨 9:26:27 
-</span><span class='line'>应该在本地安装一个cms，然后生成html ,再传上去
-</span><span class='line'>冰雨 9:26:33 
-</span><span class='line'>这样，是不是更好一些？
-</span><span class='line'>李山 9:27:31 
-</span><span class='line'>不用的，gitHub支持jekyll模版，可以用markdown做页面传上去后可以自动解析
-</span><span class='line'>冰雨 9:29:56 
-</span><span class='line'>哦，这么复杂
-</span><span class='line'>冰雨 9:30:05 
-</span><span class='line'>看来，要向你多学习才是
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;我以前的个人博客，是搭建在linode VPS上的，但因为后来的一些原因没再续费，博客也就停了。</p>
-
-<p>&emsp;&emsp;再后来，我的博客都放在了百度空间上，虽然百度空间各种体验都很差，但也只好将就着，忍着。</p>
-
-<p>&emsp;&emsp;当我从山子那了解到github上可以免费托管博客，在网上搜了一下，立即搭建了本地环境（说实话，在windows下搭建octopress还真麻烦，各种出错，还好，都一一解决了），将百度空间上的文章全部转到了新的博客系统上。</p>
-
-<p>&emsp;&emsp;转载几年前的老文章时才发现，近年来写的博客越来越少，而且含金量也越来越低。近期的博客更多的是关注代码、技术，而几年前的更加关注的是项目管理、架构。看来今后还得继续发表些高质量的东西，呵呵。</p>
-
-<p>&emsp;&emsp;学习，生活，工作，是人生的组成部分，哪一部分做不好，人生都将存在遗憾。这个新的博客也将记录更多给与工作、技术无关的内容，更多个人生活的内容。</p>
-
-<p>&emsp;&emsp;最后，欢迎各位，有空多来<a href="http://yanyaner.com">yanyaner.com</a>上看看，发现对你有帮助的东西，也希望多多交流。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; 更多早期老文章</a>
@@ -920,6 +793,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
       </li>
     
@@ -933,10 +810,6 @@
     
       <li class="post">
         <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三&#8211;深入细节</a>
       </li>
     
   </ul>

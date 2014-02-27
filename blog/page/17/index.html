@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;tor是本人很早就使用的一个翻越长城的工具，下面介绍我在linux上的安装过程及步骤： &emsp;&emsp;一、服务器采用ubuntu 9.10版本，由于tor并没有在9.10发行软件更新列表中，所以，我们首先要在更新列表中加入tor的更新地址，修改修改/etc/apt &hellip;">
+  <meta name="description" content="&emsp;&emsp; Memcached是一个开源的快速分布式缓存框架，它和ehcached等缓存框架相比，具有下面的一些优势： 1、 跨jvm的缓存架。我们知道，在一个jvm进程中，一般情况下的有效内存利用最多为2G，如果你再把数据缓存在项目的jvm进程中，势必造成内存空间的紧 缺， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,314 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/18/Memcached/">Memcached在项目中的应用</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-18T15:18:00+08:00" pubdate data-updated="true">2010年10月18日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp; <a href="http://memcached.org/" title="memcached官网" target='_blank'>Memcached</a>是一个开源的快速分布式缓存框架，它和ehcached等缓存框架相比，具有下面的一些优势：</p>
+
+<p>1、 跨jvm的缓存架。我们知道，在一个jvm进程中，一般情况下的有效内存利用最多为2G，如果你再把数据缓存在项目的jvm进程中，势必造成内存空间的紧 缺，严重的时候会出现堆栈溢出面导致项目终止运行。</p>
+
+<p>2、 集群环境下的缓存框架。Memcached启动后，有自己的独立IP地址及端口号（默认是11211，当然你可以更改），因此，在集群环境下或不同的几个 项目间，都可以访问缓存服务器中的数据，非常的方便。</p>
+
+<p>&emsp;&emsp;下面我们一起来看一看笔者在最近的一个项目中，是如何使用memached的。</p>
+
+<p>&emsp;&emsp;一、安装memcached缓存服务器</p>
+
+<p>如果你用的是windows服务器系统，请到<a href="http://jehiah.cz/projects/memcached-win32/">http://jehiah.cz/projects/memcached-win32/</a>下载，点其中的 exe可执行文件，Memcached就完成了启动，非常的简单。</p>
+
+<p>如果你使用的是linux server，你需要如下的操作(以ubuntu为例)：</p>
+
+<p>$ sudo apt-get install memcached（安装）</p>
+
+<p>$ memcached -d -m 50 -p 11211 -u root（启动）</p>
+
+<p>上面命令行参数说明：-m 指定使用多少兆的缓存空间；-p 指定要监听的端口； -u 指定以哪个用户来运行，默认情况下，会在本机的11211端口监听操作连接，你可以通过netstat –ant查看memcached是否已经正常运行。</p>
+
+<p>你也可以通过修改/etc/default/memcached配置文件，将ENABLE_MEMCACHED=yes，让系统启动时，自动运行 memcached，省去了每次都要手式启动的繁琐步骤。</p>
+
+<p>&emsp;&emsp;二、下载memcached的java访问客户端。下载地址：<a href="http://github.com/gwhalin/Memcached-Java-Client/downloads">http://github.com/gwhalin/Memcached-Java-Client/downloads</a>，将压缩包中的java_memcached-release_2.5.1.jar放到你的工程目录中。</p>
+
+<p>如果你是用的PHP，Ruby等，也可在网上找到相应的访问Memcached模块及示例代码。</p>
+
+<p>&emsp;&emsp;三、在java程序中的访问。</p>
+
+<p>首先要强调一下，放入memcached中缓存的对象，必须以键值对（key/value）的方式放入，取的时候根据key来取，但memcached有 几个自己的特殊要求：key必须为String，即字符串类型；而要缓存的对象必须要实现Serializable序列化接口。</p>
+
+<p>&emsp;&emsp;本人之前的一个项目中，当用户将鼠标停留到某个单词上时，系统要弹出该单词的解释及音标，由于项目组在开发时并没有 找到一套合适的词库，我们的解决思路是：当有用户查询时，服务器向第三方翻译网站提交单词，再从返回的结果中解析出单词解释及发音。此查询过程相当费时， 且在网络状态不好时表现不佳，但在当时这也许是最好的解决办法了。</p>
+
+<p>&emsp;&emsp;Word对象是我们封装的单词音标及解释对象，该对象实现Serializable接口。当用户查询某个单词时，我们先会在Memcached缓存中查 找，如果没有找到，则向数据库查询，如果数据库中也没有找到，再向第三方翻译网站提交，得到结果后返回给用户后，同时要把该单词存入数据库，同时放入 Memcached缓存，下次有用户查询同样的单词时，效率将会得到非常大的提升。系统得到一个单词翻译的代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">Word</span> <span class="nf">getWordTranslate</span><span class="o">(</span><span class="n">String</span> <span class="n">aWord</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 先从缓存中取</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Word</span> <span class="n">word</span> <span class="o">=</span> <span class="n">getWordFromCache</span><span class="o">(</span><span class="n">aWord</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">word</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">word</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//从数据库中取</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">word</span> <span class="o">=</span> <span class="n">wordDao</span><span class="o">.</span><span class="na">getWord</span><span class="o">(</span><span class="n">aWord</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">word</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//放入缓存</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">MemcachedAdapter</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">aWord</span><span class="o">,</span> <span class="n">word</span><span class="o">);;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">word</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&amp;</span><span class="n">nbsp</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//从网上查词</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">word</span> <span class="o">=</span> <span class="n">translateWordFromWebSite</span><span class="o">(</span><span class="n">aWord</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="o">(!</span> <span class="s">&quot;e&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">tv</span><span class="o">.</span><span class="na">getWords</span><span class="o">()))</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//存入数据库</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">saveWord</span><span class="o">(</span><span class="n">word</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//放入缓存</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">MemcachedAdapter</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">aWord</span><span class="o">,</span> <span class="n">word</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">return</span> <span class="n">word</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Memcached操作代码如下，其中的一些连接参数，你可以根据你的情况进行修改。</p>
+
+<figure class='code'><figcaption><span>MemcachedAdapter.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MemcachedAdapter</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">protected</span> <span class="kd">static</span> <span class="n">MemCachedClient</span> <span class="n">mcc</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MemCachedClient</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">static</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">SockIOPool</span> <span class="n">pool</span> <span class="o">=</span> <span class="n">SockIOPool</span><span class="o">.</span><span class="na">getInstance</span><span class="o">();</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">pool</span><span class="o">.</span><span class="na">setServers</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">[]{</span><span class="s">&quot;127.0.0.1:11211&quot;</span><span class="o">});</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Integer</span><span class="o">[]</span> <span class="n">weights</span> <span class="o">=</span> <span class="o">{</span> <span class="mi">3</span> <span class="o">};</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">pool</span><span class="o">.</span><span class="na">setWeights</span><span class="o">(</span> <span class="n">weights</span> <span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">pool</span><span class="o">.</span><span class="na">setInitConn</span><span class="o">(</span> <span class="mi">5</span> <span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">pool</span><span class="o">.</span><span class="na">setMinConn</span><span class="o">(</span> <span class="mi">5</span> <span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">pool</span><span class="o">.</span><span class="na">setMaxConn</span><span class="o">(</span> <span class="mi">250</span> <span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">pool</span><span class="o">.</span><span class="na">setMaxIdle</span><span class="o">(</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">6</span> <span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">pool</span><span class="o">.</span><span class="na">setMaintSleep</span><span class="o">(</span> <span class="mi">30</span> <span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">pool</span><span class="o">.</span><span class="na">setNagle</span><span class="o">(</span> <span class="kc">false</span> <span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">pool</span><span class="o">.</span><span class="na">setSocketTO</span><span class="o">(</span> <span class="mi">3000</span> <span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">pool</span><span class="o">.</span><span class="na">setSocketConnectTO</span><span class="o">(</span> <span class="mi">0</span> <span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">pool</span><span class="o">.</span><span class="na">initialize</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="n">Object</span> <span class="nf">get</span><span class="o">(</span><span class="n">String</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">mcc</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">set</span><span class="o">(</span><span class="n">String</span> <span class="n">key</span><span class="o">,</span> <span class="n">Object</span> <span class="n">o</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">mcc</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">o</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">add</span><span class="o">(</span><span class="n">String</span> <span class="n">key</span><span class="o">,</span> <span class="n">Object</span> <span class="n">o</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">mcc</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">o</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">replace</span><span class="o">(</span><span class="n">String</span> <span class="n">key</span><span class="o">,</span> <span class="n">Object</span> <span class="n">o</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">mcc</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="n">key</span><span class="o">,</span> <span class="n">o</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">boolean</span> <span class="nf">delete</span><span class="o">(</span><span class="n">String</span> <span class="n">key</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">mcc</span><span class="o">.</span><span class="na">delete</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;项目上线前，我们对单词翻译部分进行了压力测试，在很多用第一次查询某个单词的时候，速度很慢，但系统运行一段时候后，由于常用单词都在Memcached中 进行了缓存，速度上就基本就存在问题了。</p>
+
+<p>&emsp;&emsp;最后还有一个问题要考虑，就是在操作系统重新启动后，Memcached中缓存的数据将不再存在，为了效率考虑，你可以在应用服务器启动时，将所有的单词 对象全部读出，再添加到Memcahced中。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -191,6 +499,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
       </li>
     
@@ -204,10 +516,6 @@
     
       <li class="post">
         <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三&#8211;深入细节</a>
       </li>
     
   </ul>

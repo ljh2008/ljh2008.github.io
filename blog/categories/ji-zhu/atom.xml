@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-01-23T21:33:05+08:00</updated>
+  <updated>2014-02-26T15:28:35+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,523 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[http长连接在java中的应用示例]]></title>
+    <link href="http://yanyaner.com/blog/2014/02/17/comet-java/"/>
+    <updated>2014-02-17T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/02/17/comet-java</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;在WEB应用中，我们可能会遇到实时性要求很高的交互场景，浏览器需要及时地显示服务器上的数据变化，服务器也需要知道客户端的一些状况，比如：下面的示例中，我给出了一个简易的在线聊天系统。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/02/chat_login.jpg' width='' height='' title='聊天室登录界面'><span class='caption-text'>聊天室登录界面</span></span></p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/02/chating.jpg' width='' height='' title='正在聊天的界面'><span class='caption-text'>正在聊天的界面</span></span></p>
+
+<p>&emsp;&emsp;上面的在线聊天演示程序中，先通过用户名登录，登录成功后即可即可发送自己的聊天消息，界面中的在线用户列表中可以看到每一个用户的状态，比如：在线，离开，掉线等。</p>
+
+<p>&emsp;&emsp;好，请大家先思考一下如何去实现这样的一个系统？</p>
+
+<p>&emsp;&emsp;其实，实现的办法很多，下面我给出一些参考：</p>
+
+<p>&emsp;&emsp;一、服务器端用java写一个socket服务器，flash或flex实现聊天客户端(当然也可以用applet之类的技术)，通过socket连接服务器实现实时通讯。这种实现方式我曾经在一个项目中用过，效果还不错。目前的html5中的web socket也可以实现这个功能（具体请参考<a href="http://www.ibm.com/developerworks/cn/web/1112_huangxa_websocket/">http://www.ibm.com/developerworks/cn/web/1112_huangxa_websocket/</a>）。</p>
+
+<p>&emsp;&emsp;二、浏览器中写一定时器，不断发送ajax请求向服务器请求数据，服务器用一个servlet处理请求。在服务器上保存聊天室的内容，每一个用户发言后都将消息内容保存在一个集合中。</p>
+
+<p>&emsp;&emsp;方式二，由客户端按固定的时间发起请求，这种方式虽然可以实现我们的功能，但有一些缺陷，主要表现在：1、在用户并发量大、频率高的时候，网络会拥堵，性能存在问题；2、实时性不高，比如：用户离开，掉线等状态都是要等到下一次请求才能知道，并且服务器上要有某种机制检测到某个用户已经断线；3、如果服务器端数据没有发生变更，那么这个请求只会消耗更多系统资源。</p>
+
+<p>&emsp;&emsp;三、基于http长连接技术。这种方式中可以实现较高的实时性，当有数据发生变化时，服务器主动将数据推送到客户端。</p>
+
+<p>&emsp;&emsp;comet长连接大致有两种实现，第一种是采用长轮询机制实现，大致过程是：由客户端发起http请求，服务器收到这个请求后，进入一个 while(ture)的循环，当有数据需要告知客户端时，将数据响应给客户端，并断开连接。客户端收到信息后进行处理，处理完成后再次发起新的请求，这就是长轮询的长连接实现。当然，客户端一般都采用ajax方式发起请求。</p>
+
+<p>&emsp;&emsp;comet另一种采用基于流的方式实现，利用ajax的readystate为3时表示数据正在传输而保持连接不中断，服务器端可以使用基于NIO的方式提高处理效率，而不是while(true)的多线程方式。 更多关于comet的实现细节，大家可以参阅<a href="http://software.intel.com/zh-cn/articles/comet-java-realtime-system-essay/">http://software.intel.com/zh-cn/articles/comet-java-realtime-system-essay/</a>。</p>
+
+<p>&emsp;&emsp;我这里采用comt4j框架实现http长连接（不要去重复发明轮子哦，直接用现成的）。首先要准备相应的jar包comet4j-tomcat6.jar，将其添加到你的classpath中，大家要根据不同的服务器版本添加不同的实现，因为comet4j使用的是服务器的comet之nio实现。comt4j目前仅提供了tomcat6,tomcat7的支持。<!-- More --></p>
+
+<p>&emsp;&emsp;接下来要修改服务器的server.xml中Connector部分，以启用nio的socket方式，代码如下：</p>
+
+<p>``` xml server.xml</p>
+
+<p><Connector connectionTimeout="20000"
+port="8080"
+protocol="org.apache.coyote.http11.Http11NioProtocol"
+redirectPort="8443"/></p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;在web.xml中加入comet的支持：</p>
+
+<p>``` xml web.xml</p>
+
+<!-- Comet4J长连接请求处理servlet -->
+
+
+<p>  <servlet></p>
+
+<pre><code>&lt;servlet-name&gt;comet4Memory&lt;/servlet-name&gt;
+&lt;servlet-class&gt;org.comet4j.core.CometServlet&lt;/servlet-class&gt;
+</code></pre>
+
+<p>  </servlet>
+  &lt;servlet-mapping></p>
+
+<pre><code>&lt;servlet-name&gt;comet4Memory&lt;/servlet-name&gt;
+&lt;url-pattern&gt;/state&lt;/url-pattern&gt;
+</code></pre>
+
+<p>  &lt;/servlet-mapping></p>
+
+<p>  <!--Comet4J容器侦听 -->
+  <listener></p>
+
+<pre><code>&lt;listener-class&gt;org.comet4j.core.CometAppListener&lt;/listener-class&gt;
+</code></pre>
+
+<p>  </listener></p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;接下来是服务器端的代码，下面的这段代码用来进行初始化，使用Component将对象放入spring容器，并在构造中进行comet初始化：</p>
+
+<p>``` java  CometInit.java</p>
+
+<p>@Component
+public class CometInit {</p>
+
+<pre><code>@Resource
+private IMyService ms;
+
+public static final String CHANNEL_USER_INFO = "onlineUsers";
+public static final String CHANNEL_USER_CHATING_CONTENT = "user_chating_content";
+
+public CometInit() {
+
+    CometContext context = CometContext.getInstance(); 
+    CometEngine engine = context.getEngine();
+
+    //添加连接监听
+    engine.addConnectListener(new ConnectListener() {
+        @Override
+        public boolean handleEvent(ConnectEvent event) {
+
+            CometConnection connection = event.getConn();
+            String ip = connection.getClientIp();
+            String id = connection.getId();
+
+            HttpServletRequest request = connection.getRequest();
+
+            String userName = getCookieValue(request.getCookies(), "userName-chating-client", "");
+
+            if (userName == null) {
+                return true;
+            }
+
+            try {
+                userName = URLDecoder.decode(userName, "utf-8");
+            } catch (UnsupportedEncodingException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+            System.out.println("id是：" + id + "的用户连接服务器，ip是：" + ip + ",用户名是：" + userName);
+            User u = UserAction.onlineUsers.get(userName);
+            if (u == null) {
+                return true;
+            }
+            u.setState(UserAction.STATE_ONLINE);
+            u.setClientId(id);
+
+            ObjectMapper om = new ObjectMapper(); 
+            try {
+                event.getTarget().sendToAll(CometInit.CHANNEL_USER_INFO, om.writeValueAsString(UserAction.onlineUsers.values()));
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } 
+
+            return true;
+        }
+    });
+
+    //添加离线、断线监听
+    engine.addDropListener(new DropListener() {
+
+        @Override
+        public boolean handleEvent(DropEvent event) {
+
+            CometConnection connection = event.getConn();
+            String ip = connection.getClientIp();
+            String id = connection.getId();
+            HttpServletRequest request = connection.getRequest();
+            String userName = getCookieValue(request.getCookies(), "userName-chating-client", "");
+
+            if (userName == null) {
+                return true;
+            }
+
+            try {
+                userName = URLDecoder.decode(userName, "utf-8");
+            } catch (UnsupportedEncodingException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+
+            System.out.println("id是：" + id + "的用户断开与服务器的连接，ip是："+ ip + ",用户名是：" + userName);
+            User u = UserAction.onlineUsers.get(userName);
+            if (u == null) {
+                return true;
+            }
+            u.setState(UserAction.STATE_MISSING);
+
+            ObjectMapper om = new ObjectMapper(); 
+            try {
+                event.getTarget().sendToAll(CometInit.CHANNEL_USER_INFO, om.writeValueAsString(UserAction.onlineUsers.values()));
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } 
+            return true;
+        }
+    });
+
+    //注册信道 
+    context.registChannel(CHANNEL_USER_INFO);
+    context.registChannel(CHANNEL_USER_CHATING_CONTENT);
+
+
+}
+
+/**
+ * 从cookiek中得到某个 key的取值
+ * @param cookies
+ * @param cookieName
+ * @param defaultValue
+ * @return
+ */
+public String getCookieValue(Cookie[] cookies, String cookieName, String defaultValue) {
+    String result = defaultValue;
+    if (cookies != null) {
+        for (int i = 0; i &lt; cookies.length; i++) {
+            Cookie cookie = cookies[i];
+            if (cookieName.equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+    }
+    return result;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;服务器端处理用户聊天请求的Action代码如下：</p>
+
+<p>``` java ChatingAction.java</p>
+
+<p>@Controller
+public class ChatingAction {</p>
+
+<pre><code>public static final String STATE_LOGINING = "登录中";
+public static final String STATE_ONLINE = "在线";
+public static final String STATE_MISSING = "掉线";
+public static final String STATE_LEAVE = "离开";
+
+
+private CometEngine engine;
+
+public UserAction() {
+    engine = CometContext.getInstance().getEngine(); 
+}
+
+
+//保存在线用户集合，在些比做持久化的用户数据
+public static Map&lt;String, User&gt; onlineUsers = new HashMap&lt;String, User&gt;();
+
+@RequestMapping("loginChat")
+public String login(
+        @RequestParam(value="name") String name,
+        HttpSession session,
+        HttpServletResponse response
+        ) throws Exception {
+
+    User user = onlineUsers.get(name);
+    if (user == null) {
+        //更新状态信息
+        user = new User();
+        user.setName(name);
+        onlineUsers.put(name, user);
+    } 
+    //设置为正在登录状态
+    user.setState(STATE_LOGINING);
+    session.setAttribute("user_key", user);
+
+    //如果是json方式返回，也可由客户端通过js添加cookie
+    Cookie cookie = new Cookie("userName-chating-client",URLEncoder.encode(name,"utf-8"));  
+    cookie.setMaxAge(60*60*24*7);//保留7天  
+    response.addCookie(cookie);  
+
+    //更新在线用户列表
+    ObjectMapper om = new ObjectMapper(); 
+    engine.sendToAll(CometInit.CHANNEL_USER_INFO, om.writeValueAsString(onlineUsers.values()));
+
+    //进入主页面
+    return "chating";
+
+}
+
+
+@RequestMapping("getState")
+public void getState(
+        HttpSession session,
+        HttpServletResponse response
+        ) throws Exception {
+
+    User user = (User)session.getAttribute("user_key");
+    ObjectMapper om = new ObjectMapper(); 
+    if (user != null) {
+        //返回所有的在线用户
+        om.writeValue(response.getWriter(), user);
+    } else {
+        om.writeValue(response.getWriter(), "{code:0}");
+    }
+
+}
+
+@RequestMapping("onlineUser")
+public void allUsers(
+        HttpServletResponse response
+        ) throws Exception {
+
+    //返回所有的在线用户
+    ObjectMapper om = new ObjectMapper(); 
+    om.writeValue(response.getWriter(), onlineUsers);
+
+
+}
+
+
+@RequestMapping("logout")
+public String logout(
+        HttpSession session,
+        HttpServletResponse response
+        ) throws Exception {
+
+    User user = (User)session.getAttribute("user_key");
+    if (user != null) {
+        ObjectMapper om = new ObjectMapper(); 
+        onlineUsers.get(user.getName()).setState(STATE_LEAVE);
+        engine.sendToAll(CometInit.CHANNEL_USER_INFO, om.writeValueAsString(onlineUsers.values()));
+    }
+
+    return "chat_login";
+
+}
+
+@RequestMapping("sendMsg")
+public void sendMsg(
+        HttpSession session,
+        @RequestParam(value="msg") String msg,
+        HttpServletResponse response
+        ) throws Exception {
+
+    SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+
+    User user = (User)session.getAttribute("user_key");
+    if (user != null) {
+        ObjectMapper om = new ObjectMapper(); 
+        Map respBody = new HashMap();
+        respBody.put("date", sf.format(new Date()));
+        respBody.put("user", user.getName());
+        respBody.put("msg", msg);
+        engine.sendToAll(CometInit.CHANNEL_USER_CHATING_CONTENT, om.writeValueAsString(respBody));
+    }
+
+    response.getWriter().print("over");
+}
+</code></pre>
+
+<p>}</p>
+
+<p>//用户
+class User {</p>
+
+<pre><code>//昵称
+private String name;
+//状态(登录中，在线，掉线，已录出)
+private String state;
+//长连接id,由comet4j自行分配
+private String clientId;
+
+public String getName() {
+    return name;
+}
+public void setName(String name) {
+    this.name = name;
+}
+public String getState() {
+    return state;
+}
+public void setState(String state) {
+    this.state = state;
+}
+public String getClientId() {
+    return clientId;
+}
+public void setClientId(String clientId) {
+    this.clientId = clientId;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;comet4j客户端已经封装了相应的js，以简化我们的编码，我们需要做的是引入comet4j.js到需要的页面中。</p>
+
+<p>``` jsp chat_login.jsp
+&lt;%@ page language=&ldquo;java&rdquo; contentType=&ldquo;text/html; charset=UTF-8&rdquo;</p>
+
+<pre><code>pageEncoding="UTF-8"%&gt;
+</code></pre>
+
+<p>&lt;!DOCTYPE html PUBLIC &ldquo;&ndash;//W3C//DTD HTML 4.01 Transitional//EN&rdquo; &ldquo;<a href="http://www.w3.org/TR/html4/loose.dtd">http://www.w3.org/TR/html4/loose.dtd</a>&rdquo;>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Insert title here</title>
+<link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css"/>
+</head>
+<body></p>
+
+<pre><code>&lt;p class="text-warning"&gt;假设本系统以用户名作为用户的业务主键。&lt;/p&gt;
+&lt;form action="loginChat" method="post"&gt;
+    用户名：&lt;input type="text" name="name"/&gt;
+    &lt;input type="submit" value="进入聊天室" class="btn btn-success"/&gt;
+&lt;/form&gt;
+</code></pre>
+
+<p></body>
+</html></p>
+
+<p>```</p>
+
+<p>``` jsp chating.jsp</p>
+
+<p>&lt;%@ page language=&ldquo;java&rdquo; contentType=&ldquo;text/html; charset=UTF-8&rdquo;</p>
+
+<pre><code>pageEncoding="UTF-8"%&gt;
+</code></pre>
+
+<p>&lt;!DOCTYPE html PUBLIC &ldquo;&ndash;//W3C//DTD HTML 4.01 Transitional//EN&rdquo; &ldquo;<a href="http://www.w3.org/TR/html4/loose.dtd">http://www.w3.org/TR/html4/loose.dtd</a>&rdquo;>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>在线聊天</title></p>
+
+<script type="text/javascript" src="lib/jquery/jquery-1.7.2.min.js"></script>
+
+
+<p><link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css"/></p>
+
+<script type="text/javascript" src="lib/jquery-timer/jquery.timer.js"></script>
+
+
+<script type="text/javascript" src="lib/comet4j/comet4j.js"></script>
+
+
+
+
+<script type="text/javascript">
+    $(function(){
+        
+        $("#btn_send").click(function() {
+            $.ajax({
+                url:"sendMsg",
+                type:"post",
+                data:{msg:$("#msg").val()},
+                success:function(){
+                    $("#msg").val("");
+                }
+            });
+        });
+        
+        JS.Engine.on({
+            user_chating_content:function(data){//侦听聊天内容
+                var result = $.parseJSON(data);
+                $("<p><b>"+result.date+"</b></p>").appendTo("#msgs");
+                $("<p ><b style='color:red;'>"+result.user+"</b>: "+result.msg+"</p>").appendTo("#msgs");
+            },
+            onlineUsers: function(data){//侦听在线用户
+                    var result = $.parseJSON(data);
+                    $("#onlineUsers option").remove();
+                    $(result).each(function(){
+                        $("<option>" + this.name + ":" + this.state + "</option>").appendTo("#onlineUsers");
+                    });
+                    
+            }
+        });
+        JS.Engine.start('state');
+        
+       
+       var timer = $.timer(
+        function() {
+            $.ajax({
+                url:"getState",
+                type:"get",
+                dataType:"json",
+                success:function(user) {
+                    $("#uid").html(user.clientId);
+                    $("#nickName").html(user.name);
+                }
+            });
+        }
+        );  
+       timer.once(5000);
+            
+    });
+</script>
+
+
+<p></head>
+<body></p>
+
+<div style="background-color: silver;width:650px;">
+    当前用户长连接id:<span id="uid"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    当前用户昵称  :<span id="nickName"></span>
+</div>
+
+
+<div >
+<div id="msgs" style="height: 200px; width:650px; overflow: scroll;"></div>
+<select multiple="multiple" id="onlineUsers" style="width: 650px;">
+</select>
+<br>
+<form action="logout">
+请输入要发送的消息：<input type="text" id="msg" >
+<input type="button" value="    发        送    " id="btn_send" class="btn btn-success btn-large"> 
+<input type="submit" value="离开聊天室" class="btn btn-warning btn-large">
+</form>
+</div>
+
+
+<p></body>
+</html></p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;运行上面的代码，即可进行实时聊天了。我们近期的一个实时监控功能就是基于comet做的。</p>
+
+<p>&emsp;&emsp;最后给大家强调几点：</p>
+
+<ol>
+<li>在没有深入研究的情况下，引入任何一项新的技术，都会给项目带来风险，comet也如此。</li>
+<li>服务器能够接受的comet长连接并发数有待测试，如果并发过高，将考虑使用其它的解决方案。</li>
+<li>comet4j上线、下线等监听器中如果注入了service，在service中查询出的hibernate实体bean,必须要主动加载后面需要用到的lazy对象（原因：和openSessionInView失效有关哦）。</li>
+</ol>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[关于servlet规范中的几个设计模式解析]]></title>
@@ -213,7 +730,7 @@ public void doFilter(String param, FilterChain fc) {
 
 <p>&emsp;&emsp;如果用户的输入参数是abc，即fc.doFilter(&ldquo;abc&rdquo;);，执行输出是：</p>
 
-<p><code>
+<p><code>  
 进入MyFilter1的处理 ....
 发现参数是abc，终止执行!!!!
 </code></p>
@@ -1243,133 +1760,6 @@ mvn install:install-file -DgroupId=com.my.nio -DartifactId=mynio -Dversion=0.1.1
 &emsp;&emsp;这段代码定义了项目间的依赖关系，其中的.. ，表示上一级目录，也就是和本项目同级的项目中定义的model名称，在这个项目上运行test, install, deploy等命令，将会对所有的子项目执行相同的命令。</p>
 
 <p>&emsp;&emsp;好，今天就简单说到这，下篇关于maven的技术细节，敬请期待。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[在项目中使用maven之一--环境配置]]></title>
-    <link href="http://yanyaner.com/blog/2013/12/23/maven/"/>
-    <updated>2013-12-23T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/12/23/maven</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;Apache Maven是一个软件项目综合管理工具，它基于项目对象模型（POM）的概念来统一管理项目，使用Maven可以更好地管理项目的模块化，更好地管理项目之间的依赖，更好地管理jar包依赖及其版本，也更加贴近项目管理的各个阶段。</p>
-
-<p>&emsp;&emsp;你是否碰到过这样的一些困扰，比如：你现在要搭建一个现今比较流行的SSH javaEE框架原型，按照传统的方式，你得把项目所依赖的第三方框架jar包拷贝到工程的lib目录下再进行整合，但是，在你的架构原型中，每一个框架要用什么版本，各个版本的jar包之间是否会有不兼容的情况？这些都会给整个过程带来麻烦，并花费大量的调试时间。</p>
-
-<p>&emsp;&emsp;如果有了Maven，这个事情会变得简单，你也许只需要声明一个依赖关系，所有的一切都自动完成了。</p>
-
-<p>&emsp;&emsp;例如，我要写一个activeMQ的JMS项目，我的pom.xml中，只要添加如下的一个依赖，即可开始编码了：</p>
-
-<p>``` xml pom.xml
-<dependencies></p>
-
-<pre><code>&lt;dependency&gt;
-    &lt;groupId&gt;org.apache.activemq&lt;/groupId&gt;
-    &lt;artifactId&gt;activemq-core&lt;/artifactId&gt;
-    &lt;version&gt;5.7.0&lt;/version&gt;
-&lt;/dependency&gt;
-</code></pre>
-
-<p>  </dependencies>
-```</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven1.jpg' width='' height='' title='activeMQ项目中maven依赖的项目包'><span class='caption-text'>activeMQ项目中maven依赖的项目包</span></span></p>
-
-<p>&emsp;&emsp;当然，上面的示例中使用maven也有一点约束，那就是你的开发机器必须要能够连接到互联网上，并且网速不能太卡（这点可能有些开发者的环境无法满足而制约了maven在国内的普及速度），原因显而易见：所有的jar包需要从网上的仓库中下载到本地。<!--more--></p>
-
-<p>&emsp;&emsp;你可能通过上面的那段配置文件已经发现，在maven中世界中，每一个你所依赖的组件都是通过groupId、artifactId、version三个字段来定位的，好比x、y、h可以定位一个三维空间中的目标一样。如果你要问，我怎么知道所依赖的包的三维坐标信息呢，答案是：到<a href="http://mvnrepository.com/">mvnrepository.com</a>上查询。</p>
-
-<p>&emsp;&emsp;如果公司的开发环境处在一个封闭的局域网内，就得需要安装一些工具，另加一些额外的配置了，nexus是值得选择的内网Maven仓库，下面我给大家简单介绍一下nexus的安装、配置以及maven的基本配置。</p>
-
-<p>&emsp;&emsp;步骤如下：</p>
-
-<ul>
-<li>到nexus官网，下载nexus-2.7.0-04-bundle.zip文件（当然，你下载的版本号可能和我不同）</li>
-<li>解压到自已的一个目录中，比如我放到了D:\dev_tools\nexus-2.7.0-04-bundle\下</li>
-<li>接着，添加到路径变量到path中，注意是bin目录，我添加的是D:\dev_tools\nexus-2.7.0-04-bundle\nexus-2.7.0-04\bin</li>
-<li>安装系统服务，进入cmd中，运行：nexus install，这个时候，你可以在window的系统服务中看到这样的路径信息：D:\dev_tools\nexus-2.7.0-04-bundle\nexus-2.7.0-04\bin\jsw\windows-x86-32\wrapper.exe -s D:\dev_tools\nexus-2.7.0-04-bundle\nexus-2.7.0-04\bin\jsw\conf\wrapper.conf,实际运行的就是这个命令</li>
-<li>启动服务：nexus start，如果不出意外的话，你可以看到下面的界面，这证明安装成功了，。</li>
-</ul>
-
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/nexus1.jpg' width='' height='' title='启动nexus cmd界面'><span class='caption-text'>启动nexus cmd界面</span></span></p>
-
-<p>&emsp;&emsp;在浏览器中，输入 htt p:/ / localhost:8081/nexus/  ，在主页面中输入用户名admin，密码admin123即可完成登录。</p>
-
-<p>&emsp;&emsp;在Repositories中建立自己的仓库，如下图表中的Car ManagerSystem Release、Car ManagerSystem Snapshots就是我为车辆租赁管理系统建立的Release及Snapshort版本（这里注意，一般Repository ID有多个单词的情况下用-连接，我当时的命名并不规范）。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/nexus2.jpg' width='' height='' title='我的项目中nexus截图'><span class='caption-text'>我的项目中nexus截图</span></span></p>
-
-<p>&emsp;&emsp;接下来，找到Security菜单项，针对新建的两个仓库分别配置Privileges,Roles,Users。关于nexus的详细教程，大家可以自行在网上搜索，我在这还再详述。</p>
-
-<p>&emsp;&emsp;下面要安装MAVEN了，步骤如下：</p>
-
-<ul>
-<li>到官网上下载apache-maven-3.1.1-bin.zip（你的版本可能跟我不一样），解压到目录D:\dev_tools\maven-3.1.1下（这个目录大家自行决定）。</li>
-<li>在环境变量中，将maven的bin目录加入到path中。</li>
-</ul>
-
-
-<p>&emsp;&emsp;回到命令行下，输入mvn，出现下面界面，说明maven安装成功（当然，添加环境变量，只是为了你可以在命令行手工运行maven）。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven2.jpg' width='' height='' title='安装成功的cmd窗口'><span class='caption-text'>安装成功的cmd窗口</span></span></p>
-
-<p>&emsp;&emsp;目前的新版eclipse集成了maven，一般建议大家使用本地安装的maven以达到版本的统一，你可以在eclipse中进行选择配置，界面如下：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven3.jpg' width='' height='' title='在eclipse中配置非集成maven'><span class='caption-text'>在eclipse中配置非集成maven</span></span></p>
-
-<p>&emsp;&emsp;接下来，我们对maven进行参数进行配置，一般配置文件位于C:\Documents and Settings\Administrator.m2下，文件名为settings.xml，下面是我节选的部分修改过的配置代码：</p>
-
-<p>``` xml settings.xml</p>
-
-<pre><code> &lt;localRepository&gt;F:/java/maven&lt;/localRepository&gt;
-</code></pre>
-
-<p><servers></p>
-
-<pre><code> &lt;server&gt;
-  &lt;id&gt;carManagerProjectRelease&lt;/id&gt;
-  &lt;username&gt;deployment&lt;/username&gt;
-  &lt;password&gt;deployment123&lt;/password&gt;
-&lt;/server&gt;
-
-&lt;server&gt;
-  &lt;id&gt;carManagerProjectSnapshot&lt;/id&gt;
-  &lt;username&gt;deployment&lt;/username&gt;
-  &lt;password&gt;deployment123&lt;/password&gt;
-&lt;/server&gt;
-</code></pre>
-
-<p></servers></p>
-
-<pre><code>&lt;profiles&gt;
-   &lt;profile&gt;
-   &lt;id&gt;central-repos&lt;/id&gt;
-   &lt;repositories&gt;
-        &lt;repository&gt;
-          &lt;id&gt;central&lt;/id&gt;
-          &lt;name&gt;Central&lt;/name&gt;
-          &lt;url&gt;http://127.0.0.1:8081/nexus/content/groups/public/&lt;/url&gt;
-          &lt;releases&gt;&lt;enabled&gt;true&lt;/enabled&gt;&lt;/releases&gt;
-          &lt;snapshots&gt;
-            &lt;enabled&gt;true&lt;/enabled&gt;
-          &lt;/snapshots&gt;
-        &lt;/repository&gt;
-      &lt;/repositories&gt;
-    &lt;/profile&gt;
-&lt;/profiles&gt;
-
-&lt;activeProfiles&gt;
-    &lt;activeProfile&gt;central-repos&lt;/activeProfile&gt;
-&lt;/activeProfiles&gt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;上面的文件中，我主要配置了本地仓库所在的位置，maven从网上下载的第三方依赖包，都将存放在这个地方。我放到了F:/java/maven，如果你的这个目录下已经有了非常多的jar包，你可以将这个目录直接copy给其它的开发同事机器上，避免重复下载。</p>
-
-<p>&emsp;&emsp;server部分配置了可以上传到nexus中的相关账户的登录名及密码，这些信息都是在nexus的管理界面中配置的。而http : / /127.0.0.1:8081/nexus/content/groups/public 则是本地maven库所在的服务器路径。</p>
-
-<p>&emsp;&emsp;好了，今天先到这，下一篇文章会详细介绍如何在项目中使用maven.</p>
 ]]></content>
   </entry>
   

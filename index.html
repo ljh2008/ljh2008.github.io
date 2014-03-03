@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;在WEB应用中，我们可能会遇到实时性要求很高的交互场景，浏览器需要及时地显示服务器上的数据变化，服务器也需要知道客户端的一些状况，比如：下面的示例中，我给出了一个简易的在线聊天系统。 聊天室登录界面 正在聊天的界面 &emsp;&emsp;上面的在线聊天演示程序中， &hellip;">
+  <meta name="description" content="&emsp;&emsp;json数据类型在系统通讯中得到了非常广泛的应用，jsonlib, Gson, fastJson, jackson等开源的json操作类库层出不穷，根据对这些json的测试，我们发现jsckson的效率比其它的都要高。但在实际中， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,106 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/03/03/objectmapper-json/">Json类库jackson使用之误区</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-03T12:18:00+08:00" pubdate data-updated="true">2014年03月03日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;json数据类型在系统通讯中得到了非常广泛的应用，jsonlib, Gson, fastJson, jackson等开源的json操作类库层出不穷，根据对这些json的测试，我们发现jsckson的效率比其它的都要高。但在实际中，我发现很多人使用jackson都存在一定的问题，下面我给大家讲讲jackson使用中容易出现的一些问题。</p>
+
+<p>&emsp;&emsp;先来看看下面的这一段代码，很多人在控制器代码中就是这么写的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 得到所有的班级</span>
+</span><span class='line'><span class="cm">  * </span>
+</span><span class='line'><span class="cm">  * @param sid</span>
+</span><span class='line'><span class="cm">  * @param resp</span>
+</span><span class='line'><span class="cm">  * @throws Exception</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>   <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&quot;/classes&quot;</span><span class="o">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">RequestMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getAllClasses</span><span class="o">(</span><span class="n">HttpServletResponse</span> <span class="n">resp</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">RespMessage</span> <span class="n">msg</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RespMessage</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">()</span>
+</span><span class='line'>              <span class="o">.</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;my_classes&quot;</span><span class="o">,</span>
+</span><span class='line'>              <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span> <span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">List</span><span class="o">&lt;</span><span class="n">Classes</span><span class="o">&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="n">systemService</span><span class="o">.</span><span class="na">getAllClasses</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">msg</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">resp</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">msg</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;晃眼一看，似乎没有问题，但是，这段代码在高并发操作下，性能非常的低下。有人说，这个容易，改一下代码即可，如下：</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/03/03/objectmapper-json/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -719,65 +819,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/12/05/udisk/">万恶的u盘启动程序</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-12-05T15:18:00+08:00" pubdate data-updated="true">2013年12月05日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;前两天给一邻居家安装操作系统，由于他家的电脑没有光驱，只好自己做一个启动U盘。</p>
-
-<p>&emsp;&emsp;网上搜索了一下U盘启动盘制作程序，进入排名首位的站点是：www.uqidong.com ，名字就叫“U启动”，原来有专门做这个的网站，看来还真够专业的，不得暗暗佩服！</p>
-
-<p>&emsp;&emsp;马上download这个程序，居然有300多M，这是一个什么样的功能强大的程序呢？我记得以前下载的U盘启动盘制作程序，也就只有区区1~2M就搞定了啊。好不容易下载完成，点击安装，一路下一步，下一步直至完成，还算顺利。</p>
-
-<p>&emsp;&emsp;当我回到桌面一看，吃了一惊，冒出来好多个快捷网址链接，都是一些不相关的网站，并且还默默地在后台安装了一个新的浏览器，原来，www.uqidong.com 上的东西，是一个垃圾软件，流氓软件。</p>
-
-<p>&emsp;&emsp;启动软件，开始启动盘的制作，发现制作速度非常慢，其中，有些选项会提示将hao123设置为主页，真是垃圾中的垃圾，一个小小的启动盘制作软件，居然捆绑了这么多的无关软件和设置项在里面。</p>
-
-<p>&emsp;&emsp;这还没算完。我随后发现，IE，360浏览器，火狐浏览器的主页，全部被修改成了260260.com，并且访问localhost本地路径，也会跳转到260260.com，而260260.com则会跳转到hao123.com，随即，我将所有的浏览器主页恢复成原来的页面。</p>
-
-<p>&emsp;&emsp;紧接着，用360卫士进行插件扫描，发现又多扫描出4个广告相关插件，随即重新启动电脑。</p>
-
-<p>&emsp;&emsp;电脑重启后，我以为已经清除干净，但一访问本地localhost，又转到了hao123导航，看来，还有残余存在。我进入注册表编辑器，搜索所有的260260.com,hao123.com相关的项，全部删除，但问题依旧。</p>
-
-<p>&emsp;&emsp;后来，找到windows/system32/etc/host文件，打开一看，吓了一跳，里面被改得面目全非，添加了几十个localhost的网址映射，260260.com也在里面，我一个个删除，保存，问题依旧。</p>
-
-<p>&emsp;&emsp;再次打开host文件，发现刚才删除的内容，又被写回，只有再次删除，并将文件设置为只读，host文件的写入才被禁止，这真是一个病毒程序，如此之顽固。</p>
-
-<p>&emsp;&emsp;再访问本地localhost，又转到了hao123导航，还是老样子啊。这才发现，原来程序在本机安装了一个apache服务器，并且集成了php环境，我通过httpd.conf找到它的web目录，在index.php文件中，终于看到了源代码：</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2013/12/05/udisk/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; 更多早期老文章</a>
@@ -793,6 +834,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/03/03/objectmapper-json/">Json类库jackson使用之误区</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a>
       </li>
     
@@ -806,10 +851,6 @@
     
       <li class="post">
         <a href="/blog/2014/01/12/art-rose-rain-step/">油画-听雨终稿-步骤</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
       </li>
     
   </ul>

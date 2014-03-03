@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;用户的crud操作代码： 1
+  <meta name="description" content="&emsp;&emsp;新增用户，客户端代码 user_add.html： user_add.html1
 2
 3
 4
@@ -44,15 +44,7 @@
 33
 34
 35
-36
-37
-38
-39
-40
-41
-42
-43
-44 &hellip;">
+36 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -101,6 +93,326 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/12/28/restful4/">教你一步步做 Restful程序（4）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-28T15:20:00+08:00" pubdate data-updated="true">2012年12月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;新增用户，客户端代码 user_add.html：</p>
+
+<figure class='code'><figcaption><span>user_add.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;link</span> <span class="na">type=</span><span class="s">&quot;text/css&quot;</span> <span class="na">href=</span><span class="s">&quot;../css/redmond/jquery-ui-1.8.16.custom.css&quot;</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery-1.6.2.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery-ui-1.8.16.custom.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery.validate.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/messages_cn.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/kindeditor-min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>    <span class="nx">KE</span><span class="p">.</span><span class="nx">show</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">id</span><span class="o">:</span><span class="s2">&quot;desc&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">imageUploadJson</span><span class="o">:</span><span class="s2">&quot;../../../upload_img&quot;</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;birthday&#39;]&quot;</span><span class="p">).</span><span class="nx">datepicker</span><span class="p">({</span><span class="nx">dateFormat</span><span class="o">:</span><span class="s2">&quot;yy-mm-dd&quot;</span><span class="p">});</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_close&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nb">window</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.add_user_dlg&quot;</span><span class="p">).</span><span class="nx">dialog</span><span class="p">(</span><span class="s2">&quot;destroy&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#myform&quot;</span><span class="p">).</span><span class="nx">validate</span><span class="p">({</span><span class="nx">submitHandler</span><span class="o">:</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>            <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;post&quot;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">cache</span><span class="o">:</span><span class="kc">false</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">data</span><span class="o">:</span><span class="p">{</span>
+</span><span class='line'>                <span class="nx">loginCode</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;loginCode&#39;]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span>
+</span><span class='line'>                <span class="nx">name</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;name&#39;]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span>
+</span><span class='line'>                <span class="nx">password</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;password&#39;]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span>
+</span><span class='line'>                <span class="nx">birthday</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;birthday&#39;]&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span>
+</span><span class='line'>            <span class="p">},</span>
+</span><span class='line'>            <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="nb">window</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">refresh</span><span class="p">();</span>
+</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;添加成功！&quot;</span><span class="p">);</span>
+</span><span class='line'>                    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_close&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">();</span>
+</span><span class='line'>                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;添加失败!原因：！&quot;</span> <span class="o">+</span> <span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">}});</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'><span class="nt">&lt;/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;表单：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form</span> <span class="na">id=</span><span class="s">&quot;myform&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>用户登录编码：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;loginCode&quot;</span> <span class="na">class=</span><span class="s">&quot;required&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
+</span><span class='line'>姓名：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
+</span><span class='line'>登录密码：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;password&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
+</span><span class='line'>出生日期：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;birthday&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
+</span><span class='line'>描述：<span class="nt">&lt;textarea</span> <span class="na">id=</span><span class="s">&quot;desc&quot;</span> <span class="na">cols=</span><span class="s">&quot;60&quot;</span> <span class="na">rows=</span><span class="s">&quot;10&quot;</span><span class="nt">&gt;&lt;/textarea&gt;&lt;br/&gt;</span>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;新增&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_add&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;关闭&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_close&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;/form&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;修改的客户端代码(user_modify.html)：</p>
+
+<figure class='code'><figcaption><span>user_modify.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery-1.6.2.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery.query.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_save&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>            <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;post&quot;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;user/&quot;</span> <span class="o">+</span> <span class="nx">$</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s2">&quot;uid&quot;</span><span class="p">)</span> <span class="p">,</span>
+</span><span class='line'>            <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">data</span><span class="o">:</span><span class="p">{</span><span class="s1">&#39;loginCode&#39;</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.code&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span><span class="s1">&#39;name&#39;</span><span class="o">:</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.name&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(),</span><span class="s1">&#39;birthday&#39;</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.birthday&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">()},</span>
+</span><span class='line'>            <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="nb">window</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">refresh</span><span class="p">();</span>
+</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;修改成功！&quot;</span><span class="p">);</span>
+</span><span class='line'>                    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_close&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">();</span>
+</span><span class='line'>                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;修改失败!！&quot;</span><span class="p">);</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_close&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nb">window</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.modify_user_dlg&quot;</span><span class="p">).</span><span class="nx">dialog</span><span class="p">(</span><span class="s2">&quot;destroy&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;get&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;user/&quot;</span> <span class="o">+</span> <span class="nx">$</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s2">&quot;uid&quot;</span><span class="p">)</span> <span class="p">,</span>
+</span><span class='line'>        <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.code&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">loginCode</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.name&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.birthday&quot;</span><span class="p">).</span><span class="nx">val</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">birthday</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;取用户数据发生错误!！&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'><span class="nt">&lt;/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>登录编码：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">class=</span><span class="s">&quot;code&quot;</span><span class="nt">&gt;&lt;/input&gt;&lt;br&gt;</span>
+</span><span class='line'>用户名：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">class=</span><span class="s">&quot;name&quot;</span><span class="nt">&gt;&lt;/input&gt;&lt;br&gt;</span>
+</span><span class='line'>出生日期：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">class=</span><span class="s">&quot;birthday&quot;</span><span class="nt">&gt;&lt;/input&gt;&lt;br&gt;</span>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;保存&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_save&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;关闭&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_close&quot;</span><span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;查看的客户端代码(user_detail.html)：</p>
+
+<figure class='code'><figcaption><span>user_detail.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>$(function(){
+</span><span class='line'>
+</span><span class='line'>    $(&quot;#btn_close&quot;).click(function(){
+</span><span class='line'>        window.parent.$(&quot;.view_user_dlg&quot;).dialog(&quot;destroy&quot;);
+</span><span class='line'>    });
+</span><span class='line'>
+</span><span class='line'>    $.ajax({
+</span><span class='line'>        type:&quot;get&quot;,
+</span><span class='line'>        url:&quot;user/&quot; + $.query.get(&quot;uid&quot;) ,
+</span><span class='line'>        dataType:&quot;json&quot;,
+</span><span class='line'>        success:function(result) {
+</span><span class='line'>            if (result.code == 1 ) {
+</span><span class='line'>                $(&quot;.code&quot;).text(result.data.loginCode);
+</span><span class='line'>                $(&quot;.name&quot;).text(result.data.name);
+</span><span class='line'>                $(&quot;.birthday&quot;).text(result.data.birthday);
+</span><span class='line'>
+</span><span class='line'>            } else {
+</span><span class='line'>                alert(&quot;取用户数据发生错误!！&quot;);
+</span><span class='line'>            }
+</span><span class='line'>        }
+</span><span class='line'>    });
+</span><span class='line'>});
+</span><span class='line'><span class="nt">&lt;/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>登录编码：<span class="nt">&lt;span</span> <span class="na">class=</span><span class="s">&quot;code&quot;</span><span class="nt">&gt;&lt;/span&gt;&lt;br&gt;</span>
+</span><span class='line'>用户名：<span class="nt">&lt;span</span> <span class="na">class=</span><span class="s">&quot;name&quot;</span><span class="nt">&gt;&lt;/span&gt;&lt;br&gt;</span>
+</span><span class='line'>出生日期：<span class="nt">&lt;span</span> <span class="na">class=</span><span class="s">&quot;birthday&quot;</span><span class="nt">&gt;&lt;/span&gt;&lt;br&gt;</span>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;关闭&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_close&quot;</span><span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;删除的客户端代码已经在mian.html中提供，大家可以看到的。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2219,77 +2531,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/11/07/spring-annotation/">Spring全注解配置</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-11-07T15:18:00+08:00" pubdate data-updated="true">2012年11月07日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;可用注解有：</p>
-
-<h2>有用于声明bean的Annotation：</h2>
-
-<p>@Component</p>
-
-<p>@Controller（建议使用）</p>
-
-<p>@Repository（建议使用）</p>
-
-<p>@Service（建议使用）</p>
-
-<h2>有用于注入bean的Annotation：</h2>
-
-<p>@Autowired</p>
-
-<p>@Qualifier</p>
-
-<p>@Required</p>
-
-<p>@Resource（建议使用）这是对jsr-250标准的实现</p>
-
-<p>上面虽然很多注解都可以实现相同的功能，但我标注了建议使用的一些注解。</p>
-
-<p>xml中要加上以下代码以支持注解功能：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="c">&lt;!-- 对注解事务的支持 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;tx:annotation-driven</span> <span class="na">transaction-manager=</span><span class="s">&quot;transactionManager&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'><span class="c">&lt;!-- 注解驱动 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;context:component-scan</span> <span class="na">base-package=</span><span class="s">&quot;*.*&quot;</span> <span class="nt">/&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/9/">&larr; 更多早期老文章</a>
@@ -2307,6 +2548,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/03/03/objectmapper-json/">Json类库jackson使用之误区</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a>
       </li>
     
@@ -2320,10 +2565,6 @@
     
       <li class="post">
         <a href="/blog/2014/01/12/art-rose-rain-step/">油画-听雨终稿-步骤</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
       </li>
     
   </ul>

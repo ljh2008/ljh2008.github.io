@@ -1,0 +1,721 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>json类库jackson使用之误区 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;json数据类型在系统通讯中得到了非常广泛的应用，jsonlib, Gson, fastJson, jackson等开源的json操作类库层出不穷，根据对这些json的测试，我们发现jsckson的效率比其它的都要高。但在实际中， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2014/03/03/objectmapper-json">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Json类库jackson使用之误区</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-03T12:18:00+08:00" pubdate data-updated="true">2014年03月03日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;json数据类型在系统通讯中得到了非常广泛的应用，jsonlib, Gson, fastJson, jackson等开源的json操作类库层出不穷，根据对这些json的测试，我们发现jsckson的效率比其它的都要高。但在实际中，我发现很多人使用jackson都存在一定的问题，下面我给大家讲讲jackson使用中容易出现的一些问题。</p>
+
+<p>&emsp;&emsp;先来看看下面的这一段代码，很多人在控制器代码中就是这么写的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 得到所有的班级</span>
+</span><span class='line'><span class="cm">  * </span>
+</span><span class='line'><span class="cm">  * @param sid</span>
+</span><span class='line'><span class="cm">  * @param resp</span>
+</span><span class='line'><span class="cm">  * @throws Exception</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>   <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&quot;/classes&quot;</span><span class="o">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">RequestMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getAllClasses</span><span class="o">(</span><span class="n">HttpServletResponse</span> <span class="n">resp</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">RespMessage</span> <span class="n">msg</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RespMessage</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">()</span>
+</span><span class='line'>              <span class="o">.</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;my_classes&quot;</span><span class="o">,</span>
+</span><span class='line'>              <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span> <span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">List</span><span class="o">&lt;</span><span class="n">Classes</span><span class="o">&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="n">systemService</span><span class="o">.</span><span class="na">getAllClasses</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">msg</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">resp</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">msg</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;晃眼一看，似乎没有问题，但是，这段代码在高并发操作下，性能非常的低下。有人说，这个容易，改一下代码即可，如下：<!-- more --></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="kd">private</span> <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 得到所有的班级</span>
+</span><span class='line'><span class="cm">  * </span>
+</span><span class='line'><span class="cm">  * @param sid</span>
+</span><span class='line'><span class="cm">  * @param resp</span>
+</span><span class='line'><span class="cm">  * @throws Exception</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&quot;/classes&quot;</span><span class="o">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">RequestMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getAllClasses</span><span class="o">(</span><span class="n">HttpServletResponse</span> <span class="n">resp</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="o">....</span>
+</span><span class='line'>      <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">()</span>
+</span><span class='line'>              <span class="o">.</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;my_classes&quot;</span><span class="o">,</span>
+</span><span class='line'>              <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span> <span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">....</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">resp</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">msg</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码中，让ObjectMapper做为全局对象（或者干脆放入spring容器中，保持一个实例），不反复创建这个对象，应该就没有问题了吧。</p>
+
+<p>&emsp;&emsp;不幸的是，上面这段代码仍然存在问题，因为ObjectMapper的全局性，致使过渡属性的操作在多线程中出现问题，请看下面的测试代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">CopyOfTest</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">o1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">o2</span> <span class="o">=</span> <span class="n">o1</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Thread</span> <span class="n">t1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyThread</span><span class="o">(</span><span class="n">o1</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">Thread</span> <span class="n">t2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyThread</span><span class="o">(</span><span class="n">o2</span><span class="o">,</span> <span class="mi">2</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">t1</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">t2</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">class</span> <span class="nc">MyThread</span> <span class="kd">extends</span> <span class="n">Thread</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="n">ObjectMapper</span> <span class="n">om</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">threadId</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">MyThread</span><span class="o">(</span><span class="n">ObjectMapper</span> <span class="n">om</span><span class="o">,</span> <span class="kt">int</span> <span class="n">threadId</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">om</span> <span class="o">=</span> <span class="n">om</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">threadId</span> <span class="o">=</span> <span class="n">threadId</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//产生1秒内的随机暂停</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">pauseRandomTimes</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">((</span><span class="kt">long</span><span class="o">)</span><span class="n">Math</span><span class="o">.</span><span class="na">ceil</span><span class="o">(</span><span class="n">Math</span><span class="o">.</span><span class="na">random</span><span class="o">()*</span><span class="mi">1000</span><span class="o">));</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">e1</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Student</span> <span class="n">s</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setId</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;张三&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          
+</span><span class='line'>          
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">threadId</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span>    <span class="o">{</span>
+</span><span class='line'>              <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">().</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>              <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;myStudent&quot;</span><span class="o">,</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">));</span>
+</span><span class='line'>              <span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">);</span>
+</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="c1">//随机休眠一段时间</span>
+</span><span class='line'>                  <span class="n">pauseRandomTimes</span><span class="o">();</span>
+</span><span class='line'>                  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;线程1中的输出是：&quot;</span> <span class="o">+</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">s</span><span class="o">));</span>
+</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">().</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>              <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;myStudent&quot;</span><span class="o">,</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>              <span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">);</span>
+</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="c1">//随机休眠一段时间</span>
+</span><span class='line'>                  <span class="n">pauseRandomTimes</span><span class="o">();</span>
+</span><span class='line'>                  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;线程2中的输出是：&quot;</span> <span class="o">+</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">s</span><span class="o">));</span>
+</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的这段多线程测试程序中，本计划在线程1中只输入对象的id属性，线程2中输出id、name两个属性，但通过下面的结果，我们发现事与愿违，两个线程中的输出混乱了，这就是共享了一个ObjectMapper并通过om.setFilters造成的原因。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如何改造达到我们的要求呢？如下即可，但这又会造成并发下的性能问题。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">o1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'><span class="n">ObjectMapper</span> <span class="n">o2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'><span class="n">Thread</span> <span class="n">t1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">My2Thread</span><span class="o">(</span><span class="n">o1</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>
+</span><span class='line'><span class="n">Thread</span> <span class="n">t2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">My2Thread</span><span class="o">(</span><span class="n">o2</span><span class="o">,</span> <span class="mi">2</span><span class="o">);</span>
+</span><span class='line'>      
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最终的做法是：</p>
+
+<p>&emsp;&emsp;1、将ObjectMapper作为全局；</p>
+
+<p>&emsp;&emsp;2、通过om.writer(filterProvider).write&hellip;.. 的方式输出。即保证性能，出满足多线程。</p>
+
+<p>&emsp;&emsp;最后，看一看两种写法的性能测试数据：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main1</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Student</span> <span class="n">s</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setId</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;张三&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;开始执行.....&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="kt">long</span> <span class="n">start</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">om</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10000</span><span class="o">;</span> <span class="n">i</span> <span class="o">++</span> <span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>          <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">().</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;myStudent&quot;</span><span class="o">,</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>          <span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">);</span>
+</span><span class='line'>          <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="kt">long</span> <span class="n">end</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;执行所花时间：&quot;</span> <span class="o">+</span> <span class="o">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="o">)</span> <span class="o">+</span> <span class="s">&quot;ms.&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这段测试代码的输出是：执行所花时间：6078ms.</p>
+
+<p>&emsp;&emsp;而另一种测试写法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Student</span> <span class="n">s</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setId</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;张三&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;开始执行.....&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="kt">long</span> <span class="n">start</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10000</span><span class="o">;</span> <span class="n">i</span> <span class="o">++</span> <span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">().</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;myStudent&quot;</span><span class="o">,</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>          <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">om</span><span class="o">.</span><span class="na">writer</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">).</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="kt">long</span> <span class="n">end</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;执行所花时间：&quot;</span> <span class="o">+</span> <span class="o">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="o">)</span> <span class="o">+</span> <span class="s">&quot;ms.&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这段测试代码的输出是：执行所花时间：547ms.</p>
+
+<p>&emsp;&emsp;大家可以对ObjectMapper进行简单封闭，具体请参阅我的另一篇文章<a href="/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-03T12:18:00+08:00" pubdate data-updated="true">2014年03月03日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/02/17/comet-java/" title="上一篇文章: http长连接在java中的应用示例">&laquo;上一篇:&nbsp;&nbsp;http长连接在java中的应用示例</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/03/03/objectmapper-json/">Json类库jackson使用之误区</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/01/12/art-rose-rain-step/">油画-听雨终稿-步骤</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="60">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2014 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

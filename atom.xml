@@ -4,7 +4,7 @@
   <title><![CDATA[刘江华的博客]]></title>
   <link href="http://yanyaner.com/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-02-26T15:28:35+08:00</updated>
+  <updated>2014-03-03T17:05:49+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,470 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[json类库jackson使用之误区]]></title>
+    <link href="http://yanyaner.com/blog/2014/03/03/objectmapper-json/"/>
+    <updated>2014-03-03T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/03/03/objectmapper-json</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;json数据类型在系统通讯中得到了非常广泛的应用，jsonlib, Gson, fastJson, jackson等开源的json操作类库层出不穷，根据对这些json的测试，我们发现jsckson的效率比其它的都要高。但在实际中，我发现很多人使用jackson都存在一定的问题，下面我给大家讲讲jackson使用中容易出现的一些问题。</p>
+
+<p>&emsp;&emsp;先来看看下面的这一段代码，很多人在控制器代码中就是这么写的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 得到所有的班级</span>
+</span><span class='line'><span class="cm">  * </span>
+</span><span class='line'><span class="cm">  * @param sid</span>
+</span><span class='line'><span class="cm">  * @param resp</span>
+</span><span class='line'><span class="cm">  * @throws Exception</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>   <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&quot;/classes&quot;</span><span class="o">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">RequestMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getAllClasses</span><span class="o">(</span><span class="n">HttpServletResponse</span> <span class="n">resp</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">RespMessage</span> <span class="n">msg</span> <span class="o">=</span> <span class="k">new</span> <span class="n">RespMessage</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">()</span>
+</span><span class='line'>              <span class="o">.</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;my_classes&quot;</span><span class="o">,</span>
+</span><span class='line'>              <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span> <span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">List</span><span class="o">&lt;</span><span class="n">Classes</span><span class="o">&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="n">systemService</span><span class="o">.</span><span class="na">getAllClasses</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">msg</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">resp</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">msg</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;晃眼一看，似乎没有问题，但是，这段代码在高并发操作下，性能非常的低下。有人说，这个容易，改一下代码即可，如下：<!-- more --></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="kd">private</span> <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 得到所有的班级</span>
+</span><span class='line'><span class="cm">  * </span>
+</span><span class='line'><span class="cm">  * @param sid</span>
+</span><span class='line'><span class="cm">  * @param resp</span>
+</span><span class='line'><span class="cm">  * @throws Exception</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span> <span class="o">=</span> <span class="s">&quot;/classes&quot;</span><span class="o">,</span> <span class="n">method</span> <span class="o">=</span> <span class="n">RequestMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getAllClasses</span><span class="o">(</span><span class="n">HttpServletResponse</span> <span class="n">resp</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="o">....</span>
+</span><span class='line'>      <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">()</span>
+</span><span class='line'>              <span class="o">.</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;my_classes&quot;</span><span class="o">,</span>
+</span><span class='line'>              <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span> <span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">....</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">resp</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">msg</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码中，让ObjectMapper做为全局对象（或者干脆放入spring容器中，保持一个实例），不反复创建这个对象，应该就没有问题了吧。</p>
+
+<p>&emsp;&emsp;不幸的是，上面这段代码仍然存在问题，因为ObjectMapper的全局性，致使过渡属性的操作在多线程中出现问题，请看下面的测试代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">CopyOfTest</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">o1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">o2</span> <span class="o">=</span> <span class="n">o1</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Thread</span> <span class="n">t1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyThread</span><span class="o">(</span><span class="n">o1</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">Thread</span> <span class="n">t2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyThread</span><span class="o">(</span><span class="n">o2</span><span class="o">,</span> <span class="mi">2</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">t1</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">t2</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">class</span> <span class="nc">MyThread</span> <span class="kd">extends</span> <span class="n">Thread</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="n">ObjectMapper</span> <span class="n">om</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">threadId</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">MyThread</span><span class="o">(</span><span class="n">ObjectMapper</span> <span class="n">om</span><span class="o">,</span> <span class="kt">int</span> <span class="n">threadId</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">om</span> <span class="o">=</span> <span class="n">om</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">threadId</span> <span class="o">=</span> <span class="n">threadId</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//产生1秒内的随机暂停</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">pauseRandomTimes</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">((</span><span class="kt">long</span><span class="o">)</span><span class="n">Math</span><span class="o">.</span><span class="na">ceil</span><span class="o">(</span><span class="n">Math</span><span class="o">.</span><span class="na">random</span><span class="o">()*</span><span class="mi">1000</span><span class="o">));</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">e1</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Student</span> <span class="n">s</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setId</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;张三&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          
+</span><span class='line'>          
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">threadId</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span>    <span class="o">{</span>
+</span><span class='line'>              <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">().</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>              <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;myStudent&quot;</span><span class="o">,</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">));</span>
+</span><span class='line'>              <span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">);</span>
+</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="c1">//随机休眠一段时间</span>
+</span><span class='line'>                  <span class="n">pauseRandomTimes</span><span class="o">();</span>
+</span><span class='line'>                  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;线程1中的输出是：&quot;</span> <span class="o">+</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">s</span><span class="o">));</span>
+</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">().</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>              <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;myStudent&quot;</span><span class="o">,</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>              <span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">);</span>
+</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="c1">//随机休眠一段时间</span>
+</span><span class='line'>                  <span class="n">pauseRandomTimes</span><span class="o">();</span>
+</span><span class='line'>                  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;线程2中的输出是：&quot;</span> <span class="o">+</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">s</span><span class="o">));</span>
+</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的这段多线程测试程序中，本计划在线程1中只输入对象的id属性，线程2中输出id、name两个属性，但通过下面的结果，我们发现事与愿违，两个线程中的输出混乱了，这就是共享了一个ObjectMapper并通过om.setFilters造成的原因。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">2</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">:</span><span class="s">&quot;张三&quot;</span><span class="o">}</span>
+</span><span class='line'><span class="err">线程</span><span class="mi">1</span><span class="err">中的输出是：</span><span class="o">{</span><span class="s">&quot;id&quot;</span><span class="o">:</span><span class="mi">1</span><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如何改造达到我们的要求呢？如下即可，但这又会造成并发下的性能问题。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">o1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'><span class="n">ObjectMapper</span> <span class="n">o2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'><span class="n">Thread</span> <span class="n">t1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">My2Thread</span><span class="o">(</span><span class="n">o1</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>
+</span><span class='line'><span class="n">Thread</span> <span class="n">t2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">My2Thread</span><span class="o">(</span><span class="n">o2</span><span class="o">,</span> <span class="mi">2</span><span class="o">);</span>
+</span><span class='line'>      
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最终的做法是：</p>
+
+<p>&emsp;&emsp;1、将ObjectMapper作为全局；</p>
+
+<p>&emsp;&emsp;2、通过om.writer(filterProvider).write&hellip;.. 的方式输出。即保证性能，出满足多线程。</p>
+
+<p>&emsp;&emsp;最后，看一看两种写法的性能测试数据：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main1</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Student</span> <span class="n">s</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setId</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;张三&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;开始执行.....&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="kt">long</span> <span class="n">start</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">om</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10000</span><span class="o">;</span> <span class="n">i</span> <span class="o">++</span> <span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>          <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">().</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;myStudent&quot;</span><span class="o">,</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>          <span class="n">om</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">);</span>
+</span><span class='line'>          <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="kt">long</span> <span class="n">end</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;执行所花时间：&quot;</span> <span class="o">+</span> <span class="o">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="o">)</span> <span class="o">+</span> <span class="s">&quot;ms.&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这段测试代码的输出是：执行所花时间：6078ms.</p>
+
+<p>&emsp;&emsp;而另一种测试写法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Student</span> <span class="n">s</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setId</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">s</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;张三&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;开始执行.....&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="kt">long</span> <span class="n">start</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10000</span><span class="o">;</span> <span class="n">i</span> <span class="o">++</span> <span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">SimpleFilterProvider</span> <span class="n">filterProvider</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">().</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">filterProvider</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="s">&quot;myStudent&quot;</span><span class="o">,</span> <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">));</span>
+</span><span class='line'>          <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">om</span><span class="o">.</span><span class="na">writer</span><span class="o">(</span><span class="n">filterProvider</span><span class="o">).</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">s</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="kt">long</span> <span class="n">end</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;执行所花时间：&quot;</span> <span class="o">+</span> <span class="o">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="o">)</span> <span class="o">+</span> <span class="s">&quot;ms.&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这段测试代码的输出是：执行所花时间：547ms.</p>
+
+<p>&emsp;&emsp;大家可以对ObjectMapper进行简单封闭，具体请参阅我的另一篇文章<a href="http://yanyaner.com/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[http长连接在java中的应用示例]]></title>
@@ -5452,401 +5916,6 @@
 
 
 <p>&emsp;&emsp;这版crud演示就介绍到这，下一版本，将把前端全部替换为angular.js，再下一版本将把数据库更换为mongodb。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[node.js中基本于expresss、mysql的CRUD之五（代码实现）]]></title>
-    <link href="http://yanyaner.com/blog/2013/08/09/nodejs-express-mysql-crud5/"/>
-    <updated>2013-08-09T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/08/09/nodejs-express-mysql-crud5</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;页面的展示，jade做为高性能的一个动态页面引擎，在代码的简洁性上也有很大的优势：</p>
-
-<p>&emsp;&emsp;先来看user_list.jade的代码：</p>
-
-<figure class='code'><figcaption><span>user_list.jade</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'>doctype 5
-</span><span class='line'>html
-</span><span class='line'>    head
-</span><span class='line'>        title= title
-</span><span class='line'>        link(rel=&#39;stylesheet&#39;, href=&#39;../css/bootstrap.min.css&#39;)
-</span><span class='line'>        script(src=&#39;../js/jquery-1.7.2.min.js&#39;)
-</span><span class='line'>        script(src=&#39;../js/user.js&#39;)
-</span><span class='line'>        style
-</span><span class='line'>         #welcome{color:green}
-</span><span class='line'>         #who{color:gold}
-</span><span class='line'>         .row_op a{margin-left: 20px;cursor:pointer}
-</span><span class='line'>         .page a {margin-left: 15px;cursor:pointer}
-</span><span class='line'>    body
-</span><span class='line'>        div.container
-</span><span class='line'>            #welcome
-</span><span class='line'>             h3 欢迎
-</span><span class='line'>              span(id=&#39;who&#39;)
-</span><span class='line'>              登录成功！
-</span><span class='line'>              span
-</span><span class='line'>               a(href=&#39;../logout&#39;)退出系统
-</span><span class='line'>            div.row
-</span><span class='line'>             span 用户名称：
-</span><span class='line'>             input(type=&#39;text&#39;,id=&#39;queryWhat&#39;,class=&#39;input-medium search-query&#39;)
-</span><span class='line'>             button(class=&#39;btn&#39;,id=&#39;btn_query&#39;)搜索
-</span><span class='line'>            div(class=&#39;row&#39;,style=&#39;margin-top: 15px;&#39;)
-</span><span class='line'>             input(type=&#39;button&#39;,value=&#39;新增&#39;,class=&#39;btn&#39;,id=&#39;btn_to_add&#39;)
-</span><span class='line'>             input(type=&#39;button&#39;,value=&#39;批量删除&#39;,class=&#39;btn&#39;,id=&#39;btn_deletes&#39;)
-</span><span class='line'>            div.row
-</span><span class='line'>             div.span8
-</span><span class='line'>              table.table
-</span><span class='line'>               <span class="nt">&lt;tr&gt;&lt;th&gt;</span>选择<span class="nt">&lt;/th&gt;&lt;th&gt;</span>用户id<span class="nt">&lt;/th&gt;&lt;th&gt;</span>登录名<span class="nt">&lt;/th&gt;&lt;th&gt;</span>姓名<span class="nt">&lt;/th&gt;&lt;th&gt;</span>出生日期<span class="nt">&lt;/th&gt;&lt;th&gt;</span>操作<span class="nt">&lt;/th&gt;&lt;/tr&gt;</span>
-</span><span class='line'>               tbody(id=&#39;users&#39;)
-</span><span class='line'>            div(class=&#39;row&#39;,style=&#39;margin-top: 15px;&#39;)
-</span><span class='line'>             div#page_info.span4
-</span><span class='line'>             div.span8.page
-</span><span class='line'>              a.fp 首页
-</span><span class='line'>              a.pp 上一页
-</span><span class='line'>              a.np 下一页
-</span><span class='line'>              a.lp 末页
-</span></code></pre></td></tr></table></div></figure>
-
-
-<!--more-->
-
-
-<p>&emsp;&emsp;上面的代码只需要写标签的开始部分，结尾的配对将由服务器自动完成，标签的嵌套包含，用空格缩进完成（一定要注意是空格而不是tab）。</p>
-
-<p>&emsp;&emsp;再来看login.jade，同样的比较简单，但建立大家在书与的时候，还是把js文件单独提取到外部文件中。</p>
-
-<figure class='code'><figcaption><span>login.jade</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'>doctype 5
-</span><span class='line'>html
-</span><span class='line'>  head
-</span><span class='line'>    title= title
-</span><span class='line'>    link(rel=&#39;stylesheet&#39;, href=&#39;/css/bootstrap.min.css&#39;)
-</span><span class='line'>    script(src=&#39;js/jquery-1.7.2.min.js&#39;)
-</span><span class='line'>    script
-</span><span class='line'>      $(function(){
-</span><span class='line'>       $(&#39;#btn_login&#39;).click(function(){
-</span><span class='line'>        $.ajax({
-</span><span class='line'>         url:&#39;login&#39;,
-</span><span class='line'>         type:&#39;get&#39;,
-</span><span class='line'>         data:{uname:$(&#39;input[name=uname]&#39;).val(),pwd:$(&#39;input[name=pwd]&#39;).val()},
-</span><span class='line'>         cache:false,
-</span><span class='line'>         dataType:&#39;json&#39;,
-</span><span class='line'>         success:function(data){
-</span><span class='line'>          if (data.code==0){
-</span><span class='line'>           alert(&#39;登录失败，原因：&#39; + data.msg);
-</span><span class='line'>          }else{
-</span><span class='line'>           alert(data.name + &#39;登录成功！&#39;);
-</span><span class='line'>           window.location.href=&#39;main/to_user_list&#39;;
-</span><span class='line'>          }
-</span><span class='line'>         }
-</span><span class='line'>        });
-</span><span class='line'>       });
-</span><span class='line'>      });
-</span><span class='line'>  body
-</span><span class='line'>   div.container
-</span><span class='line'>    label 用户名：
-</span><span class='line'>    input(name=&#39;uname&#39;,type=&#39;text&#39;,value=&#39;001&#39;).input-xlarge
-</span><span class='line'>    <span class="nt">&lt;br/&gt;</span>
-</span><span class='line'>    label 密码：
-</span><span class='line'>    input(name=&#39;pwd&#39;,type=&#39;password&#39;,value=&#39;123&#39;).input-xlarge
-</span><span class='line'>    <span class="nt">&lt;br/&gt;</span>
-</span><span class='line'>    input(type=&#39;button&#39;,value=&#39;登录系统&#39;).btn#btn_login
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p></p>
-
-<p>&emsp;&emsp;user.js，前台ajax操作部分的核心代码：</p>
-
-<figure class='code'><figcaption><span>user.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-<span class='line-number'>75</span>
-<span class='line-number'>76</span>
-<span class='line-number'>77</span>
-<span class='line-number'>78</span>
-<span class='line-number'>79</span>
-<span class='line-number'>80</span>
-<span class='line-number'>81</span>
-<span class='line-number'>82</span>
-<span class='line-number'>83</span>
-<span class='line-number'>84</span>
-<span class='line-number'>85</span>
-<span class='line-number'>86</span>
-<span class='line-number'>87</span>
-<span class='line-number'>88</span>
-<span class='line-number'>89</span>
-<span class='line-number'>90</span>
-<span class='line-number'>91</span>
-<span class='line-number'>92</span>
-<span class='line-number'>93</span>
-<span class='line-number'>94</span>
-<span class='line-number'>95</span>
-<span class='line-number'>96</span>
-<span class='line-number'>97</span>
-<span class='line-number'>98</span>
-<span class='line-number'>99</span>
-<span class='line-number'>100</span>
-<span class='line-number'>101</span>
-<span class='line-number'>102</span>
-<span class='line-number'>103</span>
-<span class='line-number'>104</span>
-<span class='line-number'>105</span>
-<span class='line-number'>106</span>
-<span class='line-number'>107</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
-</span><span class='line'>        <span class="nx">url</span><span class="o">:</span><span class="s1">&#39;../getState&#39;</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">type</span><span class="o">:</span><span class="s1">&#39;get&#39;</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">dataType</span><span class="o">:</span><span class="s1">&#39;json&#39;</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">){</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#who&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
-</span><span class='line'>                <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="o">=</span><span class="s1">&#39;../to_login&#39;</span><span class="p">;</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nx">getUserByPage</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.page a&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nx">getUserByPage</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">));</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_query&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nx">getUserByPage</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_to_add&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="s1">&#39;add_user.html&#39;</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.del_user&quot;</span><span class="p">).</span><span class="nx">live</span><span class="p">(</span><span class="s2">&quot;click&quot;</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">confirm</span><span class="p">(</span><span class="s1">&#39;您确定要删除所选择的记录吗？&#39;</span><span class="p">))</span>  <span class="p">{</span>
-</span><span class='line'>            <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
-</span><span class='line'>                <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;../main/user/&quot;</span> <span class="o">+</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;uid&#39;</span><span class="p">),</span>
-</span><span class='line'>                <span class="nx">type</span><span class="o">:</span><span class="s1">&#39;delete&#39;</span><span class="p">,</span>
-</span><span class='line'>                <span class="nx">dataType</span><span class="o">:</span><span class="s1">&#39;json&#39;</span><span class="p">,</span>
-</span><span class='line'>                <span class="nx">cache</span><span class="o">:</span><span class="kc">false</span><span class="p">,</span>
-</span><span class='line'>                <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
-</span><span class='line'>                    <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                        <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="s2">&quot;to_user_list&quot;</span><span class="p">;</span>
-</span><span class='line'>                    <span class="p">}</span>
-</span><span class='line'>                <span class="p">}</span>
-</span><span class='line'>            <span class="p">});</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_deletes&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="kd">var</span> <span class="nx">selectedUser</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;.uid_c:checked&#39;</span><span class="p">);</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">selectedUser</span><span class="p">.</span><span class="nx">size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;请选择要删除的用户!&quot;</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">confirm</span><span class="p">(</span><span class="s2">&quot;您确定要删除所选择的用户数据吗?&quot;</span><span class="p">))</span> <span class="p">{</span>
-</span><span class='line'>                <span class="c1">//获取选中的id</span>
-</span><span class='line'>                <span class="kd">var</span> <span class="nx">ids</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
-</span><span class='line'>                <span class="nx">selectedUser</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">i</span><span class="p">){</span>
-</span><span class='line'>                    <span class="k">if</span> <span class="p">(</span><span class="nx">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                        <span class="nx">ids</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">val</span><span class="p">();</span>
-</span><span class='line'>                    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                        <span class="nx">ids</span> <span class="o">=</span> <span class="nx">ids</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">+</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">val</span><span class="p">();</span>
-</span><span class='line'>                    <span class="p">}</span>
-</span><span class='line'>                <span class="p">});</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
-</span><span class='line'>                    <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;../main/users/&quot;</span> <span class="o">+</span> <span class="nx">ids</span><span class="p">,</span>
-</span><span class='line'>                    <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span>
-</span><span class='line'>                    <span class="c1">//data:{&#39;ids&#39;:ids},</span>
-</span><span class='line'>                    <span class="nx">dataType</span><span class="o">:</span><span class="s1">&#39;json&#39;</span><span class="p">,</span>
-</span><span class='line'>                    <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">){</span>
-</span><span class='line'>                        <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                            <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;批量删除成功&quot;</span><span class="p">);</span>
-</span><span class='line'>                            <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="s2">&quot;to_user_list&quot;</span><span class="p">;</span>
-</span><span class='line'>                        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                            <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;批量删失败！&quot;</span><span class="p">);</span>
-</span><span class='line'>                        <span class="p">}</span>
-</span><span class='line'>                    <span class="p">}</span>
-</span><span class='line'>                <span class="p">});</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">});</span>
-</span><span class='line'><span class="kd">function</span> <span class="nx">getUserByPage</span><span class="p">(</span><span class="nx">pno</span><span class="p">){</span>
-</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
-</span><span class='line'>        <span class="nx">url</span><span class="o">:</span><span class="s1">&#39;users/&#39;</span><span class="o">+</span> <span class="nx">pno</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">type</span><span class="o">:</span><span class="s1">&#39;get&#39;</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">data</span><span class="o">:</span><span class="p">{</span><span class="nx">q_name</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#queryWhat&#39;</span><span class="p">).</span><span class="nx">val</span><span class="p">()},</span>
-</span><span class='line'>        <span class="nx">dataType</span><span class="o">:</span><span class="s1">&#39;json&#39;</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">){</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="kd">var</span> <span class="nx">html</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">data</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>                    <span class="nx">html</span> <span class="o">=</span> <span class="nx">html</span> <span class="o">+</span> <span class="s2">&quot;&lt;tr&gt;&lt;td&gt;&lt;input type=&#39;checkbox&#39; value=&#39;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">pk_id</span><span class="o">+</span><span class="s2">&quot;&#39; class=&#39;uid_c&#39; /&gt;&lt;/td&gt;&lt;td&gt;&quot;</span>
-</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">pk_id</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">f_login_code</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">f_name</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span>
-</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">f_birthday</span><span class="p">.</span><span class="nx">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td class=&#39;row_op&#39;&gt;&lt;a href=&#39;view_user.html?uid=&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">pk_id</span>
-</span><span class='line'>                        <span class="o">+</span><span class="s2">&quot;&#39; &gt;查看&lt;/a&gt;&lt;a href=&#39;modify_user.html?uid=&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">pk_id</span><span class="o">+</span><span class="s2">&quot;&#39; &gt;修改&lt;/a&gt;&lt;a href=&#39;&#39; uid=&#39;&quot;</span>
-</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">pk_id</span><span class="o">+</span><span class="s2">&quot;&#39; class=&#39;del_user&#39;&gt;删除&lt;/a&gt;&lt;/tr&gt;&quot;</span>
-</span><span class='line'>                <span class="p">});</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#users&quot;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="nx">html</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#page_info&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">pno</span><span class="o">+</span><span class="s2">&quot;/&quot;</span><span class="o">+</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">pages</span><span class="o">+</span><span class="s2">&quot;,共&quot;</span><span class="o">+</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">rows</span><span class="o">+</span><span class="s2">&quot;条记录&quot;</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.fp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">f_no</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.pp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">p_no</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.np&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">n_no</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.lp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">l_no</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果上面的代码换成AngularJS，一定会简单很多，当然，这是我的其它博文中要给大家讲解的内容。</p>
 ]]></content>
   </entry>
   

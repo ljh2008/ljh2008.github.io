@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;注册、登录，看似非常简单的功能，曾经多少入门级的软件书籍都是以这个做为Hello world级别的程序进行讲解，但是，有几个人能够真正搞清楚这个看似简单的程序，离商业（产品级）级的应用还差多少？这些也是一个初级程序员在实现时要考虑的。下面我们来一起讨论： 一、登录 &hellip;">
+  <meta name="description" content="&emsp;&emsp;正如DDD这本书所说的，领域驱动设计是应对日益复杂的软件系统开发的有效途径，前面的文章中我也讲过，领域模型是一个系统更本质、更核心的东西，准确地抓住了域模型，你就抓住了系统的“神”，也就能更加灵活地应对需求的变化。我见过很多初学者在学会了ooad和一些设计模式的知识后， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,66 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/11/29/domain/">领域对象的关联设计</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-29T15:18:00+08:00" pubdate data-updated="true">2010年11月29日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;正如DDD这本书所说的，领域驱动设计是应对日益复杂的软件系统开发的有效途径，前面的文章中我也讲过，领域模型是一个系统更本质、更核心的东西，准确地抓住了域模型，你就抓住了系统的“神”，也就能更加灵活地应对需求的变化。我见过很多初学者在学会了ooad和一些设计模式的知识后，恨不得把学到的所有东西都应用到系统设计当中去，最终的结果就是系统非常的复杂，难于实现和维护。我们知道，真正设计得好的系统，应该是简单的，一目了然。在进行领域模型设计时，我们的一个原则就是要将复杂的系统简单化，关系要由多对多、一对多双向、一对多单向、一对一，直至独立的对象。大道至简，切不可走入“分析瘫痪”的歧途。</p>
+
+<p>&emsp;&emsp;在这里，我只想结合一个项目实际中的一部分，谈谈一对多双向及一对多单向的设计，希望大家在实际项目中能做到举一反三。</p>
+
+<p>&emsp;&emsp;本项目是一个风电场实时监控系统，系统中有这么两组一对多关系：一级菜单和二级菜单，风机与风机实时监控记录，根据我们对需求的理解，有人很快设计出下面的领域图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/16.jpg' width='' height='' title='领域对象关联设计示例图'><span class='caption-text'>领域对象关联设计示例图</span></span></p>
+
+<p>&emsp;&emsp;从图中可以看到，一级菜单和二级菜单均为一对多双向关联，注意secondMeuns与fanRecords集合是多方在一方中的代码体现，那像这种设计有什么好处、有什么问题呢？我们可以从两个方面来考虑这个问题：</p>
+
+<p>&emsp;&emsp;一，建立对象之间的关联关系，好处是对象之间可以方便地实现导航，即：得到聚合根对象后，就可以得到与之相关联的对象；缺点是实例化聚合根对象时将实例化与之相关的所有对象，如果这些相关对象的在业务中从来没有被用到，则会造成不必要的内存与性能开销（当然，现在的很多ORM框架都有lazy功能，性能倒不是大的问题）。</p>
+
+<p>&emsp;&emsp;那也就是说，我们可以根据业务来确定一对多的关联关系，如果业务中90%的情况是读取到聚合根对象，都一定需要访问它相关的对象，则可以设计为双向关联，在一方中添加一个集合存储多方对象，否则，则可简化为单向关联，也就成了多对一了（注意：我们这时站在多方的立场来看，是多对一）。</p>
+
+<p>根据需求及业务，我们可以做出这样的决策：一级菜单和二级菜单的设计要做成一对多双向关联；风机与风机实时记录，可设计为一对多双向关联，也可以设计为单向，因为很多时候仅仅是查看一下风机的信息，并不去关注该风机的实时记录，但有的时候也要查看。</p>
+
+<p>&emsp;&emsp;二、综合业务与界面呈现来考虑。</p>
+
+<p>&emsp;&emsp;根据需求来看，一个一级菜单中的二级菜单数据不会太多，即时全部加载出来，也不存在性能问题，从界面呈现来看，一级菜单中的二级菜单会一般情况下都会全部显示出来，因此，一级菜单和二级菜单两者设计为一对多双向关联关系，不存在任何问题。</p>
+
+<p>&emsp;&emsp;再来看风机和风机实时记录，根据需求，一个风机每10秒钟就会产生一条实时记录（每半年清理一次），实时记录的数据量将非常庞大，如果在风机这边设计一个实时记录的集合，我敢保证你永远都不会直接去取这个集合中的数据（不信你调用fan.getFanRecordes()试一下哈），从界面上来看，一般都是通过分页来查看风机实时记录的，因此，在Fan中包含FanRecordes集合，没有实际意义，也就是说，Fan与FanRecord设计为单向关系，把前面的一对多双向关联改为现在的FanRecord与Fan的多对一关系（图我就不再去画了）。</p>
+
+<p>&emsp;&emsp;也许你有疑问，在一方去掉多方的关联，要是业务实现时又要得到一方所关联的对象怎么办呢？答案是，添加一个相应的业务方法。</p>
+
+<p>&emsp;&emsp;总的来说，领域对象之间关系在设计时，应根据需求、业务及界面实现等几个方面综合考虑，尽量将问题简化，当然，初学者喜欢将所学的全部应用到设计中，这也很正常的，我相信每个设计师经历过，大家都是这么过来的。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -726,73 +786,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/11/02/seo2/">如何写页面代码（seo思考之二）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-11-02T15:18:00+08:00" pubdate data-updated="true">2010年11月02日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;做seo的人都知道，你的站点页面不仅是呈现出来给用户看的，还应该是提供给搜索引擎阅读的，那如何才能写好站点中的每一个页面呢？下面是我总结出来的经验，供参考：</p>
-
-<p>&emsp;&emsp;一、页面结构一定要清晰。老大的一句话“像写文章一样来写网页”，让我受益匪浅。一篇文章结构，我想大家都比较清楚，标题，开头，段落，结尾等，该加强的地方要加强，文章结构清晰，完整。</p>
-
-<p>&emsp;&emsp;二、页面中仅仅呈现主要内容，页面样式全部提取到外部css中，全面减少页面的大小。</p>
-
-<p>&emsp;&emsp;三、页面中的行为，也就是js，要全部提出来，以减少页面大小，并且一般放在页面尾部引入。</p>
-
-<p>&emsp;&emsp;四、重要的内容提前。越是重要的，就越要放到前面，越是更新频繁的，就要往前放。</p>
-
-<p>&emsp;&emsp;五、合理使用h,b等html标题，以突出重要内容。</p>
-
-<p>&emsp;&emsp;六、写好页面标题，以及描述信息，比如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;meta</span> <span class="na">name=</span><span class="s">”description”</span> <span class="na">content=</span><span class="s">”刘江华的博客”</span> <span class="nt">/&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="nt">&lt;meta</span> <span class="na">name=</span><span class="s">”keywords”</span> <span class="na">content=</span><span class="s">”博客”</span> <span class="nt">/&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;这里要注意一下，meta现在对百度已经没有用处了，但google似乎还有效果，所以，还是加上，使你的页面结构更严谨。</p>
-
-<p>&emsp;&emsp;七、命名要规范，包括css中的class及id，让搜索引擎能够读懂含义最好。</p>
-
-<p>&emsp;&emsp;上面几点，是seo对页面源码书写方面的基本要求，大家写页面时应该养成这样的习惯。</p>
-
-<p>&emsp;&emsp;最后我说一个简单的方法，验证你的页面是否能达到上面的要求。把你页面中的css与js全部取消（只需在源文件的链接中改个名字）,再用浏览器打开看看，加强标签，段落标签，标题标签是否能够表达文章主题，你会发现，一目的然，这种方法非常的有效。</p>
-
-<p>&emsp;&emsp;google在中国已经快死了，这段时间政府一直在墙它，访问10次可能有5次都打不开，google news更是永久无法打开，看来zf是想把google从中国彻底的消除了，现在的seo，重点当然是baidu。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/16/">&larr; 更多早期老文章</a>
@@ -810,6 +803,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/03/03/objectmapper-json/">Json类库jackson使用之误区</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a>
       </li>
     
@@ -823,10 +820,6 @@
     
       <li class="post">
         <a href="/blog/2014/01/12/art-rose-rain-step/">油画-听雨终稿-步骤</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a>
       </li>
     
   </ul>

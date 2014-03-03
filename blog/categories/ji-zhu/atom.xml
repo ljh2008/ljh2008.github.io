@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-02-26T15:28:35+08:00</updated>
+  <updated>2014-03-03T17:05:49+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,280 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[json类库jackson使用之误区]]></title>
+    <link href="http://yanyaner.com/blog/2014/03/03/objectmapper-json/"/>
+    <updated>2014-03-03T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/03/03/objectmapper-json</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;json数据类型在系统通讯中得到了非常广泛的应用，jsonlib, Gson, fastJson, jackson等开源的json操作类库层出不穷，根据对这些json的测试，我们发现jsckson的效率比其它的都要高。但在实际中，我发现很多人使用jackson都存在一定的问题，下面我给大家讲讲jackson使用中容易出现的一些问题。</p>
+
+<p>&emsp;&emsp;先来看看下面的这一段代码，很多人在控制器代码中就是这么写的：</p>
+
+<p>``` java
+/**</p>
+
+<pre><code> * 得到所有的班级
+ * 
+ * @param sid
+ * @param resp
+ * @throws Exception
+ */
+ ObjectMapper om = new ObjectMapper();
+@RequestMapping(value = "/classes", method = RequestMethod.GET)
+public void getAllClasses(HttpServletResponse resp) throws Exception {
+
+
+    RespMessage msg = new RespMessage();
+
+    SimpleFilterProvider filterProvider = new SimpleFilterProvider()
+            .setFailOnUnknownId(false);
+    filterProvider.addFilter("my_classes",
+            SimpleBeanPropertyFilter.filterOutAllExcept("id", "name"));
+    om.setFilters(filterProvider);
+
+    List&lt;Classes&gt; data = systemService.getAllClasses();
+
+    msg.setData(data);
+
+    om.writeValue(resp.getOutputStream(), msg);
+
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;晃眼一看，似乎没有问题，但是，这段代码在高并发操作下，性能非常的低下。有人说，这个容易，改一下代码即可，如下：<!-- more --></p>
+
+<p>``` java</p>
+
+<pre><code>private ObjectMapper om = new ObjectMapper();
+
+/**
+ * 得到所有的班级
+ * 
+ * @param sid
+ * @param resp
+ * @throws Exception
+ */
+@RequestMapping(value = "/classes", method = RequestMethod.GET)
+public void getAllClasses(HttpServletResponse resp) throws Exception {
+
+    ....
+    SimpleFilterProvider filterProvider = new SimpleFilterProvider()
+            .setFailOnUnknownId(false);
+    filterProvider.addFilter("my_classes",
+            SimpleBeanPropertyFilter.filterOutAllExcept("id", "name"));
+    om.setFilters(filterProvider);
+    ....
+
+    om.writeValue(resp.getOutputStream(), msg);
+
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;上面的代码中，让ObjectMapper做为全局对象（或者干脆放入spring容器中，保持一个实例），不反复创建这个对象，应该就没有问题了吧。</p>
+
+<p>&emsp;&emsp;不幸的是，上面这段代码仍然存在问题，因为ObjectMapper的全局性，致使过渡属性的操作在多线程中出现问题，请看下面的测试代码：</p>
+
+<p>``` java
+public class CopyOfTest {</p>
+
+<pre><code>public static void main(String[] args) {
+
+    ObjectMapper o1 = new ObjectMapper();
+    ObjectMapper o2 = o1;
+
+    Thread t1 = new MyThread(o1, 1);
+    Thread t2 = new MyThread(o2, 2);
+
+    t1.start();
+    t2.start();
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>class MyThread extends Thread {</p>
+
+<pre><code>private ObjectMapper om;
+
+private int threadId;
+
+public MyThread(ObjectMapper om, int threadId) {
+    this.om = om;
+    this.threadId = threadId;
+}
+
+//产生1秒内的随机暂停
+private void pauseRandomTimes() {
+    try {
+        Thread.sleep((long)Math.ceil(Math.random()*1000));
+    } catch (InterruptedException e1) {
+        e1.printStackTrace();
+    }
+}
+
+@Override
+public void run() {
+
+    Student s = new Student();
+    s.setId(1);
+    s.setName("张三");
+
+    for (int i = 0; i &lt; 10 ; i++) {
+
+
+        if (threadId == 1)   {
+            SimpleFilterProvider filterProvider = new SimpleFilterProvider().setFailOnUnknownId(false);
+            filterProvider.addFilter("myStudent", SimpleBeanPropertyFilter.filterOutAllExcept("id"));
+            om.setFilters(filterProvider);
+            try {
+                //随机休眠一段时间
+                pauseRandomTimes();
+                System.out.println("线程1中的输出是：" + om.writeValueAsString(s));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            SimpleFilterProvider filterProvider = new SimpleFilterProvider().setFailOnUnknownId(false);
+            filterProvider.addFilter("myStudent", SimpleBeanPropertyFilter.filterOutAllExcept("id","name"));
+            om.setFilters(filterProvider);
+            try {
+                //随机休眠一段时间
+                pauseRandomTimes();
+                System.out.println("线程2中的输出是：" + om.writeValueAsString(s));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;上面的这段多线程测试程序中，本计划在线程1中只输入对象的id属性，线程2中输出id、name两个属性，但通过下面的结果，我们发现事与愿违，两个线程中的输出混乱了，这就是共享了一个ObjectMapper并通过om.setFilters造成的原因。</p>
+
+<p>```</p>
+
+<p>线程2中的输出是：{&ldquo;id&rdquo;:1}
+线程2中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
+线程2中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
+线程2中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
+线程1中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
+线程2中的输出是：{&ldquo;id&rdquo;:1}
+线程1中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
+线程1中的输出是：{&ldquo;id&rdquo;:1}
+线程1中的输出是：{&ldquo;id&rdquo;:1}
+线程1中的输出是：{&ldquo;id&rdquo;:1}
+线程2中的输出是：{&ldquo;id&rdquo;:1}
+线程1中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
+线程1中的输出是：{&ldquo;id&rdquo;:1}
+线程2中的输出是：{&ldquo;id&rdquo;:1}
+线程2中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
+线程1中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
+线程2中的输出是：{&ldquo;id&rdquo;:1}
+线程2中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
+线程1中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
+线程1中的输出是：{&ldquo;id&rdquo;:1}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;如何改造达到我们的要求呢？如下即可，但这又会造成并发下的性能问题。</p>
+
+<p>``` java
+ObjectMapper o1 = new ObjectMapper();
+ObjectMapper o2 = new ObjectMapper();
+Thread t1 = new My2Thread(o1, 1);
+Thread t2 = new My2Thread(o2, 2);</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;最终的做法是：</p>
+
+<p>&emsp;&emsp;1、将ObjectMapper作为全局；</p>
+
+<p>&emsp;&emsp;2、通过om.writer(filterProvider).write&hellip;.. 的方式输出。即保证性能，出满足多线程。</p>
+
+<p>&emsp;&emsp;最后，看一看两种写法的性能测试数据：</p>
+
+<p>``` java
+public static void main1(String[] args) {</p>
+
+<pre><code>    Student s = new Student();
+    s.setId(1);
+    s.setName("张三");
+
+    System.out.println("开始执行.....");
+    long start = System.currentTimeMillis();
+
+    ObjectMapper om;
+    for (int i = 0; i &lt; 10000; i ++ ) {
+        om = new ObjectMapper();
+        SimpleFilterProvider filterProvider = new SimpleFilterProvider().setFailOnUnknownId(false);
+        filterProvider.addFilter("myStudent", SimpleBeanPropertyFilter.filterOutAllExcept("id","name"));
+        om.setFilters(filterProvider);
+        try {
+            om.writeValueAsString(s);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } 
+
+    }
+    long end = System.currentTimeMillis();
+    System.out.println("执行所花时间：" + (end - start) + "ms.");
+
+
+}
+</code></pre>
+
+<p>```
+&emsp;&emsp;这段测试代码的输出是：执行所花时间：6078ms.</p>
+
+<p>&emsp;&emsp;而另一种测试写法：</p>
+
+<p>``` java</p>
+
+<p>public static void main(String[] args) {</p>
+
+<pre><code>    Student s = new Student();
+    s.setId(1);
+    s.setName("张三");
+
+    System.out.println("开始执行.....");
+    long start = System.currentTimeMillis();
+
+    ObjectMapper om = new ObjectMapper();
+    for (int i = 0; i &lt; 10000; i ++ ) {
+        SimpleFilterProvider filterProvider = new SimpleFilterProvider().setFailOnUnknownId(false);
+        filterProvider.addFilter("myStudent", SimpleBeanPropertyFilter.filterOutAllExcept("id","name"));
+        try {
+            om.writer(filterProvider).writeValueAsString(s);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } 
+
+    }
+    long end = System.currentTimeMillis();
+    System.out.println("执行所花时间：" + (end - start) + "ms.");
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;这段测试代码的输出是：执行所花时间：547ms.</p>
+
+<p>&emsp;&emsp;大家可以对ObjectMapper进行简单封闭，具体请参阅我的另一篇文章<a href="/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[http长连接在java中的应用示例]]></title>
@@ -1340,426 +1614,6 @@ mvn install:install-file -DgroupId=com.my.nio -DartifactId=mynio -Dversion=0.1.1
 
 <p>请注意上面的resource节点中的内容。
 ```</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[在项目中使用maven之二--项目实例]]></title>
-    <link href="http://yanyaner.com/blog/2013/12/24/maven-project/"/>
-    <updated>2013-12-24T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/12/24/maven-project</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;本篇文章介绍如何搭建一个maven工程。</p>
-
-<p>&emsp;&emsp;我们以eclipse kepler为例，kepler版本的eclipse自带有maven插件，可以省去我们自己安装的过程，着实比较方便。</p>
-
-<p>&emsp;&emsp;在新建项目向导中，我们选择maven工程，在Archetype中选择项目类型，要注意的是，一般的项目模块，选择maven-archetype-quickstart类型即可，如果是web项目请选择maven-archetype-webapp，当然你也可以根据个人喜好选择其它的项目模板类型。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_waizd1.jpg' width='' height='' title='选择maven工程类型'><span class='caption-text'>选择maven工程类型</span></span></p>
-
-<p>&emsp;&emsp;接下来输入项目坐标信息，如下图。groupId为组织标识，一般填写公司域名+项目名（请倒过来写，呵呵)，artifactId为产品标识或模块名、子系统名，多字母间请用-连接，version是这个产品的版本号，一般有SNAPSHOT快照版与RELEASE稳定版（关于maven版本的更多信息请参阅<a href="http://www.blogjava.net/hjh/archive/2009/05/14/270545.html">maven version usage</a>,<a href="http://juvenshun.iteye.com/blog/376422">Maven最佳实践：版本管理</a>）。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_waizd2.jpg' width='' height='' title='输入maven项目的组织、公司、版本信息'><span class='caption-text'>输入maven项目的组织、公司、版本信息</span></span></p>
-
-<p>&emsp;&emsp;接下来，我们来看看如何规划你的项目工程。如果是非常庞大的项目，采用Maven管理会非常的合适，因为在大的项目中，不同的模块，不同的子系统，不同的分层都有可能是不同的团队去完成，请看我下面的一个项目规划。<!--more--></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_struct.jpg' width='' height='' title='管理系统模块划分'><span class='caption-text'>管理系统模块划分</span></span></p>
-
-<p>&emsp;&emsp;在上面的项目结构图中，你可以发现，我对项目模块进行了很好的分配。</p>
-
-<ul>
-<li>car_parents为父项目，其它的子项目都将继承这个项目中的配置，以省去了在每个子项目中都进行重复配置的麻烦。</li>
-<li>framework项目，是整个系统的基础框架封装。</li>
-<li>car-core项目是系统核心，主要是系统的领域对象（也有人叫业务对象）。</li>
-<li>car-dao是项目持久层实现。</li>
-<li>car-service是系统的核心业务逻辑实现。</li>
-<li>car-web是系统对外部的调用接口，取名为car-facade也许更为合适（针对webservice类型），当然，我在这里主要存放的是restful接口及一些前端页面之类的文件。</li>
-</ul>
-
-
-<p>&emsp;&emsp;下面，我展示一个普通项目的目录结构，maven的项目结构和eclipse所建默认工程项目结构有很大的区别，最明显的感觉是目录的划分、规划更为合理、清晰。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_struct2.jpg' width='' height='' title='一个普通maven项目的目录结构'><span class='caption-text'>一个普通maven项目的目录结构</span></span></p>
-
-<p>&emsp;&emsp;上图中的结构我说明如下：</p>
-
-<ul>
-<li>src/main/java，该目录存放项目的源代码。</li>
-<li>src/main/resources，该目录存放项目相关的资源文件，比如：properties文件, xml文件等等。</li>
-<li>src/test/java，此目录下存放测试文件（注意，在maven中的测试类要以test开头或结尾，或以testCase结尾，这是规范要求）</li>
-<li>target，该目录一般会存放编译打包后产生的文件，比如jar或war。</li>
-</ul>
-
-
-<p>&emsp;&emsp;接下来带大家看看具体的配置文件，先看parents这个项目，该项目工程基本上只有一个pom.xml文件，用来定义各个项目共同的东西（该项目的packaging必须是pom类型，因为这个项目是用来继承的）。</p>
-
-<p>``` xml pom.xml
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion></p>
-
-<p>  <groupId>com.ljh.ms</groupId>
-  <artifactId>car-parents</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>pom</packaging></p>
-
-<p>  <modules></p>
-
-<pre><code>&lt;module&gt;../framework&lt;/module&gt;
-&lt;module&gt;../car-core&lt;/module&gt;
-&lt;module&gt;../car-dao&lt;/module&gt;
-&lt;module&gt;../car-service&lt;/module&gt;
-&lt;module&gt;../car-web&lt;/module&gt;
-</code></pre>
-
-<p>  </modules></p>
-
-<p>  <!-- 定义发行、快照的打包上传服务器路径 -->
-  <distributionManagement></p>
-
-<pre><code>    &lt;repository&gt;
-        &lt;id&gt;carManagerProjectRelease&lt;/id&gt;
-        &lt;name&gt;Car ManagerSystem Release&lt;/name&gt;
-        &lt;url&gt;http://127.0.0.1:8081/nexus/content/repositories/car_ms_release/&lt;/url&gt;
-    &lt;/repository&gt;
-    &lt;snapshotRepository&gt;
-        &lt;id&gt;carManagerProjectSnapshot&lt;/id&gt;
-        &lt;name&gt;Car ManagerSystem Snapshots&lt;/name&gt;
-        &lt;url&gt;http://127.0.0.1:8081/nexus/content/repositories/car_ms_snapshot/&lt;/url&gt;
-    &lt;/snapshotRepository&gt;
-</code></pre>
-
-<p></distributionManagement></p>
-
-<p>  <name>car-parents</name>
-  <url><a href="http://maven.apache.org">http://maven.apache.org</a></url></p>
-
-<p>  <!-- 定义公共的变量值 -->
-  <properties></p>
-
-<pre><code>&lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
-&lt;spring.version&gt;3.2.5.RELEASE&lt;/spring.version&gt;
-</code></pre>
-
-<p>  </properties></p>
-
-<p>  <!-- 定义依赖包 -->
-  <dependencies></p>
-
-<pre><code>&lt;dependency&gt;
-  &lt;groupId&gt;junit&lt;/groupId&gt;
-  &lt;artifactId&gt;junit&lt;/artifactId&gt;
-  &lt;version&gt;4.10&lt;/version&gt;
-  &lt;scope&gt;test&lt;/scope&gt;
-&lt;/dependency&gt;
-
-&lt;!-- =======begin spring 3.2.4.RELEASE========= --&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-test&lt;/artifactId&gt;
-    &lt;version&gt;${spring.version}&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-orm&lt;/artifactId&gt;
-    &lt;version&gt;${spring.version}&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-core&lt;/artifactId&gt;
-    &lt;version&gt;${spring.version}&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-aop&lt;/artifactId&gt;
-    &lt;version&gt;${spring.version}&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-beans&lt;/artifactId&gt;
-    &lt;version&gt;${spring.version}&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-context&lt;/artifactId&gt;
-    &lt;version&gt;${spring.version}&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-webmvc&lt;/artifactId&gt;
-    &lt;version&gt;${spring.version}&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-expression&lt;/artifactId&gt;
-    &lt;version&gt;${spring.version}&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-instrument&lt;/artifactId&gt;
-    &lt;version&gt;${spring.version}&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-jdbc&lt;/artifactId&gt;
-    &lt;version&gt;${spring.version}&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.springframework&lt;/groupId&gt;
-    &lt;artifactId&gt;spring-web&lt;/artifactId&gt;
-    &lt;version&gt;${spring.version}&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;!-- =====end spring 3.2.4.RELEASE===== --&gt;
-
-&lt;!-- =====start hibernate3 ====== --&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.hibernate&lt;/groupId&gt;
-    &lt;artifactId&gt;hibernate-core&lt;/artifactId&gt;
-    &lt;version&gt;3.6.10.Final&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
-    &lt;artifactId&gt;slf4j-api&lt;/artifactId&gt;
-    &lt;version&gt;1.7.5&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
-    &lt;artifactId&gt;slf4j-log4j12&lt;/artifactId&gt;
-    &lt;version&gt;1.7.5&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;javassist&lt;/groupId&gt;
-    &lt;artifactId&gt;javassist&lt;/artifactId&gt;
-    &lt;version&gt;3.12.1.GA&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;antlr&lt;/groupId&gt;
-    &lt;artifactId&gt;antlr&lt;/artifactId&gt;
-    &lt;version&gt;2.7.7&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;cglib&lt;/groupId&gt;
-    &lt;artifactId&gt;cglib-nodep&lt;/artifactId&gt;
-    &lt;version&gt;2.2.2&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;!-- =====end hibernate3 ====== --&gt;
-
-&lt;!-- =====commoms start =====--&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;commons-collections&lt;/groupId&gt;
-    &lt;artifactId&gt;commons-collections&lt;/artifactId&gt;
-    &lt;version&gt;3.2.1&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;commons-io&lt;/groupId&gt;
-    &lt;artifactId&gt;commons-io&lt;/artifactId&gt;
-    &lt;version&gt;2.3&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;commons-logging&lt;/groupId&gt;
-    &lt;artifactId&gt;commons-logging&lt;/artifactId&gt;
-    &lt;version&gt;1.1.1&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;commons-fileupload&lt;/groupId&gt;
-    &lt;artifactId&gt;commons-fileupload&lt;/artifactId&gt;
-    &lt;version&gt;1.2.2&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;commons-dbcp&lt;/groupId&gt;
-    &lt;artifactId&gt;commons-dbcp&lt;/artifactId&gt;
-    &lt;version&gt;1.4&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;commons-digester&lt;/groupId&gt;
-    &lt;artifactId&gt;commons-digester&lt;/artifactId&gt;
-    &lt;version&gt;2.1&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;commons-pool&lt;/groupId&gt;
-    &lt;artifactId&gt;commons-pool&lt;/artifactId&gt;
-    &lt;version&gt;1.6&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;dom4j&lt;/groupId&gt;
-    &lt;artifactId&gt;dom4j&lt;/artifactId&gt;
-    &lt;version&gt;1.6.1&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;log4j&lt;/groupId&gt;
-    &lt;artifactId&gt;log4j&lt;/artifactId&gt;
-    &lt;version&gt;1.2.9&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;!-- =====end commoms  =====--&gt;
-
-&lt;!-- =====database start===== --&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;mysql&lt;/groupId&gt;
-    &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
-    &lt;version&gt;5.1.19&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;!-- =====database end===== --&gt;
-
-&lt;!-- ===== start servlet+jstl+jsp ===== --&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;servletapi&lt;/groupId&gt;
-    &lt;artifactId&gt;servletapi&lt;/artifactId&gt;
-    &lt;version&gt;2.4&lt;/version&gt;
-    &lt;scope&gt;provided&lt;/scope&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;javax.servlet.jsp&lt;/groupId&gt;
-    &lt;artifactId&gt;jsp-api&lt;/artifactId&gt;
-    &lt;version&gt;2.2&lt;/version&gt;
-    &lt;scope&gt;provided&lt;/scope&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;jstl&lt;/groupId&gt;
-    &lt;artifactId&gt;jstl&lt;/artifactId&gt;
-    &lt;version&gt;1.2&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;taglibs&lt;/groupId&gt;
-    &lt;artifactId&gt;standard&lt;/artifactId&gt;
-    &lt;version&gt;1.1.1&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;!-- ===== end servlet+jstl+jsp ===== --&gt;
-
-&lt;!-- ===== start json ===== --&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
-    &lt;artifactId&gt;jackson-core-asl&lt;/artifactId&gt;
-    &lt;version&gt;1.9.6&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;dependency&gt;
-    &lt;groupId&gt;org.codehaus.jackson&lt;/groupId&gt;
-    &lt;artifactId&gt;jackson-mapper-asl&lt;/artifactId&gt;
-    &lt;version&gt;1.9.6&lt;/version&gt;
-&lt;/dependency&gt;
-&lt;!-- ===== end json ===== --&gt;
-</code></pre>
-
-<p>  </dependencies></p>
-
-<p>  <build></p>
-
-<pre><code>&lt;pluginManagement&gt;
-    &lt;plugins&gt;
-
-        &lt;plugin&gt;
-            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
-            &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
-            &lt;version&gt;2.3.2&lt;/version&gt;
-            &lt;configuration&gt;
-                &lt;source&gt;1.6&lt;/source&gt;
-                &lt;target&gt;1.6&lt;/target&gt;
-            &lt;/configuration&gt;
-        &lt;/plugin&gt;
-
-        &lt;plugin&gt;
-            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
-            &lt;artifactId&gt;maven-resources-plugin&lt;/artifactId&gt;
-            &lt;version&gt;2.6&lt;/version&gt;
-            &lt;configuration&gt;
-                &lt;encoding&gt;UTF-8&lt;/encoding&gt;
-            &lt;/configuration&gt;
-        &lt;/plugin&gt;
-
-        &lt;plugin&gt;
-            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
-            &lt;artifactId&gt;maven-jar-plugin&lt;/artifactId&gt;
-            &lt;version&gt;2.4&lt;/version&gt;
-            &lt;inherited&gt;true&lt;/inherited&gt;
-            &lt;configuration&gt;
-                &lt;archive&gt;                   
-                    &lt;manifest&gt;
-                        &lt;addDefaultImplementationEntries&gt;true&lt;/addDefaultImplementationEntries&gt;
-                        &lt;addDefaultSpecificationEntries&gt;true&lt;/addDefaultSpecificationEntries&gt;
-                    &lt;/manifest&gt;
-                &lt;/archive&gt;
-            &lt;/configuration&gt;
-            &lt;!--  定义打war包要排除的文件
-            &lt;executions&gt;
-                &lt;execution&gt;
-                    &lt;phase&gt;package&lt;/phase&gt;
-                    &lt;goals&gt;
-                        &lt;goal&gt;jar&lt;/goal&gt;
-                    &lt;/goals&gt;
-                    &lt;configuration&gt;
-                        &lt;classifier&gt;lib&lt;/classifier&gt;
-                        &lt;excludes&gt;
-                            &lt;exclude&gt;*.properties&lt;/exclude&gt;
-                        &lt;/excludes&gt;
-                    &lt;/configuration&gt;
-                &lt;/execution&gt;
-            &lt;/executions&gt;
-            --&gt;
-        &lt;/plugin&gt;
-
-        &lt;plugin&gt;
-            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
-            &lt;artifactId&gt;maven-war-plugin&lt;/artifactId&gt;
-            &lt;version&gt;2.4&lt;/version&gt;
-            &lt;configuration&gt;
-                &lt;archive&gt;                   
-                    &lt;manifest&gt;
-                        &lt;addDefaultImplementationEntries&gt;true&lt;/addDefaultImplementationEntries&gt;
-                        &lt;addDefaultSpecificationEntries&gt;true&lt;/addDefaultSpecificationEntries&gt;
-                    &lt;/manifest&gt;
-                &lt;/archive&gt;
-                &lt;archiveClasses&gt;true&lt;/archiveClasses&gt;
-                &lt;warName&gt;car_ms&lt;/warName&gt;
-            &lt;/configuration&gt;
-        &lt;/plugin&gt;
-
-        &lt;plugin&gt;
-            &lt;groupId&gt;org.mortbay.jetty&lt;/groupId&gt;
-            &lt;!-- 使用的是jetty-maven-plugin的插件 --&gt;
-            &lt;artifactId&gt;jetty-maven-plugin&lt;/artifactId&gt;
-            &lt;version&gt;8.1.14.v20131031&lt;/version&gt;
-            &lt;configuration&gt;
-                &lt;scanIntervalSeconds&gt;2000&lt;/scanIntervalSeconds&gt;
-                &lt;webApp&gt;
-                    &lt;!-- 上下文路径 --&gt;
-                    &lt;contextPath&gt;/car_ms&lt;/contextPath&gt;
-                &lt;/webApp&gt;
-                &lt;connectors&gt;
-                    &lt;!-- 注意要使用将implementation 由org.eclipse.jetty.server.nio.SelectChannelConnector --&gt;
-                    &lt;!-- 换为org.eclipse.jetty.server.bio.SocketConnector，否则静态页面无法修改 --&gt;
-
-                    &lt;connector implementation="org.eclipse.jetty.server.bio.SocketConnector"&gt;
-                        &lt;!-- 端口号 --&gt;
-                        &lt;port&gt;8787&lt;/port&gt;
-                        &lt;maxIdleTime&gt;500000&lt;/maxIdleTime&gt;
-                    &lt;/connector&gt;
-                &lt;/connectors&gt;
-            &lt;/configuration&gt;
-        &lt;/plugin&gt;
-    &lt;/plugins&gt;
- &lt;/pluginManagement&gt;
-</code></pre>
-
-<p>  </build></p>
-
-<p></project>
-```</p>
-
-<p>&emsp;&emsp;当然，这篇配置示例还有优化改进的地方，我没有详细去做。比如，可以把所有的dependencie放入<dependencyManagement>节点中以更好的独立定义每个子项目的依赖关系，比如：把很多重复属性定义成变量以便于统一维护等等，但这个文件也足以说明问题，比如下面这段配置代码：</p>
-
-<p>``` xml
- <modules></p>
-
-<pre><code>&lt;module&gt;../framework&lt;/module&gt;
-&lt;module&gt;../car-core&lt;/module&gt;
-&lt;module&gt;../car-dao&lt;/module&gt;
-&lt;module&gt;../car-service&lt;/module&gt;
-&lt;module&gt;../car-web&lt;/module&gt;
-</code></pre>
-
-<p>  </modules>
-```
-&emsp;&emsp;这段代码定义了项目间的依赖关系，其中的.. ，表示上一级目录，也就是和本项目同级的项目中定义的model名称，在这个项目上运行test, install, deploy等命令，将会对所有的子项目执行相同的命令。</p>
-
-<p>&emsp;&emsp;好，今天就简单说到这，下篇关于maven的技术细节，敬请期待。</p>
 ]]></content>
   </entry>
   

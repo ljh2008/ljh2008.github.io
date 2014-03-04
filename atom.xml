@@ -4,7 +4,7 @@
   <title><![CDATA[刘江华的博客]]></title>
   <link href="http://yanyaner.com/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-03-03T17:42:28+08:00</updated>
+  <updated>2014-03-04T16:57:05+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,320 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[再次简单封装的jackson]]></title>
+    <link href="http://yanyaner.com/blog/2014/03/04/objectmapper-json/"/>
+    <updated>2014-03-04T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/03/04/objectmapper-json</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;接上一篇<a href="http://yanyaner.com/blog/2014/03/03/objectmapper-json">Json类库jackson使用之误区</a>，我对json的常用操作再次进行了简单的封装，上一版的封装大家可参阅<a href="http://yanyaner.com/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
+
+<p>&emsp;&emsp;总计两个文件，只考虑到了一些简单常用的操作：</p>
+
+<figure class='code'><figcaption><span>FilterProvider.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">ms</span><span class="o">.</span><span class="na">framework</span><span class="o">.</span><span class="na">commons</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.ser.impl.SimpleBeanPropertyFilter</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.ser.impl.SimpleFilterProvider</span><span class="o">;</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 属性过滤器</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">FilterProvider</span> <span class="kd">extends</span> <span class="n">SimpleFilterProvider</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 将新的需要的属性添加到一个现有的FilterProvider中</span>
+</span><span class='line'><span class="cm">  * @param id</span>
+</span><span class='line'><span class="cm">  * @param includeProperties</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">FilterProvider</span> <span class="nf">addIncludeProperties</span><span class="o">(</span><span class="n">String</span> <span class="n">id</span><span class="o">,</span>
+</span><span class='line'>          <span class="n">String</span><span class="o">...</span> <span class="n">includeProperties</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="n">id</span><span class="o">,</span>
+</span><span class='line'>              <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="n">includeProperties</span><span class="o">));</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">this</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;FilterProvider.java中主要增加了一个输出时添加包含属性的方法，并返回自身以支持方法链编程。<!-- more --></p>
+
+<figure class='code'><figcaption><span>JsonMapper.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">ms</span><span class="o">.</span><span class="na">framework</span><span class="o">.</span><span class="na">commons</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.io.IOException</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.io.OutputStream</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.text.SimpleDateFormat</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.JsonGenerationException</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.DeserializationConfig</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.JsonMappingException</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.ObjectMapper</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.SerializationConfig.Feature</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.ser.impl.SimpleBeanPropertyFilter</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.ser.impl.SimpleFilterProvider</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * json之jackson封装</span>
+</span><span class='line'><span class="cm"> * 主要对常用的几个json方法进行了再次包装，并具备线程安全性 </span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> * </span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">JsonMapper</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">ObjectMapper</span> <span class="n">objectMapper</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">JsonMapper</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">objectMapper</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>      <span class="c1">// 设置默认日期格式</span>
+</span><span class='line'>      <span class="n">objectMapper</span><span class="o">.</span><span class="na">setDateFormat</span><span class="o">(</span><span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="c1">// 提供其它默认设置</span>
+</span><span class='line'>      <span class="n">objectMapper</span>
+</span><span class='line'>              <span class="o">.</span><span class="na">disable</span><span class="o">(</span><span class="n">DeserializationConfig</span><span class="o">.</span><span class="na">Feature</span><span class="o">.</span><span class="na">FAIL_ON_UNKNOWN_PROPERTIES</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">objectMapper</span><span class="o">.</span><span class="na">configure</span><span class="o">(</span><span class="n">Feature</span><span class="o">.</span><span class="na">FAIL_ON_EMPTY_BEANS</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">objectMapper</span><span class="o">.</span><span class="na">setFilters</span><span class="o">(</span><span class="k">new</span> <span class="n">SimpleFilterProvider</span><span class="o">()</span>
+</span><span class='line'>              <span class="o">.</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 创建一个FilterProvider对象</span>
+</span><span class='line'><span class="cm">  * </span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="n">FilterProvider</span> <span class="nf">buildFilterProvider</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">FilterProvider</span> <span class="n">filter</span> <span class="o">=</span> <span class="k">new</span> <span class="n">FilterProvider</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">filter</span><span class="o">.</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">filter</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 根据需要的对象属性，创建一个属性过滤器FilterProvider</span>
+</span><span class='line'><span class="cm">  * </span>
+</span><span class='line'><span class="cm">  * @param id</span>
+</span><span class='line'><span class="cm">  *            对象id，通过jsonFilter声明</span>
+</span><span class='line'><span class="cm">  * @param includeProperties</span>
+</span><span class='line'><span class="cm">  *            该对象上需要的属性</span>
+</span><span class='line'><span class="cm">  * @return  创建好的过滤器</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="n">FilterProvider</span> <span class="nf">buildFilterProvider</span><span class="o">(</span><span class="n">String</span> <span class="n">id</span><span class="o">,</span>
+</span><span class='line'>          <span class="n">String</span><span class="o">...</span> <span class="n">includeProperties</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">FilterProvider</span> <span class="n">filter</span> <span class="o">=</span> <span class="k">new</span> <span class="n">FilterProvider</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">filter</span><span class="o">.</span><span class="na">setFailOnUnknownId</span><span class="o">(</span><span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">filter</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="n">id</span><span class="o">,</span>
+</span><span class='line'>              <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="n">includeProperties</span><span class="o">));</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">filter</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 用提供的过滤器，将对象的json输出到流中</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">writeValue</span><span class="o">(</span><span class="n">FilterProvider</span> <span class="n">filter</span><span class="o">,</span> <span class="n">OutputStream</span> <span class="n">os</span><span class="o">,</span> <span class="n">Object</span> <span class="n">value</span><span class="o">)</span>
+</span><span class='line'>          <span class="kd">throws</span> <span class="n">JsonGenerationException</span><span class="o">,</span> <span class="n">JsonMappingException</span><span class="o">,</span> <span class="n">IOException</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">objectMapper</span><span class="o">.</span><span class="na">writer</span><span class="o">(</span><span class="n">filter</span><span class="o">).</span><span class="na">writeValue</span><span class="o">(</span><span class="n">os</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 用提供的过滤器，将对象的json输出为字符串</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">writeValueAsString</span><span class="o">(</span><span class="n">FilterProvider</span> <span class="n">filter</span><span class="o">,</span> <span class="n">Object</span> <span class="n">value</span><span class="o">)</span>
+</span><span class='line'>          <span class="kd">throws</span> <span class="n">JsonGenerationException</span><span class="o">,</span> <span class="n">JsonMappingException</span><span class="o">,</span> <span class="n">IOException</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">objectMapper</span><span class="o">.</span><span class="na">writer</span><span class="o">(</span><span class="n">filter</span><span class="o">).</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 将对象的json输出到流中</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">writeValue</span><span class="o">(</span><span class="n">OutputStream</span> <span class="n">os</span><span class="o">,</span> <span class="n">Object</span> <span class="n">value</span><span class="o">)</span>
+</span><span class='line'>          <span class="kd">throws</span> <span class="n">JsonGenerationException</span><span class="o">,</span> <span class="n">JsonMappingException</span><span class="o">,</span> <span class="n">IOException</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">objectMapper</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">os</span><span class="o">,</span> <span class="n">value</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 将对象的json输出为字符串</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">writeValueAsString</span><span class="o">(</span><span class="n">Object</span> <span class="n">value</span><span class="o">)</span>
+</span><span class='line'>          <span class="kd">throws</span> <span class="n">JsonGenerationException</span><span class="o">,</span> <span class="n">JsonMappingException</span><span class="o">,</span> <span class="n">IOException</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">objectMapper</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 得到原始的objectMapper，以进行更复杂的操作</span>
+</span><span class='line'><span class="cm">  * </span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">ObjectMapper</span> <span class="nf">getObjectMapper</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">objectMapper</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;如果需要更强大的功能，我们可以通过getObjectMapper得到ObjectMapper后进行操作，或都添加你常用的其它方法到JsonMapper中，比如：排除属性的方法等。</p>
+
+<p>&emsp;&emsp;使用时，请把JsonMapper放入spring容器(当然你也可以把这个类做成单例的哦)，在需要转换json的地方，通过@Resource注入即可，调用代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="nd">@Resource</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">JsonMapper</span> <span class="n">mapper</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@Test</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testJson</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Object</span> <span class="n">someObject</span> <span class="o">=</span> <span class="o">....</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">String</span> <span class="n">result</span> <span class="o">=</span> <span class="n">mapper</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span>
+</span><span class='line'>              <span class="n">JsonMapper</span><span class="o">.</span><span class="na">buildFilterProvider</span><span class="o">()</span>
+</span><span class='line'>              <span class="o">.</span><span class="na">addIncludeProperties</span><span class="o">(</span><span class="s">&quot;myId1&quot;</span><span class="o">,</span> <span class="s">&quot;id&quot;</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">)</span>
+</span><span class='line'>              <span class="o">.</span><span class="na">addIncludeProperties</span><span class="o">(</span><span class="s">&quot;myId2&quot;</span><span class="o">,</span> <span class="s">&quot;code&quot;</span><span class="o">,</span><span class="s">&quot;money&quot;</span><span class="o">,</span><span class="s">&quot;name&quot;</span><span class="o">),</span>
+</span><span class='line'>              <span class="n">someObject</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">assertEquals</span><span class="o">(</span><span class="s">&quot;xxxxxxxxxxxx&quot;</span><span class="o">,</span> <span class="n">result</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[json类库jackson使用之误区]]></title>
@@ -475,7 +789,7 @@
 
 <p>&emsp;&emsp;这段测试代码的输出是：执行所花时间：547ms.同样的功能，不同的实现代码，时间差距非常巨大，所以，大家在实际编码须注意到这个问题。</p>
 
-<p>&emsp;&emsp;大家可以对ObjectMapper进行简单封闭，具体请参阅我的另一篇文章<a href="http://yanyaner.com/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
+<p>&emsp;&emsp;大家可以对ObjectMapper进行简单封装，具体请参阅我的另一篇文章<a href="http://yanyaner.com/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
 ]]></content>
   </entry>
   
@@ -5730,194 +6044,6 @@
 <p>&emsp;&emsp;注意user.increment()那句代码，这而似乎只有手工去增加，但不知道后面在update的时候，是否会做为where条件加上去。</p>
 
 <p>&emsp;&emsp;最全的api，大家请去<a href="http://mongoosejs.com/docs/api.html">http://mongoosejs.com/docs/api.html</a>查看，好了，这一版本的demo先到些，下一版本，我将把前台的展示更换为angularjs。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[node.js中基本于expresss、mysql的CRUD之六（过滤器及分页代码）]]></title>
-    <link href="http://yanyaner.com/blog/2013/08/09/nodejs-express-mysql-crud6/"/>
-    <updated>2013-08-09T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/08/09/nodejs-express-mysql-crud6</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;定义一个登录验证函数：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> * Created with JetBrains WebStorm.</span>
-</span><span class='line'><span class="cm"> * User: ljh</span>
-</span><span class='line'><span class="cm"> * Date: 13-8-9</span>
-</span><span class='line'><span class="cm"> * Time: 上午9:06</span>
-</span><span class='line'><span class="cm"> * 登录验证过滤器</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">authorize</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">,</span> <span class="nx">next</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span> <span class="nx">req</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">user_key</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">redirect</span><span class="p">(</span><span class="s2">&quot;to_login&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">next</span><span class="p">();</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在需求登录验证的url中，调用些函数，例如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">app</span><span class="p">.</span><span class="nx">post</span><span class="p">(</span><span class="s1">&#39;/main/user&#39;</span><span class="p">,</span> <span class="nx">filter</span><span class="p">.</span><span class="nx">authorize</span><span class="p">,</span> <span class="nx">user</span><span class="p">.</span><span class="nx">addUser</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<!--more-->
-
-
-<p>&emsp;&emsp;最后，贴出一个通用的分页对象,page.js</p>
-
-<figure class='code'><figcaption><span>page.js</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> * 分页对象</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="nx">global</span><span class="p">.</span><span class="nx">Page</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">pno</span><span class="p">,</span> <span class="nx">pageSize</span><span class="p">,</span> <span class="nx">rows</span><span class="p">,</span> <span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">pno</span> <span class="o">=</span> <span class="nx">pno</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">pageSize</span> <span class="o">=</span> <span class="nx">pageSize</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">rows</span> <span class="o">=</span> <span class="nx">rows</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">data</span> <span class="o">=</span> <span class="nx">data</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//首页页号</span>
-</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">f_no</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span><span class='line'>    <span class="c1">//上一页页号</span>
-</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">p_no</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">pno</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">p_no</span> <span class="o">=</span> <span class="nx">pno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">};</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//末页页号</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">rows</span> <span class="o">%</span> <span class="nx">pageSize</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span>
-</span><span class='line'>        <span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">l_no</span> <span class="o">=</span> <span class="nx">rows</span> <span class="o">/</span> <span class="nx">pageSize</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">else</span>
-</span><span class='line'>        <span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">l_no</span> <span class="o">=</span> <span class="nb">parseInt</span><span class="p">(</span><span class="nx">rows</span> <span class="o">/</span> <span class="nx">pageSize</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//下一页页号</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="nb">parseInt</span><span class="p">(</span><span class="nx">pno</span><span class="p">)</span> <span class="o">+</span> <span class="nb">parseInt</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="o">&gt;=</span> <span class="k">this</span><span class="p">.</span><span class="nx">l_no</span><span class="p">)</span>  <span class="p">{</span>
-</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="nx">n_no</span> <span class="o">=</span>  <span class="k">this</span><span class="p">.</span><span class="nx">l_no</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">this</span><span class="p">.</span><span class="nx">n_no</span> <span class="o">=</span>  <span class="nb">parseInt</span><span class="p">(</span><span class="nx">pno</span><span class="p">)</span> <span class="o">+</span> <span class="nb">parseInt</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">this</span><span class="p">.</span><span class="nx">pages</span> <span class="o">=</span>  <span class="k">this</span><span class="p">.</span><span class="nx">l_no</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;使用这个对象的参考代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="c1">//显示用户列表</span>
-</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">user_list</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">){</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">pno</span> <span class="o">=</span>  <span class="nx">req</span><span class="p">.</span><span class="nx">params</span><span class="p">.</span><span class="nx">pno</span><span class="p">;</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">queryName</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">q_name</span><span class="p">;</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">pageSize</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
-</span><span class='line'>    <span class="kd">var</span> <span class="nx">queryParm</span> <span class="o">=</span> <span class="p">{};</span>
-</span><span class='line'>    <span class="c1">//进行多条件的拼装</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">queryName</span> <span class="o">&amp;&amp;</span> <span class="nx">queryName</span><span class="p">.</span><span class="nx">trim</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>         <span class="c1">//如果用户输入了姓名</span>
-</span><span class='line'>        <span class="nx">queryParm</span><span class="p">.</span><span class="nx">f_name</span> <span class="o">=</span> <span class="nx">orm</span><span class="p">.</span><span class="nx">like</span><span class="p">(</span><span class="s2">&quot;%&quot;</span> <span class="o">+</span> <span class="nx">queryName</span> <span class="o">+</span> <span class="s2">&quot;%&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>     <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">queryParm</span><span class="p">)</span>
-</span><span class='line'>         <span class="p">.</span><span class="nx">limit</span><span class="p">(</span><span class="nx">pageSize</span><span class="p">)</span>
-</span><span class='line'>         <span class="p">.</span><span class="nx">offset</span><span class="p">((</span><span class="nx">pno</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="nx">pageSize</span><span class="p">)</span>
-</span><span class='line'>        <span class="c1">// .only(&quot;pk_id&quot;,&quot;f_name&quot;,&quot;f_login_code&quot;,&quot;f_birthday&quot;)   //不需要密码字段</span>
-</span><span class='line'>         <span class="p">.</span><span class="nx">run</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">users</span><span class="p">){</span>
-</span><span class='line'>         <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>             <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
-</span><span class='line'>             <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;取用户分页数据失败！&#39;</span><span class="p">});</span>
-</span><span class='line'>         <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>             <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span><span class="nx">queryParm</span><span class="p">).</span><span class="nx">count</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">userCount</span><span class="p">){</span>
-</span><span class='line'>                 <span class="kd">var</span> <span class="nx">p</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Page</span><span class="p">(</span><span class="nx">pno</span><span class="p">,</span> <span class="nx">pageSize</span><span class="p">,</span> <span class="nx">userCount</span><span class="p">,</span> <span class="nx">users</span><span class="p">);</span>
-</span><span class='line'>                 <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;code&#39;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="s1">&#39;page&#39;</span><span class="o">:</span><span class="nx">p</span><span class="p">};</span>
-</span><span class='line'>                 <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-</span><span class='line'>             <span class="p">});</span>
-</span><span class='line'>         <span class="p">}</span>
-</span><span class='line'>     <span class="p">});</span>
-</span><span class='line'><span class="p">};</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;这版crud演示就介绍到这，下一版本，将把前端全部替换为angular.js，再下一版本将把数据库更换为mongodb。</p>
 ]]></content>
   </entry>
   

@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;我在前面的文章中讲过定时任务在项目中的应用 —【项目中定时任务实现方式比较】，并且我推荐大家利用操作系统的定时任务去完成相应的功能，对于简单的定时任务，操作系统的定时任务功能完全没有问题的，但是，如果项目需求复杂一些，操作系统的定时任务恐怕就不能胜任了。最近， &hellip;">
+  <meta name="description" content="&emsp;&emsp;从第三方网站上抓取一张页面，分析其中的内容，然后转换为自己的格式并持久化，这就是网络爬虫的操作步骤。目前，对网页的抓取及解析也在互联网项目中有较为广泛的应用，下面简单谈谈一些网页解析工具的使用方法。 &emsp;&emsp;网页的爬取及解析，应该利用一现有的工具或框架去实现 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,88 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/01/19/jsoup/">网页解析利器——jsoup</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-01-19T15:18:00+08:00" pubdate data-updated="true">2011年01月19日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;从第三方网站上抓取一张页面，分析其中的内容，然后转换为自己的格式并持久化，这就是网络爬虫的操作步骤。目前，对网页的抓取及解析也在互联网项目中有较为广泛的应用，下面简单谈谈一些网页解析工具的使用方法。</p>
+
+<p>&emsp;&emsp;网页的爬取及解析，应该利用一现有的工具或框架去实现，而这些框架的选择，至少要考虑下面的一些因素：</p>
+
+<p>&emsp;&emsp;1、应该具有一定的兼容性，比如：原始页面中的一些语法错误、未关闭标签等，应该能够被正确解析；</p>
+
+<p>&emsp;&emsp;2、应该可以方便地查找、过滤页面元素；</p>
+
+<p>&emsp;&emsp;3、应该要以对找到的元素进行操作，比如：修改，删除等，当然也可以加入新的元素。</p>
+
+<p>&emsp;&emsp;我主要说两个常用的网页解析工具，一个是htmlParser，这个框架出来得比较早，并且有比较广泛的应用，官方站点在<a href="http://htmlparser.sourceforge.net/">http://htmlparser.sourceforge.net/</a>，下面是一段示例代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Parser</span> <span class="n">parser</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Parser</span><span class="o">(</span><span class="n">str_url</span><span class="o">);</span>
+</span><span class='line'><span class="n">parser</span><span class="o">.</span><span class="na">setEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">NodeList</span> <span class="n">imageNodeList</span> <span class="o">=</span> <span class="n">contentNodeList</span><span class="o">.</span><span class="na">extractAllNodesThatMatch</span><span class="o">(</span><span class="k">new</span> <span class="n">TagNameFilter</span><span class="o">(</span><span class="s">&quot;img&quot;</span><span class="o">),</span> <span class="kc">true</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面将得到页面中的所有图片链接。其中的extractAllNodes方法有很多种实现，可以按元素类型、包含的属性等等条件进行过滤，我以前的一些项目中就曾使用这种方法来做，也用得十分的恼火，让人头疼的地方主要是：</p>
+
+<p>&emsp;&emsp;1、容错性差，目标页面有错误，解析起来就得不到正确的结果，为此，当时都研究过firefox的解析包，但发现十分复杂，放弃了（注：如果每个页面都通过xhtml标准检查，那么用dom4j中的xpath就可以解决网页解析的问题了，呵呵）。</p>
+
+<p>&emsp;&emsp;2、要仔细分析目标网页，针对目标网页的页面元素层级关系，编写相应的解析代码，写出的代码非常冗长（主要是元素查询、过滤很麻烦），可维护性不高。一旦目标网站页面格式调整，再次调整代码，修改解析代码非常痛苦。</p>
+
+<p>&emsp;&emsp;3、页面的修改、重组都不方便。</p>
+
+<p>&emsp;&emsp;用HtmlParser的经历可以说是比较痛苦，但在当时的情况下，HtmlParser是最好的一个java开源网页解析器，也只有将应着用了。同时也期待着新的框架问世。</p>
+
+<p>&emsp;&emsp;直到有一天，发现了jsoup，以前困扰过我的问题终于得到了解决，并且解决得很彻底，是到了跟HtmlParser说再见的时候了。jsoup官网地址在<a href="http://jsoup.org/">http://jsoup.org/</a>，整个jar包135kb，非常小巧，而且不依赖其它包，够强悍。下面贴出一段示例代码（具体使用官网上有Cookbook，另外chinaos版主也写了一篇jsoup的使用文档，自己去google一下吧）：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Document</span> <span class="n">doc</span> <span class="o">=</span> <span class="n">Jsoup</span><span class="o">.</span><span class="na">connect</span><span class="o">(</span><span class="n">str_url</span><span class="o">).</span><span class="na">get</span><span class="o">();</span>
+</span><span class='line'><span class="n">Elements</span> <span class="n">es</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="na">select</span><span class="o">(</span><span class="s">&quot;#results .trans-wrapper h2 span&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">es</span><span class="o">.</span><span class="na">text</span><span class="o">());</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;jsoup 具有页面纠错功能，对于一般的标签未封闭，未结束等错误可以智能纠正，这点对网页解析来说意义重大。其次，页面元素查找、定位十分的方便，它完全支持 jQuery的元素查找方式，并且几乎所有的api方法，都和jQuery api中的方法一模一样，我们知道，jQuery之所以可以被如此广泛使用，和它简洁强大的页面元素定位及简单的api是分不开的，jsoup的这种做法可以说是非常明智的。</p>
+
+<p>&emsp;&emsp;我对jQuery非常的熟悉，jsoup和jQuery又如此的相似，因此jsoup后可以说是拿来即用，感觉十分的亲切、自然。用了jsoup后，你会发现，实现同样功能的代码，jsoup代码量会比Htmlparser少很多很多，并且可读性非常的强，可维护性自然提高。</p>
+
+<p>&emsp;&emsp;做网页解析的朋友们，赶紧”鸟枪换炮“吧。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2485,62 +2567,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/11/30/tx-script/">浅谈事务脚本</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-11-30T15:18:00+08:00" pubdate data-updated="true">2010年11月30日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;你也许听说过现在的web项目开发，在业务层几乎都是采用事务脚本来组织、暴露业务逻辑，那么，大家为什么都喜欢这么做呢？下面说说我的一些肤浅认识。</p>
-
-<p>&emsp;&emsp;有人说所有的管理类型项目归根结底都是CRUD操作，仔细想想也确实如此，但再深入思考一下，既然是数据库的CRUD操作来实现业务，那么一定会出现数据库事务，由于大多数业务操作并不是由一两条简单的sql操作完成，一次业务操作中的N多条sql操作应该是一个元子性操作，要么全部成功，要么失败，这样才是一个完整的业务。何谓事务脚本（应该是MF先提出来的，大家可以去看看企业应用架构模式一书中相关章节），事务指的是完成一次业务操作的数据库事务，脚本指的是数据库sql脚本，也就是以过程化的方式实现业务逻辑，并完成业务状态数据的持久化（图懒得去画了，顺手截了张pojo in action 中的事务脚本示例图）。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/12.png' width='' height='' title='事务脚本示意图'><span class='caption-text'>事务脚本示意图</span></span></p>
-
-<p>&emsp;&emsp;我们可以看到，上图中域对象的行为已经没有了，所有的行为抽取出来放到了业务层中，用一个一个的事务脚本方法来实现业务逻辑封装，在实现过程中一般采用过程化的实现代码；领域对象中的行为抽取出来后，域对象中就仅剩下状态信息，成为了所谓的哑数据对象（失血对象，这样的对象比较安全，可以各层间通传）。很多刚学完OO思想的人就会有疑问，不是提倡面向对象的方式来开发，而在事务脚本模式中怎么又使用过程式的方式来实现业务逻辑呢？原因如下：</p>
-
-<p>&emsp;&emsp;a、由于原来的领域对象中没有了对象职责，这样就避免了为正确分配职责而苦恼的过程（你是否还记得OOAD中为了正确分配职责而画的时序图），使得设计过程变得简单。</p>
-
-<p>&emsp;&emsp;b、事务脚本对象一般以用例或模块从逻辑上来确定粒度，而事务脚本方法将直接依据界面原型进行设计，是个人都会做这件事（老大说的哈），设计难度降低，设计过程简单（几种常见界面原型的事务脚本方式设计我会在其它文章中单独讲解）。</p>
-
-<p>&emsp;&emsp;c、减少了领域对象之间的职责交互，使系统变得简单，调用者只和业务层对象交互就可实现界面逻辑（这点应该是符合迪米特法则的，和门面模式有共通之处）。</p>
-
-<p>&emsp;&emsp;正是由于这些原因，使得系统开发对从业人员的门槛大大降低，也就间接降低了项目开发的风险，项目后期的可维护性也得到了一定的增强，这也就是你所看到了现状：95%以上的web项目开发采用事务脚本模式的原因。</p>
-
-<p>&emsp;&emsp;最后说一点，任何事物都有两面性，以事务脚本方式实现业务逻辑也有显示的不足之处，那就是实现复杂的业务逻辑会使代码的可读性降低，不利于后期维护，当然，我们可以采用合理抽取子方法或采用贫血领域对象的方式来降低事务脚本带来的负面影响。</p>
-
-<p>&emsp;&emsp;事务脚本在项目实现中，我们一般会用采用AOP方式，把事务管理代码动态注入到业务方法的前后，使得程序员把主要精力用在核心业务逻辑实现上，这样就会提高项目的开发效率，这也是我认为spring最有用处的一个地方之一。</p>
-
-<p>&emsp;&emsp;pojo in action有事务脚本的代码实例与讲解，这本书的第二章也进行了全面的总结，这一章节是这本书的精华所在，建议有兴趣的去读一下，以前csdn上有这个章节的试读版，很可惜现在已经找不到了，这本书值得初、中级水平者买一本仔细阅读，书中的代码实例有利于理解一些抽象的架构概念。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/15/">&larr; 更多早期老文章</a>
@@ -2558,6 +2584,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/03/03/objectmapper-json/">Json类库jackson使用之误区</a>
       </li>
     
@@ -2571,10 +2601,6 @@
     
       <li class="post">
         <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/01/12/art-rose-rain-step/">油画-听雨终稿-步骤</a>
       </li>
     
   </ul>

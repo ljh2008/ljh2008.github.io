@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp; 这是我发布的第一篇关于seo的文章，我对seo的总原则是：内容为王，seo为辅，请大家一定不要本末倒置。 &emsp;&emsp;seo的最高境界是：经过了seo优化，却看不出来有任何seo痕迹，这也是高手追求的目标。 &emsp;&emsp; &hellip;">
+  <meta name="description" content="&emsp;&emsp;很多新手都会遇到的hibernate session关闭时的延迟加载错误，我想原因大家都知道，当session关闭后，你去访问对象中的延迟加载属性，都会报session已关闭的错误。解决办法一般有四种： hbm映射文件中，让集合或对象属性的 lazy=false &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,95 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/20/junit/">Junit测试之hiberante延迟加载问题</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-20T15:18:00+08:00" pubdate data-updated="true">2010年10月20日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;很多新手都会遇到的hibernate session关闭时的延迟加载错误，我想原因大家都知道，当session关闭后，你去访问对象中的延迟加载属性，都会报session已关闭的错误。解决办法一般有四种：</p>
+
+<ol>
+<li>hbm映射文件中，让集合或对象属性的 lazy=false</li>
+<li>在关闭session之前，使用Hibernate.initialize(Object proxy)强制加载</li>
+<li>在关闭session之前，对延迟属性进行一次get访问</li>
+<li>使用hql预加载，一般会用到fetch语句</li>
+</ol>
+
+
+<p>&emsp;&emsp;以面四种方式，如果用在与spring整合后的hibernate中，方式2、方式3可能不太好合，除非你使用模板的execute回调，那么我们在项目中是如何解决的呢？</p>
+
+<p>&emsp;&emsp;采用openSessionInView过滤器，该过滤器非常有效，会保证在同一次请求中，打开一个session，在当次请求中，打开不会关闭（具体底 层实现用到了ThreadLocal类，有兴趣的可以到网上搜一下），请求结束后spring会妥善处理好session的。</p>
+
+<p>&emsp;&emsp;有了 openSessionInView，我们几乎看不到延迟加载错误了，但是，在开发中我们又遇到了另一个严峻的问题，我们在业务层的测试代码中，去无法开 启openSessionInView，这就出现了，在action及页面中都正常的代码，拿到junit测试中却无法通过，这该如何是好？</p>
+
+<p>&emsp;&emsp;解决办法如下：</p>
+
+<p>&emsp;&emsp;在你的测试类中的setUp和tearDown中，加上下面的代码，注意，要把sessionFactory定义到外面。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">private</span> <span class="n">SessionFactory</span> <span class="n">sessionFactory</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">setUp</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">sessionFactory</span> <span class="o">=</span> <span class="o">(</span><span class="n">SessionFactory</span><span class="o">)</span> <span class="n">beanFactory</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;sessionFactory&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">Session</span> <span class="n">s</span> <span class="o">=</span> <span class="n">sessionFactory</span><span class="o">.</span><span class="na">openSession</span><span class="o">();</span>
+</span><span class='line'>  <span class="n">TransactionSynchronizationManager</span><span class="o">.</span><span class="na">bindResource</span><span class="o">(</span><span class="n">sessionFactory</span><span class="o">,</span> <span class="k">new</span> <span class="n">SessionHolder</span><span class="o">(</span><span class="n">s</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">tearDown</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">SessionHolder</span> <span class="n">holder</span> <span class="o">=</span> <span class="o">(</span><span class="n">SessionHolder</span><span class="o">)</span> <span class="n">TransactionSynchronizationManager</span><span class="o">.</span><span class="na">getResource</span><span class="o">(</span><span class="n">sessionFactory</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">Session</span> <span class="n">s</span> <span class="o">=</span> <span class="n">holder</span><span class="o">.</span><span class="na">getSession</span><span class="o">();</span>
+</span><span class='line'>  <span class="n">s</span><span class="o">.</span><span class="na">flush</span><span class="o">();</span>
+</span><span class='line'>  <span class="n">TransactionSynchronizationManager</span><span class="o">.</span><span class="na">unbindResource</span><span class="o">(</span><span class="n">sessionFactory</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的代码是纯junit下的测试，如果你用了AbstractTransactionalSpringContextTests作为测试基 类，sessionFactory的初始化就没有这么复杂了，直接由spring注入进来即可。并且在 AbstractTransactionalSpringContextTests下应该不存在session关闭的问题。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -565,6 +654,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/03/03/objectmapper-json/">Json类库jackson使用之误区</a>
       </li>
     
@@ -578,10 +671,6 @@
     
       <li class="post">
         <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/01/12/art-rose-rain-step/">油画-听雨终稿-步骤</a>
       </li>
     
   </ul>

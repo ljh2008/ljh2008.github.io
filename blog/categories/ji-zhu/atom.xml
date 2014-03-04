@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-03-03T17:42:28+08:00</updated>
+  <updated>2014-03-04T16:57:05+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,184 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[再次简单封装的jackson]]></title>
+    <link href="http://yanyaner.com/blog/2014/03/04/objectmapper-json/"/>
+    <updated>2014-03-04T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/03/04/objectmapper-json</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;接上一篇<a href="/blog/2014/03/03/objectmapper-json">Json类库jackson使用之误区</a>，我对json的常用操作再次进行了简单的封装，上一版的封装大家可参阅<a href="/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
+
+<p>&emsp;&emsp;总计两个文件，只考虑到了一些简单常用的操作：</p>
+
+<p>``` java FilterProvider.java</p>
+
+<p>package com.my.ms.framework.commons;</p>
+
+<p>import org.codehaus.jackson.map.ser.impl.SimpleBeanPropertyFilter;
+import org.codehaus.jackson.map.ser.impl.SimpleFilterProvider;
+/<em>*
+ * 属性过滤器
+ * @author ljh
+ *
+ </em>/
+public class FilterProvider extends SimpleFilterProvider {</p>
+
+<pre><code>/**
+ * 将新的需要的属性添加到一个现有的FilterProvider中
+ * @param id
+ * @param includeProperties
+ * @return
+ */
+public FilterProvider addIncludeProperties(String id,
+        String... includeProperties) {
+    this.addFilter(id,
+            SimpleBeanPropertyFilter.filterOutAllExcept(includeProperties));
+    return this;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;FilterProvider.java中主要增加了一个输出时添加包含属性的方法，并返回自身以支持方法链编程。<!-- more --></p>
+
+<p>``` java JsonMapper.java</p>
+
+<p>package com.my.ms.framework.commons;</p>
+
+<p>import java.io.IOException;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;</p>
+
+<p>import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.map.DeserializationConfig;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig.Feature;
+import org.codehaus.jackson.map.ser.impl.SimpleBeanPropertyFilter;
+import org.codehaus.jackson.map.ser.impl.SimpleFilterProvider;</p>
+
+<p>/<em>*
+ * json之jackson封装
+ * 主要对常用的几个json方法进行了再次包装，并具备线程安全性
+ * @author ljh
+ *
+ </em>/
+public class JsonMapper {</p>
+
+<pre><code>private ObjectMapper objectMapper;
+
+public JsonMapper() {
+    objectMapper = new ObjectMapper();
+    // 设置默认日期格式
+    objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
+    // 提供其它默认设置
+    objectMapper
+            .disable(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES);
+    objectMapper.configure(Feature.FAIL_ON_EMPTY_BEANS, false);
+    objectMapper.setFilters(new SimpleFilterProvider()
+            .setFailOnUnknownId(false));
+
+}
+
+/**
+ * 创建一个FilterProvider对象
+ * 
+ * @return
+ */
+public static FilterProvider buildFilterProvider() {
+    FilterProvider filter = new FilterProvider();
+    filter.setFailOnUnknownId(false);
+    return filter;
+}
+
+/**
+ * 根据需要的对象属性，创建一个属性过滤器FilterProvider
+ * 
+ * @param id
+ *            对象id，通过jsonFilter声明
+ * @param includeProperties
+ *            该对象上需要的属性
+ * @return  创建好的过滤器
+ */
+public static FilterProvider buildFilterProvider(String id,
+        String... includeProperties) {
+    FilterProvider filter = new FilterProvider();
+    filter.setFailOnUnknownId(false);
+
+    filter.addFilter(id,
+            SimpleBeanPropertyFilter.filterOutAllExcept(includeProperties));
+    return filter;
+}
+
+// 用提供的过滤器，将对象的json输出到流中
+public void writeValue(FilterProvider filter, OutputStream os, Object value)
+        throws JsonGenerationException, JsonMappingException, IOException {
+    objectMapper.writer(filter).writeValue(os, value);
+}
+
+// 用提供的过滤器，将对象的json输出为字符串
+public String writeValueAsString(FilterProvider filter, Object value)
+        throws JsonGenerationException, JsonMappingException, IOException {
+    return objectMapper.writer(filter).writeValueAsString(value);
+}
+
+// 将对象的json输出到流中
+public void writeValue(OutputStream os, Object value)
+        throws JsonGenerationException, JsonMappingException, IOException {
+    objectMapper.writeValue(os, value);
+}
+
+// 将对象的json输出为字符串
+public String writeValueAsString(Object value)
+        throws JsonGenerationException, JsonMappingException, IOException {
+    return objectMapper.writeValueAsString(value);
+}
+
+/**
+ * 得到原始的objectMapper，以进行更复杂的操作
+ * 
+ * @return
+ */
+public ObjectMapper getObjectMapper() {
+    return objectMapper;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;如果需要更强大的功能，我们可以通过getObjectMapper得到ObjectMapper后进行操作，或都添加你常用的其它方法到JsonMapper中，比如：排除属性的方法等。</p>
+
+<p>&emsp;&emsp;使用时，请把JsonMapper放入spring容器(当然你也可以把这个类做成单例的哦)，在需要转换json的地方，通过@Resource注入即可，调用代码如下：</p>
+
+<p>``` java</p>
+
+<pre><code>@Resource
+private JsonMapper mapper;
+
+@Test
+public void testJson() throws Exception {
+
+    Object someObject = ....
+
+    String result = mapper.writeValueAsString(
+            JsonMapper.buildFilterProvider()
+            .addIncludeProperties("myId1", "id","name")
+            .addIncludeProperties("myId2", "code","money","name"), 
+            someObject);
+
+    assertEquals("xxxxxxxxxxxx", result);
+
+}
+</code></pre>
+
+<p>```</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[json类库jackson使用之误区]]></title>
@@ -284,7 +462,7 @@ public static void main1(String[] args) {</p>
 
 <p>&emsp;&emsp;这段测试代码的输出是：执行所花时间：547ms.同样的功能，不同的实现代码，时间差距非常巨大，所以，大家在实际编码须注意到这个问题。</p>
 
-<p>&emsp;&emsp;大家可以对ObjectMapper进行简单封闭，具体请参阅我的另一篇文章<a href="/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
+<p>&emsp;&emsp;大家可以对ObjectMapper进行简单封装，具体请参阅我的另一篇文章<a href="/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
 ]]></content>
   </entry>
   
@@ -1365,256 +1543,6 @@ Finished: SUCCESS
 <p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-icon.jpg' width='' height='' title='Hudson图标示例'><span class='caption-text'>Hudson图标示例</span></span></p>
 
 <p>&emsp;&emsp;暂时写这些吧，以后继续补充。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[在项目中使用maven之三--深入细节]]></title>
-    <link href="http://yanyaner.com/blog/2013/12/25/maven-project-detail/"/>
-    <updated>2013-12-25T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/12/25/maven-project-detail</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;在我们的子项目中，可以使用parent节点继承父项目的pom，如下：</p>
-
-<p>``` xml
-<parent></p>
-
-<pre><code>  &lt;groupId&gt;com.ljh.ms&lt;/groupId&gt;
-  &lt;artifactId&gt;car-parents&lt;/artifactId&gt;
-  &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
-  &lt;relativePath&gt;../car_parents/pom.xml&lt;/relativePath&gt;
-</code></pre>
-
-<p></parent>
-```</p>
-
-<p>&emsp;&emsp;这段配置文件中，首先定义了我们要继承的父项目坐标信息，再使用relativePath节点具体指明父POM所在的物理路径（要注意：父项目的packaging类型设定的是pom，而不是jar或war哦）。</p>
-
-<p>&emsp;&emsp;接下来，我贴出dao项目模块的pom文件，内容如下：<!--more--></p>
-
-<p>``` xml pom.xml
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion></p>
-
-<p>  <groupId>com.ljh.ms</groupId>
-  <artifactId>car-dao</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>jar</packaging></p>
-
-<p>  <parent></p>
-
-<pre><code>  &lt;groupId&gt;com.ljh.ms&lt;/groupId&gt;
-  &lt;artifactId&gt;car-parents&lt;/artifactId&gt;
-  &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
-  &lt;relativePath&gt;../car_parents/pom.xml&lt;/relativePath&gt;
-</code></pre>
-
-<p>  </parent></p>
-
-<p>  <name>car-dao</name>
-  <url><a href="http://maven.apache.org">http://maven.apache.org</a></url></p>
-
-<p>  <properties></p>
-
-<pre><code>&lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
-</code></pre>
-
-<p>  </properties></p>
-
-<p>  <dependencies></p>
-
-<pre><code>&lt;dependency&gt;
-    &lt;groupId&gt;com.ljh.ms&lt;/groupId&gt;
-    &lt;artifactId&gt;car-core&lt;/artifactId&gt;
-    &lt;version&gt;0.0.1-SNAPSHOT&lt;/version&gt;
-&lt;/dependency&gt;
-</code></pre>
-
-<p>  </dependencies>
-</project>
-```</p>
-
-<p>&emsp;&emsp;大家可以看到，这个pom继承了parent pom中的内容，dependency部分看起来才会这么简洁（当然，也有人不建议这么做，做法是在每个子项目dependency中明确定义了所有的依赖，这样感觉会更严谨些）。</p>
-
-<p>&emsp;&emsp;另外，我们这篇文件中仅定义了对car-core的依赖，car-core又依赖了framework子项目，maven可以正确的处理这样的依赖传递。</p>
-
-<p>&emsp;&emsp;在完成了dao的实现代码后，我们要编写相应的测试代码来验证实现的正确性，部分代码在下面已贴出，大家要注意一下这个文件所在的路径。</p>
-
-<p>``` java /car-dao/src/test/java/com/ljh/ms/car/dao/UserDaoTest.java
-@Transactional
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations={&ldquo;classpath:config/spring/spring*.xml&rdquo;})
-public class UserDaoTest {</p>
-
-<pre><code>@Resource
-private IUserDao userDao;
-
-@Test
-public void testUserDao() {
-    List&lt;User&gt; us = userDao.getAllUsers();
-    Assert.assertEquals(9, us.size());
-.......
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;在这个测试类上，我们可以在文件上点右键，run As JUnit test，即可看到结果。但是，我更加建议大家用maven的统一测试，在pom.xml上，选择run as maven test，如下图：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven_run_as.jpg' width='' height='' title='运行maven测试'><span class='caption-text'>运行maven测试</span></span></p>
-
-<p>&emsp;&emsp;通过观察控制台的输出，即可知道测试是否成功。</p>
-
-<p>```
-&hellip;..
-2013-12-25 11:45:08,625 INFO [org.hibernate.impl.SessionFactoryImpl] &ndash; closing</p>
-
-<p>Results :</p>
-
-<p>Tests run: 1, Failures: 0, Errors: 0, Skipped: 0</p>
-
-<p>[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
-[INFO] BUILD SUCCESS
-[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
-[INFO] Total time: 17.234s
-[INFO] Finished at: Wed Dec 25 11:45:08 CST 2013
-[INFO] Final Memory: 4M/8M
-[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
-```</p>
-
-<p>&emsp;&emsp;按照同样的TDD流程，我们完成对service子项目的开发，最近完成对web端的开发。</p>
-
-<p>&emsp;&emsp;maven的web项目目录结构跟eclipse标准Dyna web项目结构不同，下面贴出项目结构图。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_struct3.jpg' width='' height='' title='maven web项目结构'><span class='caption-text'>maven web项目结构</span></span></p>
-
-<p>&emsp;&emsp;在maven web工程项目中，有些目录需要大家手工建立，比如resources，默认建出的web工程中是不存在这个目录的。另外，在maven的web项目中，我们所依赖的其它模块都已打包成jar的形式存放在WEB-INF/lib目录中，而在classes目录下则会没有东西，这样一来，以前的一些配置可能要进行修改，比如，下面是加载spring配置文件的代码。</p>
-
-<p>``` xml web.xml
-&lt;context-param></p>
-
-<pre><code>&lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;
-&lt;param-value&gt;/WEB-INF/classes/config/spring/spring*.xml&lt;/param-value&gt;
-</code></pre>
-
-<p>&lt;/context-param>
-```</p>
-
-<p>&emsp;&emsp;需要改成下面这样，才不会有问题：</p>
-
-<p><code>xml
-&lt;param-name&gt;contextConfigLocation&lt;/param-name&gt;
-&lt;param-value&gt;classpath*:config/spring/spring*.xml&lt;/param-value&gt;
-</code></p>
-
-<p>&emsp;&emsp;另外，如果项目中有对spring文件引用的地方，也要修改为import引入的方式，配置代码如下：</p>
-
-<p><code>xml
- &lt;!-- 引入其它jar包中的文件，须用这种方式 --&gt;    
-&lt;import resource="classpath*:config/spring/spring-core.xml"/&gt;
-</code>
-&emsp;&emsp;最后，给大家介绍一下maven的常用命令。</p>
-
-<ul>
-<li>编译源代码: mvn compile</li>
-<li>编译测试代码：mvn test-compile</li>
-<li>单元测试: mvn test</li>
-<li>构建并打包： mvn package</li>
-<li>清理： mvn clean</li>
-<li>安装： mvn clean install</li>
-<li>发布： mvn clean deploy</li>
-<li>在服务器上运行： mvn jetty:run</li>
-<li>等等&hellip;&hellip;</li>
-</ul>
-
-
-<p>&emsp;&emsp;上面的命令可以组合使用，大家要注意的是：package只是本地打包，install会部署包到本地仓库，而deploy则会将artifact发布到仓库服务器中，比如：nexus的私有仓库。另外，在命令中还可以加一些参数，比如： -X 会显示更多的信息， -U 会强制从私服上下载SNAPSHOT最新版本。</p>
-
-<p>如果要对整个项目进行打包，发布，我们只需要在car_parents项目中的pom.xml文件上运行相应的maven命令即可，下面是我在总项目中运行instlll的输出，我们可以看到，每个子项目的都进行了test,install：</p>
-
-<p>```
-Tests run: 0, Failures: 0, Errors: 0, Skipped: 0</p>
-
-<p>[INFO]
-[INFO] &mdash;&ndash; maven-war-plugin:2.4:war (default-war) @ car-web &mdash;&ndash;
-[INFO] Packaging webapp
-[INFO] Assembling webapp [car-web] in [F:\lovo\my\car-web\target\car-web]
-[INFO] Processing war project
-[INFO] Copying webapp resources [F:\lovo\my\car-web\src\main\webapp]
-[INFO] Building jar: F:\lovo\my\car-web\target\car-web\WEB-INF\lib\car-web-0.0.1-SNAPSHOT.jar
-[INFO] Webapp assembled in [2375 msecs]
-[INFO] Building war: F:\lovo\my\car-web\target\car_ms.war
-[INFO]
-[INFO] &mdash;&ndash; maven-install-plugin:2.3.1:install (default-install) @ car-web &mdash;&ndash;
-[INFO] Installing F:\lovo\my\car-web\target\car_ms.war to F:\java\maven\com\ljh\ms\car-web\0.0.1-SNAPSHOT\car-web-0.0.1-SNAPSHOT.war
-[INFO] Installing F:\lovo\my\car-web\pom.xml to F:\java\maven\com\ljh\ms\car-web\0.0.1-SNAPSHOT\car-web-0.0.1-SNAPSHOT.pom
-[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
-[INFO] Reactor Summary:
-[INFO]
-[INFO] car-parents &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip; SUCCESS [0.719s]
-[INFO] framework &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;.. SUCCESS [1.969s]
-[INFO] car-core &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip; SUCCESS [0.531s]
-[INFO] car-dao &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;. SUCCESS [2.937s]
-[INFO] car-service &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip; SUCCESS [2.719s]
-[INFO] car-web Maven Webapp &hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip; SUCCESS [7.203s]
-[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
-[INFO] BUILD SUCCESS
-[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;
-[INFO] Total time: 16.297s
-[INFO] Finished at: Wed Dec 25 16:31:53 CST 2013
-[INFO] Final Memory: 6M/12M
-[INFO] &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;总的来说，maven的所有操作都是通过相应插件完成的，而maven本身仅充当了一个平台，大家在实际的工作中可以寻找更多有用的插件来增强maven功能。</p>
-
-<p>&emsp;&emsp;好了，maven的入门介绍先到此为止吧。</p>
-
-<p>```
-2013-1-3补充：
-如果大家要引用第三方artifact，而这个artifact在maven仓库中（包括本地和私服）并没有登记，这是就需要我们手工注册了。
-比如，我要引用mynio-0.1.1.jar这个包到项目中，须在cmd窗口中执行下面的命令：
-mvn install:install-file -DgroupId=com.my.nio -DartifactId=mynio -Dversion=0.1.1 -Dpackaging=jar -Dfile=C:\temp\mynio-0.1.1.jar
-如此，maven将会把temp下的jar复制到本地仓库中，要注意articfactId的命名，maven会用artifactId+version做为包的名称哦。
-最后，在项目中定义这个artifact的依赖即可：
-<dependency></p>
-
-<pre><code>  &lt;groupId&gt;com.my.nio&lt;/groupId&gt;
-  &lt;artifactId&gt;mynio&lt;/artifactId&gt;
-  &lt;version&gt;0.1.1&lt;/version&gt;
-</code></pre>
-
-<p></dependency>
-```</p>
-
-<p>```
-2013-1-16再补充：
-有这样的应用场景，在打war过程中，需要将一些配置文件
-（比如数据库连接信息的properties文件）打包到WEB-INF/classes下。
-而这些配置文件又在另一个maven工程中，解决办法如下：
-<plugin></p>
-
-<pre><code>            &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
-            &lt;artifactId&gt;maven-war-plugin&lt;/artifactId&gt;
-            &lt;version&gt;2.4&lt;/version&gt;
-            &lt;configuration&gt; 
-                &lt;webResources&gt;
-                    &lt;resource&gt;
-                        &lt;directory&gt;../car-core/src/main/resources&lt;/directory&gt;
-                        &lt;includes&gt;
-                           &lt;include&gt;**/*.*&lt;/include&gt;
-                        &lt;/includes&gt;
-                        &lt;targetPath&gt;WEB-INF/classes&lt;/targetPath&gt;
-                    &lt;/resource&gt;
-                &lt;/webResources&gt;
-
-                &lt;archive&gt;              
-                ..............以下略去
-</code></pre>
-
-<p>请注意上面的resource节点中的内容。
-```</p>
 ]]></content>
   </entry>
   

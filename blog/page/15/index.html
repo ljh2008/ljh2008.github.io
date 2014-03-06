@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;你也许听说过现在的web项目开发，在业务层几乎都是采用事务脚本来组织、暴露业务逻辑，那么，大家为什么都喜欢这么做呢？下面说说我的一些肤浅认识。 &emsp;&emsp;有人说所有的管理类型项目归根结底都是CRUD操作，仔细想想也确实如此，但再深入思考一下， &hellip;">
+  <meta name="description" content="&emsp;&emsp;进入详细设计阶段后的一个重要任务是对业务方法进行设计，如果业务逻辑是封装到事务脚本方法中的，那就简单得多了，即根据界面可设计得到事务脚本业务方法。很多事情都是说起来容易，做起来难，下面我结合一个简单的实例，说明业务方法的设计过程。 &emsp;&emsp;一、 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,102 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/12/03/gui-prototype/">常见界面原型业务方法设计示例</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-12-03T15:18:00+08:00" pubdate data-updated="true">2010年12月03日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;进入详细设计阶段后的一个重要任务是对业务方法进行设计，如果业务逻辑是封装到事务脚本方法中的，那就简单得多了，即根据界面可设计得到事务脚本业务方法。很多事情都是说起来容易，做起来难，下面我结合一个简单的实例，说明业务方法的设计过程。</p>
+
+<p>&emsp;&emsp;一、先贴出界面原型设计图，具体操作图中已经标注得非常清楚了，我不再描述。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/49.png' width='' height='' title='界面原型示意图'><span class='caption-text'>界面原型示意图</span></span></p>
+
+<p>&emsp;&emsp;二、根据界面原型，建立简单的域模型，如下图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/15.png' width='' height='' title='领域设计图'><span class='caption-text'>领域设计图</span></span></p>
+
+<p>&emsp;&emsp;（注：其中的分页对象，是根据界面原型，在设计模型中加入的）</p>
+
+<p>&emsp;&emsp;三、业务方法设计过程是我说明的重点</p>
+
+<p>&emsp;&emsp;我们最先遇到的问题，应该是业务对象粒度的确定，常见的有两种方法，一种是根据功能模块来划分，另一种是根据用例来划分，如果你仔细想想就会发现，这两种划分方式都是从逻辑上对业务方法进行归类，总的原则是：有利于实现以及后期的维护。如果业务类粒度太细，业务类过多，会加大实现及管理上的复杂性；如果粒度过粗，一个业务类中业务方法过多，逻辑相关性不强，也会大了实现和维护难度。</p>
+
+<p>&emsp;&emsp;对界面原型分析后，我们基本上可以确定两个业务类（当然是用接口定义的），一个是菜单相关的，一个是与学生相关的（如果再细一点，也可以把班级相关的抽出来）。</p>
+
+<p>&emsp;&emsp;1、IMenuService</p>
+
+<p>&emsp;&emsp;从上面仅有的需求看，登录成功后我们要展示一个树型结构的菜单，而菜单设计为一对多自关联，所以，我们设计了下面的一个方法：+ getMemnuByLevel(level : int) : List，即根据菜单级别，得到这个级别菜单的集合，在实现的时候，需要取到所有的顶级菜单，通过jstl的循环标记取出子菜单并显示(当然，具体实现时你可能还要动动脑筋)。</p>
+
+<p>&emsp;&emsp;2、IStudentService</p>
+
+<p>&emsp;&emsp;这是本例中的核心。有人说业务方法命名无非就是一些CRUD的操作，但我认为，业务方法在命名上应该具更有业务含义，而不仅仅是一些简单的CRUD，比如：changePassword，login，register，pay，sendMail等等，这些方法都具有明确的业务含义。以有明确业务含义来为业务方法命名可以作为业务方法设计的一个标准，话又说回来，在实际项目中，还是有70%以上的业务方法命名是具有明显的CRUD含义的，还是来看看具体的设计吧。</p>
+
+<p>&emsp;&emsp;a、首先看到的第一个界面是登录界面，界面中有两个输入字段：学号及密码，登录成功后进入主界面，系统应该在作用域中保存用户的状态信息，登录有可能会失败，基于这个需求，设计业务方法如下：</p>
+
+<p>&emsp;&emsp;+ login(code : String, password : String) : Student，返回值为Student将作为状态信息保存，这个方法会throws LoginException异常，这个异常是自定义的。</p>
+
+<p>&emsp;&emsp;在这个方法的设计中，也有人把code与password封装在一个Studnet对象中传递，看起来就像这样+ login(s: Student) : Student，我个人觉得这种设计就没有第一种方式来得直观。</p>
+
+<p>&emsp;&emsp;LoginException也可以不定义，通过返回值Student是否为null，检测登录的执行情况，但我更倾向于业务层抛出统一的异常的做法。</p>
+
+<p>&emsp;&emsp;b、学生的分页查询。分页查询功能有两个地方可以触发，一个是：菜单中的“学生信息一览表”，一个是主界面中的“查询”按钮，但主界面中是带查询条件的，那我们是设计一个方法还是设计两个方法呢（我倒是见过不少初学者设计两个方法的哦）？答案是统一成一个，方法签名为+ getStudentsByPage(pageNo : int, pageSize : int, studentExample : Student) : Page。</p>
+
+<p>&emsp;&emsp;在上面的方法中，我们在studentExample封装了多个查询条件（我也见过一些初入门的程序员把每个条件都单传的设计，条件多了的话方法参数会非常庞大），后期用QBE实现，我会用一篇文章单独介绍这种多条件的具体实现方法。</p>
+
+<p>&emsp;&emsp;c、主界面的查询中会出现班级列表的选择，提供+ getAllClasses() : List就可搞定，但前提是班级不是太多，如果班级非常多，这种设计就有问题了，界面原型设计出得改。</p>
+
+<p>&emsp;&emsp;d、新增学生。方法为+ addStudent(studnet : Student) : void，这个方法写出来又有人提出疑问：你的方法返回void，那保存失败怎么办？很显示，提出这样问题的人对异常机制没有理解透，要去好好看书了哦。</p>
+
+<p>&emsp;&emsp;新增学生的时候，我们要会对学号（业务主键）的惟一性进行检测（使用ajax或保存时的检测），因此，还要提供一个业务方法+ getStudnetByCode(code : String) : Student来做这件事。</p>
+
+<p>&emsp;&emsp;e、修改学生信息。很明显，实现步骤是先查询后修改，因此设计了下面两个方法：+ getStudnetById(id : long) : Student根据id查询学生，+ updateStudent(studnet : Student) : void保存学生信息。</p>
+
+<p>&emsp;&emsp;f、删除学生信息。步骤也是先查后删除，查询的方法前面已经设计了+ getStudnetById(id : long) : Student，我们仅设计一个删除方法+ deleteStudentById(student: Student) : void。</p>
+
+<p>&emsp;&emsp;也有人设计成这样+ deleteStudentById(id : long) : void，即根据id来删除一个学员，当然底层实现也是先查后删除，这样的设计也是非常不错的，把查询对象的过程都封装到业务类实现中，而不用在 action中进行查询，效率会有一点点的提升，我推荐这种设计。</p>
+
+<p>&emsp;&emsp;g、批量删除。可以设计为+ deleteStudentByIds(ids : long[]) : void，也可以在action中通过for循环调用+ deleteStudentById(id : long) : void实现，根据你个人喜好自行设计。或都也可以设计成根据对象集合删除，即传入一个Collection。</p>
+
+<p>&emsp;&emsp;h、查看学生信息。+ getStudnetById(id : long) : Student就可以实现，这个方法我们前面已经设计好了。</p>
+
+<p>&emsp;&emsp;最终详细设计业务方法如下图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/20.png' width='' height='' title='业务方法设计'><span class='caption-text'>业务方法设计</span></span></p>
+
+<p>&emsp;&emsp;从以上的分析过程可以发现，我们的业务方法设计完全是依赖于界面原型一点一点“扣”出来的，业务有增删或变化，业务方法进行相应的调整，这种按用例或模块确定业务方法粒度并依据界面原型确定、分配业务方法的过程比较直观，也比较简单，业务实现采用事务脚本模式，事务脚本为何在目前的web应用开发中如此流行，与设计过程简单化是息息有关的。掌握了上面这个例子中的业务方法设计，你已经可以胜任软件开发了。</p>
+
+<p>&emsp;&emsp;后面的文章中，我会用一个更简单的例子，结合软件开发流程讲，讲解整个实现过程（包括关键部分的伪代码），我努力写成一个对于初级程序员来说最好的基础教程。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -728,60 +824,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/11/05/prof-web/">系统性能优化总结之表现层</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-11-05T15:18:00+08:00" pubdate data-updated="true">2010年11月05日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;对系统性能的考虑，是一个新手和老手的重要区别之一，面试的时候，问一些性能优化的问题，很容易判断应聘者的工作经验。下面是我对性能优化的考虑，将从表现层、业务层、技术层三个大的方面来阐述。本篇先介绍表现层性能优化要点。</p>
-
-<p>&emsp;&emsp;表现层优化的一个重要原则是<strong>减少向服务器发送请求的次数以及减少每次请求的数据传输量</strong>，围绕这一点，将会想到有很多的优化办法。</p>
-
-<ul>
-<li><p>ajax:大家都知道,ajax可以实现局部更新，显然减少了数据通讯量以及请求次数（全页面刷新，页面上的很多资源都要进行请求哦），而且ajax可以增强客户体验；</p></li>
-<li><p>减少图片文件大小，这个是减少数据通讯量的方法，可用png之类较小的文件存盘格式；</p></li>
-<li><p>使用css对图片分割，把多个地方的小图标集成到一张图片上来。比如：.zhu{background:url(“../img/shenxiao /sx.png”) no-repeat scroll 0 -528px transparent;}，注意其中的0 -528处，是关键；</p></li>
-<li><p>减少css与js文件的数据，最好不要按照页面逻辑将文件划分成多个，以减少请求次数；在同一个文件中，也要想法减少文件大小，多余的空格，回车，在项目上 线前都要去掉，我曾经见过一些网站，就一个css文件，打开，里面只有一行，这一行非常的长，可见，边回车换行都已经被删除了，呵呵。再有,js文件上线 前要找个工具压缩一下，文件大小一般会减少一半以上；</p></li>
-<li><p>从程序上，对页面进行静态化处理（页面静态化处理的详细内容我将在后面的博客中介绍）。</p></li>
-<li><p>对页面进行缓存，squid开源产品居多，oscache也是可以的。</p></li>
-<li><p>如果是jsp，可以考虑更换成其它的模板框架，比如：velocity，freemarker等，一来可以提高页面响应速度，还可以强制程序员按model2书写页面交互。</p></li>
-<li><p>根据实际情况选择合适的数据通讯方式，json,xml，或者是服务器拼好页面再发往客户端。</p></li>
-<li><p>合理利用好浏览器缓存。但有的时候，是禁止缓存的哦，比如一些ajax操作中。</p></li>
-<li><p>启用服务器gzip压缩。</p></li>
-</ul>
-
-
-<p>&emsp;&emsp;当然，条条大道通罗马，以“减少向服务器发送请求的次数以及减少每次请求的数据传输量”为优化核心，办法还是很多的。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/16/">&larr; 更多早期老文章</a>
@@ -799,6 +841,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a>
       </li>
     
@@ -812,10 +858,6 @@
     
       <li class="post">
         <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
       </li>
     
   </ul>

@@ -9,10 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;接上一篇Json类库jackson使用之误区，我对json的常用操作再次进行了简单的封装，上一版的封装大家可参阅Jackson之json类二次封装。 &emsp;&emsp;总计两个文件，只考虑到了一些简单常用的操作： FilterProvider.java1
-2
-3
-4 &hellip;">
+  <meta name="description" content="&emsp;&emsp;对于一般的项目hibernate足以胜任，但在选择一个框架时都要考虑适用场景（比如非功能性需求），hibernate也不例外，比如：复杂多条件组合查询对于hibernate来说并不方便（我们需要手工拼接sql）。基于这样的原因， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -61,6 +58,234 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-06T12:18:00+08:00" pubdate data-updated="true">2014年03月06日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;对于一般的项目hibernate足以胜任，但在选择一个框架时都要考虑适用场景（比如非功能性需求），hibernate也不例外，比如：复杂多条件组合查询对于hibernate来说并不方便（我们需要手工拼接sql）。基于这样的原因，很多项目中会引入ibatis来做复杂查询操作以做为补充，这主要是针对编码复杂度的考虑，性能也是其次的一个因素（其实hibernate也不存在问题的，你还记得到hibernater中有SqlQuery么，呵呵）。</p>
+
+<p>&emsp;&emsp;下面我给出一个简单的ibatis与hibernate混用示例，并在最后说明在实际使用过程中应该注意的问题。先来看spring的核心配置文件：</p>
+
+<figure class='code'><figcaption><span>spring-core.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>  <span class="c">&lt;!-- 读取配置参数 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.springframework.beans.factory.config.PropertyPlaceholderConfigurer&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;location&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>classpath:database.properties<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c">&lt;!-- 配置数据源 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;dataSource&quot;</span> <span class="na">class=</span><span class="s">&quot;com.alibaba.druid.pool.DruidDataSource&quot;</span>
+</span><span class='line'>        <span class="na">init-method=</span><span class="s">&quot;init&quot;</span> <span class="na">destroy-method=</span><span class="s">&quot;close&quot;</span>
+</span><span class='line'>  <span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;driverClassName&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>${driverClassName}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;url&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>${url}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;username&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>${username}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;password&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>${pwd}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;defaultAutoCommit&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>false<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;initialSize&quot;</span> <span class="na">value=</span><span class="s">&quot;1&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;filters&quot;</span> <span class="na">value=</span><span class="s">&quot;stat,log4j&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">value=</span><span class="s">&quot;myDatasource1&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>      <span class="c">&lt;!-- 最大活动连接数，也就是连接池中的最大缓存连接数 --&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;maxActive&quot;</span> <span class="na">value=</span><span class="s">&quot;20&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="c">&lt;!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 --&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;timeBetweenEvictionRunsMillis&quot;</span> <span class="na">value=</span><span class="s">&quot;10000&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="c">&lt;!-- 配置一个连接在池中最小生存的时间，单位是毫秒 --&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;minEvictableIdleTimeMillis&quot;</span> <span class="na">value=</span><span class="s">&quot;10000&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;minIdle&quot;</span> <span class="na">value=</span><span class="s">&quot;1&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      
+</span><span class='line'>      
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c">&lt;!-- hibernate参数配置文件，包括缓存的信息 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;hibernateProperties&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.beans.factory.config.PropertiesFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;location&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>classpath:hibernate-config.properties<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>  <span class="c">&lt;!--  配置sessionFactory--&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;sessionFactory&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;dataSource&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;dataSource&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;hibernateProperties&quot;</span> <span class="na">ref=</span><span class="s">&quot;hibernateProperties&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;packagesToScan&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;value&gt;</span>com.my.monitor.model<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>   
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c">&lt;!-- 配置事务管理器 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;transactionManager&quot;</span>
+</span><span class='line'>      <span class="na">class=</span><span class="s">&quot;org.springframework.orm.hibernate3.HibernateTransactionManager&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;sessionFactory&quot;</span> <span class="na">ref=</span><span class="s">&quot;sessionFactory&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c">&lt;!-- 对注解事务的支持 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;tx:annotation-driven</span> <span class="na">transaction-manager=</span><span class="s">&quot;transactionManager&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c">&lt;!-- 注解驱动 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;context:component-scan</span> <span class="na">base-package=</span><span class="s">&quot;com.my.monitor&quot;</span> <span class="nt">&gt;&lt;/context:component-scan&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c">&lt;!-- hibernate通用dao --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;hibernateBaseDao&quot;</span>
+</span><span class='line'>      <span class="na">class=</span><span class="s">&quot;com.my.ms.framework.persistence.hibernate.BaseDaoHibernateImpl&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;sessionFactory&quot;</span> <span class="na">ref=</span><span class="s">&quot;sessionFactory&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c">&lt;!-- ibatis通用dao，一般用于查询 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;ibatisBaseDao&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.ms.framework.persistence.ibatis.BaseDao&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;sqlMapClient&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.springframework.orm.ibatis.SqlMapClientFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;dataSource&quot;</span> <span class="na">ref=</span><span class="s">&quot;dataSource&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;configLocation&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                  <span class="nt">&lt;value&gt;</span>classpath:config/ibatis/sqlMapConfig.xml<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>  
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这里封装了两个baseDao，分别针对的是hibernate与ibatis书写，源代码如下：</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/03/06/ibatis-hibernate-in-query/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -805,76 +1030,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/12/23/maven/">在项目中使用maven之一&#8211;环境配置</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-12-23T15:18:00+08:00" pubdate data-updated="true">2013年12月23日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;Apache Maven是一个软件项目综合管理工具，它基于项目对象模型（POM）的概念来统一管理项目，使用Maven可以更好地管理项目的模块化，更好地管理项目之间的依赖，更好地管理jar包依赖及其版本，也更加贴近项目管理的各个阶段。</p>
-
-<p>&emsp;&emsp;你是否碰到过这样的一些困扰，比如：你现在要搭建一个现今比较流行的SSH javaEE框架原型，按照传统的方式，你得把项目所依赖的第三方框架jar包拷贝到工程的lib目录下再进行整合，但是，在你的架构原型中，每一个框架要用什么版本，各个版本的jar包之间是否会有不兼容的情况？这些都会给整个过程带来麻烦，并花费大量的调试时间。</p>
-
-<p>&emsp;&emsp;如果有了Maven，这个事情会变得简单，你也许只需要声明一个依赖关系，所有的一切都自动完成了。</p>
-
-<p>&emsp;&emsp;例如，我要写一个activeMQ的JMS项目，我的pom.xml中，只要添加如下的一个依赖，即可开始编码了：</p>
-
-<figure class='code'><figcaption><span>pom.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;dependencies&gt;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nt">&lt;dependency&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;groupId&gt;</span>org.apache.activemq<span class="nt">&lt;/groupId&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;artifactId&gt;</span>activemq-core<span class="nt">&lt;/artifactId&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;version&gt;</span>5.7.0<span class="nt">&lt;/version&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/dependency&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="nt">&lt;/dependencies&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/maven1.jpg' width='' height='' title='activeMQ项目中maven依赖的项目包'><span class='caption-text'>activeMQ项目中maven依赖的项目包</span></span></p>
-
-<p>&emsp;&emsp;当然，上面的示例中使用maven也有一点约束，那就是你的开发机器必须要能够连接到互联网上，并且网速不能太卡（这点可能有些开发者的环境无法满足而制约了maven在国内的普及速度），原因显而易见：所有的jar包需要从网上的仓库中下载到本地。</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2013/12/23/maven/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; 更多早期老文章</a>
@@ -890,6 +1045,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a>
       </li>
     
@@ -903,10 +1062,6 @@
     
       <li class="post">
         <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/01/12/art-rose-rain/">油画-听雨终稿</a>
       </li>
     
   </ul>

@@ -1,0 +1,1104 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>项目中ibatis与hibernate混用示例详解 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;对于一般的项目hibernate足以胜任，但在选择一个框架时都要考虑适用场景（比如非功能性需求），hibernate也不例外，比如：复杂多条件组合查询对于hibernate来说并不方便（我们需要手工拼接sql）。基于这样的原因， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2014/03/06/ibatis-hibernate-in-query">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">项目中ibatis与hibernate混用示例详解</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-06T12:18:00+08:00" pubdate data-updated="true">2014年03月06日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;对于一般的项目hibernate足以胜任，但在选择一个框架时都要考虑适用场景（比如非功能性需求），hibernate也不例外，比如：复杂多条件组合查询对于hibernate来说并不方便（我们需要手工拼接sql）。基于这样的原因，很多项目中会引入ibatis来做复杂查询操作以做为补充，这主要是针对编码复杂度的考虑，性能也是其次的一个因素（其实hibernate也不存在问题的，你还记得到hibernater中有SqlQuery么，呵呵）。</p>
+
+<p>&emsp;&emsp;下面我给出一个简单的ibatis与hibernate混用示例，并在最后说明在实际使用过程中应该注意的问题。先来看spring的核心配置文件：</p>
+
+<figure class='code'><figcaption><span>spring-core.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>  <span class="c">&lt;!-- 读取配置参数 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.springframework.beans.factory.config.PropertyPlaceholderConfigurer&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;location&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>classpath:database.properties<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c">&lt;!-- 配置数据源 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;dataSource&quot;</span> <span class="na">class=</span><span class="s">&quot;com.alibaba.druid.pool.DruidDataSource&quot;</span>
+</span><span class='line'>        <span class="na">init-method=</span><span class="s">&quot;init&quot;</span> <span class="na">destroy-method=</span><span class="s">&quot;close&quot;</span>
+</span><span class='line'>  <span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;driverClassName&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>${driverClassName}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;url&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>${url}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;username&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>${username}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;password&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>${pwd}<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;defaultAutoCommit&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>false<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;initialSize&quot;</span> <span class="na">value=</span><span class="s">&quot;1&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;filters&quot;</span> <span class="na">value=</span><span class="s">&quot;stat,log4j&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">value=</span><span class="s">&quot;myDatasource1&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>      <span class="c">&lt;!-- 最大活动连接数，也就是连接池中的最大缓存连接数 --&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;maxActive&quot;</span> <span class="na">value=</span><span class="s">&quot;20&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="c">&lt;!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 --&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;timeBetweenEvictionRunsMillis&quot;</span> <span class="na">value=</span><span class="s">&quot;10000&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="c">&lt;!-- 配置一个连接在池中最小生存的时间，单位是毫秒 --&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;minEvictableIdleTimeMillis&quot;</span> <span class="na">value=</span><span class="s">&quot;10000&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;minIdle&quot;</span> <span class="na">value=</span><span class="s">&quot;1&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      
+</span><span class='line'>      
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c">&lt;!-- hibernate参数配置文件，包括缓存的信息 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;hibernateProperties&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.beans.factory.config.PropertiesFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;location&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;value&gt;</span>classpath:hibernate-config.properties<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>  <span class="c">&lt;!--  配置sessionFactory--&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;sessionFactory&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;dataSource&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;ref</span> <span class="na">bean=</span><span class="s">&quot;dataSource&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;hibernateProperties&quot;</span> <span class="na">ref=</span><span class="s">&quot;hibernateProperties&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;packagesToScan&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;value&gt;</span>com.my.monitor.model<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>   
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c">&lt;!-- 配置事务管理器 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;transactionManager&quot;</span>
+</span><span class='line'>      <span class="na">class=</span><span class="s">&quot;org.springframework.orm.hibernate3.HibernateTransactionManager&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;sessionFactory&quot;</span> <span class="na">ref=</span><span class="s">&quot;sessionFactory&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c">&lt;!-- 对注解事务的支持 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;tx:annotation-driven</span> <span class="na">transaction-manager=</span><span class="s">&quot;transactionManager&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c">&lt;!-- 注解驱动 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;context:component-scan</span> <span class="na">base-package=</span><span class="s">&quot;com.my.monitor&quot;</span> <span class="nt">&gt;&lt;/context:component-scan&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c">&lt;!-- hibernate通用dao --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;hibernateBaseDao&quot;</span>
+</span><span class='line'>      <span class="na">class=</span><span class="s">&quot;com.my.ms.framework.persistence.hibernate.BaseDaoHibernateImpl&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;sessionFactory&quot;</span> <span class="na">ref=</span><span class="s">&quot;sessionFactory&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c">&lt;!-- ibatis通用dao，一般用于查询 --&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;ibatisBaseDao&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.ms.framework.persistence.ibatis.BaseDao&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;sqlMapClient&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.springframework.orm.ibatis.SqlMapClientFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;dataSource&quot;</span> <span class="na">ref=</span><span class="s">&quot;dataSource&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;configLocation&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                  <span class="nt">&lt;value&gt;</span>classpath:config/ibatis/sqlMapConfig.xml<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>  
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这里封装了两个baseDao，分别针对的是hibernate与ibatis书写，源代码如下：<!-- more --></p>
+
+<figure class='code'><figcaption><span>BaseDaoHibernateImpl.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">ms</span><span class="o">.</span><span class="na">framework</span><span class="o">.</span><span class="na">persistence</span><span class="o">.</span><span class="na">hibernate</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.io.Serializable</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.ArrayList</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.hibernate.HibernateException</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.hibernate.Query</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.hibernate.Session</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.springframework.orm.hibernate3.HibernateCallback</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.springframework.orm.hibernate3.support.HibernateDaoSupport</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.springframework.util.Assert</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.ms.framework.persistence.model.Page</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BaseDaoHibernateImpl</span> <span class="kd">extends</span> <span class="n">HibernateDaoSupport</span> <span class="kd">implements</span>
+</span><span class='line'>      <span class="n">IBaseDao</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addEntity</span><span class="o">(</span><span class="n">Object</span> <span class="n">entity</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">getHibernateTemplate</span><span class="o">().</span><span class="na">save</span><span class="o">(</span><span class="n">entity</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">updateEntity</span><span class="o">(</span><span class="n">Object</span> <span class="n">entity</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">getHibernateTemplate</span><span class="o">().</span><span class="na">update</span><span class="o">(</span><span class="n">entity</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deleteEntity</span><span class="o">(</span><span class="n">Object</span> <span class="n">entity</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">getHibernateTemplate</span><span class="o">().</span><span class="na">delete</span><span class="o">(</span><span class="n">entity</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deleteEntityById</span><span class="o">(</span><span class="n">Class</span> <span class="n">clazz</span><span class="o">,</span> <span class="n">Serializable</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">getHibernateTemplate</span><span class="o">().</span><span class="na">delete</span><span class="o">(</span><span class="k">this</span><span class="o">.</span><span class="na">queryEntityById</span><span class="o">(</span><span class="n">clazz</span><span class="o">,</span> <span class="n">id</span><span class="o">));</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">T</span> <span class="n">queryEntityById</span><span class="o">(</span><span class="n">Class</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">clazz</span><span class="o">,</span> <span class="n">Serializable</span> <span class="n">id</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nf">getHibernateTemplate</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="n">clazz</span><span class="o">,</span> <span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">List</span> <span class="nf">queryEntitys</span><span class="o">(</span><span class="n">String</span> <span class="n">queryString</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">values</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nf">getHibernateTemplate</span><span class="o">().</span><span class="na">find</span><span class="o">(</span><span class="n">queryString</span><span class="o">,</span> <span class="n">values</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">Page</span> <span class="nf">queryEntityByPage</span><span class="o">(</span><span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">,</span> <span class="n">String</span> <span class="n">queryString</span><span class="o">,</span>
+</span><span class='line'>          <span class="n">Object</span><span class="o">[]</span> <span class="n">parameters</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">Assert</span><span class="o">.</span><span class="na">isTrue</span><span class="o">(</span><span class="n">pageNo</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">,</span> <span class="s">&quot;起始页不能小于0！&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="c1">// 去除select 子句，未考虑union的情况</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">beginPos</span> <span class="o">=</span> <span class="n">queryString</span><span class="o">.</span><span class="na">toLowerCase</span><span class="o">().</span><span class="na">indexOf</span><span class="o">(</span><span class="s">&quot;from&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">Assert</span><span class="o">.</span><span class="na">isTrue</span><span class="o">(</span><span class="n">beginPos</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">,</span> <span class="n">queryString</span> <span class="o">+</span> <span class="s">&quot;无效，必须包含from关键字&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">String</span> <span class="n">hql4Count</span> <span class="o">=</span> <span class="s">&quot; select count(*)  &quot;</span>
+</span><span class='line'>              <span class="o">+</span> <span class="n">queryString</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="n">beginPos</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nf">queryEntityByPage</span><span class="o">(</span><span class="n">pageNo</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">,</span> <span class="n">queryString</span><span class="o">,</span> <span class="n">hql4Count</span><span class="o">,</span>
+</span><span class='line'>              <span class="n">parameters</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">Page</span> <span class="nf">queryEntityByPage</span><span class="o">(</span><span class="kd">final</span> <span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">,</span>
+</span><span class='line'>          <span class="kd">final</span> <span class="n">String</span> <span class="n">queryString4Data</span><span class="o">,</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">queryString4Count</span><span class="o">,</span>
+</span><span class='line'>          <span class="kd">final</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">parameters</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">Assert</span><span class="o">.</span><span class="na">hasText</span><span class="o">(</span><span class="n">queryString4Count</span><span class="o">,</span> <span class="s">&quot;用于计数的hql不能为空!&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">Assert</span><span class="o">.</span><span class="na">hasText</span><span class="o">(</span><span class="n">queryString4Data</span><span class="o">,</span> <span class="s">&quot;用于查询的hql不能为空！&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">Assert</span><span class="o">.</span><span class="na">isTrue</span><span class="o">(</span><span class="n">pageNo</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">,</span> <span class="s">&quot;起始页不能小于0！&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="o">(</span><span class="n">Page</span><span class="o">)</span> <span class="n">getHibernateTemplate</span><span class="o">().</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">HibernateCallback</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="kd">public</span> <span class="n">Object</span> <span class="nf">doInHibernate</span><span class="o">(</span><span class="n">Session</span> <span class="n">session</span><span class="o">)</span>
+</span><span class='line'>                  <span class="kd">throws</span> <span class="n">HibernateException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>              <span class="c1">// 根据指定的参数执行hibernate hql查询</span>
+</span><span class='line'>              <span class="n">List</span> <span class="n">countlist</span> <span class="o">=</span> <span class="n">getHibernateTemplate</span><span class="o">().</span><span class="na">find</span><span class="o">(</span><span class="n">queryString4Count</span><span class="o">,</span>
+</span><span class='line'>                      <span class="n">parameters</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>              <span class="kt">long</span> <span class="n">totalCount</span> <span class="o">=</span> <span class="o">((</span><span class="n">Long</span><span class="o">)</span> <span class="n">countlist</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">)).</span><span class="na">longValue</span><span class="o">();</span>
+</span><span class='line'>              <span class="c1">// 如果记录总数小于1则返回空的Page</span>
+</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">totalCount</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="o">)</span>
+</span><span class='line'>                  <span class="k">return</span> <span class="k">new</span> <span class="nf">Page</span><span class="o">(</span><span class="n">pageNo</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">,</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">(),</span> <span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>              <span class="kt">int</span> <span class="n">startIndex</span> <span class="o">=</span> <span class="n">Page</span><span class="o">.</span><span class="na">getStartOfPage</span><span class="o">(</span><span class="n">pageNo</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>              <span class="n">Query</span> <span class="n">query</span> <span class="o">=</span> <span class="n">getSession</span><span class="o">().</span><span class="na">createQuery</span><span class="o">(</span><span class="n">queryString4Data</span><span class="o">);</span>
+</span><span class='line'>              <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">parameters</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">query</span><span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="n">parameters</span><span class="o">[</span><span class="n">i</span><span class="o">]);</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>              <span class="n">List</span> <span class="n">list</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="na">setFirstResult</span><span class="o">(</span><span class="n">startIndex</span><span class="o">)</span>
+</span><span class='line'>                      <span class="o">.</span><span class="na">setMaxResults</span><span class="o">(</span><span class="n">pageSize</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
+</span><span class='line'>              <span class="k">return</span> <span class="k">new</span> <span class="nf">Page</span><span class="o">(</span><span class="n">pageNo</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">,</span> <span class="n">list</span><span class="o">,</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">totalCount</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="o">});</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>针对ibatis的baseDao封装，主要是添加了一个分页方法，代码如下：</p>
+
+<figure class='code'><figcaption><span>BaseDao.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">ms</span><span class="o">.</span><span class="na">framework</span><span class="o">.</span><span class="na">persistence</span><span class="o">.</span><span class="na">ibatis</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.Map</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.springframework.orm.ibatis.SqlMapClientTemplate</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.ms.framework.persistence.model.Page</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BaseDao</span> <span class="kd">extends</span> <span class="n">SqlMapClientTemplate</span> <span class="o">{</span>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 分页查询(sql语句块中的分页参数，请使用start与end)</span>
+</span><span class='line'><span class="cm">  * @param pageNo</span>
+</span><span class='line'><span class="cm">  * @param pageSize</span>
+</span><span class='line'><span class="cm">  * @param sqlId4Data</span>
+</span><span class='line'><span class="cm">  * @param sqlId4count</span>
+</span><span class='line'><span class="cm">  * @param queryParam</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">Page</span> <span class="nf">queryEntityByPage</span><span class="o">(</span><span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">,</span> <span class="n">String</span> <span class="n">sqlId4Data</span><span class="o">,</span> <span class="n">String</span> <span class="n">sqlId4Count</span><span class="o">,</span> <span class="n">Map</span> <span class="n">queryParam</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">queryParam</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;start&quot;</span><span class="o">,</span> <span class="o">(</span><span class="n">pageNo</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">*</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">queryParam</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;end&quot;</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Page</span> <span class="n">page</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Page</span><span class="o">(</span><span class="n">pageNo</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">page</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">queryForList</span><span class="o">(</span><span class="n">sqlId4Data</span><span class="o">,</span> <span class="n">queryParam</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">page</span><span class="o">.</span><span class="na">setRowcounts</span><span class="o">(((</span><span class="n">Number</span><span class="o">)</span><span class="n">queryForObject</span><span class="o">(</span><span class="n">sqlId4Count</span><span class="o">,</span> <span class="n">queryParam</span><span class="o">)).</span><span class="na">intValue</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="n">page</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面两个实现的分页部分，用到了Page对象，请看分页对象的代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">ms</span><span class="o">.</span><span class="na">framework</span><span class="o">.</span><span class="na">persistence</span><span class="o">.</span><span class="na">model</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 分页对象</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Page</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 数据对象</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">rowcounts</span><span class="o">;</span>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 页码</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">pageNo</span><span class="o">;</span>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 最大显示页数</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">Page</span><span class="o">(){</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">Page</span><span class="o">(</span><span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">pageNo</span> <span class="o">=</span> <span class="n">pageNo</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">pageSize</span> <span class="o">=</span> <span class="n">pageSize</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">Page</span><span class="o">(</span><span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data</span><span class="o">,</span> <span class="kt">int</span> <span class="n">rowcounts</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">pageNo</span> <span class="o">=</span> <span class="n">pageNo</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">pageSize</span> <span class="o">=</span> <span class="n">pageSize</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">;</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">rowcounts</span> <span class="o">=</span> <span class="n">rowcounts</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//计算该页对应的数据库下标</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">int</span> <span class="nf">getStartOfPage</span><span class="o">(</span><span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="mi">0</span> <span class="o">&gt;</span> <span class="n">pageNo</span><span class="o">)</span>
+</span><span class='line'>            <span class="k">throw</span> <span class="k">new</span> <span class="nf">IllegalArgumentException</span><span class="o">(</span><span class="s">&quot;页面索引不能小于0!&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="o">(</span><span class="n">pageNo</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">*</span> <span class="n">pageSize</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//共有多少页</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getPages</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">rowcounts</span> <span class="o">%</span> <span class="n">pageSize</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span>
+</span><span class='line'>      <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="n">rowcounts</span><span class="o">/</span><span class="n">pageSize</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="n">rowcounts</span><span class="o">/</span><span class="n">pageSize</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getFirstNo</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getLastNo</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nf">getPages</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getPreNo</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">pageNo</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="n">pageNo</span> <span class="o">-</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getNextNo</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">pageNo</span> <span class="o">+</span> <span class="mi">1</span>  <span class="o">&lt;=</span> <span class="n">getPages</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="n">pageNo</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">return</span> <span class="nf">getPages</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="nf">getData</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">data</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setData</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">data</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getPageNo</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">pageNo</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setPageNo</span><span class="o">(</span><span class="kt">int</span> <span class="n">pageNo</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">pageNo</span> <span class="o">=</span> <span class="n">pageNo</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getPageSize</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">pageSize</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setPageSize</span><span class="o">(</span><span class="kt">int</span> <span class="n">pageSize</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">pageSize</span> <span class="o">=</span> <span class="n">pageSize</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getRowcounts</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">rowcounts</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setRowcounts</span><span class="o">(</span><span class="kt">int</span> <span class="n">rowcounts</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">rowcounts</span> <span class="o">=</span> <span class="n">rowcounts</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;具体使用时就比较方便了，下面是一个调用示例：</p>
+
+<figure class='code'><figcaption><span>UserServiceImpl.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Service</span>
+</span><span class='line'><span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span><span class="o">=</span><span class="kc">false</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserServiceImpl</span> <span class="kd">implements</span> <span class="n">IUserService</span><span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@Resource</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">IBaseDao</span> <span class="n">hibernateDao</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@Resource</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">BaseDao</span> <span class="n">ibatisDao</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">User</span> <span class="nf">someBizMethod</span><span class="o">(</span><span class="kt">int</span> <span class="n">userId</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="o">......</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">User</span> <span class="n">u1</span> <span class="o">=</span> <span class="o">(</span><span class="n">User</span><span class="o">)</span><span class="n">hibernateDao</span><span class="o">.</span><span class="na">queryEntityById</span><span class="o">(</span><span class="n">User</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">userId</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">u1</span><span class="o">.</span><span class="na">setUserName</span><span class="o">(</span><span class="n">u2</span><span class="o">.</span><span class="na">getUserName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;hibernate&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">hibernateDao</span><span class="o">.</span><span class="na">updateEntity</span><span class="o">(</span><span class="n">u1</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">User</span> <span class="n">u2</span> <span class="o">=</span> <span class="o">(</span><span class="n">User</span><span class="o">)</span><span class="n">ibatisDao</span><span class="o">.</span><span class="na">queryForObject</span><span class="o">(</span><span class="s">&quot;znjk.getUserById&quot;</span><span class="o">,</span> <span class="n">userId</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">u2</span><span class="o">.</span><span class="na">setUserName</span><span class="o">(</span><span class="n">u2</span><span class="o">.</span><span class="na">getUserName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;ibatis&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">ibatisDao</span><span class="o">.</span><span class="na">update</span><span class="o">(</span><span class="s">&quot;znjk.updateUser&quot;</span><span class="o">,</span>  <span class="n">u2</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="o">......</span>
+</span><span class='line'>      
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好了，在上面的示例中还存在一些必须要弄明白的问题。</p>
+
+<p>&emsp;&emsp;一、事务管理问题。大家可以看到，我在spring文件中只配置了一个事务管理器，并且是hibernate的事务管理器，那么，有人就有会疑问：hibernater的事务可以应用在ibatis的dao上么？答案是肯定的。至于原因，你想想spring事务管理是通过AOP来实现的，并且最终映射到底层的话，事务是通过在jdbc的connection上完成的，而在我上面的这个业务方法中，两个dao拿到的是同一个连接，因此，方法中的所有操作都在一个事务环境中了，这个事务是通过hibernate事务管理器启动的。</p>
+
+<p>&emsp;&emsp;二、缓存同步问题。两个框架都有自己不同的缓存配置及实现，而且互不相关。因为这个原因，我上面的代码没法对保证缓存的一致性，所以，我的建议是：ibatis仅仅只做复杂查询，hibernate什么都可以做。此外，还有一个方案是，配置ibatis的数据源事务管理器，在不同的方法中，通过@Transactional注解来指定这个业务方法使用的事务管理器（比如：@Transactional(readOnly=false,value=&ldquo;dataSourceTransactionManager&rdquo;)），也就是说，在每一个方法中不存在两个dao混用的情况，而在不同的方法中，用不同的事务管理器操作事务的提交。</p>
+
+<p>&emsp;&emsp;ibatis的优势在于查询，特别是类似下面的组合查询，十分的方便。复杂查询更是如此。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;sql</span> <span class="na">id=</span><span class="s">&quot;where4pet&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;dynamic</span> <span class="na">prepend=</span><span class="s">&quot;where&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;isNotNull</span> <span class="na">property=</span><span class="s">&quot;nickName&quot;</span> <span class="na">prepend=</span><span class="s">&quot;and&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>              f_nick_name like &#39;%$nickName$%&#39;
+</span><span class='line'>          <span class="nt">&lt;/isNotNull&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;isNotNull</span> <span class="na">property=</span><span class="s">&quot;password&quot;</span> <span class="na">prepend=</span><span class="s">&quot;and&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>              f_password like &#39;%$password$%&#39;
+</span><span class='line'>          <span class="nt">&lt;/isNotNull&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;isNotNull</span> <span class="na">property=</span><span class="s">&quot;birthday&quot;</span> <span class="na">prepend=</span><span class="s">&quot;and&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>              f_birthday = #birthday#
+</span><span class='line'>          <span class="nt">&lt;/isNotNull&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;isNotNull</span> <span class="na">property=</span><span class="s">&quot;gender&quot;</span> <span class="na">prepend=</span><span class="s">&quot;and&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;isEqual</span> <span class="na">compareProperty=</span><span class="s">&quot;gender&quot;</span> <span class="na">compareValue=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                  f_gender = &#39;T&#39;
+</span><span class='line'>              <span class="nt">&lt;/isEqual&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;isEqual</span> <span class="na">compareProperty=</span><span class="s">&quot;gender&quot;</span> <span class="na">compareValue=</span><span class="s">&quot;false&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                  f_gender = &#39;F&#39;
+</span><span class='line'>              <span class="nt">&lt;/isEqual&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;/isNotNull&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;isNotNull</span> <span class="na">property=</span><span class="s">&quot;age&quot;</span> <span class="na">prepend=</span><span class="s">&quot;and&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>              f_age = #age#
+</span><span class='line'>          <span class="nt">&lt;/isNotNull&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/dynamic&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/sql&gt;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;getPetByPage4data&quot;</span> <span class="na">resultMap=</span><span class="s">&quot;resultMapPet&quot;</span> <span class="nt">&gt;</span>
+</span><span class='line'>      select *
+</span><span class='line'>      from t_pet
+</span><span class='line'>      <span class="nt">&lt;include</span> <span class="na">refid=</span><span class="s">&quot;where4pet&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>      order by $field$
+</span><span class='line'>      limit #start#, #end#
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;select</span> <span class="na">id=</span><span class="s">&quot;getPetByPage4count&quot;</span> <span class="na">resultClass=</span><span class="s">&quot;int&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      select count(*)
+</span><span class='line'>      from t_pet
+</span><span class='line'>      <span class="nt">&lt;include</span> <span class="na">refid=</span><span class="s">&quot;where4pet&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/select&gt;</span>
+</span><span class='line'>  
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这样的话，我们就可以充分利用不同框架的优势，达到取长补短的目的。也许你会说，这种方式就是把增、删、改交由hibernate来做，把查询交由ibatis来做。本质上看确实如此，但实际项目中要灵活去做，比如hibernate除了增删改外也可以做查询，特别是简单的查询，这样也可以更好的利用到hibernate的缓存。</p>
+
+<p>&emsp;&emsp;我在<a href="/blog/2010/11/01/p4">四种持久层设计方案比较</a>中，对查询的分离有所介绍，有兴趣的可以去看看其中的一个方案，另外，CQRS架构、mysql读写分离也有这方面的含义。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-06T12:18:00+08:00" pubdate data-updated="true">2014年03月06日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>, <a class='category' href='/blog/categories/jia-gou/'>架构</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/03/04/objectmapper-json/" title="上一篇文章: 再次简单封装的jackson">&laquo;上一篇:&nbsp;&nbsp;再次简单封装的jackson</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/03/objectmapper-json/">Json类库jackson使用之误区</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="60">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2014 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

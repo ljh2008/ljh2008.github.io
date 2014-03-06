@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-03-04T16:57:05+08:00</updated>
+  <updated>2014-03-06T13:31:11+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,470 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[项目中ibatis与hibernate混用示例详解]]></title>
+    <link href="http://yanyaner.com/blog/2014/03/06/ibatis-hibernate-in-query/"/>
+    <updated>2014-03-06T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/03/06/ibatis-hibernate-in-query</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;对于一般的项目hibernate足以胜任，但在选择一个框架时都要考虑适用场景（比如非功能性需求），hibernate也不例外，比如：复杂多条件组合查询对于hibernate来说并不方便（我们需要手工拼接sql）。基于这样的原因，很多项目中会引入ibatis来做复杂查询操作以做为补充，这主要是针对编码复杂度的考虑，性能也是其次的一个因素（其实hibernate也不存在问题的，你还记得到hibernater中有SqlQuery么，呵呵）。</p>
+
+<p>&emsp;&emsp;下面我给出一个简单的ibatis与hibernate混用示例，并在最后说明在实际使用过程中应该注意的问题。先来看spring的核心配置文件：</p>
+
+<p>``` xml spring-core.xml</p>
+
+<pre><code>&lt;!-- 读取配置参数 --&gt;
+&lt;bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"&gt;
+    &lt;property name="location"&gt;
+        &lt;value&gt;classpath:database.properties&lt;/value&gt;
+    &lt;/property&gt;
+&lt;/bean&gt;
+
+&lt;!-- 配置数据源 --&gt;
+&lt;bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+      init-method="init" destroy-method="close"
+&gt;
+    &lt;property name="driverClassName"&gt;
+        &lt;value&gt;${driverClassName}&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property name="url"&gt;
+        &lt;value&gt;${url}&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property name="username"&gt;
+        &lt;value&gt;${username}&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property name="password"&gt;
+        &lt;value&gt;${pwd}&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property name="defaultAutoCommit"&gt;
+        &lt;value&gt;false&lt;/value&gt;
+    &lt;/property&gt;
+    &lt;property name="initialSize" value="1" /&gt;
+    &lt;property name="filters" value="stat,log4j" /&gt;
+    &lt;property name="name" value="myDatasource1"&gt;&lt;/property&gt;
+    &lt;!-- 最大活动连接数，也就是连接池中的最大缓存连接数 --&gt;
+    &lt;property name="maxActive" value="20" /&gt;
+    &lt;!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 --&gt;
+    &lt;property name="timeBetweenEvictionRunsMillis" value="10000" /&gt;
+    &lt;!-- 配置一个连接在池中最小生存的时间，单位是毫秒 --&gt;
+    &lt;property name="minEvictableIdleTimeMillis" value="10000" /&gt;
+    &lt;property name="minIdle" value="1" /&gt; 
+
+
+&lt;/bean&gt;
+
+&lt;!-- hibernate参数配置文件，包括缓存的信息 --&gt;
+&lt;bean id="hibernateProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean"&gt;
+    &lt;property name="location"&gt;
+        &lt;value&gt;classpath:hibernate-config.properties&lt;/value&gt;
+    &lt;/property&gt;
+&lt;/bean&gt;
+
+
+&lt;!--  配置sessionFactory--&gt;
+&lt;bean id="sessionFactory" class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean"&gt;
+    &lt;property name="dataSource"&gt;
+        &lt;ref bean="dataSource" /&gt;
+    &lt;/property&gt;
+    &lt;property name="hibernateProperties" ref="hibernateProperties"&gt;&lt;/property&gt;
+    &lt;property name="packagesToScan"&gt;
+        &lt;list&gt;
+            &lt;value&gt;com.my.monitor.model&lt;/value&gt;
+        &lt;/list&gt;
+    &lt;/property&gt; 
+&lt;/bean&gt;
+
+&lt;!-- 配置事务管理器 --&gt;
+&lt;bean id="transactionManager"
+    class="org.springframework.orm.hibernate3.HibernateTransactionManager"&gt;
+    &lt;property name="sessionFactory" ref="sessionFactory"&gt;&lt;/property&gt;
+&lt;/bean&gt;
+
+&lt;!-- 对注解事务的支持 --&gt;
+&lt;tx:annotation-driven transaction-manager="transactionManager" /&gt;
+
+&lt;!-- 注解驱动 --&gt;
+&lt;context:component-scan base-package="com.my.monitor" &gt;&lt;/context:component-scan&gt; 
+
+&lt;!-- hibernate通用dao --&gt;
+&lt;bean id="hibernateBaseDao"
+    class="com.my.ms.framework.persistence.hibernate.BaseDaoHibernateImpl"&gt;
+    &lt;property name="sessionFactory" ref="sessionFactory"&gt;&lt;/property&gt;
+&lt;/bean&gt;
+
+&lt;!-- ibatis通用dao，一般用于查询 --&gt;
+&lt;bean id="ibatisBaseDao" class="com.my.ms.framework.persistence.ibatis.BaseDao"&gt;
+    &lt;property name="sqlMapClient"&gt;
+        &lt;bean class="org.springframework.orm.ibatis.SqlMapClientFactoryBean"&gt;
+            &lt;property name="dataSource" ref="dataSource"&gt;&lt;/property&gt;
+            &lt;property name="configLocation"&gt;
+                &lt;value&gt;classpath:config/ibatis/sqlMapConfig.xml&lt;/value&gt;
+            &lt;/property&gt;
+        &lt;/bean&gt;
+    &lt;/property&gt;
+&lt;/bean&gt;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;这里封装了两个baseDao，分别针对的是hibernate与ibatis书写，源代码如下：<!-- more --></p>
+
+<p>``` java BaseDaoHibernateImpl.java
+package com.my.ms.framework.persistence.hibernate;</p>
+
+<p>import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;</p>
+
+<p>import org.hibernate.HibernateException;
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.springframework.orm.hibernate3.HibernateCallback;
+import org.springframework.orm.hibernate3.support.HibernateDaoSupport;
+import org.springframework.util.Assert;</p>
+
+<p>import com.my.ms.framework.persistence.model.Page;</p>
+
+<p>public class BaseDaoHibernateImpl extends HibernateDaoSupport implements</p>
+
+<pre><code>    IBaseDao {
+
+@Override
+public void addEntity(Object entity) {
+    getHibernateTemplate().save(entity);
+}
+
+@Override
+public void updateEntity(Object entity) {
+    getHibernateTemplate().update(entity);
+}
+
+@Override
+public void deleteEntity(Object entity) {
+    getHibernateTemplate().delete(entity);
+}
+
+@Override
+public void deleteEntityById(Class clazz, Serializable id) {
+    getHibernateTemplate().delete(this.queryEntityById(clazz, id));
+}
+
+@Override
+public &lt;T&gt; T queryEntityById(Class&lt;T&gt; clazz, Serializable id) {
+    return getHibernateTemplate().get(clazz, id);
+}
+
+@Override
+public List queryEntitys(String queryString, Object[] values) {
+    return getHibernateTemplate().find(queryString, values);
+}
+
+@Override
+public Page queryEntityByPage(int pageNo, int pageSize, String queryString,
+        Object[] parameters) {
+    Assert.isTrue(pageNo &gt; 0, "起始页不能小于0！");
+    // 去除select 子句，未考虑union的情况
+    int beginPos = queryString.toLowerCase().indexOf("from");
+    Assert.isTrue(beginPos != -1, queryString + "无效，必须包含from关键字");
+    String hql4Count = " select count(*)  "
+            + queryString.substring(beginPos);
+    return queryEntityByPage(pageNo, pageSize, queryString, hql4Count,
+            parameters);
+}
+
+@Override
+public Page queryEntityByPage(final int pageNo, final int pageSize,
+        final String queryString4Data, final String queryString4Count,
+        final Object[] parameters) {
+    Assert.hasText(queryString4Count, "用于计数的hql不能为空!");
+    Assert.hasText(queryString4Data, "用于查询的hql不能为空！");
+    Assert.isTrue(pageNo &gt; 0, "起始页不能小于0！");
+    return (Page) getHibernateTemplate().execute(new HibernateCallback() {
+
+        public Object doInHibernate(Session session)
+                throws HibernateException {
+
+            // 根据指定的参数执行hibernate hql查询
+            List countlist = getHibernateTemplate().find(queryString4Count,
+                    parameters);
+
+            long totalCount = ((Long) countlist.get(0)).longValue();
+            // 如果记录总数小于1则返回空的Page
+            if (totalCount &lt; 1)
+                return new Page(pageNo, pageSize, new ArrayList(), 0);
+            int startIndex = Page.getStartOfPage(pageNo, pageSize);
+            Query query = getSession().createQuery(queryString4Data);
+            for (int i = 0; i &lt; parameters.length; i++) {
+                query.setParameter(i, parameters[i]);
+            }
+            List list = query.setFirstResult(startIndex)
+                    .setMaxResults(pageSize).list();
+            return new Page(pageNo, pageSize, list, (int) totalCount);
+        }
+
+    });
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>针对ibatis的baseDao封装，主要是添加了一个分页方法，代码如下：</p>
+
+<p>``` java BaseDao.java</p>
+
+<p>package com.my.ms.framework.persistence.ibatis;</p>
+
+<p>import java.util.Map;</p>
+
+<p>import org.springframework.orm.ibatis.SqlMapClientTemplate;</p>
+
+<p>import com.my.ms.framework.persistence.model.Page;</p>
+
+<p>public class BaseDao extends SqlMapClientTemplate {</p>
+
+<pre><code>/**
+ * 分页查询(sql语句块中的分页参数，请使用start与end)
+ * @param pageNo
+ * @param pageSize
+ * @param sqlId4Data
+ * @param sqlId4count
+ * @param queryParam
+ * @return
+ */
+public Page queryEntityByPage(int pageNo, int pageSize, String sqlId4Data, String sqlId4Count, Map queryParam) {
+
+    queryParam.put("start", (pageNo - 1) * pageSize);
+    queryParam.put("end", pageSize);
+
+    Page page = new Page(pageNo, pageSize);
+
+    page.setData(queryForList(sqlId4Data, queryParam));
+    page.setRowcounts(((Number)queryForObject(sqlId4Count, queryParam)).intValue());
+
+    return page;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;上面两个实现的分页部分，用到了Page对象，请看分页对象的代码：</p>
+
+<p>``` java</p>
+
+<p>package com.my.ms.framework.persistence.model;</p>
+
+<p>import java.util.List;</p>
+
+<p>/<em>*
+ * 分页对象
+ * @author ljh
+ *
+ </em>/
+public class Page<T> {</p>
+
+<pre><code>/**
+ * 数据对象
+ */
+private List&lt;T&gt; data;
+
+private int rowcounts;
+/**
+ * 页码
+ */
+private int pageNo;
+/**
+ * 最大显示页数
+ */
+private int pageSize;
+
+public Page(){
+
+}
+
+public Page(int pageNo, int pageSize) {
+    this.pageNo = pageNo;
+    this.pageSize = pageSize;
+}
+
+public Page(int pageNo, int pageSize, List&lt;T&gt; data, int rowcounts) {
+    this.pageNo = pageNo;
+    this.pageSize = pageSize;
+    this.data = data;
+    this.rowcounts = rowcounts;
+}
+
+//计算该页对应的数据库下标
+public static int getStartOfPage(int pageNo, int pageSize) {
+    if (0 &gt; pageNo)
+        throw new IllegalArgumentException("页面索引不能小于0!");
+    return (pageNo - 1) * pageSize;
+}
+
+
+//共有多少页
+public int getPages() {
+    if (rowcounts % pageSize == 0) 
+    {
+        return rowcounts/pageSize;
+    } else {
+        return rowcounts/pageSize + 1;
+    }
+}
+
+public int getFirstNo() {
+    return 1;
+}
+
+public int getLastNo() {
+    return getPages();
+}
+
+public int getPreNo() {
+    if (pageNo - 1 &gt; 0 ) {
+        return pageNo - 1;
+    } else {
+        return 1;
+    }
+} 
+
+public int getNextNo() {
+    if (pageNo + 1  &lt;= getPages()) {
+        return pageNo + 1;
+    }
+    return getPages();
+}
+
+
+
+public List&lt;T&gt; getData() {
+    return data;
+}
+
+public void setData(List&lt;T&gt; data) {
+    this.data = data;
+}
+
+public int getPageNo() {
+    return pageNo;
+}
+
+public void setPageNo(int pageNo) {
+    this.pageNo = pageNo;
+}
+
+public int getPageSize() {
+    return pageSize;
+}
+
+public void setPageSize(int pageSize) {
+    this.pageSize = pageSize;
+}
+
+public int getRowcounts() {
+    return rowcounts;
+}
+
+public void setRowcounts(int rowcounts) {
+    this.rowcounts = rowcounts;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;具体使用时就比较方便了，下面是一个调用示例：</p>
+
+<p>``` java UserServiceImpl.java</p>
+
+<p>@Service
+@Transactional(readOnly=false)
+public class UserServiceImpl implements IUserService{</p>
+
+<pre><code>@Resource
+private IBaseDao hibernateDao;
+
+@Resource
+private BaseDao ibatisDao;
+
+@Override
+public User someBizMethod(int userId) {
+
+    ......
+
+    User u1 = (User)hibernateDao.queryEntityById(User.class, userId);
+    u1.setUserName(u2.getUserName() + "hibernate");
+    hibernateDao.updateEntity(u1);
+
+    User u2 = (User)ibatisDao.queryForObject("znjk.getUserById", userId);
+    u2.setUserName(u2.getUserName() + "ibatis");
+    ibatisDao.update("znjk.updateUser",  u2);
+
+    ......
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;好了，在上面的示例中还存在一些必须要弄明白的问题。</p>
+
+<p>&emsp;&emsp;一、事务管理问题。大家可以看到，我在spring文件中只配置了一个事务管理器，并且是hibernate的事务管理器，那么，有人就有会疑问：hibernater的事务可以应用在ibatis的dao上么？答案是肯定的。至于原因，你想想spring事务管理是通过AOP来实现的，并且最终映射到底层的话，事务是通过在jdbc的connection上完成的，而在我上面的这个业务方法中，两个dao拿到的是同一个连接，因此，方法中的所有操作都在一个事务环境中了，这个事务是通过hibernate事务管理器启动的。</p>
+
+<p>&emsp;&emsp;二、缓存同步问题。两个框架都有自己不同的缓存配置及实现，而且互不相关。因为这个原因，我上面的代码没法对保证缓存的一致性，所以，我的建议是：ibatis仅仅只做复杂查询，hibernate什么都可以做。此外，还有一个方案是，配置ibatis的数据源事务管理器，在不同的方法中，通过@Transactional注解来指定这个业务方法使用的事务管理器（比如：@Transactional(readOnly=false,value=&ldquo;dataSourceTransactionManager&rdquo;)），也就是说，在每一个方法中不存在两个dao混用的情况，而在不同的方法中，用不同的事务管理器操作事务的提交。</p>
+
+<p>&emsp;&emsp;ibatis的优势在于查询，特别是类似下面的组合查询，十分的方便。复杂查询更是如此。</p>
+
+<p>``` xml
+<sql id="where4pet"></p>
+
+<pre><code>    &lt;dynamic prepend="where"&gt;
+        &lt;isNotNull property="nickName" prepend="and"&gt;
+            f_nick_name like '%$nickName$%'
+        &lt;/isNotNull&gt;
+        &lt;isNotNull property="password" prepend="and"&gt;
+            f_password like '%$password$%'
+        &lt;/isNotNull&gt;
+        &lt;isNotNull property="birthday" prepend="and"&gt;
+            f_birthday = #birthday#
+        &lt;/isNotNull&gt;
+        &lt;isNotNull property="gender" prepend="and"&gt;
+            &lt;isEqual compareProperty="gender" compareValue="true"&gt;
+                f_gender = 'T'
+            &lt;/isEqual&gt;
+            &lt;isEqual compareProperty="gender" compareValue="false"&gt;
+                f_gender = 'F'
+            &lt;/isEqual&gt;
+        &lt;/isNotNull&gt;
+        &lt;isNotNull property="age" prepend="and"&gt;
+            f_age = #age#
+        &lt;/isNotNull&gt;
+    &lt;/dynamic&gt;
+&lt;/sql&gt;
+
+&lt;select id="getPetByPage4data" resultMap="resultMapPet" &gt;
+    select *
+    from t_pet
+    &lt;include refid="where4pet"/&gt;
+    order by $field$
+    limit #start#, #end#
+&lt;/select&gt;
+&lt;select id="getPetByPage4count" resultClass="int"&gt;
+    select count(*)
+    from t_pet
+    &lt;include refid="where4pet"/&gt;
+&lt;/select&gt;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;这样的话，我们就可以充分利用不同框架的优势，达到取长补短的目的。也许你会说，这种方式就是把增、删、改交由hibernate来做，把查询交由ibatis来做。本质上看确实如此，但实际项目中要灵活去做，比如hibernate除了增删改外也可以做查询，特别是简单的查询，这样也可以更好的利用到hibernate的缓存。</p>
+
+<p>&emsp;&emsp;我在<a href="/blog/2010/11/01/p4">四种持久层设计方案比较</a>中，对查询的分离有所介绍，有兴趣的可以去看看其中的一个方案，另外，CQRS架构、mysql读写分离也有这方面的含义。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[再次简单封装的jackson]]></title>
@@ -1443,106 +1907,6 @@ public String getContent() {
 <p>```</p>
 
 <p>&emsp;&emsp;好，此篇文章就到此吧，2014春节马上就到了，假期临近，一切都显示得非常冷清，很多人已经心不在焉。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[为你的项目加入Hudson持续集成]]></title>
-    <link href="http://yanyaner.com/blog/2013/12/26/hudson-ci/"/>
-    <updated>2013-12-26T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/12/26/hudson-ci</id>
-    <content type="html"><![CDATA[<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-logo.jpg' width='' height='' title=''><span class='caption-text'></span></span></p>
-
-<p>&emsp;&emsp;Hudson是一个使用非常广泛的持续集成CI服务器，大家可以到<a href="http://hudson-ci.org/">Hudson官网</a>上了解更多内容。我们把hudson叫做持续集成服务器，就像官方的描述：Hudson is an extensible Continuous Integration Server，在采用敏捷开发流程的项目中CI几乎是一个必备的工具。</p>
-
-<p>&emsp;&emsp;为什么取hudson这个名字，我想这个系统应该和项目管理密切相关，在软件工程的项目启动流程中，有一种叫哈德森式项目启动方式，说的是要尽早启动一个项目，尽早检测项目后期的资源是否齐备，更早发现一些潜在的风险。</p>
-
-<p>&emsp;&emsp;我们可以试想一下这样的场景：开发团队中，每个成员都在努力完成自己的功能模块，在接近某个迭代周期终点时开始整合，然后再交由测试人员，但对于敏捷开发流程的项目，这似乎有点太慢了。测试人员能否尽早地参与测试？开发成员能否每天看到项目的整体效率、成果?管理人员能否了解每天项目的状况（健康情况）?CI工具可以帮助我们做到这一点。</p>
-
-<p>&emsp;&emsp;简单点来说，CI可以自动化地帮助我们从SCM中check out代码，编译、运行测试、打包、部署到服务器一条龙服务，这样一来，我们就可以及时了解项目的整体状态，比如：编译失败，测试失败，部署后测试人员发现bug等等。我们随时都可以得到可以运行的软件，这对团队成员的信心有很大的鼓舞。</p>
-
-<p>&emsp;&emsp;CI的可供选择软件比较多，除了Hudson外，还有apache continuum等，这些CI同样也具备上面的这些能力，相对来说，Hudson配置起来更为简单，也是更为老牌的CI系统。</p>
-
-<p>&emsp;&emsp;啰嗦了这么多，开始正式的内容吧。先从hudson官网上下载程序包hudson.war（一般都是3.0以上的版本哦），把这个war包直接放在tomcat的webapps目录，启动tomcat即可完成安装，足够简单吧。但要提醒各位的是，最好是下载集成版本的Hudson(即3.0.0-bundled)，这个版本集成了常用的插件，就不再需要在线更新安装插件了，另外，这个集成版程序包是经过测试的，不会出现不兼容的情况发生。我当初就是下载的3.1.1，在线安装了maven的插件，但运行时遇到了包不兼容的问题，花费了很多的调试时间，最后下载了这个集成版本，一切正常。</p>
-
-<p>&emsp;&emsp;运行start.bat启动tomcat，打开浏览器，输入地址http : / / localhost:8080/hudson/，就可以看到Hudson首页面，第一次进入有点缓慢，你可以看到有Please wait while Hudson is getting ready to work..Your browser will reload automatically when Hudson is ready.提示信息。等待片刻后后进入主界面，选择新建一个任务，如下图：<!--more--></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-new-job1.jpg' width='' height='' title='新建一个hudson工作任务'><span class='caption-text'>新建一个hudson工作任务</span></span></p>
-
-<p>&emsp;&emsp;我们选择【构建一个自由风格的软件项目】，输入任务名称、描述等信息，有几个重要的配置地方，我要给大家着重讲解。</p>
-
-<ul>
-<li>配置SCM。我选择的是svn，路径对应到项目的trunk主干目录。如果要输入svn的用户名及密码，请点Update credentials，在弹出的新窗口中填入验证信息。
-<span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-new-job2-scm.jpg' width='' height='' title='Hudson的svn配置界面'><span class='caption-text'>Hudson的svn配置界面</span></span></li>
-</ul>
-
-
-<p>&emsp;&emsp;而我们的svn目录是这样的，要注意的是我们的maven总项目位是car_parents：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/svn_struct.jpg' width='' height='' title='svn中的项目目录结构'><span class='caption-text'>svn中的项目目录结构</span></span></p>
-
-<ul>
-<li>配置任务的触发条件。找到build triggers中的Build periodically选项，输入符合contab格式的时间表达式，如下图，我配置每个小时构建发布一次（一般可设置为下班前半个小时开始构建，团队要约定在这个时间点前向SCM提交当天的工作，在构建完成后查看阶段成果，如果没有通过构建，通过分析命令行输出，找到问题所在并进行修正）：</li>
-</ul>
-
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-build-triggers.jpg' width='' height='' title='配置运行时机'><span class='caption-text'>配置运行时机</span></span></p>
-
-<ul>
-<li>配置maven选项，这里请选择Bundled的maven，以免出现运行失败的情况。另请注意，我们的项目中要运行的pom.xml在主项目中，所以大家要点SAdvanced选择，手动设定POM文件所在路径，如下图。</li>
-</ul>
-
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/Hudson-maven-build.jpg' width='' height='' title='配置maven选择'><span class='caption-text'>配置maven选择</span></span></p>
-
-<ul>
-<li>配置自动部署选项。请在Post-build Actions中，找到Deploy war/ear to a container 部分，输入部署到tomcat中的war包所在路径，以及tomcat的管理账号、密码（tomcat管理信息请到tomcat的conf/server.xml中去配置，在此不再复述），如下图所示：</li>
-</ul>
-
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-tomcat.jpg' width='' height='' title='配置自动部署选项'><span class='caption-text'>配置自动部署选项</span></span></p>
-
-<ul>
-<li>最后保存，即完成该任务的建立。如果你想立即执行一次以观察效果，可以点【立即构建】，系统会出现一个构建进度条，在构建完成后，可以通过点击【  Latest Console output】查看到构建日志，比如观察下面的日志就可以发现构建及部署成功。</li>
-</ul>
-
-
-<p><code>
-[INFO] Reactor Summary:
-[INFO]
-[INFO] car-parents ....................................... SUCCESS [0.313s]
-[INFO] framework ......................................... SUCCESS [2.172s]
-[INFO] car-core .......................................... SUCCESS [1.360s]
-[INFO] car-dao ........................................... SUCCESS [3.969s]
-[INFO] car-service ....................................... SUCCESS [4.984s]
-[INFO] car-web Maven Webapp .............................. SUCCESS [4.594s]
-[INFO] ------------------------------------------------------------------------
-[INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time: 17.719s
-[INFO] Finished at: Fri Dec 27 11:03:28 CST 2013
-[INFO] Final Memory: 52M/126M
-[INFO] ------------------------------------------------------------------------
-[DEBUG] Closing connection to remote
-[DEBUG] Waiting for process to finish
-[DEBUG] Result: 0
-Deploying C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war to container Tomcat 6.x Remote
-  Redeploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
-  Undeploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
-  Deploying [C:\Documents and Settings\Administrator\.hudson\jobs\mycar_ms\workspace\trunk\car-web\target\car_ms.war]
-[DEBUG] Skipping watched dependency update; build not configured with trigger: mycar_ms #23
-Finished: SUCCESS
-</code></p>
-
-<p>&emsp;&emsp;经过一段时间的运行后，你可以看到很多的构建历史，如下图所示，我们可以通过图标了解到构建的状态：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/Hudson-build-log.jpg' width='' height='' title='Hudson查看构建历史'><span class='caption-text'>Hudson查看构建历史</span></span></p>
-
-<p>&emsp;&emsp;同时，我们的项目也有了睛雨表，你也可理解为这个项目的健康状态。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-icon.jpg' width='' height='' title='Hudson图标示例'><span class='caption-text'>Hudson图标示例</span></span></p>
-
-<p>&emsp;&emsp;暂时写这些吧，以后继续补充。</p>
 ]]></content>
   </entry>
   

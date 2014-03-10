@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;需求还是基于前面的演示程序，只不过，我们把mysql换成了mongodb，因此，我们把以前的orm2插件更换成mongoose插件。 &emsp;&emsp;首先得下载mongodb文件，并启动服务器，这个过程大家可以参考我前面的spring &hellip;">
+  <meta name="description" content="&emsp;&emsp;angular.js是google的一个开源js模板引擎，通过扩展的html标记实现强大的功能，同时，它本身非常的小巧。具体api大家可以到这里去看：http://docs.angularjs.org/api &emsp;&emsp;我们这个例子， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,61 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/09/28/angular-js1/">一步步教你用angular.js实现一个基本应用&#8212;第一部分</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-09-28T15:18:00+08:00" pubdate data-updated="true">2013年09月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;angular.js是google的一个开源js模板引擎，通过扩展的html标记实现强大的功能，同时，它本身非常的小巧。具体api大家可以到这里去看：<a href="http://docs.angularjs.org/api">http://docs.angularjs.org/api</a></p>
+
+<p>&emsp;&emsp;我们这个例子，服务器后台仍然是前面我使用node.js+express+mongodb，restful风格的供客户调用，后端代码没有做任何改动，这也是restful webservice的优势所在。</p>
+
+<p>&emsp;&emsp;首先，给大家讲讲angular.js做为前端实现的优势，我们通过和jQuery，Extjs来比较。</p>
+
+<p>&emsp;&emsp;一、jQuery应用非常广泛，也十分小巧，但过于轻量级，它的长处在于对dom的处理，而对服务器端返回的数据如何和页面展示相结合，则有些力不从心了。</p>
+
+<p>&emsp;&emsp;二、Extjs固然可以做为前端的实现，界面美观，但这个框架有些过于重量级了，而且对服务器的返回数据格式有所要求，部分界面控件并不能随心所欲地处理任意格式的数据。</p>
+
+<p>&emsp;&emsp;三、angular.js则处于两者之间，可以快速进行数据绑定、验证及模板化展示数据，代码将更加简洁，可维护性非常好，请看下面的一个分页代码，采用jQuery版和angular.js版的实现：</p>
+
+<p>&emsp;&emsp;<strong>jQuery版本：</strong></p>
+
+<p>&emsp;&emsp;js部分：</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/09/28/angular-js1/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -848,300 +903,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/07/01/spring-aop/">Spring Aop实现机制</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-07-01T15:18:00+08:00" pubdate data-updated="true">2013年07月01日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;spring对持久层的事务管理采用的aop实现，在spring底层，aop是使用的代理模式实现的，代理模式在java中一般有jdk 动态代理以及cglib实现的更为高效的代理，jdk动态代理采用的是标准代理模式（大家可以看看标准代理模式的uml图），被代理对象必须要实现接口，而cglib就没有这一强制性要求了。</p>
-
-<p>&emsp;&emsp;下面，我要实现一个环绕通知，分别用jdk动态代理，cglib，以及在spring中的配置实现。</p>
-
-<p>&emsp;&emsp;我有两个接口，IMyService1，IMyService2，实现类MyServiceImpl实现了这两个接口，另外，还写了一个没有实现任何接口的service ,NoInterfaceService。</p>
-
-<p>&emsp;&emsp;<strong>一、jdk动态代理</strong></p>
-
-<figure class='code'><figcaption><span>MyInvocationHandler.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//调用处理程序，相当于aop中的环绕通知</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyInvocationHandler</span> <span class="kd">implements</span> <span class="n">java</span><span class="o">.</span><span class="na">lang</span><span class="o">.</span><span class="na">reflect</span><span class="o">.</span><span class="na">InvocationHandler</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//被代理的对象</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Object</span> <span class="n">target</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//构造方法传入被代理的对象</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="nf">MyInvocationHandler</span><span class="o">(</span><span class="n">Object</span> <span class="n">target</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">Object</span> <span class="n">proxy</span><span class="o">,</span> <span class="n">Method</span> <span class="n">method</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span>
-</span><span class='line'>            <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
-</span><span class='line'>        <span class="c1">//proxy就是$proxy0,里面包含一个target属性，为代理的目标对象</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;方法调用前！&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">target</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;方法调用后！&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;测试代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//目标对象</span>
-</span><span class='line'>        <span class="n">MyServiceImpl</span> <span class="n">ms</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyServiceImpl</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">//创建代理对象，interface是代理要</span>
-</span><span class='line'>        <span class="n">IMyService1</span> <span class="n">ms1</span> <span class="o">=</span>
-</span><span class='line'>                <span class="o">(</span><span class="n">IMyService1</span><span class="o">)</span><span class="n">Proxy</span><span class="o">.</span><span class="na">newProxyInstance</span><span class="o">(</span><span class="n">ms</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getClassLoader</span><span class="o">(),</span>
-</span><span class='line'>                <span class="n">ms</span><span class="o">.</span><span class="na">getClass</span><span class="o">().</span><span class="na">getInterfaces</span><span class="o">(),</span> <span class="k">new</span> <span class="n">MyInvocationHandler</span><span class="o">(</span><span class="n">ms</span><span class="o">));</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">ms1</span><span class="o">.</span><span class="na">biz1</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">IMyService2</span> <span class="n">ms2</span> <span class="o">=</span> <span class="o">(</span><span class="n">IMyService2</span><span class="o">)</span><span class="n">ms1</span><span class="o">;</span>
-</span><span class='line'>        <span class="n">ms2</span><span class="o">.</span><span class="na">biz2</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;请大家注意，需要动态代理的接口，由上面ms.getClass().getInterfaces()的代码传入，并且，我们可以发现，代理产生的对象，可以强转为其中任意一个接口，但如果强转为MyServiceImpl会报错：$proxy0不能转换为MyServiceImpl。</p>
-
-<p>&emsp;&emsp;<strong>二、cglib实现</strong></p>
-
-<figure class='code'><figcaption><span>MyAdvice.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//这个是通知类</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">class</span> <span class="nc">MyAdvice</span> <span class="kd">implements</span> <span class="n">MethodInterceptor</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">intercept</span><span class="o">(</span><span class="n">Object</span> <span class="n">object</span><span class="o">,</span> <span class="n">Method</span> <span class="n">method</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">args</span><span class="o">,</span>
-</span><span class='line'>            <span class="n">MethodProxy</span> <span class="n">methodProxy</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;执行之前..............&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">methodProxy</span><span class="o">.</span><span class="na">invokeSuper</span><span class="o">(</span><span class="n">object</span><span class="o">,</span> <span class="n">args</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;执行之后..............&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;产生代理的测试类：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">Enhancer</span> <span class="n">eh</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Enhancer</span><span class="o">();</span>
-</span><span class='line'>    <span class="n">eh</span><span class="o">.</span><span class="na">setSuperclass</span><span class="o">(</span><span class="n">NoInterfaceService</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'>    <span class="c1">//如果不需要通知代码</span>
-</span><span class='line'>    <span class="c1">//eh.setCallback(NoOp.INSTANCE);</span>
-</span><span class='line'>    <span class="n">eh</span><span class="o">.</span><span class="na">setCallback</span><span class="o">(</span><span class="k">new</span> <span class="n">MyAdvice</span><span class="o">());</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">NoInterfaceService</span> <span class="n">ns</span> <span class="o">=</span> <span class="o">(</span><span class="n">NoInterfaceService</span><span class="o">)</span><span class="n">eh</span><span class="o">.</span><span class="na">create</span><span class="o">();</span>
-</span><span class='line'>    <span class="n">ns</span><span class="o">.</span><span class="na">hello</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的代理，可以对无接口对象实现代理，有接口的当然也是不存在问题的。</p>
-
-<p>&emsp;&emsp;<strong>三、spring代理配置实现</strong></p>
-
-<figure class='code'><figcaption><span>LoggerAdvice.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">LoggerAdvice</span> <span class="kd">implements</span> <span class="n">MethodInterceptor</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Override</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">MethodInvocation</span> <span class="n">mi</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">mi</span><span class="o">.</span><span class="na">getMethod</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;开始执行！！！&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">mi</span><span class="o">.</span><span class="na">proceed</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">mi</span><span class="o">.</span><span class="na">getMethod</span><span class="o">().</span><span class="na">getName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;执行完毕！！！&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
-</span><span class='line'>    <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;配置文件：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'>    <span class="c">&lt;!-- 代理对象 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;myServiceProxy&quot;</span>
-</span><span class='line'>        <span class="na">class=</span><span class="s">&quot;org.springframework.aop.framework.ProxyFactoryBean&quot;</span>
-</span><span class='line'>    <span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;target&quot;</span> <span class="na">ref=</span><span class="s">&quot;myService&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;interceptorNames&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;value&gt;</span>loggerAdvice<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;测试代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">BeanFactory</span> <span class="n">bf</span>
-</span><span class='line'>        <span class="o">=</span> <span class="k">new</span> <span class="n">ClassPathXmlApplicationContext</span><span class="o">(</span><span class="s">&quot;beans.xml&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">IMyService1</span> <span class="n">ms1</span> <span class="o">=</span> <span class="o">(</span><span class="n">IMyService1</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myServiceProxy&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">ms1</span><span class="o">.</span><span class="na">biz1</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">IMyService2</span> <span class="n">ms2</span> <span class="o">=</span> <span class="o">(</span><span class="n">IMyService2</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myServiceProxy&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">ms2</span><span class="o">.</span><span class="na">biz2</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果被代理对象实现了接口，默认情况下spring会使用jdk动态代理，因此，如果代把上面取到的对象强转为MyServiceImpl会报错：$proxy0不能转换为MyServiceImpl，但转换为其它所实现的两个接口，都不会存在问题。</p>
-
-<p>&emsp;&emsp;我们也可以通过proxyInterfaces指定，代理哪个接口（默认情况下，会自动代理该类所实现的所有接口）。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'>    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;proxyInterfaces&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;list&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;value&gt;</span>com.my.service.IMyService1<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/list&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/property&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果被代理的类没有实现接口，spring会自动使用cblib作为底层代理实现，如果你的lib下没有该jar包，系统会报错。</p>
-
-<p>&emsp;&emsp;当然，在被代理的类有接口的情况下，你也可以通过配置，强制使用cglib代理，配置如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;proxyTargetClass&quot;</span> <span class="na">value=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;以下代码中可以看出，代理对象可直接强转为实现类：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">NoInterfaceService</span> <span class="n">is</span> <span class="o">=</span>  <span class="o">(</span><span class="n">NoInterfaceService</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myServiceProxy&quot;</span><span class="o">);</span>
-</span><span class='line'><span class="n">is</span><span class="o">.</span><span class="na">hello</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/4/">&larr; 更多早期老文章</a>
@@ -1159,6 +920,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/03/10/db-read-write-split/">读写分离架构之mysql实例</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a>
       </li>
     
@@ -1172,10 +937,6 @@
     
       <li class="post">
         <a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
       </li>
     
   </ul>

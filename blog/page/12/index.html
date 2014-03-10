@@ -9,8 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;首先说明，不是spring的问题，是程序员编程时要注意的问题，不要被标题误导了哈。
-spring通过aop机制为项目的事务管理带来了极大的方便，有了事务切面，我们的代码中再也看到commit、rollback之类的语句，我们要做的仅仅是在需要事务的地方声明事务的一些属性， &hellip;">
+  <meta name="description" content="&emsp;&emsp;隐喻，百科上的解释是“隐喻是在彼类事物的暗示之下感知、体验、想象、理解、谈论此类事物的心理行为、语言行为和文化行为。”，隐喻一词用在计算机软件领域，意思是：我们想当然或我们认为是这样的，但实际的执行情况却大相径庭，直至错误出现才意识到问题严重性，下面我举两个实例来说明。 & &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -59,6 +58,172 @@ spring通过aop机制为项目的事务管理带来了极大的方便，有了�
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/06/10/hibernate/">Hibernate中的“隐喻”</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-10T15:18:00+08:00" pubdate data-updated="true">2011年06月10日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;隐喻，百科上的解释是“隐喻是在彼类事物的暗示之下感知、体验、想象、理解、谈论此类事物的心理行为、语言行为和文化行为。”，隐喻一词用在计算机软件领域，意思是：我们想当然或我们认为是这样的，但实际的执行情况却大相径庭，直至错误出现才意识到问题严重性，下面我举两个实例来说明。</p>
+
+<p>&emsp;&emsp;第一个例子和<strong>hibernate继承映射（多态）</strong>有关，比如：我们的领域中有员工和客户两个对象，每个员工和客户都有自己的附件资料，是一对多双向关联关系。由于附件的大多数属性都相同，我们使用了泛化关系，即：员工附件、客户附件都是附件类的子类型，这种设计方式在项目中比较常见，领域模型见下图。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/4.jpg' width='' height='' title='hibernate继承映射领域关系实例'><span class='caption-text'>hibernate继承映射领域关系实例</span></span></p>
+
+<p>&emsp;&emsp;数据库物理模型如下图所示。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/5.jpg' width='' height='' title='hibernate继承映射物理模型'><span class='caption-text'>hibernate继承映射物理模型</span></span></p>
+
+<p>&emsp;&emsp;附件被设计成存储在一张表中，用f_accessor_type来标识不同的附件类型，而用fk_owner_id来标识这个附件的属主，可能是员工，也有可能是客户。</p>
+
+<p>&emsp;&emsp;下面来看hibernate的映射文件。</p>
+
+<p>&emsp;&emsp;附件类非常简单，按照多态映射很容易写好，xml文件如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">&quot;com.my.domain.ext.Accessory&quot;</span>
+</span><span class='line'>          <span class="na">table=</span><span class="s">&quot;t_accessory&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">unsaved-value=</span><span class="s">&quot;0&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">&quot;identity&quot;</span><span class="nt">&gt;&lt;/generator&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="nt">&lt;discriminator</span> <span class="na">column=</span><span class="s">&quot;f_accessory_type&quot;</span><span class="nt">&gt;&lt;/discriminator&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span> <span class="na">type=</span><span class="s">&quot;string&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>      <span class="cp">&lt;!- 其它普通属性配置略去---&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;subclass</span>
+</span><span class='line'>      <span class="na">name=</span><span class="s">&quot;com.my.domain.ext. Accessory4Employee&quot;</span>
+</span><span class='line'>      <span class="na">discriminator-value=</span><span class="s">&quot;1&quot;</span>
+</span><span class='line'>      <span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;otherProperty&quot;</span> <span class="na">column=</span><span class="s">&quot;f_otherColumn&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;many-to-one</span> <span class="na">name=</span><span class="s">&quot;Employee&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Employee&quot;</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/many-to-one&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/subclass&gt;</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="nt">&lt;subclass</span>
+</span><span class='line'>      <span class="na">name=</span><span class="s">&quot;com.my.domain.ext. Accessory4Customer&quot;</span>
+</span><span class='line'>      <span class="na">discriminator-value=</span><span class="s">&quot;2&quot;</span>
+</span><span class='line'>      <span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;otherProperty&quot;</span> <span class="na">column=</span><span class="s">&quot;f_otherColumn&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;many-to-one</span> <span class="na">name=</span><span class="s">&quot;customer&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Customer&quot;</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/many-to-one&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/subclass&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;/class&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;员工和客户的映射文件我只贴出一个，因为这两篇文件很相似，不再浪费篇幅。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">&quot;com.my.domain.ext.Employee&quot;</span>
+</span><span class='line'>          <span class="na">table=</span><span class="s">&quot;t_employee&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">unsaved-value=</span><span class="s">&quot;0&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">&quot;identity&quot;</span><span class="nt">&gt;&lt;/generator&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span> <span class="na">type=</span><span class="s">&quot;string&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;set</span> <span class="na">name=</span><span class="s">&quot;accessorys&quot;</span> <span class="na">table=</span><span class="s">&quot;t_accessory&quot;</span> <span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;key</span> <span class="na">column=</span><span class="s">&quot;fk_owner_id&quot;</span><span class="nt">&gt;&lt;/key&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;one-to-many</span> <span class="na">class=</span><span class="s">&quot;com.my.domain.ext.Accessory4Employee&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/set&gt;</span>    
+</span><span class='line'>  <span class="nt">&lt;/class&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;完成配置文件后，手工录入测试数据，添加了一个id为1的员工，又添加了一个id为1的客户，在附件表中分别给员工和客户添加附件，员工添加两条附件记录，客户也添加两条附件记录（你可以想像一下t_accessory中的数据情况，fk_owner_id全部为1，fk_accessory_type两条值为1，另两条值为2）。我们随即写出了下面的一段代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Employee</span> <span class="n">employee</span> <span class="o">=</span> <span class="o">(</span><span class="n">Employee</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">Employee</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="mi">1</span><span class="o">);</span>     
+</span><span class='line'><span class="n">Set</span> <span class="n">accessorys</span> <span class="o">=</span> <span class="n">employee</span><span class="o">.</span><span class="na">getAccessorys</span><span class="o">(</span> <span class="o">);</span>  
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">accessorys</span><span class="o">.</span><span class="na">size</span><span class="o">());</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;没运行之前，我们先猜猜输出的结果是多少？我相信大多数人的回答是：2，因为id号为1的员工只有两个附件。而最终的结果是4，这和我们想的有很大差别，看来，很多事情不能想当然啊。
+查看sql就会发现，在取附件的时候，hibernate没有带上子类类型在表中的标识，即f_accessory_type并没有作为查询条件，导致查出了所有fk_owner_id 为1的附件，这里指定的具体子类类型竟然被hibernate忽略了。</p>
+
+<p>&emsp;&emsp;上面的这个案例发生在一个真实的项目中（不过为了说明问题，代码是我另写的一个演示），程序员一直在给我抱怨查出的数据条数不对，但有时又是正确的，我当时没有在意，让他们检查测试数据是否存在问题。后来项目要上线了，这块代码开始报子类类型转换出错，看来不解决这个问题肯定是不行的了，逐坐下来和其中一个程序员一起找问题原因所在，发现了这个hibernate中存在的“隐喻”。解决办法也很简单：在set集合的配置上加上where属性再次指定子类类型字段标志值，比如在employee映射文件的set上加上 where = “f_accessory_type=1”，问题终于解决了（其实也可以通过更改Customer、Employee的OID生成方式为uuid解决本问题）。</p>
+
+<p>&emsp;&emsp;第二个例子和<strong>hibernate的hql查询</strong>有关。比如Customer和Order是一对多双向关联，关系图如下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/06/6.jpg' width='' height='' title='客户与订单领域关系图'><span class='caption-text'>客户与订单领域关系图</span></span></p>
+
+<p>&emsp;&emsp;客户中包含订单的集合，而该集合默认情况下是lazy的，但有时为了提高性能，我们想用一条sql加载用户及其订单，我们可以写出下面的HQL。</p>
+
+<p>&emsp;&emsp;<em>from Customer c left join fetch c.orders o;</em></p>
+
+<p>&emsp;&emsp;但这条HQL得到了客户List集合中，却有很多重复的用户对象，又和我们的想法不太一样，我们只是想加载客户时初始化客户的订单集合，实际上我们得到了一些重复客户对象集合。</p>
+
+<p>&emsp;&emsp;正确的HQL应该这么写：<em>select distinct( c ) from Customer c left join fetch c.orders o</em>，这条HQL会得到唯一的客户集合（我见有人写过用Set来过滤List集合重复元素的代码，其实没有这个必要）。</p>
+
+<p>&emsp;&emsp;补充一点HQL的东西，很多人是写不出来这条HQL的：查询订了iphone订单的客户集合，HQL可以这么写：<em>select distinct( c ) from Customer c left join fetch c.orders o where o.name = ‘iphone’</em>，你不要老是想着orders是集合而觉不能用o.name这样的条件哦，呵呵。这种查询同样适用于多对多中集合条件的查询。</p>
+
+<p>&emsp;&emsp;记得Ruby on rails中曾经提到一个“惯例重于配置”的原则，也就是说很多规则不用配置，会按我们的惯例进行处理，但很多时候，恰恰是我们认为惯例是这样的，而实际上却是另外的“一番景象”。</p>
+
+<p>&emsp;&emsp;“实践是检验真理的惟一标准”，软件开发人员也应牢记这一点！</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2148,82 +2313,6 @@ spring mvc提供了基本的一些数据类型的自动转换功能，这通常�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/04/15/project-effect/">你一定要知道的几种项目间数据交互方式</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-04-15T15:18:00+08:00" pubdate data-updated="true">2011年04月15日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;不同的系统之间进行数据交互是可避免的，总的说来，可以总结为向第三方系统推送数据或从服务器拉回数据两种，下面我列举几种常见的系统间数据交互方式，并给出架构设计时应考虑的因素。</p>
-
-<h2>一、ftp服务器共享方式</h2>
-
-<p>&emsp;&emsp;即建立一个ftp服务器，为不同的系统分配账号、密码、目录的操作权限等，要交换数据的两个系统要约定好数据格式（比如：xml文件，excel文件，csv文件等）、文件命名方式、存放路径等规则等。交互时，一个系统按约定的时间将数据写入ftp目录中，另一个系统定期取走并进行相应的业务操作。这种方式在电信、移动中项目用得比较多，特别是sp。交互示意图如下：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/04/5.jpg' width='' height='' title='ftp数据交换示意图'><span class='caption-text'>ftp数据交换示意图</span></span></p>
-
-<h2>二、socket通讯服务器方式</h2>
-
-<p>&emsp;&emsp;要传送数据的双方建立socket连接后再传送数据，数据格式自行约定，并对传输的数据进行加密，这种方式在银行系统中用得比较多（c、c++写的核心）。交互示意图如下：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/04/7.jpg' width='' height='' title='socket数据交换示意图'><span class='caption-text'>socket数据交换示意图</span></span></p>
-
-<h2>三、    webservice方式</h2>
-
-<p>&emsp;&emsp;这种方式不再做过多描述，具体请参阅我的《<a href="/blog/2011/04/06/webservice-cxf/">webservice之cxf实现</a>》，《<a href="/blog/2011/04/11/webservice-architect/">webservice架构设计</a>》博文。这种方式在互联网上用得多一些。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/04/8.jpg' width='' height='' title='webservice数据交换示意图'><span class='caption-text'>webservice数据交换示意图</span></span></p>
-
-<h2>四、远程rmi（如OMG CORBA）方式</h2>
-
-<p>以前我在delphi中实现过（怀念李维的时代，呵呵），j2se中也有相应的支持，这种方式相对来说比较复杂。如果同为java系统可用jndi方式，ejb也是一种方式。</p>
-
-<h2>五、远程url地址方式</h2>
-
-<p>这种方式在互联网上用得很多，比如：facebook，豆瓣的api，支付宝在线支持数据交互等等，早期DWR的web远程调用本质上也属于这种。当然，webservice说到底也是这种方式，只不过数据的xml打包和解包过程由程序按照规范自动完成。交互示意图如下：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/04/9.jpg' width='' height='' title='url调用方式数据交换示意图'><span class='caption-text'>url调用方式数据交换示意图</span></span></p>
-
-<p>&emsp;&emsp;这种暴露url地址方式的数据传输格式可以是xml、json或自定义text格式，也可以在请求参数中直接协带一个一个需要的数据。要注意的是，如果在客户浏览器中解析第三方服务器的json数据会有跨域安全访问问题（无论js还是fash、flex都一样），还好，jQuery中有相应的函数封装。</p>
-
-<p>&emsp;&emsp;总之，无论采用哪种方式，你在为实际项目做架构原型的时候，下面几个因素都要考虑周全。</p>
-
-<p>&emsp;&emsp;一、    简单。交互的设计要简单，这对调用双方都有好处。</p>
-
-<p>&emsp;&emsp;二、    安全性。如何保证数据在交互过程中的安全性是一个点。</p>
-
-<p>&emsp;&emsp;三、    性能。在选择的时候，要考虑数据量的大小，以决定一种合适的方式（比如：一次调用请求的数据量，请求调用的频率）。</p>
-
-<p>&emsp;&emsp;四、    最后，要考虑重复数据的处理，特别是在其它系统将数据推入的情况，对于推入的数据，要做好处理日志，以备后查。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/13/">&larr; 更多早期老文章</a>
@@ -2241,6 +2330,10 @@ spring mvc提供了基本的一些数据类型的自动转换功能，这通常�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/03/10/db-read-write-split/">读写分离架构之mysql实例</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a>
       </li>
     
@@ -2254,10 +2347,6 @@ spring mvc提供了基本的一些数据类型的自动转换功能，这通常�
     
       <li class="post">
         <a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
       </li>
     
   </ul>

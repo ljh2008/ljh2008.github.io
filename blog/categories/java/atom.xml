@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：java | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-03-08T15:59:44+08:00</updated>
+  <updated>2014-03-10T17:47:48+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,114 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[读写分离架构之mysql实例]]></title>
+    <link href="http://yanyaner.com/blog/2014/03/10/db-read-write-split/"/>
+    <updated>2014-03-10T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/03/10/db-read-write-split</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;读写分离架构对提升系统性能非常重要，特别是在互联网项目中，查询操作可能达到90%以上，而且有较高的并发性。</p>
+
+<p>&emsp;&emsp;对于数据库的读写分离，即是把所有的增、删、改操作发送到主数据库，所有查询操作发送到从数据库，通过增加从数据库实例个数以提升查询性能。当然也可以使用noSql数据库(如mongodb,hbase等)、搜索引擎（如lucene）等技术来做查询，关系数据库做核心数据保存，这种方式也是基于读写分离架构。</p>
+
+<p>&emsp;&emsp;更多性能优化文章，大家可以参考我的文章：
+<a href="/blog/2010/11/05/prof-web/">系统性能优化总结之表现层</a>，<a href="/blog/2010/11/08/prof-service/">系统性能优化总结之业务层</a>，<a href="/blog/2010/11/09/prof-dao/">系统性能优化总结之持久层篇</a>，技术在不断发展，这三篇文章是几年前写的，目前看来少了很多东西，我后续将把一些近年来新的内容添加上去以符合一些新的场景。</p>
+
+<p>&emsp;&emsp;目前很多数据库都支持主从复制，读写分离，如：Oracle， SqlServer， Mysql等，主数据库在写入数据时同时同步到从数据库。此文以mysql为例给大家加以介绍。网上也有很多这样的文章，大家可以去搜索阅读，但这些文章基本上都是基于*inux平台的，我将以windows平台的配置为例（其实原理都是一样的，只是配置上的一些差异而已）。</p>
+
+<p>&emsp;&emsp;简单起见，机器用我的笔记本。localhost:3307为主服务器master，localhost:3308为从属服务器slave（可以增加多个slave），mysql版本为5.6。先配置主服务器，编辑my.ini，内容如下：<!-- more--></p>
+
+<p>``` ini</p>
+
+<p>[mysqld]
+ basedir =D:/server/db/MySQL Server5.6
+ datadir =D:/server/db/mysql_db1/dbfile
+ port = 3307
+ server_id = 1
+ log-bin=mysql-bin</p>
+
+<p> skip-character-set-client-handshake
+ init-connect = &lsquo;SET NAMES utf8&rsquo;
+ character_set_server=utf8
+ sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;从属数据库配置是(和主服务器的差别在于port、server_id与datadir不同)：</p>
+
+<p><code>ini
+[mysqld]
+ basedir =D:/server/db/MySQL Server5.6
+ datadir =D:/server/db/mysql_db2/dbfile
+ port = 3308
+ server_id = 10
+ log-bin=mysql-bin
+ skip-character-set-client-handshake
+ init-connect = 'SET NAMES utf8'
+ character_set_server=utf8
+ sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
+</code></p>
+
+<p>&emsp;&emsp;为了方便启动，把这两个数据库都注册为win服务，命令如下：</p>
+
+<p>```
+ D:\server\db\MySQL Server5.6\bin>mysqld
+ &mdash;install mysql5.6.master
+ &mdash;defaults-file=D:\server\db\mysql_db1\my.ini</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;从属服务器的注册与之类似不在写出，我们接下来在系统服务中分别启动这两个服务器实例。</p>
+
+<p>&emsp;&emsp;再接下来要做的事情是配置主从复制功能，主服务器的增、删、改数据操作都将同步到多台从属服务器上，先在主服务器上给从属服务器分配登录账号，这个账号将是从属服务器进行数据同步操作的授权，命令如下（账号是backup，密码是123）：</p>
+
+<p>```
+GRANT REPLICATION SLAVE ON
+<em>.</em> to &lsquo;backup&rsquo;@&lsquo;localhost&rsquo;
+identified by &lsquo;123’;</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;继续命令行中运行：show master status; 记录下File及Position两个输出内容，这两个参数在配置slave时需要用到。</p>
+
+<p>&emsp;&emsp;登录从服务器，执行下面的命令：</p>
+
+<p><code>
+change master to
+master_host=’localhost’,
+master_port=3307,
+master_user=’backup’,
+master_password=’123’,
+master_log_file=’mysql-bin.000006’,
+master_log_pos=120;
+</code></p>
+
+<p>&emsp;&emsp;上面命令中的master_host及master_port是主服务器的地址和端口号，master_user及master_password是授权命令输入的账号、密码，master_log_file及master_log_pos是show master status输出的东西。</p>
+
+<p>&emsp;&emsp;接下来，从属服务器上运行start slave就可以启动从属服务，运行show slave status\G查看状态，如果输出的Slave_IO_Running和Slave_SQL_Running都是yes，则表示配置成功（如果配置有误，可stop slave服务，再次运行change master命令）。</p>
+
+<p>&emsp;&emsp;至此，mysql的主从复制功能就配置完成了。也许你会说，我们的所有增、删、改通过对localhost:3307这个数据库操作，查询通过localhost:3308这个数据库操作不就完成了么？确实如你所说，这种方案是可行的，我们可以在spring中配置两个Datasource，并在技术架构上进行处理，把查询接口单独封装出来以使用不同的数据源。大家可以到我的博客文章<a href="/blog/2010/11/01/p4/">四种持久层设计方案比较</a>中，查看其中的方案三设计。</p>
+
+<p>&emsp;&emsp;当然，上面的访问方式也是有缺陷的，主要体现在，读写分离操作对应用程序并不透明，比如有多台读服务器，你的读操作数据源该如何去配置呢？读写分离会影响到应用代码？因此，我们还得寻找另一种对应用透明的访问方式，这就是用代理模式，屏蔽底层访问细节，这个代理类来负责低层的读写分离，缓存连接（相当于连接池），还包括读操作的负载均衡。</p>
+
+<p>&emsp;&emsp;mysql-proxy就是这样一个程序，我下载的是mysql-proxy-0.8.4-win32-x86.zip，解压后运行bin中的mysql-proxy.exe即可。如果mysql-proxy.exe无法运行，可能是缺少vc2008支持包，大家到微软官网下载vcredist_x86.exe并安装。</p>
+
+<p>&emsp;&emsp;为了后期运行方便，可以配置一个bat批处理文件，启动代理程序：</p>
+
+<p><code>
+D:\server\db\mysql-proxy\bin\mysql-proxy.exe
+ --proxy-backend-addresses=localhost:3307
+ --proxy-read-only-backend-addresses=localhost:3308
+ --proxy-lua-script=D:\server\db\mysql-proxy\share\doc\mysql-proxy\rw-splitting.lua
+</code></p>
+
+<p>&emsp;&emsp;上面的配置中大家要注意：proxy-read-only-backend-addresses可以写多台服务器，用逗号分割开；rw-splitting.lua是读写分离lua脚本文件，您可以进行编辑以符合你的要求（比如有人修改min_idle_connections及max_idle_connections来观察到读写分离的效果），但一般情况下并不需要；你可以通过&mdash;proxy-address=host:port指定代理服务器端口号，如果不指定默认为4040(另，管理端口默认是4041，可以看到一些状态参数)。</p>
+
+<p>&emsp;&emsp;应用程序中通过连接localhost:4040即可操作mysql数据库了，后台的一切都是通过mysql-proxy去处理的，数据库连接对应用程序变得透明了，我们的任务也就完成了。</p>
+
+<p>&emsp;&emsp;下篇给出读写分离的性能测试数据。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[项目中ibatis与hibernate混用示例详解]]></title>
@@ -1444,469 +1552,6 @@ public void setClientId(String clientId) {
 <li>comet4j上线、下线等监听器中如果注入了service，在service中查询出的hibernate实体bean,必须要主动加载后面需要用到的lazy对象（原因：和openSessionInView失效有关哦）。</li>
 </ol>
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[关于servlet规范中的几个设计模式解析]]></title>
-    <link href="http://yanyaner.com/blog/2014/01/22/servlet-container-pattern/"/>
-    <updated>2014-01-22T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/01/22/servlet-container-pattern</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;本文属于入门类型文章，给大家简单介绍一下javax.servlet中用到的几个设计模式。</p>
-
-<h3>先看职责链模式</h3>
-
-<p>&emsp;&emsp;这个模式的应用就是大家所熟悉的filter过滤器,演示代码如下：</p>
-
-<p>``` java  Filter.java
-package com.my.filter;</p>
-
-<p>/<em>*
- * 定义每一个处理者的通用行为，即对传入的参数进行处理
- * @author ljh
- *
- </em>/
-public interface Filter {</p>
-
-<pre><code>public void doFilter(String param, FilterChain fc);
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;接下来定义一个职责链接口，以规范形为（当然，这个接口也可以不定义，直接给出实现类即可）。</p>
-
-<p>``` java  FilterChain.java
-package com.my.filter;</p>
-
-<p>/<em>*
- * 过滤器链接口定义
- * @author ljh
- *
- </em>/
-public interface FilterChain {</p>
-
-<pre><code>/**
- * 将请求传给下一个处理者
- * @param param
- */
-public void doFilter(String param);
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;一个具体的责任链实现（注：这个通常是由服务器去实现的，比如tomcat），里面包含了所有的要承担处理责任的处理者（也就是过滤器）。</p>
-
-<p>``` java ConcreteFilterChain.java
-package com.my.server;</p>
-
-<p>import java.util.ArrayList;
-import java.util.List;</p>
-
-<p>import com.my.biz.Processor;
-import com.my.filter.Filter;
-import com.my.filter.FilterChain;
-/<em>*
- * 一个职责链具体实现
- * @author ljh
- *
- </em>/
-public class ConcreteFilterChain implements FilterChain {</p>
-
-<pre><code>//链集合
-private List&lt;Filter&gt; filters = new ArrayList&lt;Filter&gt;();
-//初始已处理过滤器下标
-private int processIndex = -1;
-
-public ConcreteFilterChain(List&lt;Filter&gt; filters) {
-    this.filters = filters;
-}
-
-@Override
-public void doFilter(String param) {
-    //处理的过滤器下标
-    processIndex = processIndex + 1;
-
-    if (processIndex &gt;= filters.size()) {
-        Processor p = new Processor();
-        p.working(param);
-    } else {
-        filters.get(processIndex).doFilter(param, this);
-    }
-
-}
-
-/**
- * 返回一个新的FilterChain（这个方法保留待用）
- * 因为在多线程环境下，每一个请求会有自己的processIndex
- * 这个新建的processIndex将设置为初始值-1，表示还没有进入任何一个过滤器
- * @return
- */
-public FilterChain cloneFilterChain() {
-    return new ConcreteFilterChain(filters);
-}
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;好了，到这里，服务器上该做的事都已经做完，来看看程序员要做的事吧。<!--more-->我们先写一个业务处理类，模拟最终要进行的操作，如下：</p>
-
-<p>``` java Processor.java
-package com.my.biz;</p>
-
-<p>public class Processor {</p>
-
-<pre><code>public void working(String param) {
-
-    System.out.println("最后的业务执行与处理....:" + param);
-}
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;在working处理消息前，我定义了两个过滤器。在第一个过滤器中，进行了参数检测，如果参数是"abc"，将终止后续业务的执行。同时，两个过滤器都对消息进行了处理，在消息中添加了自己的东西。</p>
-
-<p>``` java MyFilter1.java与MyFilter2.java
-package com.my.concretefilter;</p>
-
-<p>import com.my.filter.Filter;
-import com.my.filter.FilterChain;
-/<em>*
- * 第一个过滤器,会对消息进行处理
- * @author ljh
- *
- </em>/
-public class MyFilter1 implements Filter {</p>
-
-<pre><code>@Override
-public void doFilter(String param, FilterChain fc) {
-
-    System.out.println("进入MyFilter1的处理 ....");
-    if ("abc".equals(param)) {
-        System.out.println("发现参数是abc，终止执行!!!!");
-        return;
-    }
-    fc.doFilter(param + "[●modify by MyFilter1●]");
-    System.out.println("离开MyFilter1的处理 ....");
-
-}
-</code></pre>
-
-<p>}</p>
-
-<p>/<em>*
- * 第一个过滤器,会对消息进行处理
- * @author ljh
- *
- </em>/
-public class MyFilter2 implements Filter {</p>
-
-<pre><code>@Override
-public void doFilter(String param, FilterChain fc) {
-
-    System.out.println("进入MyFilter2的处理 ....");
-    fc.doFilter(param + "[★modify by MyFilter2★]");
-    System.out.println("离开MyFilter2的处理 ....");
-
-}
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;接下来又是服务器上的处理代码了，我直接写出简单示例，生产环境中的服务器，肯定是读取web.xml反射创建过滤器对象。</p>
-
-<p>``` java Server.java</p>
-
-<pre><code>    //链集合(读取配置文件，反射创建filter，并加入过滤器链)
-    List&lt;Filter&gt; filters = new ArrayList&lt;Filter&gt;();
-    filters.add(new MyFilter1());
-    filters.add(new MyFilter2());
-    FilterChain fc = new ConcreteFilterChain(filters);
-
-    //派发请求
-    fc.doFilter("abcd");
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;输出的结果是如下，和我们的预期相同。</p>
-
-<p><code>
-进入MyFilter1的处理 ....
-进入MyFilter2的处理 ....
-最后的业务执行与处理....:abcd[●modify by MyFilter1●][★modify by MyFilter2★]
-离开MyFilter2的处理 ....
-离开MyFilter1的处理 ....
-</code></p>
-
-<p>&emsp;&emsp;如果用户的输入参数是abc，即fc.doFilter(&ldquo;abc&rdquo;);，执行输出是：</p>
-
-<p><code>  
-进入MyFilter1的处理 ....
-发现参数是abc，终止执行!!!!
-</code></p>
-
-<p>&emsp;&emsp;这就有点类似于权限检测的filter一样，呵呵。</p>
-
-<h3>另一个是监听器（观察者模式）</h3>
-
-<p>&emsp;&emsp;通过监听器，容器会把我们感兴趣的事告诉我们，当然前提是我们必须先向服务器注册。监听器使用了观察者模式。下面我定义了一个会话监听器。</p>
-
-<p>``` java HttpSessionListener.java</p>
-
-<p>package com.my.listener;
-/<em>*
- * 会话监听器
- * @author Administrator
- *
- </em>/
-public interface HttpSessionListener {</p>
-
-<pre><code>public void sessionCreated(String  event);
-public void sessionDestroyed(String  event);
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;接下来由程序员定义自己的监听器，并在配置文件中进行配置。</p>
-
-<p>``` java MyHttpSessionListener1.java和MyHttpSessionListener2.java
-package com.my.concretelistener;</p>
-
-<p>import com.my.listener.HttpSessionListener;</p>
-
-<p>/<em>*
- * 我的会话监听器1
- * @author Administrator
- *
- </em>/
-public class MyHttpSessionListener1 implements HttpSessionListener {</p>
-
-<pre><code>private String myName = "监听器1";
-
-@Override
-public void sessionCreated(String event) {
-
-    System.out.println(myName + " 监听到创建事件：" + event);
-
-}
-
-@Override
-public void sessionDestroyed(String event) {
-
-    System.out.println(myName + "监听到销毁事件：" + event);
-
-}
-</code></pre>
-
-<p>}</p>
-
-<p>/<em>*
- * 我的会话监听器2
- * @author Administrator
- *
- </em>/
-public class MyHttpSessionListener2 implements HttpSessionListener {</p>
-
-<pre><code>private String myName = "监听器2";
-
-@Override
-public void sessionCreated(String event) {
-
-    System.out.println(myName + " 监听到创建事件：" + event);
-
-}
-
-@Override
-public void sessionDestroyed(String event) {
-
-    System.out.println(myName + "监听到销毁事件：" + event);
-
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;服务器上的处理代码如下：</p>
-
-<p>``` java Server.java</p>
-
-<pre><code>    //监听器对队
-    HttpSessionListener[] listeners = new HttpSessionListener[2];
-    listeners[0] = new MyHttpSessionListener1();
-    listeners[1] = new MyHttpSessionListener2();
-
-    //当容器中发生事件的时候，进行通知
-    //比如：创建事件
-    System.out.println("服务器发生创建事件！");
-    for (HttpSessionListener listener : listeners) {
-        listener.sessionCreated(new Date() + "创建事件发生了！" );
-    }
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;下面就是运行的结果，我们可以发现，这就是一个观察者模式的标准应用。</p>
-
-<p>```</p>
-
-<p>服务器发生创建事件！
-监听器1 监听到创建事件：Thu Jan 23 15:34:14 CST 2014创建事件发生了！
-监听器2 监听到创建事件：Thu Jan 23 15:34:14 CST 2014创建事件发生了！</p>
-
-<p>```</p>
-
-<h3>最后，给大家说一下包装器</h3>
-
-<p>&emsp;&emsp;包装器，也叫装饰器，这个模式的本意是在不改变原有类的情况下，增强类的功能（包括添加行为或添加状态）。</p>
-
-<p>``` java  Request.java</p>
-
-<p>package com.my.wrapper;
-/<em>*
- * 抽象请求对象
- * @author ljh
- *
- </em>/
-public interface Request {</p>
-
-<pre><code>//得到内容
-public String getContent();
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>``` java OriginalRequest.java</p>
-
-<p>package com.my.wrapper;</p>
-
-<p>/<em>*
- * 原始请求
- * @author ljh
- *
- </em>/
-public class OriginalRequest implements Request {</p>
-
-<pre><code>private String content;
-
-public OriginalRequest(String content) {
-    this.content = content;
-}
-
-@Override
-public String getContent() {
-    // TODO Auto-generated method stub
-    return content;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>``` java RequestWrapper.java</p>
-
-<p>package com.my.wrapper;</p>
-
-<p>/<em>*
- * 包装对象，其它的包装类，都从这个类继承
- * @author ljh
- *
- </em>/
-public class RequestWrapper implements Request {</p>
-
-<pre><code>private Request request;
-
-
-
-public RequestWrapper(Request request) {
-    super();
-    this.request = request;
-}
-
-
-
-@Override
-public String getContent() {
-    //此处暂时不做任何处理，直接返回
-    String content = request.getContent();
-    return content;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;上面三个类，都是由服务器端已经定义好的（也就是先把基本的架子搭起来）。下面这个方法才是我最终要执行的一个目标业务方法。</p>
-
-<p>``` java</p>
-
-<pre><code>/**
- * 此访求接收request接口类型，并感知不到对象已被包装
- * @param req
- */
-public static void display(Request req) {
-    System.out.println(req.getContent());
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;接下来，大家看看我实现了一个对敏感关键词进行处理的包装器：</p>
-
-<p>``` java MyRequestWrapper.java</p>
-
-<p>package com.my.concretewrapper;</p>
-
-<p>import com.my.wrapper.Request;
-import com.my.wrapper.RequestWrapper;</p>
-
-<p>public class MyRequestWrapper extends RequestWrapper {</p>
-
-<pre><code>public MyRequestWrapper(Request request) {
-    super(request);
-}
-
-//添加行为或改变现在行为，或新的属性
-
-//比如：我下面进行敏感字符过滤
-@Override
-public String getContent() {
-    String content = super.getContent();
-    content = content.replaceAll("江泽民", "***");
-    return content;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;最后是对目标方法的调用了，输入结果是：我是国家主席***。</p>
-
-<p>```</p>
-
-<pre><code>    Request req = new MyRequestWrapper(new OriginalRequest("我是国家主席江泽民"));
-    //目标方法的调用
-    display(req);
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;好，此篇文章就到此吧，2014春节马上就到了，假期临近，一切都显示得非常冷清，很多人已经心不在焉。</p>
 ]]></content>
   </entry>
   

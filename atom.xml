@@ -4,7 +4,7 @@
   <title><![CDATA[刘江华的博客]]></title>
   <link href="http://yanyaner.com/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-03-08T15:59:44+08:00</updated>
+  <updated>2014-03-10T17:47:48+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,152 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[读写分离架构之mysql实例]]></title>
+    <link href="http://yanyaner.com/blog/2014/03/10/db-read-write-split/"/>
+    <updated>2014-03-10T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/03/10/db-read-write-split</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;读写分离架构对提升系统性能非常重要，特别是在互联网项目中，查询操作可能达到90%以上，而且有较高的并发性。</p>
+
+<p>&emsp;&emsp;对于数据库的读写分离，即是把所有的增、删、改操作发送到主数据库，所有查询操作发送到从数据库，通过增加从数据库实例个数以提升查询性能。当然也可以使用noSql数据库(如mongodb,hbase等)、搜索引擎（如lucene）等技术来做查询，关系数据库做核心数据保存，这种方式也是基于读写分离架构。</p>
+
+<p>&emsp;&emsp;更多性能优化文章，大家可以参考我的文章：
+<a href="http://yanyaner.com/blog/2010/11/05/prof-web/">系统性能优化总结之表现层</a>，<a href="http://yanyaner.com/blog/2010/11/08/prof-service/">系统性能优化总结之业务层</a>，<a href="http://yanyaner.com/blog/2010/11/09/prof-dao/">系统性能优化总结之持久层篇</a>，技术在不断发展，这三篇文章是几年前写的，目前看来少了很多东西，我后续将把一些近年来新的内容添加上去以符合一些新的场景。</p>
+
+<p>&emsp;&emsp;目前很多数据库都支持主从复制，读写分离，如：Oracle， SqlServer， Mysql等，主数据库在写入数据时同时同步到从数据库。此文以mysql为例给大家加以介绍。网上也有很多这样的文章，大家可以去搜索阅读，但这些文章基本上都是基于*inux平台的，我将以windows平台的配置为例（其实原理都是一样的，只是配置上的一些差异而已）。</p>
+
+<p>&emsp;&emsp;简单起见，机器用我的笔记本。localhost:3307为主服务器master，localhost:3308为从属服务器slave（可以增加多个slave），mysql版本为5.6。先配置主服务器，编辑my.ini，内容如下：<!-- more--></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="k">[mysqld]</span>
+</span><span class='line'> <span class="na">basedir</span> <span class="o">=</span><span class="s">D:/server/db/MySQL Server5.6</span>
+</span><span class='line'><span class="s"> datadir =D:/server/db/mysql_db1/dbfile</span>
+</span><span class='line'><span class="s"> port = 3307</span>
+</span><span class='line'><span class="s"> server_id = 1</span>
+</span><span class='line'><span class="s"> log-bin=mysql-bin</span>
+</span><span class='line'>
+</span><span class='line'> <span class="err">skip-character-set-client-handshake</span>
+</span><span class='line'> <span class="na">init-connect</span> <span class="o">=</span> <span class="s">&#39;SET NAMES utf8&#39;</span>
+</span><span class='line'><span class="s"> character_set_server=utf8</span>
+</span><span class='line'><span class="s"> sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES </span>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;从属数据库配置是(和主服务器的差别在于port、server_id与datadir不同)：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="k">[mysqld]</span>
+</span><span class='line'> <span class="na">basedir</span> <span class="o">=</span><span class="s">D:/server/db/MySQL Server5.6</span>
+</span><span class='line'><span class="s"> datadir =D:/server/db/mysql_db2/dbfile</span>
+</span><span class='line'><span class="s"> port = 3308</span>
+</span><span class='line'><span class="s"> server_id = 10</span>
+</span><span class='line'><span class="s"> log-bin=mysql-bin</span>
+</span><span class='line'><span class="s"> skip-character-set-client-handshake</span>
+</span><span class='line'><span class="s"> init-connect = &#39;SET NAMES utf8&#39;</span>
+</span><span class='line'><span class="s"> character_set_server=utf8</span>
+</span><span class='line'><span class="s"> sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES </span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;为了方便启动，把这两个数据库都注册为win服务，命令如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ini'><span class='line'> <span class="err">D:\server\db\MySQL</span> <span class="err">Server5.6\bin&gt;mysqld</span>
+</span><span class='line'> <span class="err">--install</span> <span class="err">mysql5.6.master</span>
+</span><span class='line'> <span class="na">--defaults-file</span><span class="o">=</span><span class="s">D:\server\db\mysql_db1\my.ini</span>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;从属服务器的注册与之类似不在写出，我们接下来在系统服务中分别启动这两个服务器实例。</p>
+
+<p>&emsp;&emsp;再接下来要做的事情是配置主从复制功能，主服务器的增、删、改数据操作都将同步到多台从属服务器上，先在主服务器上给从属服务器分配登录账号，这个账号将是从属服务器进行数据同步操作的授权，命令如下（账号是backup，密码是123）：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">GRANT</span> <span class="err">REPLICATION</span> <span class="err">SLAVE</span> <span class="err">ON</span>
+</span><span class='line'><span class="err">*.*</span> <span class="err">to</span> <span class="err">&#39;backup&#39;@&#39;localhost&#39;</span>
+</span><span class='line'><span class="err">identified</span> <span class="err">by</span> <span class="err">&#39;123’</span><span class="c1">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;继续命令行中运行：show master status; 记录下File及Position两个输出内容，这两个参数在配置slave时需要用到。</p>
+
+<p>&emsp;&emsp;登录从服务器，执行下面的命令：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">change</span> <span class="err">master</span> <span class="err">to</span>
+</span><span class='line'><span class="na">master_host</span><span class="o">=</span><span class="s">’localhost’,</span>
+</span><span class='line'><span class="na">master_port</span><span class="o">=</span><span class="s">3307,</span>
+</span><span class='line'><span class="na">master_user</span><span class="o">=</span><span class="s">’backup’,</span>
+</span><span class='line'><span class="na">master_password</span><span class="o">=</span><span class="s">’123’,</span>
+</span><span class='line'><span class="na">master_log_file</span><span class="o">=</span><span class="s">’mysql-bin.000006’,</span>
+</span><span class='line'><span class="na">master_log_pos</span><span class="o">=</span><span class="s">120;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面命令中的master_host及master_port是主服务器的地址和端口号，master_user及master_password是授权命令输入的账号、密码，master_log_file及master_log_pos是show master status输出的东西。</p>
+
+<p>&emsp;&emsp;接下来，从属服务器上运行start slave就可以启动从属服务，运行show slave status\G查看状态，如果输出的Slave_IO_Running和Slave_SQL_Running都是yes，则表示配置成功（如果配置有误，可stop slave服务，再次运行change master命令）。</p>
+
+<p>&emsp;&emsp;至此，mysql的主从复制功能就配置完成了。也许你会说，我们的所有增、删、改通过对localhost:3307这个数据库操作，查询通过localhost:3308这个数据库操作不就完成了么？确实如你所说，这种方案是可行的，我们可以在spring中配置两个Datasource，并在技术架构上进行处理，把查询接口单独封装出来以使用不同的数据源。大家可以到我的博客文章<a href="http://yanyaner.com/blog/2010/11/01/p4/">四种持久层设计方案比较</a>中，查看其中的方案三设计。</p>
+
+<p>&emsp;&emsp;当然，上面的访问方式也是有缺陷的，主要体现在，读写分离操作对应用程序并不透明，比如有多台读服务器，你的读操作数据源该如何去配置呢？读写分离会影响到应用代码？因此，我们还得寻找另一种对应用透明的访问方式，这就是用代理模式，屏蔽底层访问细节，这个代理类来负责低层的读写分离，缓存连接（相当于连接池），还包括读操作的负载均衡。</p>
+
+<p>&emsp;&emsp;mysql-proxy就是这样一个程序，我下载的是mysql-proxy-0.8.4-win32-x86.zip，解压后运行bin中的mysql-proxy.exe即可。如果mysql-proxy.exe无法运行，可能是缺少vc2008支持包，大家到微软官网下载vcredist_x86.exe并安装。</p>
+
+<p>&emsp;&emsp;为了后期运行方便，可以配置一个bat批处理文件，启动代理程序：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='ini'><span class='line'><span class="err">D:\server\db\mysql-proxy\bin\mysql-proxy.exe</span>
+</span><span class='line'> <span class="na">--proxy-backend-addresses</span><span class="o">=</span><span class="s">localhost:3307 </span>
+</span><span class='line'><span class="s"> --proxy-read-only-backend-addresses=localhost:3308 </span>
+</span><span class='line'><span class="s"> --proxy-lua-script=D:\server\db\mysql-proxy\share\doc\mysql-proxy\rw-splitting.lua</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的配置中大家要注意：proxy-read-only-backend-addresses可以写多台服务器，用逗号分割开；rw-splitting.lua是读写分离lua脚本文件，您可以进行编辑以符合你的要求（比如有人修改min_idle_connections及max_idle_connections来观察到读写分离的效果），但一般情况下并不需要；你可以通过&mdash;proxy-address=host:port指定代理服务器端口号，如果不指定默认为4040(另，管理端口默认是4041，可以看到一些状态参数)。</p>
+
+<p>&emsp;&emsp;应用程序中通过连接localhost:4040即可操作mysql数据库了，后台的一切都是通过mysql-proxy去处理的，数据库连接对应用程序变得透明了，我们的任务也就完成了。</p>
+
+<p>&emsp;&emsp;下篇给出读写分离的性能测试数据。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[项目中ibatis与hibernate混用示例详解]]></title>
@@ -5931,270 +6077,6 @@
 <p>&emsp;&emsp;Provider，有时间再深入研究，目前没有用到。</p>
 
 <p>&emsp;&emsp;好了，下一篇，给大家讲具体的使用。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[一步步教你用angular.js实现一个基本应用---第一部分]]></title>
-    <link href="http://yanyaner.com/blog/2013/09/28/angular-js1/"/>
-    <updated>2013-09-28T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/09/28/angular-js1</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;angular.js是google的一个开源js模板引擎，通过扩展的html标记实现强大的功能，同时，它本身非常的小巧。具体api大家可以到这里去看：<a href="http://docs.angularjs.org/api">http://docs.angularjs.org/api</a></p>
-
-<p>&emsp;&emsp;我们这个例子，服务器后台仍然是前面我使用node.js+express+mongodb，restful风格的供客户调用，后端代码没有做任何改动，这也是restful webservice的优势所在。</p>
-
-<p>&emsp;&emsp;首先，给大家讲讲angular.js做为前端实现的优势，我们通过和jQuery，Extjs来比较。</p>
-
-<p>&emsp;&emsp;一、jQuery应用非常广泛，也十分小巧，但过于轻量级，它的长处在于对dom的处理，而对服务器端返回的数据如何和页面展示相结合，则有些力不从心了。</p>
-
-<p>&emsp;&emsp;二、Extjs固然可以做为前端的实现，界面美观，但这个框架有些过于重量级了，而且对服务器的返回数据格式有所要求，部分界面控件并不能随心所欲地处理任意格式的数据。</p>
-
-<p>&emsp;&emsp;三、angular.js则处于两者之间，可以快速进行数据绑定、验证及模板化展示数据，代码将更加简洁，可维护性非常好，请看下面的一个分页代码，采用jQuery版和angular.js版的实现：</p>
-
-<p>&emsp;&emsp;<strong>jQuery版本：</strong></p>
-
-<p>&emsp;&emsp;js部分：</p>
-
-<!--more-->
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">function</span> <span class="nx">getUserByPage</span><span class="p">(</span><span class="nx">pno</span><span class="p">){</span>
-</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
-</span><span class='line'>        <span class="nx">url</span><span class="o">:</span><span class="s1">&#39;users/&#39;</span><span class="o">+</span> <span class="nx">pno</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">type</span><span class="o">:</span><span class="s1">&#39;get&#39;</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">data</span><span class="o">:</span><span class="p">{</span><span class="nx">q_name</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#queryWhat&#39;</span><span class="p">).</span><span class="nx">val</span><span class="p">()},</span>
-</span><span class='line'>        <span class="nx">dataType</span><span class="o">:</span><span class="s1">&#39;json&#39;</span><span class="p">,</span>
-</span><span class='line'>        <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">){</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="kd">var</span> <span class="nx">html</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">data</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>                    <span class="nx">html</span> <span class="o">=</span> <span class="nx">html</span> <span class="o">+</span> <span class="s2">&quot;&lt;tr&gt;&lt;td&gt;&lt;input type=&#39;checkbox&#39; value=&#39;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">_id</span><span class="o">+</span><span class="s2">&quot;&#39; class=&#39;uid_c&#39; /&gt;&lt;/td&gt;&lt;td&gt;&quot;</span>
-</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">_id</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">loginCode</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">userName</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span>
-</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">birthDay</span><span class="p">.</span><span class="nx">substring</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">10</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td class=&#39;row_op&#39;&gt;&lt;a href=&#39;view_user.html?uid=&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">_id</span>
-</span><span class='line'>                        <span class="o">+</span><span class="s2">&quot;&#39; &gt;查看&lt;/a&gt;&lt;a href=&#39;modify_user.html?uid=&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">_id</span><span class="o">+</span><span class="s2">&quot;&#39; &gt;修改&lt;/a&gt;&lt;a href=&#39;&#39; uid=&#39;&quot;</span>
-</span><span class='line'>                        <span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">_id</span><span class="o">+</span><span class="s2">&quot;&#39; class=&#39;del_user&#39;&gt;删除&lt;/a&gt;&lt;/tr&gt;&quot;</span>
-</span><span class='line'>                <span class="p">});</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#users&quot;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="nx">html</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#page_info&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">pno</span><span class="o">+</span><span class="s2">&quot;/&quot;</span><span class="o">+</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">pages</span><span class="o">+</span><span class="s2">&quot;,共&quot;</span><span class="o">+</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">rows</span><span class="o">+</span><span class="s2">&quot;条记录&quot;</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.fp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">f_no</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.pp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">p_no</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.np&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">n_no</span><span class="p">);</span>
-</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.lp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">l_no</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'> <span class="nx">getUserByPage</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.page a&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nx">getUserByPage</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;pno&#39;</span><span class="p">));</span>
-</span><span class='line'><span class="p">});</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;页面部分：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;span9&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;table</span> <span class="na">class=</span><span class="s">&quot;table&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;tr&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>选择<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>用户id<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>登录名<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>姓名<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>出生日期<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>操作<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;/tr&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;tbody</span> <span class="na">id=</span><span class="s">&quot;users&quot;</span><span class="nt">&gt;&lt;/tbody&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;/table&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">style=</span><span class="s">&quot;margin-top: 15px;&quot;</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;page_info&quot;</span> <span class="na">class=</span><span class="s">&quot;span4&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;span8 page&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;fp&quot;</span><span class="nt">&gt;</span>首页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;pp&quot;</span><span class="nt">&gt;</span>上一页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;np&quot;</span><span class="nt">&gt;</span>下一页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;lp&quot;</span><span class="nt">&gt;</span>末页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;请大家注意，js中13-15行部分的代码，就是在jQuery中进行的页面元素拼接，这种方式非常的不直观，也不好维护。anjular版本，又是怎样的呢？</p>
-
-<p>&emsp;&emsp;<strong>angular.js版本：</strong></p>
-
-<p>&emsp;&emsp;js部分：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$scope</span><span class="p">.</span><span class="nx">pageFun</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">pno</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nx">$http</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;main/users/&#39;</span> <span class="o">+</span>  <span class="nx">pno</span> <span class="p">,{</span><span class="nx">params</span><span class="o">:</span><span class="p">{</span><span class="nx">q_name</span><span class="o">:</span><span class="nx">userService</span><span class="p">.</span><span class="nx">q_name</span><span class="p">}})</span>
-</span><span class='line'>            <span class="p">.</span><span class="nx">success</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
-</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;取用户分页数据失败，原因：&#39;</span> <span class="o">+</span> <span class="nx">data</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
-</span><span class='line'>                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nx">userService</span><span class="p">.</span><span class="nx">pno</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">pno</span><span class="p">;</span>
-</span><span class='line'>                    <span class="nx">$scope</span><span class="p">.</span><span class="nx">page</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">page</span><span class="p">;</span>
-</span><span class='line'>                    <span class="nx">$scope</span><span class="p">.</span><span class="nx">users</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">page</span><span class="p">.</span><span class="nx">data</span><span class="p">;</span>
-</span><span class='line'>                <span class="p">}</span>
-</span><span class='line'>            <span class="p">})</span> <span class="p">;</span>
-</span><span class='line'>    <span class="p">};</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;页面部分代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;span12&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;table</span> <span class="na">class=</span><span class="s">&quot;table&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;tr&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>选择<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>用户id<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>登录名<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>姓名<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>出生日期<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>操作<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;/tr&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;tbody</span> <span class="na">id=</span><span class="s">&quot;users&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;tr</span> <span class="na">ng-repeat=</span><span class="s">&quot;user in users&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td&gt;&lt;input</span> <span class="na">value=</span><span class="s">&quot;&quot;</span> <span class="na">class=</span><span class="s">&quot;uid_c&quot;</span> <span class="na">type=</span><span class="s">&quot;checkbox&quot;</span><span class="nt">&gt;&lt;/td&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td</span> <span class="na">class=</span><span class="s">&quot;row_op&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>                        <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;user/&quot;</span><span class="nt">&gt;</span>查看<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>                        <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;to_modifyuser/&quot;</span><span class="nt">&gt;</span>修改<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>                        <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;deleteUser(user._id)&quot;</span><span class="nt">&gt;</span>删除<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;/td&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;/tr&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;/tbody&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;/table&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">style=</span><span class="s">&quot;margin-top: 15px;&quot;</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;page_info&quot;</span> <span class="na">class=</span><span class="s">&quot;span4&quot;</span><span class="nt">&gt;</span>/  共条记录<span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;span5 page offset3&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.f_no)&quot;</span> <span class="nt">&gt;</span>首 页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.p_no)&quot;</span><span class="nt">&gt;</span>上一页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.n_no)&quot;</span><span class="nt">&gt;</span>下一页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.l_no)&quot;</span><span class="nt">&gt;</span>末 页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;也请大家注意上面的13-24行代码，数据的填充是在页面中通过ng-repeat完成的，这样就达到了页面本身更好理解、维护的作用。</p>
-
-<p>&emsp;&emsp;当然，angular.js的强大功能远远不止这些，我在下篇博客中，会详细给大家介绍。</p>
 ]]></content>
   </entry>
   

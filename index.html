@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;对于一般的项目hibernate足以胜任，但在选择一个框架时都要考虑适用场景（比如非功能性需求），hibernate也不例外，比如：复杂多条件组合查询对于hibernate来说并不方便（我们需要手工拼接sql）。基于这样的原因， &hellip;">
+  <meta name="description" content="&emsp;&emsp;读写分离架构对提升系统性能非常重要，特别是在互联网项目中，查询操作可能达到90%以上，而且有较高的并发性。 &emsp;&emsp;对于数据库的读写分离，即是把所有的增、删、改操作发送到主数据库，所有查询操作发送到从数据库，通过增加从数据库实例个数以提升查询性能。 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,54 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/03/10/db-read-write-split/">读写分离架构之mysql实例</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-10T12:18:00+08:00" pubdate data-updated="true">2014年03月10日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;读写分离架构对提升系统性能非常重要，特别是在互联网项目中，查询操作可能达到90%以上，而且有较高的并发性。</p>
+
+<p>&emsp;&emsp;对于数据库的读写分离，即是把所有的增、删、改操作发送到主数据库，所有查询操作发送到从数据库，通过增加从数据库实例个数以提升查询性能。当然也可以使用noSql数据库(如mongodb,hbase等)、搜索引擎（如lucene）等技术来做查询，关系数据库做核心数据保存，这种方式也是基于读写分离架构。</p>
+
+<p>&emsp;&emsp;更多性能优化文章，大家可以参考我的文章：
+<a href="/blog/2010/11/05/prof-web/">系统性能优化总结之表现层</a>，<a href="/blog/2010/11/08/prof-service/">系统性能优化总结之业务层</a>，<a href="/blog/2010/11/09/prof-dao/">系统性能优化总结之持久层篇</a>，技术在不断发展，这三篇文章是几年前写的，目前看来少了很多东西，我后续将把一些近年来新的内容添加上去以符合一些新的场景。</p>
+
+<p>&emsp;&emsp;目前很多数据库都支持主从复制，读写分离，如：Oracle， SqlServer， Mysql等，主数据库在写入数据时同时同步到从数据库。此文以mysql为例给大家加以介绍。网上也有很多这样的文章，大家可以去搜索阅读，但这些文章基本上都是基于*inux平台的，我将以windows平台的配置为例（其实原理都是一样的，只是配置上的一些差异而已）。</p>
+
+<p>&emsp;&emsp;简单起见，机器用我的笔记本。localhost:3307为主服务器master，localhost:3308为从属服务器slave（可以增加多个slave），mysql版本为5.6。先配置主服务器，编辑my.ini，内容如下：</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/03/10/db-read-write-split/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -979,57 +1027,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/12/24/maven-project/">在项目中使用maven之二&#8211;项目实例</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-12-24T15:18:00+08:00" pubdate data-updated="true">2013年12月24日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;本篇文章介绍如何搭建一个maven工程。</p>
-
-<p>&emsp;&emsp;我们以eclipse kepler为例，kepler版本的eclipse自带有maven插件，可以省去我们自己安装的过程，着实比较方便。</p>
-
-<p>&emsp;&emsp;在新建项目向导中，我们选择maven工程，在Archetype中选择项目类型，要注意的是，一般的项目模块，选择maven-archetype-quickstart类型即可，如果是web项目请选择maven-archetype-webapp，当然你也可以根据个人喜好选择其它的项目模板类型。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_waizd1.jpg' width='' height='' title='选择maven工程类型'><span class='caption-text'>选择maven工程类型</span></span></p>
-
-<p>&emsp;&emsp;接下来输入项目坐标信息，如下图。groupId为组织标识，一般填写公司域名+项目名（请倒过来写，呵呵)，artifactId为产品标识或模块名、子系统名，多字母间请用-连接，version是这个产品的版本号，一般有SNAPSHOT快照版与RELEASE稳定版（关于maven版本的更多信息请参阅<a href="http://www.blogjava.net/hjh/archive/2009/05/14/270545.html">maven version usage</a>,<a href="http://juvenshun.iteye.com/blog/376422">Maven最佳实践：版本管理</a>）。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/project_waizd2.jpg' width='' height='' title='输入maven项目的组织、公司、版本信息'><span class='caption-text'>输入maven项目的组织、公司、版本信息</span></span></p>
-
-<p>&emsp;&emsp;接下来，我们来看看如何规划你的项目工程。如果是非常庞大的项目，采用Maven管理会非常的合适，因为在大的项目中，不同的模块，不同的子系统，不同的分层都有可能是不同的团队去完成，请看我下面的一个项目规划。</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2013/12/24/maven-project/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; 更多早期老文章</a>
@@ -1045,6 +1042,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/03/10/db-read-write-split/">读写分离架构之mysql实例</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a>
       </li>
     
@@ -1058,10 +1059,6 @@
     
       <li class="post">
         <a href="/blog/2014/02/17/comet-java/">Http长连接在java中的应用示例</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a>
       </li>
     
   </ul>

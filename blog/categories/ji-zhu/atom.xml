@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-03-10T17:47:48+08:00</updated>
+  <updated>2014-03-28T19:34:27+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,94 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[缓存之redis]]></title>
+    <link href="http://yanyaner.com/blog/2014/03/27/cache-redis/"/>
+    <updated>2014-03-27T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/03/27/cache-redis</id>
+    <content type="html"><![CDATA[<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/03/redis.jpg' width='' height='' title=''><span class='caption-text'></span></span></p>
+
+<p>&emsp;&emsp;缓存在软件系统中有着不可替代的作用，特别是访问量巨大的网站，我们对系统热点数据的缓存将会降低数据库的压力，提高系统性能。目前常用的缓存大致分为本地缓存和独立的缓存服务，本地缓存常用的有ehcached,oscached等，而独立的服务器缓存常用的有memcached、redis等。</p>
+
+<p>&emsp;&emsp;Redis is an open source, BSD licensed, advanced key-value store. It is often referred to as a data structure server since keys can contain strings, hashes, lists, sets and sorted sets.</p>
+
+<p>&emsp;&emsp;这是redis官网<a href="http://redis.io/">redis.io</a>对redis的描述，我们从中可以看出，它是一个高性能的、更加高级的key-value缓存服务器。其中的更加高级，可能是相对于memcached这种简单的缓存服务器而言。比如redis可以在不取回缓存对象的情况下，通过指令直接对缓存的数字类型进行加、减操作，也可以对缓存的list进行修改操作，也可以对缓存的字符串进行直接的修改操作等等，这些操作都不需要取回缓存中的数据，因此没有序列化、反序列化的开销，性能会更高。还有redis对一些复杂数据结构的支持，可以满足一些特定场景下的需求。</p>
+
+<p>&emsp;&emsp;当然更高级、先进的redis，在功能强大的同时也增加了自身的复杂性。复杂可不是什么好事情，复杂的东西可能会给我们带来烦恼，实践证明，真正能够解决问题的东西一般都是简单的。因此，就redis和memcached而言，后者功能简单也更容易使用，这就造成了memcached在当前依然是缓存服务器中的老大（当然也不能太绝对，我们在实际项目可以根据不同的需求应用场景选择不同的缓存方案）。</p>
+
+<p>&emsp;&emsp;本文是入门级文章，我在讲解redis的同时，也会顺便提到memcached，以便于大家对比。<!-- more --></p>
+
+<p>&emsp;&emsp;先来安装redis，同样以windows系统为例（因为更多同鞋没有安装linux环境）。winodws的安装很简单，下载redis for windows的编译版本（地址在：<a href="http://code.google.com/p/servicestack/downloads/list">http://code.google.com/p/servicestack/downloads/list</a>），这是一个zip压缩包，将这个包解压到某个目录下，运行其中的redis-server.exe即可启动服务器。</p>
+
+<p>&emsp;&emsp;如果你要指定一些额外的配置参数，可以在运行cmd中指定redis的配置文件，比如：</p>
+
+<p>```
+redis-server.exe conf/myredis.conf，</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;这样就可以配置更多的信息了。比如：daemonize，logfile，database，dbfilename，slaveof,loglevel等等，其中有两个参数我要说一下。</p>
+
+<p>&emsp;&emsp;dbfilename参数，这个参数可以指定持久化文件名，默认是dump.rdb。这个参数说明redis可以将内存中缓存的东西进行持久化，如果您缓存服务器宕机重启了，redis可以自动从这个文件中读取数据并恢复至内存中。这个功能在memcached中是没有的，memcached如果重新启动，缓存的数据将全部丢失。话又说回来，缓存的数据一般是来自数据库的，完全可以重新加载，系统在经过一段时间的运行后自然会重新填充到缓存服务器中的。当然，丢失缓存数据这对于一些大数据高并发发的网站来说，也许并不可接受，因为可能在瞬间造成数据库的压力。</p>
+
+<p>&emsp;&emsp;另一个参数是slaveof，这个参数可以指定redis主服务器，也就是说redis可以做成主从结构的，通过这种架构来保证系统的高可用性。当然，memcached也可以做成主从结构，但memcache需要第三方的插件支持（可以下载memcached-repcached并安装）。主从结构可以做到当主服务器发生故障的时候，从服务器可以升级以继续提供服务。</p>
+
+<p>&emsp;&emsp;说到高可用性，另一个问题也要提出来，那就是分布式（即集群），因为缓存的东西都是在内在中的，一台服务器的内在毕竟有限，那我们就得搭建一个服务器集群，在多台服务器上保存缓存的数据（即分片保存）。如何根据客户端的数据key找到集群中的正确的缓存服务器呢(实际项目中更有某台缓存服务器故障下线，或添加新的缓存服务器)？目前的做法是一致性hash，具体算法大家可以去查一下哦。</p>
+
+<p>&emsp;&emsp;对分布式的Redis的访问，java客户端程序Jedis中已有实现，具体代码如下：</p>
+
+<p>``` java</p>
+
+<p>List<JedisShardInfo> jdsInfoList =new ArrayList<JedisShardInfo>();
+//集群中的A服务器
+JedisShardInfo infoA = new JedisShardInfo(hostA, portA);
+//集群中的B服务器
+JedisShardInfo infoB = new JedisShardInfo(hostB, portB);</p>
+
+<p>//加入可用结点中
+jdsInfoList.add(infoA);
+jdsInfoList.add(infoB);</p>
+
+<p>//下面的Hashing.MURMUR_HASH就是由Jedis提供的分布式的hash key算法
+ShardedJedisPool pool =new ShardedJedisPool(config, jdsInfoList, Hashing.MURMUR_HASH, Sharded.DEFAULT_KEY_TAG_PATTERN);</p>
+
+<p>ShardedJedis jedis = pool.getResource();</p>
+
+<p>//下面就可以进行操作了哦</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;下面简单说一下，在java中如何访问redis。现在常用的各户端是jedis,具体的操作我也不想再写了，大家可以从这些方面去体验Redis的独特之处，我贴出网址。</p>
+
+<p>&emsp;&emsp;一、丰富数据类型的支持。<a href="http://www.open-open.com/lib/view/open1385173126448.html">redis中各种数据类型对应的jedis操作命令 </a>.</p>
+
+<p>&emsp;&emsp;二、对字符串的操作。<a href="http://blog.csdn.net/java2000_wl/article/details/8535486">redis &ndash; String字符串操作 </a>.</p>
+
+<p>&emsp;&emsp;三、事务等特性。<a href="http://www.blogways.net/blog/2013/06/02/jedis-demo.html">Redis的Java客户端Jedis的八种调用方式(事务、管道、分布式…)介绍</a>.</p>
+
+<p>&emsp;&emsp;四、其它的一些特殊用途，比如跨jvm主键生成器等。<a href="http://www.blogjava.net/masfay/archive/2012/07/03/382080.html">Jedis使用总结【pipeline】【分布式的id生成器】【分布式锁【watch】【multi】】【redis分布式】</a>.</p>
+
+<p>&emsp;&emsp;大家要注意的是，大部分Jedis api的操作上传入的参数都是String或byte[],如果我们需要把对象放入redis中去，必须对对象进行序列化，而从redis中读出来又得反序列化，比如下面的代码：</p>
+
+<p>``` java</p>
+
+<p>tx.set(&ldquo;key_user1&rdquo;.getBytes(),
+SerializationUtils.serialize(u));</p>
+
+<p>User u = (User)SerializationUtils.deserialize(
+jedis.get(&ldquo;key_user1&rdquo;.getBytes()));
+```</p>
+
+<p>&emsp;&emsp;其中SerializationUtils是由spring core提供的，你也可以使用apache工具包中提供的类似功能类，或都自己用对象流实现也是一样的。</p>
+
+<p>&emsp;&emsp;另外，如果使用spring框架，可以使用<a href="http://projects.spring.io/spring-data-redis/#quick-start">spring-data-redis</a>，spring data redis提供了几个常用的redis客户端的封装，以在高层面抽像出统一的使用接口，建议在spring项目中采用这种方式。</p>
+
+<p>&emsp;&emsp;同时，taobao也开源了自己redis客户端<a href="https://github.com/taobao/tedis">tedis</a>，据说具有更好的性能和可用性，tedis还提供了object的高层api，使用起来更为方便。另外，taobao开源了很多的软件系统，对于中国的开源界来说是一件很好的事，相比腾讯这些自私的公司，品质不在一个档次。但alib系统的开源源代码中似乎都不写什么注释说明的（比如druid连接池开源代码），也许是这些牛人太忙了，也许是写了注释也没人会去看吧，呵呵。</p>
+
+<p>&emsp;&emsp;好,redis的内容先简单介绍到这吧。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[读写分离架构之mysql实例]]></title>
@@ -1035,523 +1123,6 @@ public static void main1(String[] args) {</p>
 <p>&emsp;&emsp;这段测试代码的输出是：执行所花时间：547ms.同样的功能，不同的实现代码，时间差距非常巨大，所以，大家在实际编码须注意到这个问题。</p>
 
 <p>&emsp;&emsp;大家可以对ObjectMapper进行简单封装，具体请参阅我的另一篇文章<a href="/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[http长连接在java中的应用示例]]></title>
-    <link href="http://yanyaner.com/blog/2014/02/17/comet-java/"/>
-    <updated>2014-02-17T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/02/17/comet-java</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;在WEB应用中，我们可能会遇到实时性要求很高的交互场景，浏览器需要及时地显示服务器上的数据变化，服务器也需要知道客户端的一些状况，比如：下面的示例中，我给出了一个简易的在线聊天系统。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/02/chat_login.jpg' width='' height='' title='聊天室登录界面'><span class='caption-text'>聊天室登录界面</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/02/chating.jpg' width='' height='' title='正在聊天的界面'><span class='caption-text'>正在聊天的界面</span></span></p>
-
-<p>&emsp;&emsp;上面的在线聊天演示程序中，先通过用户名登录，登录成功后即可即可发送自己的聊天消息，界面中的在线用户列表中可以看到每一个用户的状态，比如：在线，离开，掉线等。</p>
-
-<p>&emsp;&emsp;好，请大家先思考一下如何去实现这样的一个系统？</p>
-
-<p>&emsp;&emsp;其实，实现的办法很多，下面我给出一些参考：</p>
-
-<p>&emsp;&emsp;一、服务器端用java写一个socket服务器，flash或flex实现聊天客户端(当然也可以用applet之类的技术)，通过socket连接服务器实现实时通讯。这种实现方式我曾经在一个项目中用过，效果还不错。目前的html5中的web socket也可以实现这个功能（具体请参考<a href="http://www.ibm.com/developerworks/cn/web/1112_huangxa_websocket/">http://www.ibm.com/developerworks/cn/web/1112_huangxa_websocket/</a>）。</p>
-
-<p>&emsp;&emsp;二、浏览器中写一定时器，不断发送ajax请求向服务器请求数据，服务器用一个servlet处理请求。在服务器上保存聊天室的内容，每一个用户发言后都将消息内容保存在一个集合中。</p>
-
-<p>&emsp;&emsp;方式二，由客户端按固定的时间发起请求，这种方式虽然可以实现我们的功能，但有一些缺陷，主要表现在：1、在用户并发量大、频率高的时候，网络会拥堵，性能存在问题；2、实时性不高，比如：用户离开，掉线等状态都是要等到下一次请求才能知道，并且服务器上要有某种机制检测到某个用户已经断线；3、如果服务器端数据没有发生变更，那么这个请求只会消耗更多系统资源。</p>
-
-<p>&emsp;&emsp;三、基于http长连接技术。这种方式中可以实现较高的实时性，当有数据发生变化时，服务器主动将数据推送到客户端。</p>
-
-<p>&emsp;&emsp;comet长连接大致有两种实现，第一种是采用长轮询机制实现，大致过程是：由客户端发起http请求，服务器收到这个请求后，进入一个 while(ture)的循环，当有数据需要告知客户端时，将数据响应给客户端，并断开连接。客户端收到信息后进行处理，处理完成后再次发起新的请求，这就是长轮询的长连接实现。当然，客户端一般都采用ajax方式发起请求。</p>
-
-<p>&emsp;&emsp;comet另一种采用基于流的方式实现，利用ajax的readystate为3时表示数据正在传输而保持连接不中断，服务器端可以使用基于NIO的方式提高处理效率，而不是while(true)的多线程方式。 更多关于comet的实现细节，大家可以参阅<a href="http://software.intel.com/zh-cn/articles/comet-java-realtime-system-essay/">http://software.intel.com/zh-cn/articles/comet-java-realtime-system-essay/</a>。</p>
-
-<p>&emsp;&emsp;我这里采用comt4j框架实现http长连接（不要去重复发明轮子哦，直接用现成的）。首先要准备相应的jar包comet4j-tomcat6.jar，将其添加到你的classpath中，大家要根据不同的服务器版本添加不同的实现，因为comet4j使用的是服务器的comet之nio实现。comt4j目前仅提供了tomcat6,tomcat7的支持。<!-- More --></p>
-
-<p>&emsp;&emsp;接下来要修改服务器的server.xml中Connector部分，以启用nio的socket方式，代码如下：</p>
-
-<p>``` xml server.xml</p>
-
-<p><Connector connectionTimeout="20000"
-port="8080"
-protocol="org.apache.coyote.http11.Http11NioProtocol"
-redirectPort="8443"/></p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;在web.xml中加入comet的支持：</p>
-
-<p>``` xml web.xml</p>
-
-<!-- Comet4J长连接请求处理servlet -->
-
-
-<p>  <servlet></p>
-
-<pre><code>&lt;servlet-name&gt;comet4Memory&lt;/servlet-name&gt;
-&lt;servlet-class&gt;org.comet4j.core.CometServlet&lt;/servlet-class&gt;
-</code></pre>
-
-<p>  </servlet>
-  &lt;servlet-mapping></p>
-
-<pre><code>&lt;servlet-name&gt;comet4Memory&lt;/servlet-name&gt;
-&lt;url-pattern&gt;/state&lt;/url-pattern&gt;
-</code></pre>
-
-<p>  &lt;/servlet-mapping></p>
-
-<p>  <!--Comet4J容器侦听 -->
-  <listener></p>
-
-<pre><code>&lt;listener-class&gt;org.comet4j.core.CometAppListener&lt;/listener-class&gt;
-</code></pre>
-
-<p>  </listener></p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;接下来是服务器端的代码，下面的这段代码用来进行初始化，使用Component将对象放入spring容器，并在构造中进行comet初始化：</p>
-
-<p>``` java  CometInit.java</p>
-
-<p>@Component
-public class CometInit {</p>
-
-<pre><code>@Resource
-private IMyService ms;
-
-public static final String CHANNEL_USER_INFO = "onlineUsers";
-public static final String CHANNEL_USER_CHATING_CONTENT = "user_chating_content";
-
-public CometInit() {
-
-    CometContext context = CometContext.getInstance(); 
-    CometEngine engine = context.getEngine();
-
-    //添加连接监听
-    engine.addConnectListener(new ConnectListener() {
-        @Override
-        public boolean handleEvent(ConnectEvent event) {
-
-            CometConnection connection = event.getConn();
-            String ip = connection.getClientIp();
-            String id = connection.getId();
-
-            HttpServletRequest request = connection.getRequest();
-
-            String userName = getCookieValue(request.getCookies(), "userName-chating-client", "");
-
-            if (userName == null) {
-                return true;
-            }
-
-            try {
-                userName = URLDecoder.decode(userName, "utf-8");
-            } catch (UnsupportedEncodingException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-
-            System.out.println("id是：" + id + "的用户连接服务器，ip是：" + ip + ",用户名是：" + userName);
-            User u = UserAction.onlineUsers.get(userName);
-            if (u == null) {
-                return true;
-            }
-            u.setState(UserAction.STATE_ONLINE);
-            u.setClientId(id);
-
-            ObjectMapper om = new ObjectMapper(); 
-            try {
-                event.getTarget().sendToAll(CometInit.CHANNEL_USER_INFO, om.writeValueAsString(UserAction.onlineUsers.values()));
-            } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } 
-
-            return true;
-        }
-    });
-
-    //添加离线、断线监听
-    engine.addDropListener(new DropListener() {
-
-        @Override
-        public boolean handleEvent(DropEvent event) {
-
-            CometConnection connection = event.getConn();
-            String ip = connection.getClientIp();
-            String id = connection.getId();
-            HttpServletRequest request = connection.getRequest();
-            String userName = getCookieValue(request.getCookies(), "userName-chating-client", "");
-
-            if (userName == null) {
-                return true;
-            }
-
-            try {
-                userName = URLDecoder.decode(userName, "utf-8");
-            } catch (UnsupportedEncodingException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-
-            System.out.println("id是：" + id + "的用户断开与服务器的连接，ip是："+ ip + ",用户名是：" + userName);
-            User u = UserAction.onlineUsers.get(userName);
-            if (u == null) {
-                return true;
-            }
-            u.setState(UserAction.STATE_MISSING);
-
-            ObjectMapper om = new ObjectMapper(); 
-            try {
-                event.getTarget().sendToAll(CometInit.CHANNEL_USER_INFO, om.writeValueAsString(UserAction.onlineUsers.values()));
-            } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } 
-            return true;
-        }
-    });
-
-    //注册信道 
-    context.registChannel(CHANNEL_USER_INFO);
-    context.registChannel(CHANNEL_USER_CHATING_CONTENT);
-
-
-}
-
-/**
- * 从cookiek中得到某个 key的取值
- * @param cookies
- * @param cookieName
- * @param defaultValue
- * @return
- */
-public String getCookieValue(Cookie[] cookies, String cookieName, String defaultValue) {
-    String result = defaultValue;
-    if (cookies != null) {
-        for (int i = 0; i &lt; cookies.length; i++) {
-            Cookie cookie = cookies[i];
-            if (cookieName.equals(cookie.getName())) {
-                return cookie.getValue();
-            }
-        }
-    }
-    return result;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;服务器端处理用户聊天请求的Action代码如下：</p>
-
-<p>``` java ChatingAction.java</p>
-
-<p>@Controller
-public class ChatingAction {</p>
-
-<pre><code>public static final String STATE_LOGINING = "登录中";
-public static final String STATE_ONLINE = "在线";
-public static final String STATE_MISSING = "掉线";
-public static final String STATE_LEAVE = "离开";
-
-
-private CometEngine engine;
-
-public UserAction() {
-    engine = CometContext.getInstance().getEngine(); 
-}
-
-
-//保存在线用户集合，在些比做持久化的用户数据
-public static Map&lt;String, User&gt; onlineUsers = new HashMap&lt;String, User&gt;();
-
-@RequestMapping("loginChat")
-public String login(
-        @RequestParam(value="name") String name,
-        HttpSession session,
-        HttpServletResponse response
-        ) throws Exception {
-
-    User user = onlineUsers.get(name);
-    if (user == null) {
-        //更新状态信息
-        user = new User();
-        user.setName(name);
-        onlineUsers.put(name, user);
-    } 
-    //设置为正在登录状态
-    user.setState(STATE_LOGINING);
-    session.setAttribute("user_key", user);
-
-    //如果是json方式返回，也可由客户端通过js添加cookie
-    Cookie cookie = new Cookie("userName-chating-client",URLEncoder.encode(name,"utf-8"));  
-    cookie.setMaxAge(60*60*24*7);//保留7天  
-    response.addCookie(cookie);  
-
-    //更新在线用户列表
-    ObjectMapper om = new ObjectMapper(); 
-    engine.sendToAll(CometInit.CHANNEL_USER_INFO, om.writeValueAsString(onlineUsers.values()));
-
-    //进入主页面
-    return "chating";
-
-}
-
-
-@RequestMapping("getState")
-public void getState(
-        HttpSession session,
-        HttpServletResponse response
-        ) throws Exception {
-
-    User user = (User)session.getAttribute("user_key");
-    ObjectMapper om = new ObjectMapper(); 
-    if (user != null) {
-        //返回所有的在线用户
-        om.writeValue(response.getWriter(), user);
-    } else {
-        om.writeValue(response.getWriter(), "{code:0}");
-    }
-
-}
-
-@RequestMapping("onlineUser")
-public void allUsers(
-        HttpServletResponse response
-        ) throws Exception {
-
-    //返回所有的在线用户
-    ObjectMapper om = new ObjectMapper(); 
-    om.writeValue(response.getWriter(), onlineUsers);
-
-
-}
-
-
-@RequestMapping("logout")
-public String logout(
-        HttpSession session,
-        HttpServletResponse response
-        ) throws Exception {
-
-    User user = (User)session.getAttribute("user_key");
-    if (user != null) {
-        ObjectMapper om = new ObjectMapper(); 
-        onlineUsers.get(user.getName()).setState(STATE_LEAVE);
-        engine.sendToAll(CometInit.CHANNEL_USER_INFO, om.writeValueAsString(onlineUsers.values()));
-    }
-
-    return "chat_login";
-
-}
-
-@RequestMapping("sendMsg")
-public void sendMsg(
-        HttpSession session,
-        @RequestParam(value="msg") String msg,
-        HttpServletResponse response
-        ) throws Exception {
-
-    SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-
-    User user = (User)session.getAttribute("user_key");
-    if (user != null) {
-        ObjectMapper om = new ObjectMapper(); 
-        Map respBody = new HashMap();
-        respBody.put("date", sf.format(new Date()));
-        respBody.put("user", user.getName());
-        respBody.put("msg", msg);
-        engine.sendToAll(CometInit.CHANNEL_USER_CHATING_CONTENT, om.writeValueAsString(respBody));
-    }
-
-    response.getWriter().print("over");
-}
-</code></pre>
-
-<p>}</p>
-
-<p>//用户
-class User {</p>
-
-<pre><code>//昵称
-private String name;
-//状态(登录中，在线，掉线，已录出)
-private String state;
-//长连接id,由comet4j自行分配
-private String clientId;
-
-public String getName() {
-    return name;
-}
-public void setName(String name) {
-    this.name = name;
-}
-public String getState() {
-    return state;
-}
-public void setState(String state) {
-    this.state = state;
-}
-public String getClientId() {
-    return clientId;
-}
-public void setClientId(String clientId) {
-    this.clientId = clientId;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;comet4j客户端已经封装了相应的js，以简化我们的编码，我们需要做的是引入comet4j.js到需要的页面中。</p>
-
-<p>``` jsp chat_login.jsp
-&lt;%@ page language=&ldquo;java&rdquo; contentType=&ldquo;text/html; charset=UTF-8&rdquo;</p>
-
-<pre><code>pageEncoding="UTF-8"%&gt;
-</code></pre>
-
-<p>&lt;!DOCTYPE html PUBLIC &ldquo;&ndash;//W3C//DTD HTML 4.01 Transitional//EN&rdquo; &ldquo;<a href="http://www.w3.org/TR/html4/loose.dtd">http://www.w3.org/TR/html4/loose.dtd</a>&rdquo;>
-<html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Insert title here</title>
-<link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css"/>
-</head>
-<body></p>
-
-<pre><code>&lt;p class="text-warning"&gt;假设本系统以用户名作为用户的业务主键。&lt;/p&gt;
-&lt;form action="loginChat" method="post"&gt;
-    用户名：&lt;input type="text" name="name"/&gt;
-    &lt;input type="submit" value="进入聊天室" class="btn btn-success"/&gt;
-&lt;/form&gt;
-</code></pre>
-
-<p></body>
-</html></p>
-
-<p>```</p>
-
-<p>``` jsp chating.jsp</p>
-
-<p>&lt;%@ page language=&ldquo;java&rdquo; contentType=&ldquo;text/html; charset=UTF-8&rdquo;</p>
-
-<pre><code>pageEncoding="UTF-8"%&gt;
-</code></pre>
-
-<p>&lt;!DOCTYPE html PUBLIC &ldquo;&ndash;//W3C//DTD HTML 4.01 Transitional//EN&rdquo; &ldquo;<a href="http://www.w3.org/TR/html4/loose.dtd">http://www.w3.org/TR/html4/loose.dtd</a>&rdquo;>
-<html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>在线聊天</title></p>
-
-<script type="text/javascript" src="lib/jquery/jquery-1.7.2.min.js"></script>
-
-
-<p><link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css"/></p>
-
-<script type="text/javascript" src="lib/jquery-timer/jquery.timer.js"></script>
-
-
-<script type="text/javascript" src="lib/comet4j/comet4j.js"></script>
-
-
-
-
-<script type="text/javascript">
-    $(function(){
-        
-        $("#btn_send").click(function() {
-            $.ajax({
-                url:"sendMsg",
-                type:"post",
-                data:{msg:$("#msg").val()},
-                success:function(){
-                    $("#msg").val("");
-                }
-            });
-        });
-        
-        JS.Engine.on({
-            user_chating_content:function(data){//侦听聊天内容
-                var result = $.parseJSON(data);
-                $("<p><b>"+result.date+"</b></p>").appendTo("#msgs");
-                $("<p ><b style='color:red;'>"+result.user+"</b>: "+result.msg+"</p>").appendTo("#msgs");
-            },
-            onlineUsers: function(data){//侦听在线用户
-                    var result = $.parseJSON(data);
-                    $("#onlineUsers option").remove();
-                    $(result).each(function(){
-                        $("<option>" + this.name + ":" + this.state + "</option>").appendTo("#onlineUsers");
-                    });
-                    
-            }
-        });
-        JS.Engine.start('state');
-        
-       
-       var timer = $.timer(
-        function() {
-            $.ajax({
-                url:"getState",
-                type:"get",
-                dataType:"json",
-                success:function(user) {
-                    $("#uid").html(user.clientId);
-                    $("#nickName").html(user.name);
-                }
-            });
-        }
-        );  
-       timer.once(5000);
-            
-    });
-</script>
-
-
-<p></head>
-<body></p>
-
-<div style="background-color: silver;width:650px;">
-    当前用户长连接id:<span id="uid"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-    当前用户昵称  :<span id="nickName"></span>
-</div>
-
-
-<div >
-<div id="msgs" style="height: 200px; width:650px; overflow: scroll;"></div>
-<select multiple="multiple" id="onlineUsers" style="width: 650px;">
-</select>
-<br>
-<form action="logout">
-请输入要发送的消息：<input type="text" id="msg" >
-<input type="button" value="    发        送    " id="btn_send" class="btn btn-success btn-large"> 
-<input type="submit" value="离开聊天室" class="btn btn-warning btn-large">
-</form>
-</div>
-
-
-<p></body>
-</html></p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;运行上面的代码，即可进行实时聊天了。我们近期的一个实时监控功能就是基于comet做的。</p>
-
-<p>&emsp;&emsp;最后给大家强调几点：</p>
-
-<ol>
-<li>在没有深入研究的情况下，引入任何一项新的技术，都会给项目带来风险，comet也如此。</li>
-<li>服务器能够接受的comet长连接并发数有待测试，如果并发过高，将考虑使用其它的解决方案。</li>
-<li>comet4j上线、下线等监听器中如果注入了service，在service中查询出的hibernate实体bean,必须要主动加载后面需要用到的lazy对象（原因：和openSessionInView失效有关哦）。</li>
-</ol>
-
 ]]></content>
   </entry>
   

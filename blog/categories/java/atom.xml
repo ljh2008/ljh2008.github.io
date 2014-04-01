@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：java | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-03-28T19:34:27+08:00</updated>
+  <updated>2014-03-31T17:40:04+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -24,9 +24,9 @@
 
 <p>&emsp;&emsp;Redis is an open source, BSD licensed, advanced key-value store. It is often referred to as a data structure server since keys can contain strings, hashes, lists, sets and sorted sets.</p>
 
-<p>&emsp;&emsp;这是redis官网<a href="http://redis.io/">redis.io</a>对redis的描述，我们从中可以看出，它是一个高性能的、更加高级的key-value缓存服务器。其中的更加高级，可能是相对于memcached这种简单的缓存服务器而言。比如redis可以在不取回缓存对象的情况下，通过指令直接对缓存的数字类型进行加、减操作，也可以对缓存的list进行修改操作，也可以对缓存的字符串进行直接的修改操作等等，这些操作都不需要取回缓存中的数据，因此没有序列化、反序列化的开销，性能会更高。还有redis对一些复杂数据结构的支持，可以满足一些特定场景下的需求。</p>
+<p>&emsp;&emsp;这是redis官网<a href="http://redis.io/">redis.io</a>对redis的描述，我们从中可以看出，它是一个高性能的、更加高级的key-value缓存服务器。其中的更加高级，可能是相对于memcached这种简单的缓存服务器而言。比如redis可以在不取回缓存对象的情况下，通过指令直接对缓存的数字类型进行加、减操作，也可以对缓存的list中的内容进行修改操作，还可以对缓存的字符串进行直接的修改操作等等，这些操作都不需要取回缓存中的数据，因此没有序列化、反序列化的开销，性能会更高。另外，redis对一些复杂数据结构的支持，可以满足一些特定场景下的需求，比如sorted sets。</p>
 
-<p>&emsp;&emsp;当然更高级、先进的redis，在功能强大的同时也增加了自身的复杂性。复杂可不是什么好事情，复杂的东西可能会给我们带来烦恼，实践证明，真正能够解决问题的东西一般都是简单的。因此，就redis和memcached而言，后者功能简单也更容易使用，这就造成了memcached在当前依然是缓存服务器中的老大（当然也不能太绝对，我们在实际项目可以根据不同的需求应用场景选择不同的缓存方案）。</p>
+<p>&emsp;&emsp;当然更高级、先进的redis，在功能强大的同时也增加了自身的复杂性。复杂可不是什么好事情，复杂的东西可能会给我们带来烦恼，实践证明，真正能够解决问题的方案一般都是简单的。因此，就redis和memcached而言，后者功能简单也更容易使用，这就造成了memcached在当前依然是缓存服务器中的老大（当然任何事都不能太绝对，我们在实际项目中可以根据不同的需求应用场景选择不同的缓存方案）。</p>
 
 <p>&emsp;&emsp;本文是入门级文章，我在讲解redis的同时，也会顺便提到memcached，以便于大家对比。<!-- more --></p>
 
@@ -39,13 +39,13 @@ redis-server.exe conf/myredis.conf，</p>
 
 <p>```</p>
 
-<p>&emsp;&emsp;这样就可以配置更多的信息了。比如：daemonize，logfile，database，dbfilename，slaveof,loglevel等等，其中有两个参数我要说一下。</p>
+<p>&emsp;&emsp;这样就可以在myredis.conf中配置更多的信息了。比如：daemonize，logfile，database，dbfilename，slaveof,loglevel等等，其中有两个参数我要说一下。</p>
 
-<p>&emsp;&emsp;dbfilename参数，这个参数可以指定持久化文件名，默认是dump.rdb。这个参数说明redis可以将内存中缓存的东西进行持久化，如果您缓存服务器宕机重启了，redis可以自动从这个文件中读取数据并恢复至内存中。这个功能在memcached中是没有的，memcached如果重新启动，缓存的数据将全部丢失。话又说回来，缓存的数据一般是来自数据库的，完全可以重新加载，系统在经过一段时间的运行后自然会重新填充到缓存服务器中的。当然，丢失缓存数据这对于一些大数据高并发发的网站来说，也许并不可接受，因为可能在瞬间造成数据库的压力。</p>
+<p>&emsp;&emsp;dbfilename参数，这个参数可以指定持久化文件名，默认是dump.rdb。这个参数说明redis可以将内存中缓存的东西进行持久化，如果您缓存服务器宕机重启了，redis下次重启时可以自动从这个文件中读取数据并恢复至内存中。这个功能在memcached中是没有的，memcached如果重新启动，缓存的数据将全部丢失。话又说回来，缓存的数据一般是来自数据库的，完全可以重新加载，系统在经过一段时间的运行后自然会重新填充到缓存服务器中的。当然，丢失缓存数据这对于一些大数据高并发发的网站来说，也许并不可接受，因为可能在瞬间造成数据库的极大访问压力而造成系统崩溃。</p>
 
 <p>&emsp;&emsp;另一个参数是slaveof，这个参数可以指定redis主服务器，也就是说redis可以做成主从结构的，通过这种架构来保证系统的高可用性。当然，memcached也可以做成主从结构，但memcache需要第三方的插件支持（可以下载memcached-repcached并安装）。主从结构可以做到当主服务器发生故障的时候，从服务器可以升级以继续提供服务。</p>
 
-<p>&emsp;&emsp;说到高可用性，另一个问题也要提出来，那就是分布式（即集群），因为缓存的东西都是在内在中的，一台服务器的内在毕竟有限，那我们就得搭建一个服务器集群，在多台服务器上保存缓存的数据（即分片保存）。如何根据客户端的数据key找到集群中的正确的缓存服务器呢(实际项目中更有某台缓存服务器故障下线，或添加新的缓存服务器)？目前的做法是一致性hash，具体算法大家可以去查一下哦。</p>
+<p>&emsp;&emsp;说到高可用性，另一个问题不得不提出，那就是分布式（即集群），因为缓存的东西都是在内在中的，一台服务器的内在毕竟有限，那我们就得搭建一个服务器集群在多台服务器上保存缓存的数据（即分片保存）。如何根据客户端的数据key找到集群中的正确的缓存服务器呢(实际项目中更有某台缓存服务器故障下线，或添加新的缓存服务器)？目前的做法是一致性hash，具体算法大家可以去查一下哦。</p>
 
 <p>&emsp;&emsp;对分布式的Redis的访问，java客户端程序Jedis中已有实现，具体代码如下：</p>
 
@@ -70,7 +70,7 @@ ShardedJedisPool pool =new ShardedJedisPool(config, jdsInfoList, Hashing.MURMUR_
 
 <p>```</p>
 
-<p>&emsp;&emsp;下面简单说一下，在java中如何访问redis。现在常用的各户端是jedis,具体的操作我也不想再写了，大家可以从这些方面去体验Redis的独特之处，我贴出网址。</p>
+<p>&emsp;&emsp;下面简单说一下，在java中如何访问redis。现在常用的客户端是jedis,具体的操作我也不想再写了，大家可以从这些方面去体验Redis的独特之处，我贴出网址。</p>
 
 <p>&emsp;&emsp;一、丰富数据类型的支持。<a href="http://www.open-open.com/lib/view/open1385173126448.html">redis中各种数据类型对应的jedis操作命令 </a>.</p>
 
@@ -84,18 +84,17 @@ ShardedJedisPool pool =new ShardedJedisPool(config, jdsInfoList, Hashing.MURMUR_
 
 <p>``` java</p>
 
-<p>tx.set(&ldquo;key_user1&rdquo;.getBytes(),
-SerializationUtils.serialize(u));</p>
+<p>tx.set(&ldquo;key_user1&rdquo;.getBytes(), SerializationUtils.serialize(u));</p>
 
-<p>User u = (User)SerializationUtils.deserialize(
-jedis.get(&ldquo;key_user1&rdquo;.getBytes()));
-```</p>
+<p>User u = (User)SerializationUtils.deserialize(jedis.get(&ldquo;key_user1&rdquo;.getBytes()));</p>
+
+<p>```</p>
 
 <p>&emsp;&emsp;其中SerializationUtils是由spring core提供的，你也可以使用apache工具包中提供的类似功能类，或都自己用对象流实现也是一样的。</p>
 
-<p>&emsp;&emsp;另外，如果使用spring框架，可以使用<a href="http://projects.spring.io/spring-data-redis/#quick-start">spring-data-redis</a>，spring data redis提供了几个常用的redis客户端的封装，以在高层面抽像出统一的使用接口，建议在spring项目中采用这种方式。</p>
+<p>&emsp;&emsp;另外，如果您的项目中使用spring框架，您可以使用<a href="http://projects.spring.io/spring-data-redis/#quick-start">spring-data-redis</a>，spring data redis提供了几个常用的redis客户端的封装，以在高层面抽像出统一的使用接口（其实相当于适配器），建议在spring项目中采用这种方式。</p>
 
-<p>&emsp;&emsp;同时，taobao也开源了自己redis客户端<a href="https://github.com/taobao/tedis">tedis</a>，据说具有更好的性能和可用性，tedis还提供了object的高层api，使用起来更为方便。另外，taobao开源了很多的软件系统，对于中国的开源界来说是一件很好的事，相比腾讯这些自私的公司，品质不在一个档次。但alib系统的开源源代码中似乎都不写什么注释说明的（比如druid连接池开源代码），也许是这些牛人太忙了，也许是写了注释也没人会去看吧，呵呵。</p>
+<p>&emsp;&emsp;同时，taobao也开源了自己redis客户端<a href="https://github.com/taobao/tedis">tedis</a>，据说具有更好的性能和可用性，tedis还提供了object的高层api，使用起来更为方便。另外，taobao开源了很多的软件系统，对于中国的开源界来说是一件很好的事，相比腾讯这些自私的公司，品质自然不在一个档次，但阿里系统的开源源代码中似乎都不写什么注释说明的（比如druid连接池开源代码），也许是这些公司的牛人太忙了，也许是认为写了注释也没人会去看吧，呵呵。</p>
 
 <p>&emsp;&emsp;好,redis的内容先简单介绍到这吧。</p>
 ]]></content>

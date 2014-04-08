@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;缓存在软件系统中有着不可替代的作用，特别是访问量巨大的网站，我们对系统热点数据的缓存将会降低数据库的压力，提高系统性能。目前常用的缓存大致分为本地缓存和独立的缓存服务，本地缓存常用的有ehcached,oscached等，而独立的服务器缓存常用的有memcached、 &hellip;">
+  <meta name="description" content="&emsp;&emsp;以后的文章要尽量做到通俗，让非技术人员都读得懂，道理就跟艺术作品一样，一件好的作品，不需要配任何文字说明就足以打动普通观众，做到雅俗共赏而且有深度和内涵，其实，这需要作者相当的功力。 &emsp;&emsp;近期一些童鞋在实现一个监控系统，其中的一个功能是： &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,57 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-08T12:18:00+08:00" pubdate data-updated="true">2014年04月08日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;以后的文章要尽量做到通俗，让非技术人员都读得懂，道理就跟艺术作品一样，一件好的作品，不需要配任何文字说明就足以打动普通观众，做到雅俗共赏而且有深度和内涵，其实，这需要作者相当的功力。</p>
+
+<p>&emsp;&emsp;近期一些童鞋在实现一个监控系统，其中的一个功能是：对监控平台上布署的第三方应用业务方法执行细节进行监控，比如：方法调用者，调用者ip，应用系统名称，子系统名称，方法名称，执行耗时等信息。如何能够让监控系统得到目标机器上需要监控的业务方法执行情况呢？如何保证在监控的过程中不影响对方的业务的正常执行？下面我给出一种参考架构实现，这也是在概要设计的时候就应该明确的东西（专业名词叫架构原型）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms.jpg' width='' height='' title='业务方法监控架构图'><span class='caption-text'>业务方法监控架构图</span></span></p>
+
+<p>&emsp;&emsp;首先，MonitorPlatform是我们的监控平台（图中青色部分），targetServer上运行着需要监控的系统hotel project（图中黄色部分）,如果我们想要获得目标机器上的我们需要的信息，最简单的办法是运行一个spy程序在对方的机器上，图中的spy app是起这个作用的（当然你也可以使用jmx规范来实现类似功能），举个不恰当的例子，就好比你在某人的机器上安装了一个木马程序，通过远程控制端你就可以得到对方机器上你感兴趣的任何东西，甚至包括控制摄像头哦。</p>
+
+<p>&emsp;&emsp;其次，监控平台同时要监控多个目标系统，就我们例子中监控业务方法执行情况而言，就需要把监控得到的信息加以持久化以备后查，如果目标系统业务繁忙，而我们的spy app又要将取到的信息进行数据库持久化，数据库很可能会成为性能瓶颈从而造成性能问题，因此，我在这里采用了异步消息系统的设计，以缓解持久化压力。正如图所示，spy app将采集到的业务方法执行数据直接写入异步消息服务器的queue中，而monitor platform中的处理程序将从queue中取出消息，再进行后续的持久化处理。这种异步的消息设计方式可以有效缓解系统的压力，在很多项目中都可以采用（互联网项目中可用这种方式来&#8221;削峰&#8221;，缓解高并发压力）。</p>
+
+<p>&emsp;&emsp;最后一个问题,spy如何采集到目标机器业务方法的执行情况呢。最佳答案当然是AOP。</p>
+
+<p>&emsp;&emsp;下面，我们一起来看看架构原型中的原码实现吧。MethodLoggerMessage是需要持久化的消息对象，请注意实现Serializable接口。</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/04/08/async_message_architect1/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -965,59 +1016,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/12/26/hudson-ci/">为你的项目加入Hudson持续集成</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-12-26T15:18:00+08:00" pubdate data-updated="true">2013年12月26日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/12/hudson-logo.jpg' width='' height='' title=''><span class='caption-text'></span></span></p>
-
-<p>&emsp;&emsp;Hudson是一个使用非常广泛的持续集成CI服务器，大家可以到<a href="http://hudson-ci.org/">Hudson官网</a>上了解更多内容。我们把hudson叫做持续集成服务器，就像官方的描述：Hudson is an extensible Continuous Integration Server，在采用敏捷开发流程的项目中CI几乎是一个必备的工具。</p>
-
-<p>&emsp;&emsp;为什么取hudson这个名字，我想这个系统应该和项目管理密切相关，在软件工程的项目启动流程中，有一种叫哈德森式项目启动方式，说的是要尽早启动一个项目，尽早检测项目后期的资源是否齐备，更早发现一些潜在的风险。</p>
-
-<p>&emsp;&emsp;我们可以试想一下这样的场景：开发团队中，每个成员都在努力完成自己的功能模块，在接近某个迭代周期终点时开始整合，然后再交由测试人员，但对于敏捷开发流程的项目，这似乎有点太慢了。测试人员能否尽早地参与测试？开发成员能否每天看到项目的整体效率、成果?管理人员能否了解每天项目的状况（健康情况）?CI工具可以帮助我们做到这一点。</p>
-
-<p>&emsp;&emsp;简单点来说，CI可以自动化地帮助我们从SCM中check out代码，编译、运行测试、打包、部署到服务器一条龙服务，这样一来，我们就可以及时了解项目的整体状态，比如：编译失败，测试失败，部署后测试人员发现bug等等。我们随时都可以得到可以运行的软件，这对团队成员的信心有很大的鼓舞。</p>
-
-<p>&emsp;&emsp;CI的可供选择软件比较多，除了Hudson外，还有apache continuum等，这些CI同样也具备上面的这些能力，相对来说，Hudson配置起来更为简单，也是更为老牌的CI系统。</p>
-
-<p>&emsp;&emsp;啰嗦了这么多，开始正式的内容吧。先从hudson官网上下载程序包hudson.war（一般都是3.0以上的版本哦），把这个war包直接放在tomcat的webapps目录，启动tomcat即可完成安装，足够简单吧。但要提醒各位的是，最好是下载集成版本的Hudson(即3.0.0-bundled)，这个版本集成了常用的插件，就不再需要在线更新安装插件了，另外，这个集成版程序包是经过测试的，不会出现不兼容的情况发生。我当初就是下载的3.1.1，在线安装了maven的插件，但运行时遇到了包不兼容的问题，花费了很多的调试时间，最后下载了这个集成版本，一切正常。</p>
-
-<p>&emsp;&emsp;运行start.bat启动tomcat，打开浏览器，输入地址http : / / localhost:8080/hudson/，就可以看到Hudson首页面，第一次进入有点缓慢，你可以看到有Please wait while Hudson is getting ready to work..Your browser will reload automatically when Hudson is ready.提示信息。等待片刻后后进入主界面，选择新建一个任务，如下图：</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2013/12/26/hudson-ci/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; 更多早期老文章</a>
@@ -1033,6 +1031,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/03/27/cache-redis/">缓存之redis</a>
       </li>
     
@@ -1046,10 +1048,6 @@
     
       <li class="post">
         <a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/03/03/objectmapper-json/">Json类库jackson使用之误区</a>
       </li>
     
   </ul>

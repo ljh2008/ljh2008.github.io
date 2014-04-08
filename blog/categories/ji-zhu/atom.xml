@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-03-31T17:40:04+08:00</updated>
+  <updated>2014-04-08T22:48:53+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,287 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[监控系统中的异步消息使用实例（一）]]></title>
+    <link href="http://yanyaner.com/blog/2014/04/08/async_message_architect1/"/>
+    <updated>2014-04-08T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/04/08/async_message_architect1</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;以后的文章要尽量做到通俗，让非技术人员都读得懂，道理就跟艺术作品一样，一件好的作品，不需要配任何文字说明就足以打动普通观众，做到雅俗共赏而且有深度和内涵，其实，这需要作者相当的功力。</p>
+
+<p>&emsp;&emsp;近期一些童鞋在实现一个监控系统，其中的一个功能是：对监控平台上布署的第三方应用业务方法执行细节进行监控，比如：方法调用者，调用者ip，应用系统名称，子系统名称，方法名称，执行耗时等信息。如何能够让监控系统得到目标机器上需要监控的业务方法执行情况呢？如何保证在监控的过程中不影响对方的业务的正常执行？下面我给出一种参考架构实现，这也是在概要设计的时候就应该明确的东西（专业名词叫架构原型）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms.jpg' width='' height='' title='业务方法监控架构图'><span class='caption-text'>业务方法监控架构图</span></span></p>
+
+<p>&emsp;&emsp;首先，MonitorPlatform是我们的监控平台（图中青色部分），targetServer上运行着需要监控的系统hotel project（图中黄色部分）,如果我们想要获得目标机器上的我们需要的信息，最简单的办法是运行一个spy程序在对方的机器上，图中的spy app是起这个作用的（当然你也可以使用jmx规范来实现类似功能），举个不恰当的例子，就好比你在某人的机器上安装了一个木马程序，通过远程控制端你就可以得到对方机器上你感兴趣的任何东西，甚至包括控制摄像头哦。</p>
+
+<p>&emsp;&emsp;其次，监控平台同时要监控多个目标系统，就我们例子中监控业务方法执行情况而言，就需要把监控得到的信息加以持久化以备后查，如果目标系统业务繁忙，而我们的spy app又要将取到的信息进行数据库持久化，数据库很可能会成为性能瓶颈从而造成性能问题，因此，我在这里采用了异步消息系统的设计，以缓解持久化压力。正如图所示，spy app将采集到的业务方法执行数据直接写入异步消息服务器的queue中，而monitor platform中的处理程序将从queue中取出消息，再进行后续的持久化处理。这种异步的消息设计方式可以有效缓解系统的压力，在很多项目中都可以采用（互联网项目中可用这种方式来"削峰"，缓解高并发压力）。</p>
+
+<p>&emsp;&emsp;最后一个问题,spy如何采集到目标机器业务方法的执行情况呢。最佳答案当然是AOP。</p>
+
+<p>&emsp;&emsp;下面，我们一起来看看架构原型中的原码实现吧。MethodLoggerMessage是需要持久化的消息对象，请注意实现Serializable接口。<!-- more --></p>
+
+<p>``` java MethodLoggerMessage.java</p>
+
+<p>package com.monitor.client.commons;</p>
+
+<p>import java.io.Serializable;
+import java.util.Date;</p>
+
+<p>/<em>*
+ * 需要持久化的对象消息
+ * @author ljh
+ *
+ </em>/
+public class MethodLoggerMessage implements Serializable {</p>
+
+<pre><code>//方法执行时间，单位：毫秒
+private double howLong;
+//方法名
+private String methodName;
+//执行者ip地址
+private String ip;
+//执行者session会话id
+private String sessionId;
+//执行者
+private String operater = "";
+//执行时间
+private Date execTimer;
+
+public double getHowLong() {
+    return howLong;
+}
+public void setHowLong(double howLong) {
+    this.howLong = howLong;
+}
+public String getMethodName() {
+    return methodName;
+}
+public void setMethodName(String methodName) {
+    this.methodName = methodName;
+}
+public String getIp() {
+    return ip;
+}
+public void setIp(String ip) {
+    this.ip = ip;
+}
+public String getOperater() {
+    return operater;
+}
+public void setOperater(String operater) {
+    this.operater = operater;
+}
+public String getSessionId() {
+    return sessionId;
+}
+public void setSessionId(String sessionId) {
+    this.sessionId = sessionId;
+}
+public Date getExecTimer() {
+    return execTimer;
+}
+public void setExecTimer(Date execTimer) {
+    this.execTimer = execTimer;
+}
+@Override
+public String toString() {
+    return "MethodLoggerMessage [howLong=" + howLong + ", methodName="
+            + methodName + ", ip=" + ip + ", sessionId=" + sessionId
+            + ", operater=" + operater + ", execTimer=" + execTimer + "]";
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;IMessageDao接口用来定义消息持久化行为，可以有很同种不同的实现版本，如基于消息的，关系数据库的或nosql的等等，有了这个接口，我们在intercepter中就可以做到拦截代码和持久化代码的解耦。</p>
+
+<p>``` java IMessageDao.java
+package com.monitor.client.dao;</p>
+
+<p>import java.io.Serializable;</p>
+
+<p>/<em>*
+ * 持久化消息服务
+ * @author ljh
+ *
+ </em>/
+public interface IMessageDao {</p>
+
+<pre><code>public void persist(Serializable msg);
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;接下来是消息持久化实现类源代码。因为采用了jms，因此我直接使用了spring对jms封装的模板方法实现。</p>
+
+<p>``` java JMSMessageDaoImpl.java
+package com.monitor.client.dao;</p>
+
+<p>import java.io.Serializable;</p>
+
+<p>import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.ObjectMessage;
+import javax.jms.Session;</p>
+
+<p>import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.core.MessageCreator;</p>
+
+<p>/<em>*
+ * jms消息处理实现
+ * @author ljh
+ *
+ </em>/
+public class JMSMessageDaoImpl implements IMessageDao {</p>
+
+<pre><code>//jms模板
+private JmsTemplate jmsTemplate;
+//目标队列名称
+private String destinationName;
+
+@Override
+public void persist(final Serializable msg) {
+
+    MessageCreator mc = new MessageCreator() {
+
+        @Override
+        public Message createMessage(Session session) throws JMSException {
+            //创建对象消息，并发送之
+            ObjectMessage objMsg = session.createObjectMessage();   
+            objMsg.setObject(msg);
+
+            return objMsg;
+        }
+    };
+
+    if (destinationName == null) {
+        jmsTemplate.send(mc);
+    } else {
+        //发送到指定的目标
+        jmsTemplate.send(destinationName, mc);
+    }
+
+
+}
+
+public void setJmsTemplate(JmsTemplate jmsTemplate) {
+    this.jmsTemplate = jmsTemplate;
+}
+
+public void setDestinationName(String destinationName) {
+    this.destinationName = destinationName;
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;最重要的就是这个拦截器实现了。环绕拦截器，功能最为强大。</p>
+
+<p>``` java SpyMethodIntercepter.java
+package com.monitor.client.spy;</p>
+
+<p>import java.util.Date;</p>
+
+<p>import javax.servlet.http.HttpServletRequest;</p>
+
+<p>import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;</p>
+
+<p>import com.monitor.client.commons.MethodLoggerMessage;
+import com.monitor.client.dao.IMessageDao;
+/<em>*
+ * 目标服务器方法拦截器，调用信息可以通过异步消息机制持久化，具体要看IMessageDao实现
+ * @author ljh
+ *
+ </em>/
+public class SpyMethodIntercepter implements MethodInterceptor{</p>
+
+<pre><code>public static final Logger LOG = LoggerFactory.getLogger(SpyMethodIntercepter.class);
+
+//消息处理dao
+private IMessageDao messageDao;
+//当前登录者在目标系统中的登录用户名之key,在配置第三方程序时注入
+private String userNameSessionKey = "loginedUserName";
+
+@Override
+public Object invoke(MethodInvocation method) throws Throwable {
+
+    //取方法执行时的开始时间
+    long start = System.nanoTime();
+
+    try {
+        return method.proceed();
+    } catch (Exception ex) {
+        throw ex;
+    } finally {
+
+        try {
+            //为了不影响目标方法的运行，这里再次try
+            //得到访问者request对象
+            ServletRequestAttributes sas = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
+            HttpServletRequest req = sas.getRequest();
+
+            //取方法执行后的时间
+            long end = System.nanoTime();
+
+            //方法执行时间
+            long howLong = end - start;
+            String methodName = method.getMethod().getName();
+
+            //持久化方法调用日志
+            MethodLoggerMessage logger = new MethodLoggerMessage();
+
+            logger.setMethodName(methodName);
+
+            //方法执行时间，单位：毫秒
+            logger.setHowLong((double)howLong/(1000*1000));
+
+            logger.setIp(req.getLocalAddr());
+            logger.setSessionId(sas.getSessionId());
+
+            if (req.getSession() != null) {
+                logger.setOperater((String)req.getSession().getAttribute(userNameSessionKey));
+            }
+
+            logger.setExecTimer(new Date());
+
+            messageDao.persist(logger);
+        } catch (Exception exc) {
+            //do nothing or LOG.debug(ex.getMessage());
+            LOG.warn("Error in spy: {}", exc);
+        }
+
+    }
+
+}
+
+public void setMessageDao(IMessageDao messageDao) {
+    this.messageDao = messageDao;
+}
+
+public void setUserNameSessionKey(String userNameSessionKey) {
+    this.userNameSessionKey = userNameSessionKey;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;至此，spy程序这边基本开发完成了。目标服务器上，该如何配置呢？监控平台的消息处理者又该如何实现呢？</p>
+
+<p>&emsp;&emsp;且听下回分解。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[缓存之redis]]></title>
@@ -847,281 +1128,6 @@ public void testJson() throws Exception {
 </code></pre>
 
 <p>```</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[json类库jackson使用之误区]]></title>
-    <link href="http://yanyaner.com/blog/2014/03/03/objectmapper-json/"/>
-    <updated>2014-03-03T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/03/03/objectmapper-json</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;json数据类型在系统通讯中得到了非常广泛的应用，jsonlib, Gson, fastJson, jackson等开源的json操作类库层出不穷，根据对这些json的测试，我们发现jsckson的效率比其它的都要高。但在实际中，我发现很多人使用jackson都存在一定的问题，下面我给大家讲讲jackson使用中容易出现的一些问题。</p>
-
-<p>&emsp;&emsp;先来看看下面的这一段代码，很多人在控制器代码中就是这么写的：</p>
-
-<p>``` java
-/**</p>
-
-<pre><code> * 得到所有的班级
- * 
- * @param sid
- * @param resp
- * @throws Exception
- */
-
-@RequestMapping(value = "/classes", method = RequestMethod.GET)
-public void getAllClasses(HttpServletResponse resp) throws Exception {
-
-    ObjectMapper om = new ObjectMapper();
-
-    RespMessage msg = new RespMessage();
-
-    SimpleFilterProvider filterProvider = new SimpleFilterProvider()
-            .setFailOnUnknownId(false);
-    filterProvider.addFilter("my_classes",
-            SimpleBeanPropertyFilter.filterOutAllExcept("id", "name"));
-    om.setFilters(filterProvider);
-
-    List&lt;Classes&gt; data = systemService.getAllClasses();
-
-    msg.setData(data);
-
-    om.writeValue(resp.getOutputStream(), msg);
-
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;晃眼一看，似乎没有问题，但是，这段代码在高并发操作下，性能非常的低下。有人说，这个容易，改一下代码即可，如下：<!-- more --></p>
-
-<p>``` java</p>
-
-<pre><code>private ObjectMapper om = new ObjectMapper();
-
-/**
- * 得到所有的班级
- * 
- * @param sid
- * @param resp
- * @throws Exception
- */
-@RequestMapping(value = "/classes", method = RequestMethod.GET)
-public void getAllClasses(HttpServletResponse resp) throws Exception {
-
-    ....
-    SimpleFilterProvider filterProvider = new SimpleFilterProvider()
-            .setFailOnUnknownId(false);
-    filterProvider.addFilter("my_classes",
-            SimpleBeanPropertyFilter.filterOutAllExcept("id", "name"));
-    om.setFilters(filterProvider);
-    ....
-
-    om.writeValue(resp.getOutputStream(), msg);
-
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;上面的代码中，让ObjectMapper做为全局对象（或者干脆放入spring容器中，保持一个实例），不反复创建这个对象，应该就没有问题了吧。</p>
-
-<p>&emsp;&emsp;不幸的是，上面这段代码仍然存在问题，因为ObjectMapper的全局性，致使过渡属性的操作在多线程中出现问题，请看下面的测试代码：</p>
-
-<p>``` java
-public class CopyOfTest {</p>
-
-<pre><code>public static void main(String[] args) {
-
-    ObjectMapper o1 = new ObjectMapper();
-    ObjectMapper o2 = o1;
-
-    Thread t1 = new MyThread(o1, 1);
-    Thread t2 = new MyThread(o2, 2);
-
-    t1.start();
-    t2.start();
-
-}
-</code></pre>
-
-<p>}</p>
-
-<p>class MyThread extends Thread {</p>
-
-<pre><code>private ObjectMapper om;
-
-private int threadId;
-
-public MyThread(ObjectMapper om, int threadId) {
-    this.om = om;
-    this.threadId = threadId;
-}
-
-//产生1秒内的随机暂停
-private void pauseRandomTimes() {
-    try {
-        Thread.sleep((long)Math.ceil(Math.random()*1000));
-    } catch (InterruptedException e1) {
-        e1.printStackTrace();
-    }
-}
-
-@Override
-public void run() {
-
-    Student s = new Student();
-    s.setId(1);
-    s.setName("张三");
-
-    for (int i = 0; i &lt; 10 ; i++) {
-
-
-        if (threadId == 1)   {
-            SimpleFilterProvider filterProvider = new SimpleFilterProvider().setFailOnUnknownId(false);
-            filterProvider.addFilter("myStudent", SimpleBeanPropertyFilter.filterOutAllExcept("id"));
-            om.setFilters(filterProvider);
-            try {
-                //随机休眠一段时间
-                pauseRandomTimes();
-                System.out.println("线程1中的输出是：" + om.writeValueAsString(s));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            SimpleFilterProvider filterProvider = new SimpleFilterProvider().setFailOnUnknownId(false);
-            filterProvider.addFilter("myStudent", SimpleBeanPropertyFilter.filterOutAllExcept("id","name"));
-            om.setFilters(filterProvider);
-            try {
-                //随机休眠一段时间
-                pauseRandomTimes();
-                System.out.println("线程2中的输出是：" + om.writeValueAsString(s));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-    }
-
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;上面的这段多线程测试程序中，本计划在线程1中只输入对象的id属性，线程2中输出id、name两个属性，但通过下面的结果，我们发现事与愿违，两个线程中的输出混乱了，这就是共享了一个ObjectMapper并通过om.setFilters造成的原因。</p>
-
-<p>```</p>
-
-<p>线程2中的输出是：{&ldquo;id&rdquo;:1}
-线程2中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
-线程2中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
-线程2中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
-线程1中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
-线程2中的输出是：{&ldquo;id&rdquo;:1}
-线程1中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
-线程1中的输出是：{&ldquo;id&rdquo;:1}
-线程1中的输出是：{&ldquo;id&rdquo;:1}
-线程1中的输出是：{&ldquo;id&rdquo;:1}
-线程2中的输出是：{&ldquo;id&rdquo;:1}
-线程1中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
-线程1中的输出是：{&ldquo;id&rdquo;:1}
-线程2中的输出是：{&ldquo;id&rdquo;:1}
-线程2中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
-线程1中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
-线程2中的输出是：{&ldquo;id&rdquo;:1}
-线程2中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
-线程1中的输出是：{&ldquo;id&rdquo;:1,&ldquo;name&rdquo;:&ldquo;张三&rdquo;}
-线程1中的输出是：{&ldquo;id&rdquo;:1}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;如何改造达到我们的要求呢？如下即可，但这又会造成并发下的性能问题。</p>
-
-<p>``` java
-ObjectMapper o1 = new ObjectMapper();
-ObjectMapper o2 = new ObjectMapper();
-Thread t1 = new My2Thread(o1, 1);
-Thread t2 = new My2Thread(o2, 2);</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;最终的做法是：</p>
-
-<p>&emsp;&emsp;1、将ObjectMapper作为全局；</p>
-
-<p>&emsp;&emsp;2、通过om.writer(filterProvider).write&hellip;.. 的方式输出。即保证性能，出满足多线程。</p>
-
-<p>&emsp;&emsp;最后，看一看两种写法的性能测试结果：</p>
-
-<p>``` java
-public static void main1(String[] args) {</p>
-
-<pre><code>    Student s = new Student();
-    s.setId(1);
-    s.setName("张三");
-
-    System.out.println("开始执行.....");
-    long start = System.currentTimeMillis();
-
-    ObjectMapper om;
-    for (int i = 0; i &lt; 10000; i ++ ) {
-        om = new ObjectMapper();
-        SimpleFilterProvider filterProvider = new SimpleFilterProvider().setFailOnUnknownId(false);
-        filterProvider.addFilter("myStudent", SimpleBeanPropertyFilter.filterOutAllExcept("id","name"));
-        om.setFilters(filterProvider);
-        try {
-            om.writeValueAsString(s);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } 
-
-    }
-    long end = System.currentTimeMillis();
-    System.out.println("执行所花时间：" + (end - start) + "ms.");
-
-
-}
-</code></pre>
-
-<p>```
-&emsp;&emsp;这段测试代码的输出是：执行所花时间：6078ms.</p>
-
-<p>&emsp;&emsp;而另一种写法的测试代码如下：</p>
-
-<p>``` java</p>
-
-<p>public static void main(String[] args) {</p>
-
-<pre><code>    Student s = new Student();
-    s.setId(1);
-    s.setName("张三");
-
-    System.out.println("开始执行.....");
-    long start = System.currentTimeMillis();
-
-    ObjectMapper om = new ObjectMapper();
-    for (int i = 0; i &lt; 10000; i ++ ) {
-        SimpleFilterProvider filterProvider = new SimpleFilterProvider().setFailOnUnknownId(false);
-        filterProvider.addFilter("myStudent", SimpleBeanPropertyFilter.filterOutAllExcept("id","name"));
-        try {
-            om.writer(filterProvider).writeValueAsString(s);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } 
-
-    }
-    long end = System.currentTimeMillis();
-    System.out.println("执行所花时间：" + (end - start) + "ms.");
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;这段测试代码的输出是：执行所花时间：547ms.同样的功能，不同的实现代码，时间差距非常巨大，所以，大家在实际编码须注意到这个问题。</p>
-
-<p>&emsp;&emsp;大家可以对ObjectMapper进行简单封装，具体请参阅我的另一篇文章<a href="/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
 ]]></content>
   </entry>
   

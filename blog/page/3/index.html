@@ -9,10 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;angular.js同时也是一个客户端的MVC框架，它有自己的控制器，可以对客户端的程序结构进行有效规范，比如，我们可以通过$routeProvider，定义整个系统的路由表，示例代码如下： 1
-2
-3
-$routeProvider .when(&quot;/&quot &hellip;">
+  <meta name="description" content="&emsp;&emsp;搭建项目结构，这个可以在gitHub上找到很多的seed来参考，我就是这么做的。结构如下，需要注意的是： &emsp;&emsp;1、所有的js都放到了js目录中 &emsp;&emsp;2、框架包放在js/lib下，主文件包是app.js， &emsp;&emsp;3、 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -61,6 +58,67 @@ $routeProvider .when(&quot;/&quot &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/09/28/angular-js3/">一步步教你用angular.js实现一个基本应用&#8212;第三部分</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-09-28T15:18:00+08:00" pubdate data-updated="true">2013年09月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;搭建项目结构，这个可以在gitHub上找到很多的seed来参考，我就是这么做的。结构如下，需要注意的是：</p>
+
+<p>&emsp;&emsp;1、所有的js都放到了js目录中</p>
+
+<p>&emsp;&emsp;2、框架包放在js/lib下，主文件包是app.js，</p>
+
+<p>&emsp;&emsp;3、控制器在controller.js中，如果控制器中东西太多，建议按模块再次划分成更多的文件，比如：systemController.js，salemanagerController.js</p>
+
+<p>&emsp;&emsp;4、服务存放在service.js中，其中可以注册多个服务。</p>
+
+<p>&emsp;&emsp;5、自己的一些公共js，可以放在commons.js中。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/09/1.jpg' width='' height='' title='项目文件结构'><span class='caption-text'>项目文件结构</span></span></p>
+
+<p>&emsp;&emsp;好了，先来看主页面index.html，这篇文件中</p>
+
+<p>&emsp;&emsp;1、使用ng-app指明，整个系统是在哪个模块作用域下；</p>
+
+<p>&emsp;&emsp;2、ng-view，是所有了页面加载显示的地方。</p>
+
+<p>&emsp;&emsp;3、在最后导入的有使用到的js，angular会重新编译整个页面，并重建dom结构。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/09/28/angular-js3/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -813,82 +871,6 @@ $routeProvider .when(&quot;/&quot &hellip;">
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/08/01/nodejs-login-sync/">Nodejs中的同步之&#8211;登录代码</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-08-01T15:18:00+08:00" pubdate data-updated="true">2013年08月01日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;在我们的业务代码实现中，总有那么一些存在同步操作的情况，为了让写出的代码具有更好的可读性（相对于function层层嵌套而言），我们还得借助一些同步框架来实现，下面以一个简单的登录代码来说明这个问题。现假设有多个相同用户名称密码的情况存在，我们只取一个人的信息完成登录，代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'>     <span class="kd">var</span> <span class="nx">loginUser</span><span class="p">;</span>
-</span><span class='line'>     <span class="nx">req</span><span class="p">.</span><span class="nx">models</span><span class="p">.</span><span class="nx">user</span><span class="p">.</span><span class="nx">find</span><span class="p">({</span> <span class="nx">f_login_code</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">f_pwd</span><span class="o">:</span><span class="nx">req</span><span class="p">.</span><span class="nx">query</span><span class="p">.</span><span class="nx">pwd</span> <span class="p">}).</span><span class="nx">run</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="nx">users</span><span class="p">){</span>
-</span><span class='line'>           <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span><span class="o">&lt;</span> <span class="nx">users</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="c1">//只处理一个</span>
-</span><span class='line'>                    <span class="nx">loginUser</span> <span class="o">=</span> <span class="nx">users</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
-</span><span class='line'>                    <span class="k">break</span><span class="p">;</span>
-</span><span class='line'>                <span class="p">}</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">loginUser</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>         <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">name</span><span class="o">:</span><span class="nx">loginUser</span><span class="p">.</span><span class="nx">f_name</span><span class="p">});</span>
-</span><span class='line'>     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>         <span class="nx">resultJson</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span><span class="nx">code</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span><span class="nx">msg</span><span class="o">:</span><span class="s1">&#39;用户名或密码错误，请核对！&#39;</span><span class="p">});</span>
-</span><span class='line'>     <span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2013/08/01/nodejs-login-sync/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/4/">&larr; 更多早期老文章</a>
@@ -906,6 +888,10 @@ $routeProvider .when(&quot;/&quot &hellip;">
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/03/27/cache-redis/">缓存之redis</a>
       </li>
     
@@ -919,10 +905,6 @@ $routeProvider .when(&quot;/&quot &hellip;">
     
       <li class="post">
         <a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/03/03/objectmapper-json/">Json类库jackson使用之误区</a>
       </li>
     
   </ul>

@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;在项目后期维护中，服务器通常在异地，那么我们如何有效地进行维护呢，下面谈谈我使用过的一些工具。 &emsp;&emsp;一、windows server服务器： &emsp;&emsp;一般不建议用windows做为服务器，我们以前就遇到过服务器被黑客攻破，或者被病毒感染， &hellip;">
+  <meta name="description" content="&emsp;&emsp;异常，为我们处理非正常的业务流程提供了很好的解决方案，如果你有过dbase、c、pascal等过程式语言开发的经历，你一定会深刻体会到，异常机制给你的代码可读行、可维护性带来的好处，同时，程序的健壮性也得到了增强。 &emsp;&emsp;在 java项目中， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,82 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/11/12/exception/">项目中异常设计及处理总结</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-11-12T15:18:00+08:00" pubdate data-updated="true">2010年11月12日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;异常，为我们处理非正常的业务流程提供了很好的解决方案，如果你有过dbase、c、pascal等过程式语言开发的经历，你一定会深刻体会到，异常机制给你的代码可读行、可维护性带来的好处，同时，程序的健壮性也得到了增强。</p>
+
+<p>&emsp;&emsp;在 java项目中，异常设计要注意下面的几点。</p>
+
+<p>&emsp;&emsp;<strong>一、自定义异常父类的选择</strong></p>
+
+<p>&emsp;&emsp;A、自定义异常的父类，可以选择为RuntimeException或Exception。RuntimeException是运行时异常，你可以选择它来做为你的异常父类，因为这种异常不受到编译器检查，因此，给予了程序员很大的灵活性，程序员可以处理这种异常，也可以不处理（实际上并不是不处理，而是不立即处理，等到一个合适的地方再进行处理）。选择RuntimeException作为父类，是很多框架常采用的，如果你是做底层框架的，可以选择 RuntimeException。</p>
+
+<p>&emsp;&emsp;B、业务层异常，一般选择Exception作为父类，因为业务层异常比较重要，一般都是要由调用者进行处理或者是要告知调用者会发生这种异常。如果你的代码是提供给第三方厂商用的，业务层封闭统一的异常就显得非常的有必要。这类异常会强制要求程序员进行处理（异常转译或继续声明抛出），程序完整性、健壮性得到了加强。</p>
+
+<p>&emsp;&emsp;<strong>二、业务层自定义异常结构的设计</strong></p>
+
+<p>&emsp;&emsp;A、业务层自定义异常可以考虑按子系统来划分，也就是说，每一个子系统（模块）都有自己的异常定义，每个子系统自己维护自己的，统一向调用者抛出。</p>
+
+<p>&emsp;&emsp;B、根据业务类型，从逻辑上划分异常类型，比如：权限相关的，安全相关的，数据库相关的等等。</p>
+
+<p>&emsp;&emsp;总的来说，这两种自定义异常也可以混合使用，因为有的时候，子系统（业务模块）本身就是从逻辑上进行划分的。</p>
+
+<p>&emsp;&emsp;<strong>三、异常结构定义</strong></p>
+
+<p>&emsp;&emsp;异常类的父类选定后，再定义自己的异常结构。一般的异常类中，要定义这么一些东西。</p>
+
+<p>&emsp;&emsp;A、描述字符串，说明异常的起因，或说明等。</p>
+
+<p>&emsp;&emsp;B、异常码。定义一个int或String类型的异常码，异常码在整个系统中统一定义，根据异常继承结构，异常码也可以定义得有层次结构。异常码在大的系统中比较常见，Oracle ,Sqlserver等数据库产品中，或华为、中兴的一些驱动api中。</p>
+
+<p>&emsp;&emsp;C、定义一个Throwable的成员变量，用以封装异常结构链。</p>
+
+<p>&emsp;&emsp;D、定义无参数、有参数（String，Throwable）的构造方法。</p>
+
+<p>&emsp;&emsp;<strong>四、在WEB三层模型中，异常的处理</strong></p>
+
+<p>&emsp;&emsp;在经典的三层架构模型中，通常都是这样来进行异常处理的：</p>
+
+<p>&emsp;&emsp;A、持久层一般抛出的是RuntiomeException类型的异常，一般不处理，直接向上抛出。</p>
+
+<p>&emsp;&emsp;B、业务层一般要封装自定义异常，统一向外抛出（这里要注意，如果用spring在业务层管理异常，一定要配置好异常回滚类型，因为spring默认只回滚RuntiomeException类型的）。我也见过一些想省事的人，业务层也不定义任何异常，也不进行try catch，如果业务层出现异常将在表现层进行处理及页面跳转。</p>
+
+<p>&emsp;&emsp;C、表现层必须要处理业务层的异常，以正确向客户报告系统出现的问题，这里面是最后一道异常处理的地方。我也见过有懒人在业务层都不处理，直接在web.xml中配置errorPage的，但不建议这么做。</p>
+
+<p>&emsp;&emsp;用好异常，对于项目的可维护性、健壮性都有极大的好处，当然，异常也不是万能的，在有些项目中并不适用，比如：纯算法项目，对性能要求极高的项目等，因为异常栈会对系统性能有一定开销，在这些项目中，最后还在老老实实用方法的返回值去标识方法执行的结果，用if else去处理业务逻辑中的非正常情况吧。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -625,159 +701,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/10/27/nginx/">Nginx转换手记</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-10-27T15:18:00+08:00" pubdate data-updated="true">2010年10月27日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;首先说一下为什么要把apache换成nginx。</p>
-
-<p>&emsp;&emsp;在目前的web服务器市场，apache的市场占有率应该在70%左右，可见其应用之广泛。apache有不错的性能及强大的模块配置功能，安全性也不 错。后来发现，很多访问量比较大的网站，都换成了nginx，一个由俄罗斯人开发的开源项目，就下载下为研究了一下，发现其配置上比apache更加简 洁，且可控制项也非常丰富，就决定采用nginx了。至于效率是否会比apache高10倍，本人没有测试过，没有发言权。</p>
-
-<p>&emsp;&emsp;首先安装，sudo apt-get install ngnix，版本是0.6.02，应该是一个比较稳定的版本。</p>
-
-<p>&emsp;&emsp;其次，安装与php5-cgispawn-fcgi，php5服务器上本来就有，所以不必再安装一次。（前段时候nginx报重大安全漏洞，其实并不是ngnix的漏洞，而是spawn-fcgi上的问题，怎么修改以避免该漏同，大家google一下哈）。</p>
-
-<p>&emsp;&emsp;经过上面的操作，就完成了安装，ngnix已经加入到自动启动配置中，接下来，我们要做的，就是修改配置文件，建立虚拟主机。</p>
-
-<p>&emsp;&emsp;ubuntu集成nginx与apache后的目录结构非常的相似，在/etc/nginx目录下就是所有需要的东西了。nginx.conf是主配置文 件，一般不用改动，sites-available目录下，是站点虚拟主机配置文件，sites-enabled下是生效的配置（直接建立起sites- available目录下文件的软链接，软链接是我发现的linux下最强大、最有效的功能，如果换为win 平台，我不晓得该怎么做，呵呵）。
-下面是一个主机配置示例：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='nginx'><span class='line'><span class="k">server</span> <span class="p">{</span>
-</span><span class='line'><span class="kn">listen</span>   <span class="mi">80</span><span class="p">;</span>
-</span><span class='line'><span class="kn">server_name</span>  <span class="s">yourdomain.com</span><span class="p">;</span>
-</span><span class='line'><span class="kn">root</span> <span class="s">/var/www/yousite_doc_root</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="kn">access_log</span>  <span class="s">/var/log/nginx/localhost.access.log</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
-</span><span class='line'>  <span class="kn">root</span> <span class="s">/var/www/yousite_doc_root</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">index</span> <span class="s">index.html</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="kn">location</span> <span class="p">~</span> <span class="sr">\.(jsp|htm|do)$</span> <span class="p">{</span>
-</span><span class='line'>  <span class="kn">proxy_pass</span> <span class="s">http://youdomain.com</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">proxy_set_header</span> <span class="s">X-Real-IP</span> <span class="nv">$remote_addr</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">proxy_read_timeout</span> <span class="mi">480</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">proxy_send_timeout</span> <span class="mi">480</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="kn">location</span> <span class="p">~</span><span class="sr">*</span> <span class="s">\.(mp3|wmv|png|jpg|gif|swf)</span>$ <span class="p">{</span>
-</span><span class='line'>  <span class="kn">valid_referers</span>  <span class="s">none</span>  <span class="s">blocked</span> <span class="s">server_names</span> <span class="s">*.yourdomain.com</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">if</span> <span class="s">(</span><span class="nv">$invalid_referer</span><span class="s">)</span> <span class="p">{</span>
-</span><span class='line'>      <span class="kn">rewrite</span> <span class="s">^/</span> <span class="s">http://image.yourdomain.com/dl.jpg</span><span class="p">;</span>
-</span><span class='line'>      <span class="c1">#return 403;</span>
-</span><span class='line'>  <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;ubuntu在上面的配置中，要注意的是：</p>
-
-<p>&emsp;&emsp;1、location / {}中，请配置上root，虽然上面已经配置过一次。如果不配置，资源访盗链将无法实现，网上的很多配置都是误人子弟的，请大家一定要小心。</p>
-
-<p>&emsp;&emsp;2、 proxy_pass <a href="http://youdomain.com">http://youdomain.com</a> 是到jsp和*.do的，转到一个后台tomcat集群配置中，效率可能会比apache的ajp13低一些，我会在另一篇文章中介绍。</p>
-
-<p>&emsp;&emsp;3、proxy_read_timeout 480;与 proxy_send_timeout 480配置，有助于解决业务执行过程较长的长请求。</p>
-
-<p>&emsp;&emsp;4、 proxy_set_header X-Real-IP $remote_addr用于在程序中获得客户真实的ip，当然切换成nginx后，你程序中取ip的代码也得改。</p>
-
-<p>php站点的一个配置实例：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='nginx'><span class='line'><span class="k">server</span> <span class="p">{</span>
-</span><span class='line'>  <span class="kn">listen</span> <span class="mi">80</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">server_name</span> <span class="s">yourdomain.com</span><span class="p">;</span>
-</span><span class='line'>  <span class="kn">access_log</span>  <span class="s">/var/log/nginx/localhost.access.log</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
-</span><span class='line'>      <span class="kn">root</span>   <span class="s">/var/www/bbs_doc_root/subdir</span><span class="p">;</span>
-</span><span class='line'>      <span class="kn">index</span>  <span class="s">index.html</span> <span class="s">index.php</span><span class="p">;</span>
-</span><span class='line'>  <span class="p">}</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="kn">location</span> <span class="p">~</span> <span class="sr">\.php$</span> <span class="p">{</span>
-</span><span class='line'>      <span class="kn">fastcgi_pass</span>   <span class="n">127.0.0.1</span><span class="p">:</span><span class="mi">9000</span><span class="p">;</span>
-</span><span class='line'>      <span class="kn">fastcgi_index</span>  <span class="s">index.php</span><span class="p">;</span>
-</span><span class='line'>      <span class="kn">fastcgi_param</span>  <span class="s">SCRIPT_FILENAME</span>  <span class="s">/var/www/bbs_yousitedomain/ucenter</span><span class="nv">$fastcgi_script_name</span><span class="p">;</span>
-</span><span class='line'>      <span class="kn">include</span> <span class="s">fastcgi_params</span><span class="p">;</span>
-</span><span class='line'>  <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;最后，还需要修改nginx配置文件，将nginx版本号隐藏起来，以访止自动扫描软件发现特定版本的安全露洞。</p>
-
-<p>&emsp;&emsp;如有问题，请与我讨论。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/17/">&larr; 更多早期老文章</a>
@@ -795,6 +718,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a>
       </li>
     
@@ -808,10 +735,6 @@
     
       <li class="post">
         <a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a>
       </li>
     
   </ul>

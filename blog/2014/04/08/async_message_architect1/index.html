@@ -88,15 +88,15 @@
 
 <p>&emsp;&emsp;近期一些童鞋在实现一个监控系统，其中的一个功能是：对监控平台上布署的第三方应用业务方法执行细节进行监控，比如：方法调用者，调用者ip，应用系统名称，子系统名称，方法名称，执行耗时等信息。如何能够让监控系统得到目标机器上需要监控的业务方法执行情况呢？如何保证在监控的过程中不影响对方的业务的正常执行？下面我给出一种参考架构实现，这也是在概要设计的时候就应该明确的东西（专业名词叫架构原型）。</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构图'><span class='caption-text'>业务方法监控架构图</span></span></p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构'><span class='caption-text'>业务方法监控架构</span></span></p>
 
 <p>&emsp;&emsp;首先，MonitorPlatform是我们的监控平台（图中青色部分），targetServer上运行着需要监控的系统hotel project（图中黄色部分）,如果我们想要获得目标机器上的我们需要的信息，最简单的办法是运行一个spy程序在对方的机器上，图中的spy app是起这个作用的（当然你也可以使用jmx规范来实现类似功能），举个不恰当的例子，就好比你在某人的机器上安装了一个木马程序，通过远程控制端你就可以得到对方机器上你感兴趣的任何东西，甚至包括控制摄像头哦。</p>
 
 <p>&emsp;&emsp;其次，监控平台同时要监控多个目标系统，就我们例子中监控业务方法执行情况而言，就需要把监控得到的信息加以持久化以备后查，如果目标系统业务繁忙，而我们的spy app又要将取到的信息进行数据库持久化，数据库很可能会成为性能瓶颈从而造成性能问题，因此，我在这里采用了异步消息系统的设计，以缓解持久化压力。正如图所示，spy app将采集到的业务方法执行数据直接写入异步消息服务器的queue中，而monitor platform中的处理程序将从queue中取出消息，再进行后续的持久化处理。这种异步的消息设计方式可以有效缓解系统的压力，在很多项目中都可以采用（互联网项目中可用这种方式来&#8221;削峰&#8221;，缓解高并发压力）。</p>
 
-<p>&emsp;&emsp;最后一个问题,spy如何采集到目标机器业务方法的执行情况呢。最佳答案当然是AOP。</p>
+<p>&emsp;&emsp;最后一个问题,spy如何采集到目标机器业务方法的执行情况呢。最佳答案当然是AOP。大家可以参考我的另一篇文章<a href="/blog/2013/03/26/logger/">一种日志记录解决方案</a>。</p>
 
-<p>&emsp;&emsp;下面，我们一起来看看架构原型中的原码实现吧。MethodLoggerMessage是需要持久化的消息对象，请注意实现Serializable接口。<!-- more --></p>
+<p>&emsp;&emsp;下面，我们一起来看看架构原型中的原代码实现吧。MethodLoggerMessage是需要持久化的消息对象，请注意实现Serializable接口。<!-- more --></p>
 
 <figure class='code'><figcaption><span>MethodLoggerMessage.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -628,6 +628,8 @@
         <a class="basic-alignment left" href="/blog/2014/03/27/cache-redis/" title="上一篇文章: 缓存之redis">&laquo;上一篇:&nbsp;&nbsp;缓存之redis</a>
       
       
+        <a class="basic-alignment right" href="/blog/2014/04/09/async_message_architect2/" title="下一篇文章: 监控系统中的异步消息使用实例（二）">下一篇: &nbsp;&nbsp;监控系统中的异步消息使用实例（二） &raquo;</a>
+      
     </p>
   </footer>
 </article>
@@ -661,6 +663,10 @@ var duoshuoQuery = {short_name:"ljh2008"};
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a>
       </li>
     
@@ -674,10 +680,6 @@ var duoshuoQuery = {short_name:"ljh2008"};
     
       <li class="post">
         <a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a>
       </li>
     
   </ul>

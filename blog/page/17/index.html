@@ -9,16 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;定时任务在项目中使用非常普遍，比如说：每天晚上3：00开始执行数据真删除，每个月第四周星期三晚上1：00开始执行报表统计任务等，我们在项目中，可以通过下面三种方式来实现： 一、利用j2se的timer类来实现，非常简单，代码如下： 1
-2
-3
-4
-5
-6
-7
-8
-9
-10 &hellip;">
+  <meta name="description" content="&emsp;&emsp;首先说一下为什么要把apache换成nginx。 &emsp;&emsp;在目前的web服务器市场，apache的市场占有率应该在70%左右，可见其应用之广泛。apache有不错的性能及强大的模块配置功能，安全性也不 错。后来发现，很多访问量比较大的网站，都换成了nginx &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -67,6 +58,159 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/27/nginx/">Nginx转换手记</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-27T15:18:00+08:00" pubdate data-updated="true">2010年10月27日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;首先说一下为什么要把apache换成nginx。</p>
+
+<p>&emsp;&emsp;在目前的web服务器市场，apache的市场占有率应该在70%左右，可见其应用之广泛。apache有不错的性能及强大的模块配置功能，安全性也不 错。后来发现，很多访问量比较大的网站，都换成了nginx，一个由俄罗斯人开发的开源项目，就下载下为研究了一下，发现其配置上比apache更加简 洁，且可控制项也非常丰富，就决定采用nginx了。至于效率是否会比apache高10倍，本人没有测试过，没有发言权。</p>
+
+<p>&emsp;&emsp;首先安装，sudo apt-get install ngnix，版本是0.6.02，应该是一个比较稳定的版本。</p>
+
+<p>&emsp;&emsp;其次，安装与php5-cgispawn-fcgi，php5服务器上本来就有，所以不必再安装一次。（前段时候nginx报重大安全漏洞，其实并不是ngnix的漏洞，而是spawn-fcgi上的问题，怎么修改以避免该漏同，大家google一下哈）。</p>
+
+<p>&emsp;&emsp;经过上面的操作，就完成了安装，ngnix已经加入到自动启动配置中，接下来，我们要做的，就是修改配置文件，建立虚拟主机。</p>
+
+<p>&emsp;&emsp;ubuntu集成nginx与apache后的目录结构非常的相似，在/etc/nginx目录下就是所有需要的东西了。nginx.conf是主配置文 件，一般不用改动，sites-available目录下，是站点虚拟主机配置文件，sites-enabled下是生效的配置（直接建立起sites- available目录下文件的软链接，软链接是我发现的linux下最强大、最有效的功能，如果换为win 平台，我不晓得该怎么做，呵呵）。
+下面是一个主机配置示例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='nginx'><span class='line'><span class="k">server</span> <span class="p">{</span>
+</span><span class='line'><span class="kn">listen</span>   <span class="mi">80</span><span class="p">;</span>
+</span><span class='line'><span class="kn">server_name</span>  <span class="s">yourdomain.com</span><span class="p">;</span>
+</span><span class='line'><span class="kn">root</span> <span class="s">/var/www/yousite_doc_root</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">access_log</span>  <span class="s">/var/log/nginx/localhost.access.log</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span><span class='line'>  <span class="kn">root</span> <span class="s">/var/www/yousite_doc_root</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">index</span> <span class="s">index.html</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kn">location</span> <span class="p">~</span> <span class="sr">\.(jsp|htm|do)$</span> <span class="p">{</span>
+</span><span class='line'>  <span class="kn">proxy_pass</span> <span class="s">http://youdomain.com</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">proxy_set_header</span> <span class="s">X-Real-IP</span> <span class="nv">$remote_addr</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">proxy_read_timeout</span> <span class="mi">480</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">proxy_send_timeout</span> <span class="mi">480</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kn">location</span> <span class="p">~</span><span class="sr">*</span> <span class="s">\.(mp3|wmv|png|jpg|gif|swf)</span>$ <span class="p">{</span>
+</span><span class='line'>  <span class="kn">valid_referers</span>  <span class="s">none</span>  <span class="s">blocked</span> <span class="s">server_names</span> <span class="s">*.yourdomain.com</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">if</span> <span class="s">(</span><span class="nv">$invalid_referer</span><span class="s">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="kn">rewrite</span> <span class="s">^/</span> <span class="s">http://image.yourdomain.com/dl.jpg</span><span class="p">;</span>
+</span><span class='line'>      <span class="c1">#return 403;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;ubuntu在上面的配置中，要注意的是：</p>
+
+<p>&emsp;&emsp;1、location / {}中，请配置上root，虽然上面已经配置过一次。如果不配置，资源访盗链将无法实现，网上的很多配置都是误人子弟的，请大家一定要小心。</p>
+
+<p>&emsp;&emsp;2、 proxy_pass <a href="http://youdomain.com">http://youdomain.com</a> 是到jsp和*.do的，转到一个后台tomcat集群配置中，效率可能会比apache的ajp13低一些，我会在另一篇文章中介绍。</p>
+
+<p>&emsp;&emsp;3、proxy_read_timeout 480;与 proxy_send_timeout 480配置，有助于解决业务执行过程较长的长请求。</p>
+
+<p>&emsp;&emsp;4、 proxy_set_header X-Real-IP $remote_addr用于在程序中获得客户真实的ip，当然切换成nginx后，你程序中取ip的代码也得改。</p>
+
+<p>php站点的一个配置实例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='nginx'><span class='line'><span class="k">server</span> <span class="p">{</span>
+</span><span class='line'>  <span class="kn">listen</span> <span class="mi">80</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">server_name</span> <span class="s">yourdomain.com</span><span class="p">;</span>
+</span><span class='line'>  <span class="kn">access_log</span>  <span class="s">/var/log/nginx/localhost.access.log</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kn">location</span> <span class="s">/</span> <span class="p">{</span>
+</span><span class='line'>      <span class="kn">root</span>   <span class="s">/var/www/bbs_doc_root/subdir</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">index</span>  <span class="s">index.html</span> <span class="s">index.php</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kn">location</span> <span class="p">~</span> <span class="sr">\.php$</span> <span class="p">{</span>
+</span><span class='line'>      <span class="kn">fastcgi_pass</span>   <span class="n">127.0.0.1</span><span class="p">:</span><span class="mi">9000</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">fastcgi_index</span>  <span class="s">index.php</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">fastcgi_param</span>  <span class="s">SCRIPT_FILENAME</span>  <span class="s">/var/www/bbs_yousitedomain/ucenter</span><span class="nv">$fastcgi_script_name</span><span class="p">;</span>
+</span><span class='line'>      <span class="kn">include</span> <span class="s">fastcgi_params</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，还需要修改nginx配置文件，将nginx版本号隐藏起来，以访止自动扫描软件发现特定版本的安全露洞。</p>
+
+<p>&emsp;&emsp;如有问题，请与我讨论。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1011,6 +1155,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a>
       </li>
     
@@ -1024,10 +1172,6 @@
     
       <li class="post">
         <a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a>
       </li>
     
   </ul>

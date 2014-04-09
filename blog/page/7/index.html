@@ -9,7 +9,16 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;z-tree是基于jquery上的一个功能强大的js树控件，先看项目中的一张效果图： z-tree界面示例 &emsp;&emsp;图中展示了网元类别和网元的关系，类别是树状态结构的，而网元属于一个类别，一个类别下有多个网元，标准一对多关系。 &emsp;&emsp; &hellip;">
+  <meta name="description" content="&emsp;&emsp;枚举类型可以增强代码的可读性和健壮性，在项目中有广泛的使用，比如，我们有一个代码数据库类型的枚举： 1
+2
+3
+4
+5
+6
+7
+8
+9
+public enum DatabaseType{ oracle, mysql, sqlServer } &emsp;&emsp; &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +67,195 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/06/enum-spring-mvc/">Enum枚举类型在spring Mvc中的转换</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-06T15:18:00+08:00" pubdate data-updated="true">2013年03月06日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;枚举类型可以增强代码的可读性和健壮性，在项目中有广泛的使用，比如，我们有一个代码数据库类型的枚举：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">enum</span> <span class="n">DatabaseType</span><span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">oracle</span><span class="o">,</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">mysql</span><span class="o">,</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">sqlServer</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在另一个数据源对象中，引用了这个枚举类型，如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">DataSource</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">DatabaseType</span>  <span class="n">databaseType</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;DataSource对象中的databaseType属性，可以通过hibernate中的@Enumerated注解实现很好的映射，保存到数据库中的值，是枚举类型的下标，从0开始。有些同学使用的是spring mvc，而spring mvc没有提供对枚举类型的自动转换功能，我们要如何处理呢？当然，是要定义自己的属性转换器了，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">class</span> <span class="nc">DatabaseTypeEnumEditor</span> <span class="kd">extends</span> <span class="n">PropertyEditorSupport</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'> <span class="nd">@Override</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">setAsText</span><span class="o">(</span><span class="n">String</span> <span class="n">text</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">text</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>         <span class="kt">boolean</span> <span class="n">found</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>         <span class="k">for</span> <span class="o">(</span><span class="n">DatabaseType</span> <span class="n">d</span> <span class="o">:</span> <span class="n">DatabaseType</span><span class="o">.</span><span class="na">values</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">val</span> <span class="o">==</span> <span class="n">d</span><span class="o">.</span><span class="na">ordinal</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>                 <span class="k">this</span><span class="o">.</span><span class="na">setValue</span><span class="o">(</span><span class="n">d</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>                 <span class="n">found</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>                 <span class="k">break</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>             <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">found</span> <span class="o">==</span> <span class="kc">false</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">//错误的取值，我们默认为oracle类型，当然你也可以throws exception</span>
+</span><span class='line'>
+</span><span class='line'>             <span class="k">this</span><span class="o">.</span><span class="na">setValue</span><span class="o">(</span><span class="n">DatabaseType</span><span class="o">.</span><span class="na">oracle</span><span class="o">);</span>         <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后将这个属性转换器注册到spring mvc的这个action上：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@InitBinder</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">initBinder</span><span class="o">(</span><span class="n">HttpServletRequest</span> <span class="n">request</span><span class="o">,</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">ServletRequestDataBinder</span> <span class="n">binder</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>             <span class="n">binder</span><span class="o">.</span><span class="na">registerCustomEditor</span><span class="o">(</span><span class="n">Date</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">dateEditor</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>             <span class="n">binder</span><span class="o">.</span><span class="na">registerCustomEditor</span><span class="o">(</span><span class="n">DatabaseType</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="k">new</span> <span class="n">DatabaseTypeEnumEditor</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;至此已经全部完成。</p>
+
+<p>&emsp;&emsp;最后说一下jackson在对enum进行转换时，默认情况下得到的是枚举字符串，如果想得到其底层的真实值（即和hibernate持久化的值保持一致），需要打开这个开关：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">configure</span><span class="o">(</span><span class="n">Feature</span><span class="o">.</span><span class="na">WRITE_ENUMS_USING_INDEX</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2336,50 +2534,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/01/07/art/">油画- 晨曦</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-01-07T15:18:00+08:00" pubdate data-updated="true">2013年01月07日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;布面油画（60X80CM）。</p>
-
-<p>&emsp;&emsp;这是一张表现清晨的临摹作品，因为有人很喜欢这张画，因此绘制了一张。</p>
-
-<p>&emsp;&emsp;画面的难点在于表现晨曦中的远山，似乎还有一层雾气，另一个是阳光穿透树叶的光影感觉。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/01/4.jpg' width='' height='' title='布面油画-晨曦'><span class='caption-text'>布面油画-晨曦</span></span></p>
-
-<p>&emsp;&emsp;临摹作品一般速度较快，因为不需要构思及投入过多情感，通常，一至两天就可以完成这样的一张画。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/8/">&larr; 更多早期老文章</a>
@@ -2397,6 +2551,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a>
       </li>
     
@@ -2410,10 +2568,6 @@
     
       <li class="post">
         <a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a>
       </li>
     
   </ul>

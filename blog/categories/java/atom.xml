@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：java | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-04-08T23:15:57+08:00</updated>
+  <updated>2014-04-09T17:11:02+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,260 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[监控系统中的异步消息使用实例（二）]]></title>
+    <link href="http://yanyaner.com/blog/2014/04/09/async_message_architect2/"/>
+    <updated>2014-04-09T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/04/09/async_message_architect2</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;接上节，再次贴出架构图，我们接下来要讲的是图中黄色部分的配置。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构'><span class='caption-text'>业务方法监控架构</span></span></p>
+
+<p>&emsp;&emsp;先将spy程序导成一个jar包，加入到需要监控的目标服务器lib目录，monitor_spy.jar结构如下所示：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/jarinfo.jpg' width='' height='' title='monitor_spy.jar结构'><span class='caption-text'>monitor_spy.jar结构</span></span></p>
+
+<p>&emsp;&emsp;为了能够实现对目标系统业务方法执行情况进行监控，需要将我们已经写好的拦截器配置到目标系统中去，下面是我的一个配置示例：</p>
+
+<p>``` xml spring-spy.xml</p>
+
+<pre><code>&lt;!-- jms连接工厂 --&gt;         
+&lt;bean id="jmsFactory" class="org.apache.activemq.pool.PooledConnectionFactoryBean"&gt;
+    &lt;property name="connectionFactory"&gt;
+        &lt;bean class="org.apache.activemq.ActiveMQConnectionFactory"&gt;
+            &lt;property name="brokerURL" value="tcp://localhost:61616"&gt;&lt;/property&gt;
+        &lt;/bean&gt;
+    &lt;/property&gt;
+    &lt;!-- 配置池中最大连接数据以及最大活动连接数 --&gt;
+    &lt;property name="maxConnections" value="100"&gt;&lt;/property&gt;
+    &lt;property name="maximumActive" value="100"&gt;&lt;/property&gt;
+&lt;/bean&gt;
+
+&lt;!-- jms模板方法 --&gt;    
+&lt;bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate"&gt;
+    &lt;constructor-arg ref="jmsFactory"&gt;
+    &lt;/constructor-arg&gt;
+    &lt;!-- 默认会创建queue类型的目标
+    &lt;property name="defaultDestinationName" value="queue/methodSpyLogger"&gt;&lt;/property&gt; --&gt;
+    &lt;property name="defaultDestination" ref="destinationQueue1"&gt;&lt;/property&gt;
+&lt;/bean&gt;
+
+&lt;!-- 发送消息的目的地 --&gt;
+&lt;bean id="destinationQueue1" class="org.apache.activemq.command.ActiveMQQueue"&gt;
+    &lt;!-- 设置消息队列的名字 --&gt;
+    &lt;constructor-arg  value="queue/methodSpyLogger" /&gt;
+&lt;/bean&gt;
+
+
+&lt;!-- 配置Spring和方法相关的监控 --&gt;
+&lt;bean id="method-pointcut" class="org.springframework.aop.support.JdkRegexpMethodPointcut"&gt;
+    &lt;property name="patterns"&gt;
+        &lt;list&gt;
+            &lt;value&gt;com.lovo.mis.xjgl.service.impl.*&lt;/value&gt;
+        &lt;/list&gt;
+    &lt;/property&gt;
+&lt;/bean&gt;
+
+&lt;!-- 方法AOP拦截器 --&gt;
+&lt;bean id="spy-method-interceptor"
+      class="com.monitor.client.spy.SpyMethodIntercepter"&gt;
+      &lt;property name="messageDao"&gt;
+        &lt;bean class="com.monitor.client.dao.JMSMessageDaoImpl"&gt;
+            &lt;property name="jmsTemplate" ref="jmsTemplate"&gt;&lt;/property&gt;
+        &lt;/bean&gt;
+      &lt;/property&gt;
+      &lt;property name="userNameSessionKey" value="loginUserName"&gt;&lt;/property&gt;
+&lt;/bean&gt;
+
+&lt;!-- 将切面应用到通知上 --&gt;
+&lt;aop:config proxy-target-class="true"&gt;
+    &lt;aop:advisor advice-ref="spy-method-interceptor"
+                 pointcut-ref="method-pointcut" /&gt;
+&lt;/aop:config&gt;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;配置文件中有几个地方需要进行说明：<!-- more --></p>
+
+<p>&emsp;&emsp;1、目标机器要修改的部分是JdkRegexpMethodPointcut中的patterns，由patterns指定需要监控的业务类所在的位置。</p>
+
+<p>&emsp;&emsp;2、jmsFactory部分配置你的异步消息服务器连接信息，比如brokerURL等。</p>
+
+<p>&emsp;&emsp;3、jmsTemplate中，通过defaultDestination指定一个Destination，因为一个消息服务器上存在多个Destination。也可以通过defaultDestinationName直接指定消息Destination的名称，系统默认创建的是queue，也就是说，如果你要使用topic类型的消息，就必须通过defaultDestination指定一个Destination。</p>
+
+<p>&emsp;&emsp;4、messageDao可自由替换为其它实现类，比如你可以写一个mongoDB版本的实现以提供更好的性性，支持更大数据量。</p>
+
+<p>&emsp;&emsp;最后来看看消费者代码，是直接使用ActiveMQ驱动实现的。</p>
+
+<p>``` java</p>
+
+<pre><code>    ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("tcp://localhost:61616");
+
+    Connection connection = factory.createConnection();
+
+    //尝试真正建立连接，这里可以catch Exception
+    connection.start();
+
+    //得到一个会话，只有得到会话后，才可进行后续的操作
+    Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+    //创建一个目标队列
+    Destination queue = session.createQueue("queue/methodSpyLogger"); 
+
+    MessageConsumer consumer = session.createConsumer(queue);
+
+    //可通过其它一些机制，来改变flag为false，以退出处理
+    boolean flag = true;
+
+    while (flag) {
+        ObjectMessage msg = (ObjectMessage)consumer.receive();
+        MethodLoggerMessage myMsg = (MethodLoggerMessage)msg.getObject();
+
+        System.out.println(myMsg);
+        //这里，可调用dao或service，向关系数据库(或nosql)中保存msg中的内容");
+
+    }
+
+    session.close();
+
+    connection.close();
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;注意，如果队列中已经没有消息了，代码中的consumer.receive()会阻塞，直到有新的消息后再处理。我们也可以采用监听器的方式来处理消息服务器中的消息，比如下面的代码：</p>
+
+<p>``` java</p>
+
+<pre><code>    //处理消息者
+    MessageConsumer consumer = session.createConsumer(queue);
+
+    //处理多条消息
+    consumer.setMessageListener(new MessageListener() {
+        public void onMessage(Message msg) {
+           //转换，这可以对类型进行检测，使用instance of
+            TextMessage txtMsg = (TextMessage)msg;
+            try {
+                System.out.println("得到消息内容："+txtMsg.getText());
+                System.out.println("处理完一条消息！！");
+                //如果开启了事务，请session.commit();
+            } catch (JMSException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+    });
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;当目标程序运行时，我们可以打开ActiveMQ的管理界面，即可发现这个queue及上面的消费者。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/active_mq_admin.jpg' width='' height='' title='ActiveMQ的管理界面'><span class='caption-text'>ActiveMQ的管理界面</span></span></p>
+
+<p>&emsp;&emsp;大家还要注意的是，我们的AOP通知中，还获取了调用者的ip，访问者姓名等信息，这些和web环境相关的信息是通过类似于下面的代码实现的：</p>
+
+<p>``` java</p>
+
+<p>ServletRequestAttributes sas = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
+HttpServletRequest req = sas.getRequest();</p>
+
+<p>logger.setIp(req.getLocalAddr());
+logger.setSessionId(sas.getSessionId());</p>
+
+<p>if (req.getSession() != null) {</p>
+
+<pre><code>logger.setOperater((String)req.getSession().getAttribute(userNameSessionKey));
+</code></pre>
+
+<p>}</p>
+
+<p>```
+ &emsp;&emsp;其中的RequestContextHolder是由spring封装，具体做法是将用户web相关的信息通过filter或listener放入ThreadLocal对象中，在需要的地方通过RequestContextHolder从ThreadLocal中取得，因此，你想让上面的代码正常工作，要记得在web.xml中添加一个spring已经写好的RequestContextListener监听器哦。</p>
+
+<p>``` xml  web.xml</p>
+
+<pre><code>&lt;listener&gt;
+    &lt;listener-class&gt;
+        org.springframework.web.context.request.RequestContextListener
+    &lt;/listener-class&gt;
+&lt;/listener&gt;
+</code></pre>
+
+<p>```</p>
+
+<p> &emsp;&emsp;当然，本例中所使用的消息服务器是ActiveMQ，这个服务器实现了JMS规范，在企业级应用场景中不会存在问题。如果在互联网行业中，由于会面临高并发、大流量等情况，ActiveMQ不能保证高可用性、稳定性及性能要求，这个时候我们可以考虑其它的第三方消息服务器，比如淘宝的taobao-metaq，alibaba-rocketmq等，这些服务器是经过实际考验的开源产品，值得在互联网场景中使用。当然，这些MQ服务器和JMS规范没有任何关系，JMS企业级要求中并没有考虑过多的并发、大数据量的需求。</p>
+
+<p> &emsp;&emsp;另外，kafka，rabbitmq等消息服务器也具有不错的性能，都可以进入架构的技术方案选型范围。比如，下面是一段rabbitmq的调用示例代码(注：rabbitmq需要er_lang并发程序包支持哦)，和JMS的调用相当类似。</p>
+
+<p>``` java
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;</p>
+
+<p>&hellip;&hellip;.//略去代码</p>
+
+<pre><code>@Test
+public void testSendMessage() throws Exception {
+    SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+
+    ConnectionFactory factory = new ConnectionFactory();
+    factory.setHost("localhost");
+
+    Connection connection = factory.newConnection();
+    Channel channel = connection.createChannel();
+
+    String message = sf.format(new Date()) + ":Hello!!!";
+    channel.basicPublish("", "queue/sendEmail", null, message.getBytes());
+
+
+    channel.close();
+    connection.close();
+
+    System.out.println("send message ok!");
+
+
+
+}
+
+
+@Test
+public void testReciveMessage() throws Exception {
+
+    System.out.println("recever starting.....");
+
+    String QUEUE_NAME = "queue/sendEmail";
+
+    SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+
+    ConnectionFactory factory = new ConnectionFactory();
+    factory.setHost("localhost");
+
+    Connection connection = factory.newConnection();
+    Channel channel = connection.createChannel();
+
+    channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+
+    QueueingConsumer consumer = new QueueingConsumer(channel);
+    channel.basicConsume(QUEUE_NAME, false, consumer);
+
+    QueueingConsumer.Delivery delivery = consumer.nextDelivery();
+
+    String msg = new String(delivery.getBody());
+
+    System.out.println(msg);
+
+    System.out.println("rec end!!!");
+}
+</code></pre>
+
+<p>```</p>
+
+<p> &emsp;&emsp;先说到这吧。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[监控系统中的异步消息使用实例（一）]]></title>
@@ -22,15 +276,15 @@
 
 <p>&emsp;&emsp;近期一些童鞋在实现一个监控系统，其中的一个功能是：对监控平台上布署的第三方应用业务方法执行细节进行监控，比如：方法调用者，调用者ip，应用系统名称，子系统名称，方法名称，执行耗时等信息。如何能够让监控系统得到目标机器上需要监控的业务方法执行情况呢？如何保证在监控的过程中不影响对方的业务的正常执行？下面我给出一种参考架构实现，这也是在概要设计的时候就应该明确的东西（专业名词叫架构原型）。</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构图'><span class='caption-text'>业务方法监控架构图</span></span></p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构'><span class='caption-text'>业务方法监控架构</span></span></p>
 
 <p>&emsp;&emsp;首先，MonitorPlatform是我们的监控平台（图中青色部分），targetServer上运行着需要监控的系统hotel project（图中黄色部分）,如果我们想要获得目标机器上的我们需要的信息，最简单的办法是运行一个spy程序在对方的机器上，图中的spy app是起这个作用的（当然你也可以使用jmx规范来实现类似功能），举个不恰当的例子，就好比你在某人的机器上安装了一个木马程序，通过远程控制端你就可以得到对方机器上你感兴趣的任何东西，甚至包括控制摄像头哦。</p>
 
 <p>&emsp;&emsp;其次，监控平台同时要监控多个目标系统，就我们例子中监控业务方法执行情况而言，就需要把监控得到的信息加以持久化以备后查，如果目标系统业务繁忙，而我们的spy app又要将取到的信息进行数据库持久化，数据库很可能会成为性能瓶颈从而造成性能问题，因此，我在这里采用了异步消息系统的设计，以缓解持久化压力。正如图所示，spy app将采集到的业务方法执行数据直接写入异步消息服务器的queue中，而monitor platform中的处理程序将从queue中取出消息，再进行后续的持久化处理。这种异步的消息设计方式可以有效缓解系统的压力，在很多项目中都可以采用（互联网项目中可用这种方式来"削峰"，缓解高并发压力）。</p>
 
-<p>&emsp;&emsp;最后一个问题,spy如何采集到目标机器业务方法的执行情况呢。最佳答案当然是AOP。</p>
+<p>&emsp;&emsp;最后一个问题,spy如何采集到目标机器业务方法的执行情况呢。最佳答案当然是AOP。大家可以参考我的另一篇文章<a href="/blog/2013/03/26/logger/">一种日志记录解决方案</a>。</p>
 
-<p>&emsp;&emsp;下面，我们一起来看看架构原型中的原码实现吧。MethodLoggerMessage是需要持久化的消息对象，请注意实现Serializable接口。<!-- more --></p>
+<p>&emsp;&emsp;下面，我们一起来看看架构原型中的原代码实现吧。MethodLoggerMessage是需要持久化的消息对象，请注意实现Serializable接口。<!-- more --></p>
 
 <p>``` java MethodLoggerMessage.java</p>
 
@@ -950,184 +1204,6 @@ public User someBizMethod(int userId) {
 <p>&emsp;&emsp;这样的话，我们就可以充分利用不同框架的优势，达到取长补短的目的。也许你会说，这种方式就是把增、删、改交由hibernate来做，把查询交由ibatis来做。本质上看确实如此，但实际项目中要灵活去做，比如hibernate除了增删改外也可以做查询，特别是简单的查询，这样也可以更好的利用到hibernate的缓存。</p>
 
 <p>&emsp;&emsp;我在<a href="/blog/2010/11/01/p4">四种持久层设计方案比较</a>中，对查询的分离有所介绍，有兴趣的可以去看看其中的一个方案，另外，CQRS架构、mysql读写分离也有这方面的含义。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[再次简单封装的jackson]]></title>
-    <link href="http://yanyaner.com/blog/2014/03/04/objectmapper-json/"/>
-    <updated>2014-03-04T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/03/04/objectmapper-json</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;接上一篇<a href="/blog/2014/03/03/objectmapper-json">Json类库jackson使用之误区</a>，我对json的常用操作再次进行了简单的封装，上一版的封装大家可参阅<a href="/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
-
-<p>&emsp;&emsp;总计两个文件，只考虑到了一些简单常用的操作：</p>
-
-<p>``` java FilterProvider.java</p>
-
-<p>package com.my.ms.framework.commons;</p>
-
-<p>import org.codehaus.jackson.map.ser.impl.SimpleBeanPropertyFilter;
-import org.codehaus.jackson.map.ser.impl.SimpleFilterProvider;
-/<em>*
- * 属性过滤器
- * @author ljh
- *
- </em>/
-public class FilterProvider extends SimpleFilterProvider {</p>
-
-<pre><code>/**
- * 将新的需要的属性添加到一个现有的FilterProvider中
- * @param id
- * @param includeProperties
- * @return
- */
-public FilterProvider addIncludeProperties(String id,
-        String... includeProperties) {
-    this.addFilter(id,
-            SimpleBeanPropertyFilter.filterOutAllExcept(includeProperties));
-    return this;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;FilterProvider.java中主要增加了一个输出时添加包含属性的方法，并返回自身以支持方法链编程。<!-- more --></p>
-
-<p>``` java JsonMapper.java</p>
-
-<p>package com.my.ms.framework.commons;</p>
-
-<p>import java.io.IOException;
-import java.io.OutputStream;
-import java.text.SimpleDateFormat;</p>
-
-<p>import org.codehaus.jackson.JsonGenerationException;
-import org.codehaus.jackson.map.DeserializationConfig;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.SerializationConfig.Feature;
-import org.codehaus.jackson.map.ser.impl.SimpleBeanPropertyFilter;
-import org.codehaus.jackson.map.ser.impl.SimpleFilterProvider;</p>
-
-<p>/<em>*
- * json之jackson封装
- * 主要对常用的几个json方法进行了再次包装，并具备线程安全性
- * @author ljh
- *
- </em>/
-public class JsonMapper {</p>
-
-<pre><code>private ObjectMapper objectMapper;
-
-public JsonMapper() {
-    objectMapper = new ObjectMapper();
-    // 设置默认日期格式
-    objectMapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd"));
-    // 提供其它默认设置
-    objectMapper
-            .disable(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES);
-    objectMapper.configure(Feature.FAIL_ON_EMPTY_BEANS, false);
-    objectMapper.setFilters(new SimpleFilterProvider()
-            .setFailOnUnknownId(false));
-
-}
-
-/**
- * 创建一个FilterProvider对象
- * 
- * @return
- */
-public static FilterProvider buildFilterProvider() {
-    FilterProvider filter = new FilterProvider();
-    filter.setFailOnUnknownId(false);
-    return filter;
-}
-
-/**
- * 根据需要的对象属性，创建一个属性过滤器FilterProvider
- * 
- * @param id
- *            对象id，通过jsonFilter声明
- * @param includeProperties
- *            该对象上需要的属性
- * @return  创建好的过滤器
- */
-public static FilterProvider buildFilterProvider(String id,
-        String... includeProperties) {
-    FilterProvider filter = new FilterProvider();
-    filter.setFailOnUnknownId(false);
-
-    filter.addFilter(id,
-            SimpleBeanPropertyFilter.filterOutAllExcept(includeProperties));
-    return filter;
-}
-
-// 用提供的过滤器，将对象的json输出到流中
-public void writeValue(FilterProvider filter, OutputStream os, Object value)
-        throws JsonGenerationException, JsonMappingException, IOException {
-    objectMapper.writer(filter).writeValue(os, value);
-}
-
-// 用提供的过滤器，将对象的json输出为字符串
-public String writeValueAsString(FilterProvider filter, Object value)
-        throws JsonGenerationException, JsonMappingException, IOException {
-    return objectMapper.writer(filter).writeValueAsString(value);
-}
-
-// 将对象的json输出到流中
-public void writeValue(OutputStream os, Object value)
-        throws JsonGenerationException, JsonMappingException, IOException {
-    objectMapper.writeValue(os, value);
-}
-
-// 将对象的json输出为字符串
-public String writeValueAsString(Object value)
-        throws JsonGenerationException, JsonMappingException, IOException {
-    return objectMapper.writeValueAsString(value);
-}
-
-/**
- * 得到原始的objectMapper，以进行更复杂的操作
- * 
- * @return
- */
-public ObjectMapper getObjectMapper() {
-    return objectMapper;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;如果需要更强大的功能，我们可以通过getObjectMapper得到ObjectMapper后进行操作，或都添加你常用的其它方法到JsonMapper中，比如：排除属性的方法等。</p>
-
-<p>&emsp;&emsp;使用时，请把JsonMapper放入spring容器(当然你也可以把这个类做成单例的哦)，在需要转换json的地方，通过@Resource注入即可，调用代码如下：</p>
-
-<p>``` java</p>
-
-<pre><code>@Resource
-private JsonMapper mapper;
-
-@Test
-public void testJson() throws Exception {
-
-    Object someObject = ....
-
-    String result = mapper.writeValueAsString(
-            JsonMapper.buildFilterProvider()
-            .addIncludeProperties("myId1", "id","name")
-            .addIncludeProperties("myId2", "code","money","name"), 
-            someObject);
-
-    assertEquals("xxxxxxxxxxxx", result);
-
-}
-</code></pre>
-
-<p>```</p>
 ]]></content>
   </entry>
   

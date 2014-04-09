@@ -1,0 +1,674 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>监控系统中的异步消息使用实例（二） - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;接上节，再次贴出架构图，我们接下来要讲的是图中黄色部分的配置。 业务方法监控架构 &emsp;&emsp;先将spy程序导成一个jar包，加入到需要监控的目标服务器lib目录，monitor_spy.jar结构如下所示： monitor_spy.jar结构 &emsp;& &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2014/04/09/async_message_architect2">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">监控系统中的异步消息使用实例（二）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-09T12:18:00+08:00" pubdate data-updated="true">2014年04月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;接上节，再次贴出架构图，我们接下来要讲的是图中黄色部分的配置。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构'><span class='caption-text'>业务方法监控架构</span></span></p>
+
+<p>&emsp;&emsp;先将spy程序导成一个jar包，加入到需要监控的目标服务器lib目录，monitor_spy.jar结构如下所示：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/jarinfo.jpg' width='' height='' title='monitor_spy.jar结构'><span class='caption-text'>monitor_spy.jar结构</span></span></p>
+
+<p>&emsp;&emsp;为了能够实现对目标系统业务方法执行情况进行监控，需要将我们已经写好的拦截器配置到目标系统中去，下面是我的一个配置示例：</p>
+
+<figure class='code'><figcaption><span>spring-spy.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>  <span class="c">&lt;!-- jms连接工厂 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;jmsFactory&quot;</span> <span class="na">class=</span><span class="s">&quot;org.apache.activemq.pool.PooledConnectionFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;connectionFactory&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.apache.activemq.ActiveMQConnectionFactory&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;brokerURL&quot;</span> <span class="na">value=</span><span class="s">&quot;tcp://localhost:61616&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>      <span class="c">&lt;!-- 配置池中最大连接数据以及最大活动连接数 --&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;maxConnections&quot;</span> <span class="na">value=</span><span class="s">&quot;100&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;maximumActive&quot;</span> <span class="na">value=</span><span class="s">&quot;100&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c">&lt;!-- jms模板方法 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;jmsTemplate&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.jms.core.JmsTemplate&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;constructor-arg</span> <span class="na">ref=</span><span class="s">&quot;jmsFactory&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/constructor-arg&gt;</span>
+</span><span class='line'>      <span class="c">&lt;!-- 默认会创建queue类型的目标</span>
+</span><span class='line'><span class="c">      &lt;property name=&quot;defaultDestinationName&quot; value=&quot;queue/methodSpyLogger&quot;&gt;&lt;/property&gt; --&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;defaultDestination&quot;</span> <span class="na">ref=</span><span class="s">&quot;destinationQueue1&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c">&lt;!-- 发送消息的目的地 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;destinationQueue1&quot;</span> <span class="na">class=</span><span class="s">&quot;org.apache.activemq.command.ActiveMQQueue&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="c">&lt;!-- 设置消息队列的名字 --&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;constructor-arg</span>  <span class="na">value=</span><span class="s">&quot;queue/methodSpyLogger&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="c">&lt;!-- 配置Spring和方法相关的监控 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;method-pointcut&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.aop.support.JdkRegexpMethodPointcut&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;patterns&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
+</span><span class='line'>                <span class="nt">&lt;value&gt;</span>com.lovo.mis.xjgl.service.impl.*<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c">&lt;!-- 方法AOP拦截器 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;spy-method-interceptor&quot;</span>
+</span><span class='line'>          <span class="na">class=</span><span class="s">&quot;com.monitor.client.spy.SpyMethodIntercepter&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;messageDao&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;com.monitor.client.dao.JMSMessageDaoImpl&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;jmsTemplate&quot;</span> <span class="na">ref=</span><span class="s">&quot;jmsTemplate&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>              <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;userNameSessionKey&quot;</span> <span class="na">value=</span><span class="s">&quot;loginUserName&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c">&lt;!-- 将切面应用到通知上 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;aop:config</span> <span class="na">proxy-target-class=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;aop:advisor</span> <span class="na">advice-ref=</span><span class="s">&quot;spy-method-interceptor&quot;</span>
+</span><span class='line'>                     <span class="na">pointcut-ref=</span><span class="s">&quot;method-pointcut&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/aop:config&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;配置文件中有几个地方需要进行说明：<!-- more --></p>
+
+<p>&emsp;&emsp;1、目标机器要修改的部分是JdkRegexpMethodPointcut中的patterns，由patterns指定需要监控的业务类所在的位置。</p>
+
+<p>&emsp;&emsp;2、jmsFactory部分配置你的异步消息服务器连接信息，比如brokerURL等。</p>
+
+<p>&emsp;&emsp;3、jmsTemplate中，通过defaultDestination指定一个Destination，因为一个消息服务器上存在多个Destination。也可以通过defaultDestinationName直接指定消息Destination的名称，系统默认创建的是queue，也就是说，如果你要使用topic类型的消息，就必须通过defaultDestination指定一个Destination。</p>
+
+<p>&emsp;&emsp;4、messageDao可自由替换为其它实现类，比如你可以写一个mongoDB版本的实现以提供更好的性性，支持更大数据量。</p>
+
+<p>&emsp;&emsp;最后来看看消费者代码，是直接使用ActiveMQ驱动实现的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">ActiveMQConnectionFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ActiveMQConnectionFactory</span><span class="o">(</span><span class="s">&quot;tcp://localhost:61616&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">Connection</span> <span class="n">connection</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="na">createConnection</span><span class="o">();</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//尝试真正建立连接，这里可以catch Exception</span>
+</span><span class='line'>    <span class="n">connection</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//得到一个会话，只有得到会话后，才可进行后续的操作</span>
+</span><span class='line'>    <span class="n">Session</span> <span class="n">session</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">createSession</span><span class="o">(</span><span class="kc">false</span><span class="o">,</span> <span class="n">Session</span><span class="o">.</span><span class="na">AUTO_ACKNOWLEDGE</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//创建一个目标队列</span>
+</span><span class='line'>    <span class="n">Destination</span> <span class="n">queue</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">createQueue</span><span class="o">(</span><span class="s">&quot;queue/methodSpyLogger&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">MessageConsumer</span> <span class="n">consumer</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">createConsumer</span><span class="o">(</span><span class="n">queue</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//可通过其它一些机制，来改变flag为false，以退出处理</span>
+</span><span class='line'>    <span class="kt">boolean</span> <span class="n">flag</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">while</span> <span class="o">(</span><span class="n">flag</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">ObjectMessage</span> <span class="n">msg</span> <span class="o">=</span> <span class="o">(</span><span class="n">ObjectMessage</span><span class="o">)</span><span class="n">consumer</span><span class="o">.</span><span class="na">receive</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">MethodLoggerMessage</span> <span class="n">myMsg</span> <span class="o">=</span> <span class="o">(</span><span class="n">MethodLoggerMessage</span><span class="o">)</span><span class="n">msg</span><span class="o">.</span><span class="na">getObject</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">myMsg</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//这里，可调用dao或service，向关系数据库(或nosql)中保存msg中的内容&quot;);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">session</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">connection</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;注意，如果队列中已经没有消息了，代码中的consumer.receive()会阻塞，直到有新的消息后再处理。我们也可以采用监听器的方式来处理消息服务器中的消息，比如下面的代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="c1">//处理消息者</span>
+</span><span class='line'>    <span class="n">MessageConsumer</span> <span class="n">consumer</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">createConsumer</span><span class="o">(</span><span class="n">queue</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//处理多条消息</span>
+</span><span class='line'>    <span class="n">consumer</span><span class="o">.</span><span class="na">setMessageListener</span><span class="o">(</span><span class="k">new</span> <span class="n">MessageListener</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onMessage</span><span class="o">(</span><span class="n">Message</span> <span class="n">msg</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>         <span class="c1">//转换，这可以对类型进行检测，使用instance of</span>
+</span><span class='line'>          <span class="n">TextMessage</span> <span class="n">txtMsg</span> <span class="o">=</span> <span class="o">(</span><span class="n">TextMessage</span><span class="o">)</span><span class="n">msg</span><span class="o">;</span>
+</span><span class='line'>          <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;得到消息内容：&quot;</span><span class="o">+</span><span class="n">txtMsg</span><span class="o">.</span><span class="na">getText</span><span class="o">());</span>
+</span><span class='line'>              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;处理完一条消息！！&quot;</span><span class="o">);</span>
+</span><span class='line'>              <span class="c1">//如果开启了事务，请session.commit();</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">JMSException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="c1">// TODO Auto-generated catch block</span>
+</span><span class='line'>              <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当目标程序运行时，我们可以打开ActiveMQ的管理界面，即可发现这个queue及上面的消费者。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/active_mq_admin.jpg' width='' height='' title='ActiveMQ的管理界面'><span class='caption-text'>ActiveMQ的管理界面</span></span></p>
+
+<p>&emsp;&emsp;大家还要注意的是，我们的AOP通知中，还获取了调用者的ip，访问者姓名等信息，这些和web环境相关的信息是通过类似于下面的代码实现的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ServletRequestAttributes</span> <span class="n">sas</span> <span class="o">=</span> <span class="o">(</span><span class="n">ServletRequestAttributes</span><span class="o">)</span><span class="n">RequestContextHolder</span><span class="o">.</span><span class="na">getRequestAttributes</span><span class="o">();</span>
+</span><span class='line'><span class="n">HttpServletRequest</span> <span class="n">req</span> <span class="o">=</span> <span class="n">sas</span><span class="o">.</span><span class="na">getRequest</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">logger</span><span class="o">.</span><span class="na">setIp</span><span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getLocalAddr</span><span class="o">());</span>
+</span><span class='line'><span class="n">logger</span><span class="o">.</span><span class="na">setSessionId</span><span class="o">(</span><span class="n">sas</span><span class="o">.</span><span class="na">getSessionId</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getSession</span><span class="o">()</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">logger</span><span class="o">.</span><span class="na">setOperater</span><span class="o">((</span><span class="n">String</span><span class="o">)</span><span class="n">req</span><span class="o">.</span><span class="na">getSession</span><span class="o">().</span><span class="na">getAttribute</span><span class="o">(</span><span class="n">userNameSessionKey</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>      
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p> &emsp;&emsp;其中的RequestContextHolder是由spring封装，具体做法是将用户web相关的信息通过filter或listener放入ThreadLocal对象中，在需要的地方通过RequestContextHolder从ThreadLocal中取得，因此，你想让上面的代码正常工作，要记得在web.xml中添加一个spring已经写好的RequestContextListener监听器哦。</p>
+
+<figure class='code'><figcaption><span>web.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;listener&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;listener-class&gt;</span>
+</span><span class='line'>      org.springframework.web.context.request.RequestContextListener
+</span><span class='line'>  <span class="nt">&lt;/listener-class&gt;</span>
+</span><span class='line'><span class="nt">&lt;/listener&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p> &emsp;&emsp;当然，本例中所使用的消息服务器是ActiveMQ，这个服务器实现了JMS规范，在企业级应用场景中不会存在问题。如果在互联网行业中，由于会面临高并发、大流量等情况，ActiveMQ不能保证高可用性、稳定性及性能要求，这个时候我们可以考虑其它的第三方消息服务器，比如淘宝的taobao-metaq，alibaba-rocketmq等，这些服务器是经过实际考验的开源产品，值得在互联网场景中使用。当然，这些MQ服务器和JMS规范没有任何关系，JMS企业级要求中并没有考虑过多的并发、大数据量的需求。</p>
+
+<p> &emsp;&emsp;另外，kafka，rabbitmq等消息服务器也具有不错的性能，都可以进入架构的技术方案选型范围。比如，下面是一段rabbitmq的调用示例代码(注：rabbitmq需要er_lang并发程序包支持哦)，和JMS的调用相当类似。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">com.rabbitmq.client.Channel</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.rabbitmq.client.Connection</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.rabbitmq.client.ConnectionFactory</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">.......</span><span class="c1">//略去代码</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Test</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testSendMessage</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">SimpleDateFormat</span> <span class="n">sf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd hh:mm:ss&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">ConnectionFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ConnectionFactory</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">factory</span><span class="o">.</span><span class="na">setHost</span><span class="o">(</span><span class="s">&quot;localhost&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Connection</span> <span class="n">connection</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="na">newConnection</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">Channel</span> <span class="n">channel</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">createChannel</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">message</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="k">new</span> <span class="n">Date</span><span class="o">())</span> <span class="o">+</span> <span class="s">&quot;:Hello!!!&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">channel</span><span class="o">.</span><span class="na">basicPublish</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">,</span> <span class="s">&quot;queue/sendEmail&quot;</span><span class="o">,</span> <span class="kc">null</span><span class="o">,</span> <span class="n">message</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">channel</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">connection</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;send message ok!&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      
+</span><span class='line'>      
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@Test</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testReciveMessage</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;recever starting.....&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">QUEUE_NAME</span> <span class="o">=</span> <span class="s">&quot;queue/sendEmail&quot;</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">SimpleDateFormat</span> <span class="n">sf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd hh:mm:ss&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">ConnectionFactory</span> <span class="n">factory</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ConnectionFactory</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">factory</span><span class="o">.</span><span class="na">setHost</span><span class="o">(</span><span class="s">&quot;localhost&quot;</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Connection</span> <span class="n">connection</span> <span class="o">=</span> <span class="n">factory</span><span class="o">.</span><span class="na">newConnection</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">Channel</span> <span class="n">channel</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">createChannel</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">channel</span><span class="o">.</span><span class="na">queueDeclare</span><span class="o">(</span><span class="n">QUEUE_NAME</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">QueueingConsumer</span> <span class="n">consumer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">QueueingConsumer</span><span class="o">(</span><span class="n">channel</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">channel</span><span class="o">.</span><span class="na">basicConsume</span><span class="o">(</span><span class="n">QUEUE_NAME</span><span class="o">,</span> <span class="kc">false</span><span class="o">,</span> <span class="n">consumer</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">QueueingConsumer</span><span class="o">.</span><span class="na">Delivery</span> <span class="n">delivery</span> <span class="o">=</span> <span class="n">consumer</span><span class="o">.</span><span class="na">nextDelivery</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">msg</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">delivery</span><span class="o">.</span><span class="na">getBody</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">msg</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;rec end!!!&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p> &emsp;&emsp;先说到这吧。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-09T12:18:00+08:00" pubdate data-updated="true">2014年04月09日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>, <a class='category' href='/blog/categories/jia-gou/'>架构</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/04/08/async_message_architect1/" title="上一篇文章: 监控系统中的异步消息使用实例（一）">&laquo;上一篇:&nbsp;&nbsp;监控系统中的异步消息使用实例（一）</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/27/cache-redis/">缓存之redis</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/10/db-read-write-split/">读写分离架构之mysql实例</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/06/ibatis-hibernate-in-query/">项目中ibatis与hibernate混用示例详解</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="60">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2014 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

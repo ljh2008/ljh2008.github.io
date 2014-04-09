@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：架构 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/jia-gou/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-04-08T23:15:57+08:00</updated>
+  <updated>2014-04-09T17:11:02+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,260 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[监控系统中的异步消息使用实例（二）]]></title>
+    <link href="http://yanyaner.com/blog/2014/04/09/async_message_architect2/"/>
+    <updated>2014-04-09T12:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/04/09/async_message_architect2</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;接上节，再次贴出架构图，我们接下来要讲的是图中黄色部分的配置。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构'><span class='caption-text'>业务方法监控架构</span></span></p>
+
+<p>&emsp;&emsp;先将spy程序导成一个jar包，加入到需要监控的目标服务器lib目录，monitor_spy.jar结构如下所示：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/jarinfo.jpg' width='' height='' title='monitor_spy.jar结构'><span class='caption-text'>monitor_spy.jar结构</span></span></p>
+
+<p>&emsp;&emsp;为了能够实现对目标系统业务方法执行情况进行监控，需要将我们已经写好的拦截器配置到目标系统中去，下面是我的一个配置示例：</p>
+
+<p>``` xml spring-spy.xml</p>
+
+<pre><code>&lt;!-- jms连接工厂 --&gt;         
+&lt;bean id="jmsFactory" class="org.apache.activemq.pool.PooledConnectionFactoryBean"&gt;
+    &lt;property name="connectionFactory"&gt;
+        &lt;bean class="org.apache.activemq.ActiveMQConnectionFactory"&gt;
+            &lt;property name="brokerURL" value="tcp://localhost:61616"&gt;&lt;/property&gt;
+        &lt;/bean&gt;
+    &lt;/property&gt;
+    &lt;!-- 配置池中最大连接数据以及最大活动连接数 --&gt;
+    &lt;property name="maxConnections" value="100"&gt;&lt;/property&gt;
+    &lt;property name="maximumActive" value="100"&gt;&lt;/property&gt;
+&lt;/bean&gt;
+
+&lt;!-- jms模板方法 --&gt;    
+&lt;bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate"&gt;
+    &lt;constructor-arg ref="jmsFactory"&gt;
+    &lt;/constructor-arg&gt;
+    &lt;!-- 默认会创建queue类型的目标
+    &lt;property name="defaultDestinationName" value="queue/methodSpyLogger"&gt;&lt;/property&gt; --&gt;
+    &lt;property name="defaultDestination" ref="destinationQueue1"&gt;&lt;/property&gt;
+&lt;/bean&gt;
+
+&lt;!-- 发送消息的目的地 --&gt;
+&lt;bean id="destinationQueue1" class="org.apache.activemq.command.ActiveMQQueue"&gt;
+    &lt;!-- 设置消息队列的名字 --&gt;
+    &lt;constructor-arg  value="queue/methodSpyLogger" /&gt;
+&lt;/bean&gt;
+
+
+&lt;!-- 配置Spring和方法相关的监控 --&gt;
+&lt;bean id="method-pointcut" class="org.springframework.aop.support.JdkRegexpMethodPointcut"&gt;
+    &lt;property name="patterns"&gt;
+        &lt;list&gt;
+            &lt;value&gt;com.lovo.mis.xjgl.service.impl.*&lt;/value&gt;
+        &lt;/list&gt;
+    &lt;/property&gt;
+&lt;/bean&gt;
+
+&lt;!-- 方法AOP拦截器 --&gt;
+&lt;bean id="spy-method-interceptor"
+      class="com.monitor.client.spy.SpyMethodIntercepter"&gt;
+      &lt;property name="messageDao"&gt;
+        &lt;bean class="com.monitor.client.dao.JMSMessageDaoImpl"&gt;
+            &lt;property name="jmsTemplate" ref="jmsTemplate"&gt;&lt;/property&gt;
+        &lt;/bean&gt;
+      &lt;/property&gt;
+      &lt;property name="userNameSessionKey" value="loginUserName"&gt;&lt;/property&gt;
+&lt;/bean&gt;
+
+&lt;!-- 将切面应用到通知上 --&gt;
+&lt;aop:config proxy-target-class="true"&gt;
+    &lt;aop:advisor advice-ref="spy-method-interceptor"
+                 pointcut-ref="method-pointcut" /&gt;
+&lt;/aop:config&gt;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;配置文件中有几个地方需要进行说明：<!-- more --></p>
+
+<p>&emsp;&emsp;1、目标机器要修改的部分是JdkRegexpMethodPointcut中的patterns，由patterns指定需要监控的业务类所在的位置。</p>
+
+<p>&emsp;&emsp;2、jmsFactory部分配置你的异步消息服务器连接信息，比如brokerURL等。</p>
+
+<p>&emsp;&emsp;3、jmsTemplate中，通过defaultDestination指定一个Destination，因为一个消息服务器上存在多个Destination。也可以通过defaultDestinationName直接指定消息Destination的名称，系统默认创建的是queue，也就是说，如果你要使用topic类型的消息，就必须通过defaultDestination指定一个Destination。</p>
+
+<p>&emsp;&emsp;4、messageDao可自由替换为其它实现类，比如你可以写一个mongoDB版本的实现以提供更好的性性，支持更大数据量。</p>
+
+<p>&emsp;&emsp;最后来看看消费者代码，是直接使用ActiveMQ驱动实现的。</p>
+
+<p>``` java</p>
+
+<pre><code>    ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("tcp://localhost:61616");
+
+    Connection connection = factory.createConnection();
+
+    //尝试真正建立连接，这里可以catch Exception
+    connection.start();
+
+    //得到一个会话，只有得到会话后，才可进行后续的操作
+    Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+
+    //创建一个目标队列
+    Destination queue = session.createQueue("queue/methodSpyLogger"); 
+
+    MessageConsumer consumer = session.createConsumer(queue);
+
+    //可通过其它一些机制，来改变flag为false，以退出处理
+    boolean flag = true;
+
+    while (flag) {
+        ObjectMessage msg = (ObjectMessage)consumer.receive();
+        MethodLoggerMessage myMsg = (MethodLoggerMessage)msg.getObject();
+
+        System.out.println(myMsg);
+        //这里，可调用dao或service，向关系数据库(或nosql)中保存msg中的内容");
+
+    }
+
+    session.close();
+
+    connection.close();
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;注意，如果队列中已经没有消息了，代码中的consumer.receive()会阻塞，直到有新的消息后再处理。我们也可以采用监听器的方式来处理消息服务器中的消息，比如下面的代码：</p>
+
+<p>``` java</p>
+
+<pre><code>    //处理消息者
+    MessageConsumer consumer = session.createConsumer(queue);
+
+    //处理多条消息
+    consumer.setMessageListener(new MessageListener() {
+        public void onMessage(Message msg) {
+           //转换，这可以对类型进行检测，使用instance of
+            TextMessage txtMsg = (TextMessage)msg;
+            try {
+                System.out.println("得到消息内容："+txtMsg.getText());
+                System.out.println("处理完一条消息！！");
+                //如果开启了事务，请session.commit();
+            } catch (JMSException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+    });
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;当目标程序运行时，我们可以打开ActiveMQ的管理界面，即可发现这个queue及上面的消费者。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/active_mq_admin.jpg' width='' height='' title='ActiveMQ的管理界面'><span class='caption-text'>ActiveMQ的管理界面</span></span></p>
+
+<p>&emsp;&emsp;大家还要注意的是，我们的AOP通知中，还获取了调用者的ip，访问者姓名等信息，这些和web环境相关的信息是通过类似于下面的代码实现的：</p>
+
+<p>``` java</p>
+
+<p>ServletRequestAttributes sas = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
+HttpServletRequest req = sas.getRequest();</p>
+
+<p>logger.setIp(req.getLocalAddr());
+logger.setSessionId(sas.getSessionId());</p>
+
+<p>if (req.getSession() != null) {</p>
+
+<pre><code>logger.setOperater((String)req.getSession().getAttribute(userNameSessionKey));
+</code></pre>
+
+<p>}</p>
+
+<p>```
+ &emsp;&emsp;其中的RequestContextHolder是由spring封装，具体做法是将用户web相关的信息通过filter或listener放入ThreadLocal对象中，在需要的地方通过RequestContextHolder从ThreadLocal中取得，因此，你想让上面的代码正常工作，要记得在web.xml中添加一个spring已经写好的RequestContextListener监听器哦。</p>
+
+<p>``` xml  web.xml</p>
+
+<pre><code>&lt;listener&gt;
+    &lt;listener-class&gt;
+        org.springframework.web.context.request.RequestContextListener
+    &lt;/listener-class&gt;
+&lt;/listener&gt;
+</code></pre>
+
+<p>```</p>
+
+<p> &emsp;&emsp;当然，本例中所使用的消息服务器是ActiveMQ，这个服务器实现了JMS规范，在企业级应用场景中不会存在问题。如果在互联网行业中，由于会面临高并发、大流量等情况，ActiveMQ不能保证高可用性、稳定性及性能要求，这个时候我们可以考虑其它的第三方消息服务器，比如淘宝的taobao-metaq，alibaba-rocketmq等，这些服务器是经过实际考验的开源产品，值得在互联网场景中使用。当然，这些MQ服务器和JMS规范没有任何关系，JMS企业级要求中并没有考虑过多的并发、大数据量的需求。</p>
+
+<p> &emsp;&emsp;另外，kafka，rabbitmq等消息服务器也具有不错的性能，都可以进入架构的技术方案选型范围。比如，下面是一段rabbitmq的调用示例代码(注：rabbitmq需要er_lang并发程序包支持哦)，和JMS的调用相当类似。</p>
+
+<p>``` java
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;</p>
+
+<p>&hellip;&hellip;.//略去代码</p>
+
+<pre><code>@Test
+public void testSendMessage() throws Exception {
+    SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+
+    ConnectionFactory factory = new ConnectionFactory();
+    factory.setHost("localhost");
+
+    Connection connection = factory.newConnection();
+    Channel channel = connection.createChannel();
+
+    String message = sf.format(new Date()) + ":Hello!!!";
+    channel.basicPublish("", "queue/sendEmail", null, message.getBytes());
+
+
+    channel.close();
+    connection.close();
+
+    System.out.println("send message ok!");
+
+
+
+}
+
+
+@Test
+public void testReciveMessage() throws Exception {
+
+    System.out.println("recever starting.....");
+
+    String QUEUE_NAME = "queue/sendEmail";
+
+    SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+
+    ConnectionFactory factory = new ConnectionFactory();
+    factory.setHost("localhost");
+
+    Connection connection = factory.newConnection();
+    Channel channel = connection.createChannel();
+
+    channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+
+    QueueingConsumer consumer = new QueueingConsumer(channel);
+    channel.basicConsume(QUEUE_NAME, false, consumer);
+
+    QueueingConsumer.Delivery delivery = consumer.nextDelivery();
+
+    String msg = new String(delivery.getBody());
+
+    System.out.println(msg);
+
+    System.out.println("rec end!!!");
+}
+</code></pre>
+
+<p>```</p>
+
+<p> &emsp;&emsp;先说到这吧。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[监控系统中的异步消息使用实例（一）]]></title>
@@ -22,15 +276,15 @@
 
 <p>&emsp;&emsp;近期一些童鞋在实现一个监控系统，其中的一个功能是：对监控平台上布署的第三方应用业务方法执行细节进行监控，比如：方法调用者，调用者ip，应用系统名称，子系统名称，方法名称，执行耗时等信息。如何能够让监控系统得到目标机器上需要监控的业务方法执行情况呢？如何保证在监控的过程中不影响对方的业务的正常执行？下面我给出一种参考架构实现，这也是在概要设计的时候就应该明确的东西（专业名词叫架构原型）。</p>
 
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构图'><span class='caption-text'>业务方法监控架构图</span></span></p>
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构'><span class='caption-text'>业务方法监控架构</span></span></p>
 
 <p>&emsp;&emsp;首先，MonitorPlatform是我们的监控平台（图中青色部分），targetServer上运行着需要监控的系统hotel project（图中黄色部分）,如果我们想要获得目标机器上的我们需要的信息，最简单的办法是运行一个spy程序在对方的机器上，图中的spy app是起这个作用的（当然你也可以使用jmx规范来实现类似功能），举个不恰当的例子，就好比你在某人的机器上安装了一个木马程序，通过远程控制端你就可以得到对方机器上你感兴趣的任何东西，甚至包括控制摄像头哦。</p>
 
 <p>&emsp;&emsp;其次，监控平台同时要监控多个目标系统，就我们例子中监控业务方法执行情况而言，就需要把监控得到的信息加以持久化以备后查，如果目标系统业务繁忙，而我们的spy app又要将取到的信息进行数据库持久化，数据库很可能会成为性能瓶颈从而造成性能问题，因此，我在这里采用了异步消息系统的设计，以缓解持久化压力。正如图所示，spy app将采集到的业务方法执行数据直接写入异步消息服务器的queue中，而monitor platform中的处理程序将从queue中取出消息，再进行后续的持久化处理。这种异步的消息设计方式可以有效缓解系统的压力，在很多项目中都可以采用（互联网项目中可用这种方式来"削峰"，缓解高并发压力）。</p>
 
-<p>&emsp;&emsp;最后一个问题,spy如何采集到目标机器业务方法的执行情况呢。最佳答案当然是AOP。</p>
+<p>&emsp;&emsp;最后一个问题,spy如何采集到目标机器业务方法的执行情况呢。最佳答案当然是AOP。大家可以参考我的另一篇文章<a href="/blog/2013/03/26/logger/">一种日志记录解决方案</a>。</p>
 
-<p>&emsp;&emsp;下面，我们一起来看看架构原型中的原码实现吧。MethodLoggerMessage是需要持久化的消息对象，请注意实现Serializable接口。<!-- more --></p>
+<p>&emsp;&emsp;下面，我们一起来看看架构原型中的原代码实现吧。MethodLoggerMessage是需要持久化的消息对象，请注意实现Serializable接口。<!-- more --></p>
 
 <p>``` java MethodLoggerMessage.java</p>
 
@@ -1181,209 +1435,6 @@ public void unLockEpet(int epetid, String locker) {
 <p>&emsp;&emsp;这种悲观锁的实现中，还需要防止死锁，比如：对多个对象的锁定，还有就是，需要某种检测机制，把超过某个业务时间的锁释放。</p>
 
 <p>&emsp;&emsp;要想解决好事务的并发处理非常的不容易，因为这个问题本来就是和业务领域密切相关的一个问题，需要我们从业务方面去分析解决。转换为一对多，关系越简单越好。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[cas与shiro集成]]></title>
-    <link href="http://yanyaner.com/blog/2013/05/13/shiro-cas/"/>
-    <updated>2013-05-13T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/05/13/shiro-cas</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;cas与shiro的集成思路是：子系统的登录入口定位到cas，将用户名与密码的验证交由cas服务器去做，在服务器端登录成功后，重定向到子系统，再由子系统验证凭证号，如果通过，则初始化子系统的会话中的内容及权限等。大家要明白这样两点思想：</p>
-
-<p>&emsp;&emsp;一、子系统不需要再做用户名及密码的验证。</p>
-
-<p>&emsp;&emsp;二、子系统需要查询cas服务器，以确保该用户已经成功登录，凭证有效。</p>
-
-<p>&emsp;&emsp;三、子系统去实现原有的会话管理及权限验证。</p>
-
-<p>&emsp;&emsp;好了，下面看看配置上的代码：</p>
-
-<p>&emsp;&emsp;重写cas验证过滤器，请注意，doGetAuthenticationInfo方法中的红色代码部分，是我在原有CasRealm的源码中新加的，而doGetAuthorizationInfo授权代码，将是你原来的授权代码：</p>
-
-<p>``` java CasAuthRealm.java
-/<em>*
- * cas认证类信息
- * @author ljh
- *
- </em>/
-public class CasAuthRealm extends CasRealm  {</p>
-
-<pre><code>private static Logger log = LoggerFactory.getLogger(CasAuthRealm.class);
-
-@Resource(name = "studentService")
-private IStudentService studentService;
-
-// 认证
-@Override
-protected AuthenticationInfo doGetAuthenticationInfo(
-        AuthenticationToken token) throws AuthenticationException {
-
-    System.out.println("进入登录认证方法doGetAuthenticationInfo");
-
-    CasToken casToken = (CasToken) token;
-    if (token == null) {
-        return null;
-    }
-
-    String ticket = (String)casToken.getCredentials();
-    if (!StringUtils.hasText(ticket)) {
-        return null;
-    }
-
-    TicketValidator ticketValidator = ensureTicketValidator();
-
-    try {
-        // contact CAS server to validate service ticket
-        Assertion casAssertion = ticketValidator.validate(ticket, getCasService());
-        // get principal, user id and attributes
-        AttributePrincipal casPrincipal = casAssertion.getPrincipal();
-        String userId = casPrincipal.getName();
-        log.debug("Validate ticket : {} in CAS server : {} to retrieve user : {}", new Object[]{
-                ticket, getCasServerUrlPrefix(), userId
-        });
-
-        Map&lt;String, Object&gt; attributes = casPrincipal.getAttributes();
-        // refresh authentication token (user id + remember me)
-        casToken.setUserId(userId);
-        String rememberMeAttributeName = getRememberMeAttributeName();
-        String rememberMeStringValue = (String)attributes.get(rememberMeAttributeName);
-        boolean isRemembered = rememberMeStringValue != null &amp;&amp; Boolean.parseBoolean(rememberMeStringValue);
-        if (isRemembered) {
-            casToken.setRememberMe(true);
-        }
-        // create simple authentication info
-        List&lt;Object&gt; principals = CollectionUtils.asList(userId, attributes);
-        PrincipalCollection principalCollection = new SimplePrincipalCollection(principals, getName());
-
-
-        //*************************自定义处理
-        User user = studentService.getStudentById(Long.parseLong(userId));
-        if (user != null) {
-            //要放在作用域中的东西，请在这里进行操作
-            SecurityUtils.getSubject().getSession().setAttribute("c_user", user);
-
-            return new SimpleAuthenticationInfo(principalCollection, ticket);
-        }
-
-        //认证没有通过
-        return null;
-
-
-    } catch (TicketValidationException e) { 
-        throw new CasAuthenticationException("Unable to validate ticket [" + ticket + "]", e);
-    }
-
-}
-
-// 授权
-@Override
-protected AuthorizationInfo doGetAuthorizationInfo(
-        PrincipalCollection principalCollection) {
-
-    Long loginId = Long.parseLong((String)principalCollection.fromRealm(getName()).iterator().next());
-    System.out.println("doGetAuthorizationInfo: 进行授权，登录id是：" + loginId);
-    //取当前用户
-    User student = studentService.getStudentById(loginId);
-    System.out.println("角色标识是：" + student.getRolesAsString());
-    System.out.println("权限标识是：" + student.getOperationPermissionsAsString());
-    //System.out.println("用户可操作的菜单：" + student.getMenus());
-
-    //添加角色及权限信息
-    SimpleAuthorizationInfo sazi = new SimpleAuthorizationInfo();
-    sazi.addRoles(student.getRolesAsString());
-    sazi.addStringPermissions(student.getPermissionsAsString());
-
-    return sazi;
-}
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;在spring配置文件中，配置上面的cas过滤器，其中需要大家注意的地方，是“自定义处理“部分，源代码中我有标注，https : / /localhost:8444/cas 是cas服务器地址，http : / / localhost:8080/shiro_demo 是子系统的项目路径：</p>
-
-<p>``` xml
-<bean id="myCasRealm" class="com.my.service.impl.CasAuthRealm"></p>
-
-<pre><code>    &lt;property name="casServerUrlPrefix" value="https://localhost:8444/cas"/&gt;
-    &lt;property name="casService" value="http://localhost:8080/shiro_demo/login"/&gt;
-</code></pre>
-
-<p></bean></p>
-
-<!-- 权限管理器 -->
-
-
-<pre><code>&lt;bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager"&gt;
-    &lt;property name="realms"&gt;
-        &lt;list&gt;
-            &lt;ref bean="myCasRealm" /&gt;
-        &lt;/list&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-</code></pre>
-
-<p> <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean" depends-on="roleOrFilter"></p>
-
-<pre><code>    &lt;property name="securityManager" ref="securityManager" /&gt;
-
-    &lt;property name="loginUrl" value="https://localhost:8444/cas/login?service=http://localhost:8080/shiro_demo/login" /&gt;
-    &lt;property name="successUrl" value="/main" /&gt;
-    &lt;property name="unauthorizedUrl" value="/commons/unauth.jsp" /&gt;
-
-&lt;property name="filters"&gt;
-        &lt;map&gt;
-            &lt;entry key="cas" value-ref="myCasFilter"/&gt; 
-            &lt;entry key="roleOrFilter" value-ref="roleOrFilter"&gt;
-            &lt;/entry&gt;
-        &lt;/map&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;最后，在配置文件中，配置子系统登录入口至cas</p>
-
-<p>```</p>
-
-<p>/js/<strong> = anon
-/css/</strong> = anon
-/logout = anon</p>
-
-<p>/error.jsp = anon</p>
-
-<p>/login.jsp = cas  <br/>
-/login = cas</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;当然，在进入主页面的时候，要访问session中的对象，如果hibernate的连接已经关闭，你可以重新将session中的对象与新的连接进行绑定，类似代码如下：</p>
-
-<p>``` java</p>
-
-<p>User u = (User)currentUser.getSession().getAttribute(&ldquo;c_user&rdquo;);</p>
-
-<p>getHibernateTemplate().refresh(u);</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;再说一下子系统的退出，如果子系统退出，也要退出cas服务器，可以写如下代码：</p>
-
-<p>``` java
-@RequestMapping(value=&ldquo;/logout&rdquo;)</p>
-
-<pre><code>public void logout(HttpServletResponse resp) throws IOException {
-    Subject currentUser = SecurityUtils.getSubject();
-    currentUser.logout(); 
-    resp.sendRedirect("https://localhost:8444/cas/logout");
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;文章内容虽少，但调试成功确需要花费大量的时候，网上很多人写资料的都不能运行，有需要源代码的同鞋，请发消息与我。</p>
 ]]></content>
   </entry>
   

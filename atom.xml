@@ -4,7 +4,7 @@
   <title><![CDATA[刘江华的博客]]></title>
   <link href="http://yanyaner.com/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-04-09T17:11:02+08:00</updated>
+  <updated>2014-04-13T10:31:46+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,66 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[java安全那些事之一]]></title>
+    <link href="http://yanyaner.com/blog/2014/04/13/security1/"/>
+    <updated>2014-04-13T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/04/13/security1</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;安全攻防的世界，永远是道高一尺魔高一丈的世界，再强的安全防护在FBI面前几乎无密码可言，如果你去看看美国的楞镜门事件相关新闻就知道了。我并不是安全密码方面的专家，本文只是从应用角度给大家普及些许web应用系统中安全相关的一些知识，希望对大家开发普通的企业级应用及互联网应用有帮助。</p>
+
+<p>&emsp;&emsp;先来看看加密及解密码。</p>
+
+<p>&emsp;&emsp;登录是任何一个系统都有的功能，在登录的过程中需要对用户提供的密码进行验证以检测其身份合法性，这点对于我们应用开发者而言，就是如何持久化用户的密码。如果仅仅以明文方式将用户密码保存在数据库中，那未免有些太“瓜西西”了，这就像CSDN所犯错一样低级。因此，我们一定要对用户密码进行相应的处理后再保存，即使被黑客拖库也可以防止用户密码的泄露。</p>
+
+<p>&emsp;&emsp;Hash是常用的方法。Hash一般翻译为&#8221;散列&#8221;或直接音译为&#8221;哈希&#8221;，就是把任意长度的输入变换成固定长度的散列输出。这种转换是一种压缩映射，也就是散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，而不可能从散列值来唯一的确定输入值，简单的说就是一种将任意长度的消息压缩到某一固定长度的消息摘要。</p>
+
+<p>&emsp;&emsp;Hash常用的算法有md5、sha等，比如下面的代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">DigestUtils</span><span class="o">.</span><span class="na">md5Hex</span><span class="o">(</span><span class="s">&quot;ljh&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">DigestUtils</span><span class="o">.</span><span class="na">sha256Hex</span><span class="o">(</span><span class="s">&quot;ljh&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">DigestUtils</span><span class="o">.</span><span class="na">sha384Hex</span><span class="o">(</span><span class="s">&quot;ljh&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">DigestUtils</span><span class="o">.</span><span class="na">sha512Hex</span><span class="o">(</span><span class="s">&quot;ljh&quot;</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;大家要注意上面这4行代码的输出结果长度分别是：32，64，96，128位长，如何你决定采用其中的一种hash来处理用户密码的消息接要并持久化，一定要注意数据库字段的长度设定哦。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="mi">67</span><span class="n">f87c9b32834504b4ddf432055d88bd</span>
+</span><span class='line'><span class="mi">871</span><span class="n">ca93f9e215997cc2d65b4a6924c706b69b09c4d419f89c24746d3ae04727b</span>
+</span><span class='line'><span class="n">d24d011e9d67511deea2f1296adaa65db2c161f8537ed48d5893c06d712abdf4a229c98f8d0fd2776fd8119248949a72</span>
+</span><span class='line'><span class="mi">1</span><span class="n">def79cd9d613a9ceefa285902cd1eb2397b176fd16a09525f52947518c196e8e3349d017182b12726e6a74a0f553af2b6991034f0a9361671176c5f96c5a21b5YiY5rGf5Y2O</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<!-- more-->
+
+
+<p>&emsp;&emsp;上面我用到了MD5与SHA1 Hash算法，这两种算法的区别在于：MD5比SHA1运算速度快，但SHA1比MD5强度高，其中，hash输出结果长度越长代表保密强度越好。Hash算法理论上是不可逆的，这意味着你不可能通过hash值反向计算出原始信息，因此，如果你的数据库中保存的是用户密码的hash值，将无人能够知道用户的原始密码是什么了，就好比你的银行密码遗忘了，只有带有效证件去银行重新设置密码，而老的密码将夫人知晓，包括DBA、开发人员。</p>
+
+<p>&emsp;&emsp;那么，对于程序员来说，如何通过用户输入的密码来验证用户的身份呢？非常简单，基本流程是：得到用户输入的用户名及密码&mdash;>对输入的密码进行hash运算&mdash;>根据用户名到数据库中查询出这个用户&mdash;>取得数据库中保存的用户曾经的密码hash值&mdash;>比对两个hash值得出结论。</p>
+
+<p>&emsp;&emsp;既然Hash加密密码有这么多的好处，那Hash保存密码真的可以高枕无忧了么？非也。hash是可以进行暴力破解的（虽然代价非常大的，一般情况下不会采用，但也不能排除），现在比较流行的做法是反向hash查询，就是预先在一张巨大的表中保存事先计算出来的hash值，通过询这个表就可以得到明文了。因此，如果用户的密码足够简单而常见，通过一次hash计算出来的结果几乎无秘密可言。另外，你也可以到网上了解一下“彩虹表”RainbowCrack相关的内容<a href="http://my.oschina.net/jgy/blog/38252">彩虹表-破解哈希算法 MD5加密法</a>，以空间换时间。</p>
+
+<p>&emsp;&emsp;既然一次hash计算出来的保密性不好，那就多计算几次效果如何？比如：md5(md5(pwd))，答案是,这样的计算结果也是不安全，互联网上已经有多次hash计算结果的查询（有的是要收费的）。</p>
+
+<p>&emsp;&emsp;其中，最好的一种办法是，加“随机盐”，也就是为每个用户保存一个足够长的随机字符串，使用这个salt参与计算，再进行多次hash计算。比如：md5(md5(pwd + salt))，这种做法相对来说就安全多了。在具体的项目中，你可以再改进一下这个算法，增加些复杂性（比如:md5(username.hashcode() + sha384Hex(salt + md5(pwd + slat)))），并且，程序在生成每个用户的salt时，要足够随机、足够长，这种方式对付hash反向查询就十分有效了。</p>
+
+<p>&emsp;&emsp;hash算法除了用于密码的安全性外，还经常用于数据签名，这一块的应用我在随后的文章中会提到。</p>
+
+<p>&emsp;&emsp;好了，这一部分先简单介绍到这，下一篇我们来看看Base64,DES,RSA等与加密解决信息有关的内容。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[监控系统中的异步消息使用实例（二）]]></title>
@@ -6271,302 +6331,6 @@
 <p>&emsp;&emsp;有人看过此画，说不想再当程序员，我想，她应该是理解了其中的某些东西。</p>
 
 <p>&emsp;&emsp;在正式油画中，我将对色彩进行进一步简化，并对程序猿表情再度夸张，希望，最终的作品，有更多的人和我感同身受。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[一步步教你用angular.js实现一个基本应用---第五部分]]></title>
-    <link href="http://yanyaner.com/blog/2013/09/28/angular-js5/"/>
-    <updated>2013-09-28T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/09/28/angular-js5</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;我们再来看页面中的标签。</p>
-
-<p>&emsp;&emsp;首页，<strong>index.html</strong>,在这个页面中，我们：</p>
-
-<p>&emsp;&emsp;1、使用ng-app来指明，整个页面使用的model名称。</p>
-
-<p>&emsp;&emsp;2、ng-view标签，指名所有子页面加载显示的位置。</p>
-
-<p>&emsp;&emsp;3、最后引入我们需要的js文件，大家要注意依赖关系。（jquery-1.7.2.min.js不是必须的，因为angular也可以完成dom操作，只不过书写起来没有jquery简洁）</p>
-
-<!--more-->
-
-
-
-
-<figure class='code'><figcaption><span>index.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="cp">&lt;!DOCTYPE html&gt;</span>
-</span><span class='line'><span class="nt">&lt;html</span> <span class="na">ng-app=</span><span class="s">&quot;myApp&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;head&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;title&gt;&lt;/title&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href=</span><span class="s">&quot;/css/bootstrap.min.css&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href=</span><span class="s">&quot;/css/my.css&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;/head&gt;</span>
-</span><span class='line'><span class="nt">&lt;body&gt;</span>
-</span><span class='line'>     <span class="nt">&lt;div</span> <span class="na">ng-view</span><span class="nt">&gt;&lt;/div&gt;</span>
-</span><span class='line'><span class="nt">&lt;/body&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;js/lib/jquery/jquery-1.7.2.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;js/commons.js&quot;</span>  <span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;js/lib/angular/angular.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;js/services.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;js/controllers.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;js/app.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="nt">&lt;/html&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>main.html</strong>，也是用户列表页面：</p>
-
-<figure class='code'><figcaption><span>main.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;container&quot;</span> <span class="na">ng-init=</span><span class="s">&quot;getState();pageFun(userService.pno);&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;welcome&quot;</span><span class="nt">&gt;&lt;h3&gt;</span>欢迎<span class="nt">&lt;span</span> <span class="na">id=</span><span class="s">&quot;who&quot;</span><span class="nt">&gt;</span><span class="nt">&lt;/span&gt;</span>登录成功！<span class="nt">&lt;span&gt;&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;logout()&quot;</span><span class="nt">&gt;</span>退出系统<span class="nt">&lt;/a&gt;&lt;/span&gt;&lt;/h3&gt;&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;&lt;span&gt;</span>用户名称：<span class="nt">&lt;/span&gt;&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span>  <span class="na">ng-model=</span><span class="s">&quot;userService.q_name&quot;</span> <span class="na">class=</span><span class="s">&quot;input-medium search-query&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;button</span> <span class="na">id=</span><span class="s">&quot;btn_query&quot;</span> <span class="na">class=</span><span class="s">&quot;btn&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;pageFun(1)&quot;</span><span class="nt">&gt;</span>搜索<span class="nt">&lt;/button&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">style=</span><span class="s">&quot;margin-top: 15px;&quot;</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;&lt;a</span>  <span class="na">ng-href=</span><span class="s">&quot;/to_adduser&quot;</span>  <span class="na">class=</span><span class="s">&quot;btn&quot;</span><span class="nt">&gt;</span>新增<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;a</span> <span class="na">class=</span><span class="s">&quot;btn&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;deleteUsers()&quot;</span><span class="nt">&gt;</span>批量删除<span class="nt">&lt;/a&gt;&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;span12&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;table</span> <span class="na">class=</span><span class="s">&quot;table&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;tr&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>选择<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>用户id<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>登录名<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>姓名<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>出生日期<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;th&gt;</span>操作<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;/tr&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;tbody</span> <span class="na">id=</span><span class="s">&quot;users&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;tr</span> <span class="na">ng-repeat=</span><span class="s">&quot;user in users&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td&gt;&lt;input</span> <span class="na">value=</span><span class="s">&quot;&quot;</span> <span class="na">class=</span><span class="s">&quot;uid_c&quot;</span> <span class="na">type=</span><span class="s">&quot;checkbox&quot;</span><span class="nt">&gt;&lt;/td&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td&gt;</span><span class="nt">&lt;/td&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;td</span> <span class="na">class=</span><span class="s">&quot;row_op&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>                        <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;user/&quot;</span><span class="nt">&gt;</span>查看<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>                        <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;to_modifyuser/&quot;</span><span class="nt">&gt;</span>修改<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>                        <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;deleteUser(user._id)&quot;</span><span class="nt">&gt;</span>删除<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>                    <span class="nt">&lt;/td&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;/tr&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;/tbody&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;/table&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">style=</span><span class="s">&quot;margin-top: 15px;&quot;</span> <span class="na">class=</span><span class="s">&quot;row&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;page_info&quot;</span> <span class="na">class=</span><span class="s">&quot;span4&quot;</span><span class="nt">&gt;</span>/  共条记录<span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;span5 page offset3&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.f_no)&quot;</span> <span class="nt">&gt;</span>首 页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.p_no)&quot;</span><span class="nt">&gt;</span>上一页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.n_no)&quot;</span><span class="nt">&gt;</span>下一页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;a</span>  <span class="na">ng-click=</span><span class="s">&quot;pageFun(page.l_no)&quot;</span><span class="nt">&gt;</span>末 页<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'><span class="nt">&lt;/div&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在主页面中，分页、查询、新增、删除操作的事件，是通过ng-click进行绑定的。</p>
-
-<p>&emsp;&emsp;再来看看具体的CRUD子页面：</p>
-
-<p>&emsp;&emsp;<strong>add_user.html</strong>,添加用户页面</p>
-
-<figure class='code'><figcaption><span>add_user.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;container&quot;</span> <span class="na">style=</span><span class="s">&quot;margin-top: 20px;&quot;</span> <span class="nt">&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;div&gt;</span>登录编码：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">ng-model=</span><span class="s">&quot;user.loginCode&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div&gt;</span>登录姓名：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">ng-model=</span><span class="s">&quot;user.name&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div&gt;</span>登录密码：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">ng-model=</span><span class="s">&quot;user.password&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div&gt;</span>出生日期：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">ng-model=</span><span class="s">&quot;user.birthday&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;hidden&quot;</span> <span class="na">ng-model=</span><span class="s">&quot;user.pic&quot;</span>  <span class="na">id=</span><span class="s">&quot;picPath&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;alert &quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        照片：
-</span><span class='line'>        <span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&quot;../commons/upload&quot;</span>
-</span><span class='line'>              <span class="na">method=</span><span class="s">&quot;post&quot;</span>
-</span><span class='line'>              <span class="na">enctype=</span><span class="s">&quot;multipart/form-data&quot;</span>
-</span><span class='line'>              <span class="na">id=</span><span class="s">&quot;uploadForm&quot;</span> <span class="na">target=</span><span class="s">&quot;other_frame&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;file&#39;</span> <span class="na">name=</span><span class="s">&quot;photo&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;submit&#39;</span> <span class="na">value=</span><span class="s">&quot;上传&quot;</span> <span class="na">class=</span><span class="s">&quot;btn-large btn-primary&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;hidden&#39;</span> <span class="na">name=</span><span class="s">&#39;cbName&#39;</span> <span class="na">value=</span><span class="s">&#39;parent.showImage&#39;</span><span class="nt">/&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/form&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;br/&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;img</span> <span class="na">src=</span><span class="s">&quot;&quot;</span> <span class="na">id=</span><span class="s">&quot;pic&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;iframe</span> <span class="na">name=</span><span class="s">&quot;other_frame&quot;</span> <span class="na">style=</span><span class="s">&#39;display: none;&#39;</span> <span class="nt">&gt;&lt;/iframe&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;div&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;新增&quot;</span>  <span class="na">class=</span><span class="s">&quot;btn&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;addUser()&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;返回&quot;</span>  <span class="na">class=</span><span class="s">&quot;btn&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;back()&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'><span class="nt">&lt;/div&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>modify_user.html</strong>，修改用户页面。</p>
-
-<figure class='code'><figcaption><span>modify_user.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;container&quot;</span> <span class="na">ng-init=</span><span class="s">&quot;loadUser();&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;alert alert-info&quot;</span><span class="nt">&gt;</span>用户名称：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">ng-model=</span><span class="s">&quot;user.userName&quot;</span><span class="nt">/&gt;&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;alert alert-success&quot;</span><span class="nt">&gt;</span>出生日期：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">ng-model=</span><span class="s">&quot;user.birthDay&quot;</span> <span class="na">value=</span><span class="s">&quot;&quot;</span><span class="nt">/&gt;&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;alert alert-info&quot;</span><span class="nt">&gt;</span>登录密码：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;password&quot;</span> <span class="na">ng-model=</span><span class="s">&quot;user.password&quot;</span>  <span class="na">placeholder=</span><span class="s">&quot;***&quot;</span><span class="nt">/&gt;&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;alert &quot;</span><span class="nt">&gt;</span>  <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;hidden&quot;</span> <span class="na">ng-model=</span><span class="s">&quot;user.picPath&quot;</span> <span class="na">value=</span><span class="s">&quot;&quot;</span> <span class="na">id=</span><span class="s">&quot;picPath&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>        照片：
-</span><span class='line'>        <span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&quot;../commons/upload&quot;</span>
-</span><span class='line'>                                 <span class="na">method=</span><span class="s">&quot;post&quot;</span>
-</span><span class='line'>                                 <span class="na">enctype=</span><span class="s">&quot;multipart/form-data&quot;</span>
-</span><span class='line'>                                 <span class="na">id=</span><span class="s">&quot;uploadForm&quot;</span> <span class="na">target=</span><span class="s">&quot;other_frame&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;file&#39;</span> <span class="na">name=</span><span class="s">&quot;photo&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;submit&#39;</span> <span class="na">value=</span><span class="s">&quot;上传&quot;</span> <span class="na">class=</span><span class="s">&quot;btn-large btn-primary&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&#39;hidden&#39;</span> <span class="na">name=</span><span class="s">&#39;cbName&#39;</span> <span class="na">value=</span><span class="s">&#39;parent.showImage&#39;</span><span class="nt">/&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/form&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;br/&gt;</span>
-</span><span class='line'>     <span class="nt">&lt;img</span> <span class="na">id=</span><span class="s">&quot;pic&quot;</span> <span class="na">src=</span><span class="s">&quot;../&quot;</span><span class="nt">/&gt;&lt;/div&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;iframe</span> <span class="na">name=</span><span class="s">&quot;other_frame&quot;</span> <span class="na">style=</span><span class="s">&#39;display: none;&#39;</span> <span class="nt">&gt;&lt;/iframe&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;div&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;修改&quot;</span> <span class="na">class=</span><span class="s">&quot;btn&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;updateUser()&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;返回&quot;</span> <span class="na">class=</span><span class="s">&quot;btn&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;back()&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/div&gt;</span>
-</span><span class='line'><span class="nt">&lt;/div&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;查看用户页面，<strong>view_user.html</strong></p>
-
-<figure class='code'><figcaption><span>view_user.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'> <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;container&quot;</span>  <span class="na">ng-init=</span><span class="s">&quot;loadUser();&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;alert alert-info&quot;</span><span class="nt">&gt;</span>id：<span class="nt">&lt;span</span> <span class="na">id=</span><span class="s">&quot;userId&quot;</span><span class="nt">&gt;</span><span class="nt">&lt;/span&gt;&lt;/div&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;alert alert-success&quot;</span><span class="nt">&gt;</span>用户名称：<span class="nt">&lt;span</span> <span class="na">id=</span><span class="s">&quot;userName&quot;</span><span class="nt">&gt;</span><span class="nt">&lt;/span&gt;&lt;/div&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;alert &quot;</span><span class="nt">&gt;</span>照片：<span class="nt">&lt;img</span> <span class="na">src=</span><span class="s">&quot;../&quot;</span> <span class="nt">&gt;&lt;/div&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;div&gt;&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;返回&quot;</span> <span class="na">class=</span><span class="s">&quot;btn btn-large&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;back();&quot;</span><span class="nt">/&gt;&lt;/div&gt;</span>
-</span><span class='line'><span class="nt">&lt;/div&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;最后是登录页面，<strong>login.html</strong></p>
-
-<figure class='code'><figcaption><span>login.html</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">&quot;container&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;label&gt;</span>用户名2：<span class="nt">&lt;/label&gt;&lt;input</span> <span class="na">name=</span><span class="s">&quot;uname&quot;</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">ng-model=</span><span class="s">&quot;user.uname&quot;</span>   <span class="na">class=</span><span class="s">&quot;input-xlarge&quot;</span><span class="nt">&gt;&lt;br/&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;label&gt;</span>密码：<span class="nt">&lt;/label&gt;&lt;input</span>   <span class="na">name=</span><span class="s">&quot;pwd&quot;</span> <span class="na">type=</span><span class="s">&quot;password&quot;</span> <span class="na">ng-model=</span><span class="s">&quot;user.pwd&quot;</span> <span class="na">class=</span><span class="s">&quot;input-xlarge&quot;</span><span class="nt">&gt;&lt;br/&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;登录系统&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_login&quot;</span> <span class="na">class=</span><span class="s">&quot;btn&quot;</span> <span class="na">ng-click=</span><span class="s">&quot;login()&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;/div&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;angular.js的入门使用简单介绍到这，随着后期的深入，我会再写一些关于这方面的文章，尽请期待。</p>
 ]]></content>
   </entry>
   

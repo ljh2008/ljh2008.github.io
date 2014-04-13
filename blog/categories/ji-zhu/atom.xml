@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-04-09T17:11:02+08:00</updated>
+  <updated>2014-04-13T10:31:46+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,55 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[java安全那些事之一]]></title>
+    <link href="http://yanyaner.com/blog/2014/04/13/security1/"/>
+    <updated>2014-04-13T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/04/13/security1</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;安全攻防的世界，永远是道高一尺魔高一丈的世界，再强的安全防护在FBI面前几乎无密码可言，如果你去看看美国的楞镜门事件相关新闻就知道了。我并不是安全密码方面的专家，本文只是从应用角度给大家普及些许web应用系统中安全相关的一些知识，希望对大家开发普通的企业级应用及互联网应用有帮助。</p>
+
+<p>&emsp;&emsp;先来看看加密及解密码。</p>
+
+<p>&emsp;&emsp;登录是任何一个系统都有的功能，在登录的过程中需要对用户提供的密码进行验证以检测其身份合法性，这点对于我们应用开发者而言，就是如何持久化用户的密码。如果仅仅以明文方式将用户密码保存在数据库中，那未免有些太“瓜西西”了，这就像CSDN所犯错一样低级。因此，我们一定要对用户密码进行相应的处理后再保存，即使被黑客拖库也可以防止用户密码的泄露。</p>
+
+<p>&emsp;&emsp;Hash是常用的方法。Hash一般翻译为"散列"或直接音译为"哈希"，就是把任意长度的输入变换成固定长度的散列输出。这种转换是一种压缩映射，也就是散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，而不可能从散列值来唯一的确定输入值，简单的说就是一种将任意长度的消息压缩到某一固定长度的消息摘要。</p>
+
+<p>&emsp;&emsp;Hash常用的算法有md5、sha等，比如下面的代码：</p>
+
+<p>``` java
+System.out.println(DigestUtils.md5Hex(&ldquo;ljh&rdquo;));
+System.out.println(DigestUtils.sha256Hex(&ldquo;ljh&rdquo;));
+System.out.println(DigestUtils.sha384Hex(&ldquo;ljh&rdquo;));
+System.out.println(DigestUtils.sha512Hex(&ldquo;ljh&rdquo;));</p>
+
+<p><code>
+&amp;emsp;&amp;emsp;大家要注意上面这4行代码的输出结果长度分别是：32，64，96，128位长，如何你决定采用其中的一种hash来处理用户密码的消息接要并持久化，一定要注意数据库字段的长度设定哦。
+</code>
+67f87c9b32834504b4ddf432055d88bd
+871ca93f9e215997cc2d65b4a6924c706b69b09c4d419f89c24746d3ae04727b
+d24d011e9d67511deea2f1296adaa65db2c161f8537ed48d5893c06d712abdf4a229c98f8d0fd2776fd8119248949a72
+1def79cd9d613a9ceefa285902cd1eb2397b176fd16a09525f52947518c196e8e3349d017182b12726e6a74a0f553af2b6991034f0a9361671176c5f96c5a21b5YiY5rGf5Y2O
+```</p>
+
+<!-- more-->
+
+
+<p>&emsp;&emsp;上面我用到了MD5与SHA1 Hash算法，这两种算法的区别在于：MD5比SHA1运算速度快，但SHA1比MD5强度高，其中，hash输出结果长度越长代表保密强度越好。Hash算法理论上是不可逆的，这意味着你不可能通过hash值反向计算出原始信息，因此，如果你的数据库中保存的是用户密码的hash值，将无人能够知道用户的原始密码是什么了，就好比你的银行密码遗忘了，只有带有效证件去银行重新设置密码，而老的密码将夫人知晓，包括DBA、开发人员。</p>
+
+<p>&emsp;&emsp;那么，对于程序员来说，如何通过用户输入的密码来验证用户的身份呢？非常简单，基本流程是：得到用户输入的用户名及密码&mdash;>对输入的密码进行hash运算&mdash;>根据用户名到数据库中查询出这个用户&mdash;>取得数据库中保存的用户曾经的密码hash值&mdash;>比对两个hash值得出结论。</p>
+
+<p>&emsp;&emsp;既然Hash加密密码有这么多的好处，那Hash保存密码真的可以高枕无忧了么？非也。hash是可以进行暴力破解的（虽然代价非常大的，一般情况下不会采用，但也不能排除），现在比较流行的做法是反向hash查询，就是预先在一张巨大的表中保存事先计算出来的hash值，通过询这个表就可以得到明文了。因此，如果用户的密码足够简单而常见，通过一次hash计算出来的结果几乎无秘密可言。另外，你也可以到网上了解一下“彩虹表”RainbowCrack相关的内容<a href="http://my.oschina.net/jgy/blog/38252">彩虹表-破解哈希算法 MD5加密法</a>，以空间换时间。</p>
+
+<p>&emsp;&emsp;既然一次hash计算出来的保密性不好，那就多计算几次效果如何？比如：md5(md5(pwd))，答案是,这样的计算结果也是不安全，互联网上已经有多次hash计算结果的查询（有的是要收费的）。</p>
+
+<p>&emsp;&emsp;其中，最好的一种办法是，加“随机盐”，也就是为每个用户保存一个足够长的随机字符串，使用这个salt参与计算，再进行多次hash计算。比如：md5(md5(pwd + salt))，这种做法相对来说就安全多了。在具体的项目中，你可以再改进一下这个算法，增加些复杂性（比如:md5(username.hashcode() + sha384Hex(salt + md5(pwd + slat)))），并且，程序在生成每个用户的salt时，要足够随机、足够长，这种方式对付hash反向查询就十分有效了。</p>
+
+<p>&emsp;&emsp;hash算法除了用于密码的安全性外，还经常用于数据签名，这一块的应用我在随后的文章中会提到。</p>
+
+<p>&emsp;&emsp;好了，这一部分先简单介绍到这，下一篇我们来看看Base64,DES,RSA等与加密解决信息有关的内容。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[监控系统中的异步消息使用实例（二）]]></title>
@@ -740,470 +789,6 @@ D:\server\db\mysql-proxy\bin\mysql-proxy.exe
 <p>&emsp;&emsp;应用程序中通过连接localhost:4040即可操作mysql数据库了，后台的一切都是通过mysql-proxy去处理的，数据库连接对应用程序变得透明了，我们的任务也就完成了。</p>
 
 <p>&emsp;&emsp;下篇给出读写分离的性能测试数据。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[项目中ibatis与hibernate混用示例详解]]></title>
-    <link href="http://yanyaner.com/blog/2014/03/06/ibatis-hibernate-in-query/"/>
-    <updated>2014-03-06T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/03/06/ibatis-hibernate-in-query</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;对于一般的项目hibernate足以胜任，但在选择一个框架时都要考虑适用场景（比如非功能性需求），hibernate也不例外，比如：复杂多条件组合查询对于hibernate来说并不方便（我们需要手工拼接sql）。基于这样的原因，很多项目中会引入ibatis来做复杂查询操作以做为补充，这主要是针对编码复杂度的考虑，性能也是其次的一个因素（其实hibernate也不存在问题的，你还记得到hibernater中有SqlQuery么，呵呵）。</p>
-
-<p>&emsp;&emsp;下面我给出一个简单的ibatis与hibernate混用示例，并在最后说明在实际使用过程中应该注意的问题。先来看spring的核心配置文件：</p>
-
-<p>``` xml spring-core.xml</p>
-
-<pre><code>&lt;!-- 读取配置参数 --&gt;
-&lt;bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"&gt;
-    &lt;property name="location"&gt;
-        &lt;value&gt;classpath:database.properties&lt;/value&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- 配置数据源 --&gt;
-&lt;bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
-      init-method="init" destroy-method="close"
-&gt;
-    &lt;property name="driverClassName"&gt;
-        &lt;value&gt;${driverClassName}&lt;/value&gt;
-    &lt;/property&gt;
-    &lt;property name="url"&gt;
-        &lt;value&gt;${url}&lt;/value&gt;
-    &lt;/property&gt;
-    &lt;property name="username"&gt;
-        &lt;value&gt;${username}&lt;/value&gt;
-    &lt;/property&gt;
-    &lt;property name="password"&gt;
-        &lt;value&gt;${pwd}&lt;/value&gt;
-    &lt;/property&gt;
-    &lt;property name="defaultAutoCommit"&gt;
-        &lt;value&gt;false&lt;/value&gt;
-    &lt;/property&gt;
-    &lt;property name="initialSize" value="1" /&gt;
-    &lt;property name="filters" value="stat,log4j" /&gt;
-    &lt;property name="name" value="myDatasource1"&gt;&lt;/property&gt;
-    &lt;!-- 最大活动连接数，也就是连接池中的最大缓存连接数 --&gt;
-    &lt;property name="maxActive" value="20" /&gt;
-    &lt;!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 --&gt;
-    &lt;property name="timeBetweenEvictionRunsMillis" value="10000" /&gt;
-    &lt;!-- 配置一个连接在池中最小生存的时间，单位是毫秒 --&gt;
-    &lt;property name="minEvictableIdleTimeMillis" value="10000" /&gt;
-    &lt;property name="minIdle" value="1" /&gt; 
-
-
-&lt;/bean&gt;
-
-&lt;!-- hibernate参数配置文件，包括缓存的信息 --&gt;
-&lt;bean id="hibernateProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean"&gt;
-    &lt;property name="location"&gt;
-        &lt;value&gt;classpath:hibernate-config.properties&lt;/value&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-
-
-&lt;!--  配置sessionFactory--&gt;
-&lt;bean id="sessionFactory" class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean"&gt;
-    &lt;property name="dataSource"&gt;
-        &lt;ref bean="dataSource" /&gt;
-    &lt;/property&gt;
-    &lt;property name="hibernateProperties" ref="hibernateProperties"&gt;&lt;/property&gt;
-    &lt;property name="packagesToScan"&gt;
-        &lt;list&gt;
-            &lt;value&gt;com.my.monitor.model&lt;/value&gt;
-        &lt;/list&gt;
-    &lt;/property&gt; 
-&lt;/bean&gt;
-
-&lt;!-- 配置事务管理器 --&gt;
-&lt;bean id="transactionManager"
-    class="org.springframework.orm.hibernate3.HibernateTransactionManager"&gt;
-    &lt;property name="sessionFactory" ref="sessionFactory"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- 对注解事务的支持 --&gt;
-&lt;tx:annotation-driven transaction-manager="transactionManager" /&gt;
-
-&lt;!-- 注解驱动 --&gt;
-&lt;context:component-scan base-package="com.my.monitor" &gt;&lt;/context:component-scan&gt; 
-
-&lt;!-- hibernate通用dao --&gt;
-&lt;bean id="hibernateBaseDao"
-    class="com.my.ms.framework.persistence.hibernate.BaseDaoHibernateImpl"&gt;
-    &lt;property name="sessionFactory" ref="sessionFactory"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- ibatis通用dao，一般用于查询 --&gt;
-&lt;bean id="ibatisBaseDao" class="com.my.ms.framework.persistence.ibatis.BaseDao"&gt;
-    &lt;property name="sqlMapClient"&gt;
-        &lt;bean class="org.springframework.orm.ibatis.SqlMapClientFactoryBean"&gt;
-            &lt;property name="dataSource" ref="dataSource"&gt;&lt;/property&gt;
-            &lt;property name="configLocation"&gt;
-                &lt;value&gt;classpath:config/ibatis/sqlMapConfig.xml&lt;/value&gt;
-            &lt;/property&gt;
-        &lt;/bean&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;这里封装了两个baseDao，分别针对的是hibernate与ibatis书写，源代码如下：<!-- more --></p>
-
-<p>``` java BaseDaoHibernateImpl.java
-package com.my.ms.framework.persistence.hibernate;</p>
-
-<p>import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;</p>
-
-<p>import org.hibernate.HibernateException;
-import org.hibernate.Query;
-import org.hibernate.Session;
-import org.springframework.orm.hibernate3.HibernateCallback;
-import org.springframework.orm.hibernate3.support.HibernateDaoSupport;
-import org.springframework.util.Assert;</p>
-
-<p>import com.my.ms.framework.persistence.model.Page;</p>
-
-<p>public class BaseDaoHibernateImpl extends HibernateDaoSupport implements</p>
-
-<pre><code>    IBaseDao {
-
-@Override
-public void addEntity(Object entity) {
-    getHibernateTemplate().save(entity);
-}
-
-@Override
-public void updateEntity(Object entity) {
-    getHibernateTemplate().update(entity);
-}
-
-@Override
-public void deleteEntity(Object entity) {
-    getHibernateTemplate().delete(entity);
-}
-
-@Override
-public void deleteEntityById(Class clazz, Serializable id) {
-    getHibernateTemplate().delete(this.queryEntityById(clazz, id));
-}
-
-@Override
-public &lt;T&gt; T queryEntityById(Class&lt;T&gt; clazz, Serializable id) {
-    return getHibernateTemplate().get(clazz, id);
-}
-
-@Override
-public List queryEntitys(String queryString, Object[] values) {
-    return getHibernateTemplate().find(queryString, values);
-}
-
-@Override
-public Page queryEntityByPage(int pageNo, int pageSize, String queryString,
-        Object[] parameters) {
-    Assert.isTrue(pageNo &gt; 0, "起始页不能小于0！");
-    // 去除select 子句，未考虑union的情况
-    int beginPos = queryString.toLowerCase().indexOf("from");
-    Assert.isTrue(beginPos != -1, queryString + "无效，必须包含from关键字");
-    String hql4Count = " select count(*)  "
-            + queryString.substring(beginPos);
-    return queryEntityByPage(pageNo, pageSize, queryString, hql4Count,
-            parameters);
-}
-
-@Override
-public Page queryEntityByPage(final int pageNo, final int pageSize,
-        final String queryString4Data, final String queryString4Count,
-        final Object[] parameters) {
-    Assert.hasText(queryString4Count, "用于计数的hql不能为空!");
-    Assert.hasText(queryString4Data, "用于查询的hql不能为空！");
-    Assert.isTrue(pageNo &gt; 0, "起始页不能小于0！");
-    return (Page) getHibernateTemplate().execute(new HibernateCallback() {
-
-        public Object doInHibernate(Session session)
-                throws HibernateException {
-
-            // 根据指定的参数执行hibernate hql查询
-            List countlist = getHibernateTemplate().find(queryString4Count,
-                    parameters);
-
-            long totalCount = ((Long) countlist.get(0)).longValue();
-            // 如果记录总数小于1则返回空的Page
-            if (totalCount &lt; 1)
-                return new Page(pageNo, pageSize, new ArrayList(), 0);
-            int startIndex = Page.getStartOfPage(pageNo, pageSize);
-            Query query = getSession().createQuery(queryString4Data);
-            for (int i = 0; i &lt; parameters.length; i++) {
-                query.setParameter(i, parameters[i]);
-            }
-            List list = query.setFirstResult(startIndex)
-                    .setMaxResults(pageSize).list();
-            return new Page(pageNo, pageSize, list, (int) totalCount);
-        }
-
-    });
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>针对ibatis的baseDao封装，主要是添加了一个分页方法，代码如下：</p>
-
-<p>``` java BaseDao.java</p>
-
-<p>package com.my.ms.framework.persistence.ibatis;</p>
-
-<p>import java.util.Map;</p>
-
-<p>import org.springframework.orm.ibatis.SqlMapClientTemplate;</p>
-
-<p>import com.my.ms.framework.persistence.model.Page;</p>
-
-<p>public class BaseDao extends SqlMapClientTemplate {</p>
-
-<pre><code>/**
- * 分页查询(sql语句块中的分页参数，请使用start与end)
- * @param pageNo
- * @param pageSize
- * @param sqlId4Data
- * @param sqlId4count
- * @param queryParam
- * @return
- */
-public Page queryEntityByPage(int pageNo, int pageSize, String sqlId4Data, String sqlId4Count, Map queryParam) {
-
-    queryParam.put("start", (pageNo - 1) * pageSize);
-    queryParam.put("end", pageSize);
-
-    Page page = new Page(pageNo, pageSize);
-
-    page.setData(queryForList(sqlId4Data, queryParam));
-    page.setRowcounts(((Number)queryForObject(sqlId4Count, queryParam)).intValue());
-
-    return page;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;上面两个实现的分页部分，用到了Page对象，请看分页对象的代码：</p>
-
-<p>``` java</p>
-
-<p>package com.my.ms.framework.persistence.model;</p>
-
-<p>import java.util.List;</p>
-
-<p>/<em>*
- * 分页对象
- * @author ljh
- *
- </em>/
-public class Page<T> {</p>
-
-<pre><code>/**
- * 数据对象
- */
-private List&lt;T&gt; data;
-
-private int rowcounts;
-/**
- * 页码
- */
-private int pageNo;
-/**
- * 最大显示页数
- */
-private int pageSize;
-
-public Page(){
-
-}
-
-public Page(int pageNo, int pageSize) {
-    this.pageNo = pageNo;
-    this.pageSize = pageSize;
-}
-
-public Page(int pageNo, int pageSize, List&lt;T&gt; data, int rowcounts) {
-    this.pageNo = pageNo;
-    this.pageSize = pageSize;
-    this.data = data;
-    this.rowcounts = rowcounts;
-}
-
-//计算该页对应的数据库下标
-public static int getStartOfPage(int pageNo, int pageSize) {
-    if (0 &gt; pageNo)
-        throw new IllegalArgumentException("页面索引不能小于0!");
-    return (pageNo - 1) * pageSize;
-}
-
-
-//共有多少页
-public int getPages() {
-    if (rowcounts % pageSize == 0) 
-    {
-        return rowcounts/pageSize;
-    } else {
-        return rowcounts/pageSize + 1;
-    }
-}
-
-public int getFirstNo() {
-    return 1;
-}
-
-public int getLastNo() {
-    return getPages();
-}
-
-public int getPreNo() {
-    if (pageNo - 1 &gt; 0 ) {
-        return pageNo - 1;
-    } else {
-        return 1;
-    }
-} 
-
-public int getNextNo() {
-    if (pageNo + 1  &lt;= getPages()) {
-        return pageNo + 1;
-    }
-    return getPages();
-}
-
-
-
-public List&lt;T&gt; getData() {
-    return data;
-}
-
-public void setData(List&lt;T&gt; data) {
-    this.data = data;
-}
-
-public int getPageNo() {
-    return pageNo;
-}
-
-public void setPageNo(int pageNo) {
-    this.pageNo = pageNo;
-}
-
-public int getPageSize() {
-    return pageSize;
-}
-
-public void setPageSize(int pageSize) {
-    this.pageSize = pageSize;
-}
-
-public int getRowcounts() {
-    return rowcounts;
-}
-
-public void setRowcounts(int rowcounts) {
-    this.rowcounts = rowcounts;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;具体使用时就比较方便了，下面是一个调用示例：</p>
-
-<p>``` java UserServiceImpl.java</p>
-
-<p>@Service
-@Transactional(readOnly=false)
-public class UserServiceImpl implements IUserService{</p>
-
-<pre><code>@Resource
-private IBaseDao hibernateDao;
-
-@Resource
-private BaseDao ibatisDao;
-
-@Override
-public User someBizMethod(int userId) {
-
-    ......
-
-    User u1 = (User)hibernateDao.queryEntityById(User.class, userId);
-    u1.setUserName(u2.getUserName() + "hibernate");
-    hibernateDao.updateEntity(u1);
-
-    User u2 = (User)ibatisDao.queryForObject("znjk.getUserById", userId);
-    u2.setUserName(u2.getUserName() + "ibatis");
-    ibatisDao.update("znjk.updateUser",  u2);
-
-    ......
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;好了，在上面的示例中还存在一些必须要弄明白的问题。</p>
-
-<p>&emsp;&emsp;一、事务管理问题。大家可以看到，我在spring文件中只配置了一个事务管理器，并且是hibernate的事务管理器，那么，有人就有会疑问：hibernater的事务可以应用在ibatis的dao上么？答案是肯定的。至于原因，你想想spring事务管理是通过AOP来实现的，并且最终映射到底层的话，事务是通过在jdbc的connection上完成的，而在我上面的这个业务方法中，两个dao拿到的是同一个连接，因此，方法中的所有操作都在一个事务环境中了，这个事务是通过hibernate事务管理器启动的。</p>
-
-<p>&emsp;&emsp;二、缓存同步问题。两个框架都有自己不同的缓存配置及实现，而且互不相关。因为这个原因，我上面的代码没法对保证缓存的一致性，所以，我的建议是：ibatis仅仅只做复杂查询，hibernate什么都可以做。此外，还有一个方案是，配置ibatis的数据源事务管理器，在不同的方法中，通过@Transactional注解来指定这个业务方法使用的事务管理器（比如：@Transactional(readOnly=false,value=&ldquo;dataSourceTransactionManager&rdquo;)），也就是说，在每一个方法中不存在两个dao混用的情况，而在不同的方法中，用不同的事务管理器操作事务的提交。</p>
-
-<p>&emsp;&emsp;ibatis的优势在于查询，特别是类似下面的组合查询，十分的方便。复杂查询更是如此。</p>
-
-<p>``` xml
-<sql id="where4pet"></p>
-
-<pre><code>    &lt;dynamic prepend="where"&gt;
-        &lt;isNotNull property="nickName" prepend="and"&gt;
-            f_nick_name like '%$nickName$%'
-        &lt;/isNotNull&gt;
-        &lt;isNotNull property="password" prepend="and"&gt;
-            f_password like '%$password$%'
-        &lt;/isNotNull&gt;
-        &lt;isNotNull property="birthday" prepend="and"&gt;
-            f_birthday = #birthday#
-        &lt;/isNotNull&gt;
-        &lt;isNotNull property="gender" prepend="and"&gt;
-            &lt;isEqual compareProperty="gender" compareValue="true"&gt;
-                f_gender = 'T'
-            &lt;/isEqual&gt;
-            &lt;isEqual compareProperty="gender" compareValue="false"&gt;
-                f_gender = 'F'
-            &lt;/isEqual&gt;
-        &lt;/isNotNull&gt;
-        &lt;isNotNull property="age" prepend="and"&gt;
-            f_age = #age#
-        &lt;/isNotNull&gt;
-    &lt;/dynamic&gt;
-&lt;/sql&gt;
-
-&lt;select id="getPetByPage4data" resultMap="resultMapPet" &gt;
-    select *
-    from t_pet
-    &lt;include refid="where4pet"/&gt;
-    order by $field$
-    limit #start#, #end#
-&lt;/select&gt;
-&lt;select id="getPetByPage4count" resultClass="int"&gt;
-    select count(*)
-    from t_pet
-    &lt;include refid="where4pet"/&gt;
-&lt;/select&gt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;这样的话，我们就可以充分利用不同框架的优势，达到取长补短的目的。也许你会说，这种方式就是把增、删、改交由hibernate来做，把查询交由ibatis来做。本质上看确实如此，但实际项目中要灵活去做，比如hibernate除了增删改外也可以做查询，特别是简单的查询，这样也可以更好的利用到hibernate的缓存。</p>
-
-<p>&emsp;&emsp;我在<a href="/blog/2010/11/01/p4">四种持久层设计方案比较</a>中，对查询的分离有所介绍，有兴趣的可以去看看其中的一个方案，另外，CQRS架构、mysql读写分离也有这方面的含义。</p>
 ]]></content>
   </entry>
   

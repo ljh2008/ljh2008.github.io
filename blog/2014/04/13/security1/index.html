@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>java安全那些事之一 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;安全攻防的世界，永远是道高一尺魔高一丈的世界，再强的安全防护在FBI面前几乎无密码可言，如果你去看看美国的楞镜门事件相关新闻就知道了。我并不是安全密码方面的专家，本文只是从应用角度给大家普及些许web应用系统中安全相关的一些知识， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2014/04/13/security1">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Java安全那些事之一</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-13T15:18:00+08:00" pubdate data-updated="true">2014年04月13日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;安全攻防的世界，永远是道高一尺魔高一丈的世界，再强的安全防护在FBI面前几乎无密码可言，如果你去看看美国的楞镜门事件相关新闻就知道了。我并不是安全密码方面的专家，本文只是从应用角度给大家普及些许web应用系统中安全相关的一些知识，希望对大家开发普通的企业级应用及互联网应用有帮助。</p>
+
+<p>&emsp;&emsp;先来看看加密及解密码。</p>
+
+<p>&emsp;&emsp;登录是任何一个系统都有的功能，在登录的过程中需要对用户提供的密码进行验证以检测其身份合法性，这点对于我们应用开发者而言，就是如何持久化用户的密码。如果仅仅以明文方式将用户密码保存在数据库中，那未免有些太“瓜西西”了，这就像CSDN所犯错一样低级。因此，我们一定要对用户密码进行相应的处理后再保存，即使被黑客拖库也可以防止用户密码的泄露。</p>
+
+<p>&emsp;&emsp;Hash是常用的方法。Hash一般翻译为&#8221;散列&#8221;或直接音译为&#8221;哈希&#8221;，就是把任意长度的输入变换成固定长度的散列输出。这种转换是一种压缩映射，也就是散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，而不可能从散列值来唯一的确定输入值，简单的说就是一种将任意长度的消息压缩到某一固定长度的消息摘要。</p>
+
+<p>&emsp;&emsp;Hash常用的算法有md5、sha等，比如下面的代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">DigestUtils</span><span class="o">.</span><span class="na">md5Hex</span><span class="o">(</span><span class="s">&quot;ljh&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">DigestUtils</span><span class="o">.</span><span class="na">sha256Hex</span><span class="o">(</span><span class="s">&quot;ljh&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">DigestUtils</span><span class="o">.</span><span class="na">sha384Hex</span><span class="o">(</span><span class="s">&quot;ljh&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">DigestUtils</span><span class="o">.</span><span class="na">sha512Hex</span><span class="o">(</span><span class="s">&quot;ljh&quot;</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;大家要注意上面这4行代码的输出结果长度分别是：32，64，96，128位长，如何你决定采用其中的一种hash来处理用户密码的消息接要并持久化，一定要注意数据库字段的长度设定哦。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="mi">67</span><span class="n">f87c9b32834504b4ddf432055d88bd</span>
+</span><span class='line'><span class="mi">871</span><span class="n">ca93f9e215997cc2d65b4a6924c706b69b09c4d419f89c24746d3ae04727b</span>
+</span><span class='line'><span class="n">d24d011e9d67511deea2f1296adaa65db2c161f8537ed48d5893c06d712abdf4a229c98f8d0fd2776fd8119248949a72</span>
+</span><span class='line'><span class="mi">1</span><span class="n">def79cd9d613a9ceefa285902cd1eb2397b176fd16a09525f52947518c196e8e3349d017182b12726e6a74a0f553af2b6991034f0a9361671176c5f96c5a21b5YiY5rGf5Y2O</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<!-- more-->
+
+
+<p>&emsp;&emsp;上面我用到了MD5与SHA1 Hash算法，这两种算法的区别在于：MD5比SHA1运算速度快，但SHA1比MD5强度高，其中，hash输出结果长度越长代表保密强度越好。Hash算法理论上是不可逆的，这意味着你不可能通过hash值反向计算出原始信息，因此，如果你的数据库中保存的是用户密码的hash值，将无人能够知道用户的原始密码是什么了，就好比你的银行密码遗忘了，只有带有效证件去银行重新设置密码，而老的密码将夫人知晓，包括DBA、开发人员。</p>
+
+<p>&emsp;&emsp;那么，对于程序员来说，如何通过用户输入的密码来验证用户的身份呢？非常简单，基本流程是：得到用户输入的用户名及密码&mdash;>对输入的密码进行hash运算&mdash;>根据用户名到数据库中查询出这个用户&mdash;>取得数据库中保存的用户曾经的密码hash值&mdash;>比对两个hash值得出结论。</p>
+
+<p>&emsp;&emsp;既然Hash加密密码有这么多的好处，那Hash保存密码真的可以高枕无忧了么？非也。hash是可以进行暴力破解的（虽然代价非常大的，一般情况下不会采用，但也不能排除），现在比较流行的做法是反向hash查询，就是预先在一张巨大的表中保存事先计算出来的hash值，通过询这个表就可以得到明文了。因此，如果用户的密码足够简单而常见，通过一次hash计算出来的结果几乎无秘密可言。另外，你也可以到网上了解一下“彩虹表”RainbowCrack相关的内容<a href="http://my.oschina.net/jgy/blog/38252">彩虹表-破解哈希算法 MD5加密法</a>，以空间换时间。</p>
+
+<p>&emsp;&emsp;既然一次hash计算出来的保密性不好，那就多计算几次效果如何？比如：md5(md5(pwd))，答案是,这样的计算结果也是不安全，互联网上已经有多次hash计算结果的查询（有的是要收费的）。</p>
+
+<p>&emsp;&emsp;其中，最好的一种办法是，加“随机盐”，也就是为每个用户保存一个足够长的随机字符串，使用这个salt参与计算，再进行多次hash计算。比如：md5(md5(pwd + salt))，这种做法相对来说就安全多了。在具体的项目中，你可以再改进一下这个算法，增加些复杂性（比如:md5(username.hashcode() + sha384Hex(salt + md5(pwd + slat)))），并且，程序在生成每个用户的salt时，要足够随机、足够长，这种方式对付hash反向查询就十分有效了。</p>
+
+<p>&emsp;&emsp;hash算法除了用于密码的安全性外，还经常用于数据签名，这一块的应用我在随后的文章中会提到。</p>
+
+<p>&emsp;&emsp;好了，这一部分先简单介绍到这，下一篇我们来看看Base64,DES,RSA等与加密解决信息有关的内容。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-13T15:18:00+08:00" pubdate data-updated="true">2014年04月13日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/04/09/async_message_architect2/" title="上一篇文章: 监控系统中的异步消息使用实例（二）">&laquo;上一篇:&nbsp;&nbsp;监控系统中的异步消息使用实例（二）</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/04/13/security1/">Java安全那些事之一</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/27/cache-redis/">缓存之redis</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/10/db-read-write-split/">读写分离架构之mysql实例</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="60">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2014 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

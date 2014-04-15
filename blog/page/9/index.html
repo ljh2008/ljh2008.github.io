@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;配置 web.xml ，加入spring mvc，代码如下： web.xml1
+  <meta name="description" content="&emsp;&emsp;用户的crud操作代码： 1
 2
 3
 4
@@ -44,7 +44,15 @@
 33
 34
 35
-36 &hellip;">
+36
+37
+38
+39
+40
+41
+42
+43
+44 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -93,6 +101,789 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/12/28/restful3/">教你一步步做 Restful程序（3）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-28T15:19:00+08:00" pubdate data-updated="true">2012年12月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;用户的crud操作代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+<span class='line-number'>170</span>
+<span class='line-number'>171</span>
+<span class='line-number'>172</span>
+<span class='line-number'>173</span>
+<span class='line-number'>174</span>
+<span class='line-number'>175</span>
+<span class='line-number'>176</span>
+<span class='line-number'>177</span>
+<span class='line-number'>178</span>
+<span class='line-number'>179</span>
+<span class='line-number'>180</span>
+<span class='line-number'>181</span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Controller</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserAction</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">PRE_FIX_URL</span> <span class="o">=</span> <span class="s">&quot;userManager/&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">log</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">UserAction</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Resource</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Resource</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">ISystemManagerService</span> <span class="n">systemManagerService</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@InitBinder</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">initBinder</span><span class="o">(</span><span class="n">HttpServletRequest</span> <span class="n">request</span><span class="o">,</span>
+</span><span class='line'>                <span class="n">ServletRequestDataBinder</span> <span class="n">binder</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">DateFormat</span> <span class="n">fmt</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">CustomDateEditor</span> <span class="n">dateEditor</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CustomDateEditor</span><span class="o">(</span><span class="n">fmt</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">binder</span><span class="o">.</span><span class="na">registerCustomEditor</span><span class="o">(</span><span class="n">Date</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">dateEditor</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span> <span class="n">PRE_FIX_URL</span> <span class="o">+</span> <span class="s">&quot;getState&quot;</span><span class="o">,</span> <span class="n">method</span><span class="o">=</span><span class="n">RequestMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getLogingUserState</span><span class="o">(</span>
+</span><span class='line'>            <span class="n">HttpSession</span> <span class="n">session</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">HttpServletResponse</span> <span class="n">response</span><span class="o">)</span>  <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="o">(</span><span class="n">User</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;session_key&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">MyResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyResponse</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">user</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">resp</span><span class="o">.</span><span class="na">setErrorCode</span><span class="o">();</span>
+</span><span class='line'>            <span class="n">resp</span><span class="o">.</span><span class="na">setMsg</span><span class="o">(</span><span class="s">&quot;该用户没有登录！&quot;</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">resp</span><span class="o">);</span>
+</span><span class='line'>            <span class="k">return</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">UserDTO</span> <span class="n">u</span> <span class="o">=</span> <span class="k">new</span> <span class="n">UserDTO</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">BeanUtils</span><span class="o">.</span><span class="na">copyProperties</span><span class="o">(</span><span class="n">user</span><span class="o">,</span> <span class="n">u</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">resp</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">u</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">resp</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="n">PRE_FIX_URL</span> <span class="o">+</span> <span class="s">&quot;upload_img&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">uploadFile</span><span class="o">(</span>
+</span><span class='line'>            <span class="n">HttpSession</span> <span class="n">session</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">HttpServletResponse</span> <span class="n">response</span><span class="o">,</span>
+</span><span class='line'>            <span class="nd">@RequestParam</span><span class="o">(</span><span class="s">&quot;imgFile&quot;</span><span class="o">)</span> <span class="n">CommonsMultipartFile</span> <span class="n">imgFile</span>
+</span><span class='line'>            <span class="o">)</span>  <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">//对上传的文件进行处理</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">dir</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">getServletContext</span><span class="o">().</span><span class="na">getRealPath</span><span class="o">(</span><span class="s">&quot;upload&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">new_fileName</span> <span class="o">=</span> <span class="n">UUID</span><span class="o">.</span><span class="na">randomUUID</span><span class="o">().</span><span class="na">toString</span><span class="o">()</span> <span class="o">+</span> <span class="n">imgFile</span><span class="o">.</span><span class="na">getOriginalFilename</span><span class="o">().</span><span class="na">substring</span><span class="o">(</span><span class="n">imgFile</span><span class="o">.</span><span class="na">getOriginalFilename</span><span class="o">().</span><span class="na">lastIndexOf</span><span class="o">(</span><span class="s">&quot;.&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">String</span> <span class="n">save_file</span> <span class="o">=</span> <span class="n">dir</span> <span class="o">+</span> <span class="n">File</span><span class="o">.</span><span class="na">separator</span> <span class="o">+</span> <span class="n">new_fileName</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">save_file</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">FileUtils</span><span class="o">.</span><span class="na">writeByteArrayToFile</span><span class="o">(</span><span class="k">new</span> <span class="n">File</span><span class="o">(</span><span class="n">save_file</span><span class="o">),</span> <span class="n">imgFile</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+</span><span class='line'>        <span class="c1">//发回新文件名给客户端</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Map</span> <span class="n">result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">result</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;error&quot;</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">result</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;url&quot;</span><span class="o">,</span> <span class="s">&quot;upload/&quot;</span> <span class="o">+</span> <span class="n">new_fileName</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">result</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="n">PRE_FIX_URL</span> <span class="o">+</span> <span class="s">&quot;deleteUsers&quot;</span><span class="o">,</span><span class="n">method</span><span class="o">=</span><span class="n">RequestMethod</span><span class="o">.</span><span class="na">DELETE</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deleteUsers</span><span class="o">(</span>
+</span><span class='line'>            <span class="nd">@RequestBody</span> <span class="n">String</span> <span class="n">ids</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">HttpServletResponse</span> <span class="n">response</span>
+</span><span class='line'>            <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">MyResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyResponse</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">ids</span><span class="o">.</span><span class="na">endsWith</span><span class="o">(</span><span class="s">&quot;-&quot;</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">ids</span> <span class="o">=</span> <span class="n">ids</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">ids</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">-</span> <span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>            <span class="n">String</span><span class="o">[]</span> <span class="n">str_ids</span> <span class="o">=</span> <span class="n">ids</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&quot;-&quot;</span><span class="o">);</span>
+</span><span class='line'>            <span class="k">for</span> <span class="o">(</span><span class="n">String</span> <span class="n">id</span> <span class="o">:</span> <span class="n">str_ids</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">systemManagerService</span><span class="o">.</span><span class="na">deleteUser</span><span class="o">(</span><span class="n">systemManagerService</span><span class="o">.</span><span class="na">getUserById</span><span class="o">(</span><span class="n">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">id</span><span class="o">)));</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&quot;delete user error, exception is:{}&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">resp</span><span class="o">.</span><span class="na">setErrorCode</span><span class="o">();</span>
+</span><span class='line'>            <span class="n">resp</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="s">&quot;error!!!!&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">resp</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="n">PRE_FIX_URL</span> <span class="o">+</span> <span class="s">&quot;user&quot;</span><span class="o">,</span><span class="n">method</span><span class="o">=</span><span class="n">RequestMethod</span><span class="o">.</span><span class="na">POST</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addUser</span><span class="o">(</span>
+</span><span class='line'>            <span class="nd">@ModelAttribute</span> <span class="n">User</span> <span class="n">user</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">HttpServletResponse</span> <span class="n">response</span>
+</span><span class='line'>            <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">MyResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyResponse</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">user</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">systemManagerService</span><span class="o">.</span><span class="na">addUser</span><span class="o">(</span><span class="n">user</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&quot;add user error, exception is:{}&quot;</span><span class="o">,</span> <span class="n">e</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">resp</span><span class="o">.</span><span class="na">setErrorCode</span><span class="o">();</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">resp</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">user</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">resp</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="n">PRE_FIX_URL</span> <span class="o">+</span> <span class="s">&quot;users/{pno}&quot;</span><span class="o">,</span><span class="n">method</span><span class="o">=</span><span class="n">RequestMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getUsersByPage</span><span class="o">(</span>
+</span><span class='line'>            <span class="nd">@PathVariable</span><span class="o">(</span><span class="s">&quot;pno&quot;</span><span class="o">)</span> <span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span>
+</span><span class='line'>            <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;ps&quot;</span><span class="o">,</span> <span class="n">defaultValue</span><span class="o">=</span><span class="s">&quot;2&quot;</span><span class="o">)</span><span class="kt">int</span> <span class="n">pageSize</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">HttpServletResponse</span> <span class="n">response</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="o">)</span>   <span class="kd">throws</span> <span class="n">Exception</span>  <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">MyResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyResponse</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Page</span> <span class="n">page</span> <span class="o">=</span> <span class="n">systemManagerService</span><span class="o">.</span><span class="na">getUserByPage</span><span class="o">(</span><span class="n">pageNo</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">resp</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">page</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">resp</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="n">PRE_FIX_URL</span> <span class="o">+</span> <span class="s">&quot;user/{id}&quot;</span><span class="o">,</span><span class="n">method</span><span class="o">=</span><span class="n">RequestMethod</span><span class="o">.</span><span class="na">GET</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getUserById</span><span class="o">(</span>
+</span><span class='line'>            <span class="nd">@PathVariable</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">)</span><span class="kt">int</span> <span class="n">id</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">HttpServletResponse</span> <span class="n">response</span>
+</span><span class='line'>            <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">MyResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyResponse</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">resp</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">systemManagerService</span><span class="o">.</span><span class="na">getUserById</span><span class="o">(</span><span class="n">id</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">resp</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="n">PRE_FIX_URL</span> <span class="o">+</span> <span class="s">&quot;user/{id}&quot;</span><span class="o">,</span><span class="n">method</span><span class="o">=</span><span class="n">RequestMethod</span><span class="o">.</span><span class="na">DELETE</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">deleteUserById</span><span class="o">(</span>
+</span><span class='line'>            <span class="nd">@PathVariable</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">)</span><span class="kt">int</span> <span class="n">id</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">HttpServletResponse</span> <span class="n">response</span>
+</span><span class='line'>            <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">MyResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyResponse</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">systemManagerService</span><span class="o">.</span><span class="na">deleteUser</span><span class="o">(</span><span class="n">systemManagerService</span><span class="o">.</span><span class="na">getUserById</span><span class="o">(</span><span class="n">id</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">resp</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="n">PRE_FIX_URL</span> <span class="o">+</span> <span class="s">&quot;user/{id}&quot;</span><span class="o">,</span><span class="n">method</span><span class="o">=</span><span class="n">RequestMethod</span><span class="o">.</span><span class="na">POST</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">updateUser</span><span class="o">(</span>
+</span><span class='line'>            <span class="nd">@PathVariable</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">)</span><span class="kt">int</span> <span class="n">id</span><span class="o">,</span>
+</span><span class='line'>            <span class="nd">@ModelAttribute</span> <span class="n">User</span> <span class="n">user</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">HttpServletResponse</span> <span class="n">response</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">MyResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">MyResponse</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">User</span> <span class="n">user2save</span> <span class="o">=</span> <span class="n">systemManagerService</span><span class="o">.</span><span class="na">getUserById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">BeanUtils</span><span class="o">.</span><span class="na">copyProperties</span><span class="o">(</span><span class="n">user</span><span class="o">,</span> <span class="n">user2save</span><span class="o">,</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{</span><span class="s">&quot;id&quot;</span><span class="o">,</span> <span class="s">&quot;password&quot;</span><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">systemManagerService</span><span class="o">.</span><span class="na">updateUser</span><span class="o">(</span><span class="n">user2save</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">(),</span> <span class="n">resp</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;客户端比较复杂，先看分页查看用户部分的代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;link</span> <span class="na">type=</span><span class="s">&quot;text/css&quot;</span> <span class="na">href=</span><span class="s">&quot;../css/redmond/jquery-ui-1.8.16.custom.css&quot;</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;style </span><span class="na">type=</span><span class="s">&quot;text/css&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nc">.if_u</span><span class="p">{</span>
+</span><span class='line'>    <span class="k">border</span><span class="o">:</span> <span class="k">none</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nt">table</span> <span class="nt">a</span><span class="p">{</span>
+</span><span class='line'>    <span class="k">margin-left</span><span class="o">:</span> <span class="m">10px</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nt">&lt;/style&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery-1.6.2.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;../js/jquery-ui-1.8.16.custom.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">pageSize</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+</span><span class='line'><span class="kd">var</span> <span class="nx">pageNo</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'><span class="kd">function</span> <span class="nx">refresh</span><span class="p">(){</span>
+</span><span class='line'>    <span class="nx">getUsersByPage</span><span class="p">(</span><span class="nx">pageNo</span><span class="p">,</span> <span class="nx">pageSize</span><span class="p">);</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">function</span> <span class="nx">getUsersByPage</span><span class="p">(</span><span class="nx">pageNo</span><span class="p">,</span> <span class="nx">pageSize</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;get&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;users/&quot;</span> <span class="o">+</span><span class="nx">pageNo</span> <span class="p">,</span>
+</span><span class='line'>        <span class="nx">cache</span><span class="o">:</span><span class="kc">false</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">data</span><span class="o">:</span><span class="s2">&quot;ps=&quot;</span> <span class="o">+</span> <span class="nx">pageSize</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="kd">var</span> <span class="nx">datas</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">data</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>                    <span class="nx">datas</span> <span class="o">=</span> <span class="nx">datas</span> <span class="o">+</span> <span class="s2">&quot;&lt;tr&gt;&lt;td&gt;&lt;input type=&#39;checkbox&#39; name=&#39;uid&#39; value=&#39;&quot;</span><span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">id</span><span class="o">+</span><span class="s2">&quot;&#39;/&gt;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">id</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">loginCode</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span>
+</span><span class='line'>                    <span class="k">this</span><span class="p">.</span><span class="nx">name</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">birthday</span><span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;td&gt;&lt;a href=&#39;&quot;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">id</span>
+</span><span class='line'>                    <span class="o">+</span><span class="s2">&quot;&#39; class=&#39;view_user&#39;&gt;查看&lt;/a&gt;&quot;</span>
+</span><span class='line'>                    <span class="o">+</span><span class="s2">&quot;&lt;a href=&#39;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">id</span>
+</span><span class='line'>                        <span class="o">+</span><span class="s2">&quot;&#39; class=&#39;modify_user&#39;&gt;修改&lt;/a&gt;&quot;</span>
+</span><span class='line'>                    <span class="o">+</span><span class="s2">&quot;&lt;a href=&#39;&quot;</span><span class="o">+</span><span class="k">this</span><span class="p">.</span><span class="nx">id</span>
+</span><span class='line'>                        <span class="o">+</span><span class="s2">&quot;&#39; class=&#39;delete_user&#39;&gt;删除&lt;/a&gt;&quot;</span>
+</span><span class='line'>                    <span class="o">+</span><span class="s2">&quot;&lt;/td&gt;&lt;/tr&gt;&quot;</span>
+</span><span class='line'>                <span class="p">});</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#users&quot;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="nx">datas</span><span class="p">).</span><span class="nx">appendTo</span><span class="p">(</span><span class="s2">&quot;#users&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#pageInfo&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">currentPageNo</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">totalPages</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#pageCount&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">totalRows</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.fp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">firstPageNo</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.pp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">prePageNo</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.np&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">nextPageNo</span><span class="p">);</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.lp&quot;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">,</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">lastPageNo</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;取分页数据发生错误!！&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>        <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;get&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;getState&quot;</span> <span class="p">,</span>
+</span><span class='line'>        <span class="nx">cache</span><span class="o">:</span><span class="kc">false</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#loginState&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s2">&quot;欢迎&quot;</span> <span class="o">+</span> <span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;使用本系统！&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_delete_users&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="kd">var</span> <span class="nx">ids</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;uid&#39;]:checked&quot;</span><span class="p">).</span><span class="nx">size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span>  <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">confirm</span><span class="p">(</span><span class="s2">&quot;您确定要删除所选择的数据吗？&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="kc">false</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="k">return</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[name=&#39;uid&#39;]:checked&quot;</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">i</span><span class="p">){</span>
+</span><span class='line'>            <span class="nx">ids</span> <span class="o">=</span>  <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">val</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">+</span> <span class="nx">ids</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>            <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;deleteUsers&quot;</span> <span class="p">,</span>
+</span><span class='line'>            <span class="nx">cache</span><span class="o">:</span><span class="kc">false</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">data</span><span class="o">:</span><span class="nx">ids</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;删除成功  ！&quot;</span><span class="p">);</span>
+</span><span class='line'>                    <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">reload</span><span class="p">();</span>
+</span><span class='line'>                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;删除数据发生错误!！&quot;</span><span class="p">);</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.view_user&quot;</span><span class="p">).</span><span class="nx">live</span><span class="p">(</span><span class="s2">&quot;click&quot;</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="c1">//window.location.href = &quot;user_detail.html?uid=&quot; + $(this).attr(&quot;href&quot;);</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;&lt;div class=&#39;view_user_dlg&#39;&gt;&lt;iframe height=&#39;150&#39; frameborder=0 class=&#39;if_u&#39; src=&#39;user_detail.html?uid=&quot;</span><span class="o">+</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">)</span> <span class="o">+</span><span class="s2">&quot;&#39;&gt;&lt;/iframe&gt;&lt;/div&gt;&quot;</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="nx">dialog</span><span class="p">({</span><span class="nx">title</span><span class="o">:</span><span class="s2">&quot;用户详细信息&quot;</span><span class="p">,</span><span class="nx">width</span><span class="o">:</span><span class="mi">350</span><span class="p">,</span> <span class="nx">height</span><span class="o">:</span><span class="mi">200</span><span class="p">,</span><span class="nx">modal</span><span class="o">:</span><span class="kc">true</span><span class="p">});</span>
+</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.modify_user&quot;</span><span class="p">).</span><span class="nx">live</span><span class="p">(</span><span class="s2">&quot;click&quot;</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;&lt;div class=&#39;modify_user_dlg&#39;&gt;&lt;iframe height=&#39;150&#39; frameborder=0 class=&#39;if_u&#39; src=&#39;user_modifyl.html?uid=&quot;</span><span class="o">+</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">)</span> <span class="o">+</span><span class="s2">&quot;&#39;&gt;&lt;/iframe&gt;&lt;/div&gt;&quot;</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="nx">dialog</span><span class="p">({</span><span class="nx">title</span><span class="o">:</span><span class="s2">&quot;修改用户信息&quot;</span><span class="p">,</span><span class="nx">width</span><span class="o">:</span><span class="mi">350</span><span class="p">,</span> <span class="nx">height</span><span class="o">:</span><span class="mi">200</span><span class="p">,</span><span class="nx">modal</span><span class="o">:</span><span class="kc">true</span><span class="p">});</span>
+</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.delete_user&quot;</span><span class="p">).</span><span class="nx">live</span><span class="p">(</span><span class="s2">&quot;click&quot;</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">confirm</span><span class="p">(</span><span class="s2">&quot;您确定要删除该用户信息吗？&quot;</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
+</span><span class='line'>                <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;user/&quot;</span> <span class="o">+</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">),</span>
+</span><span class='line'>                <span class="nx">cache</span><span class="o">:</span><span class="kc">false</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
+</span><span class='line'>                <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                        <span class="nb">window</span><span class="p">.</span><span class="nx">parent</span><span class="p">.</span><span class="nx">refresh</span><span class="p">();</span>
+</span><span class='line'>                        <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;删除成功！&quot;</span><span class="p">);</span>
+</span><span class='line'>                        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_close&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">();</span>
+</span><span class='line'>                    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                        <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;删除失败!原因：！&quot;</span> <span class="o">+</span> <span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
+</span><span class='line'>                    <span class="p">}</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">getUsersByPage</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nx">pageSize</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.page&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nx">pageNo</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="nx">getUsersByPage</span><span class="p">(</span><span class="nx">pageNo</span><span class="p">,</span><span class="nx">pageSize</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_add_user&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;&lt;div class=&#39;add_user_dlg&#39;&gt;&lt;iframe src=&#39;user_add.html&#39; height=&#39;100%&#39; width=&#39;100%&#39; class=&#39;if_u&#39; frameborder=0&gt;&lt;/iframe&gt;&lt;/div&gt;&quot;</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">.</span><span class="nx">dialog</span><span class="p">({</span><span class="nx">title</span><span class="o">:</span><span class="s1">&#39;新增用户&#39;</span><span class="p">,</span><span class="nx">width</span><span class="o">:</span><span class="mi">550</span><span class="p">,</span><span class="nx">height</span><span class="o">:</span><span class="mi">500</span><span class="p">,</span><span class="nx">modal</span><span class="o">:</span><span class="kc">true</span><span class="p">});</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'><span class="nt">&lt;/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;网页body中的内容是：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;h1</span> <span class="na">style=</span><span class="s">&quot;color: red;&quot;</span> <span class="na">id=</span><span class="s">&quot;loginState&quot;</span><span class="nt">&gt;&lt;/h1&gt;</span>
+</span><span class='line'><span class="nt">&lt;h2&gt;</span>用户列表<span class="nt">&lt;/h2&gt;</span>
+</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;新增&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_add_user&quot;</span><span class="nt">/&gt;&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;批量删除&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_delete_users&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;table&gt;</span>
+</span><span class='line'><span class="nt">&lt;tr&gt;&lt;th&gt;</span>选择<span class="nt">&lt;/th&gt;&lt;th&gt;</span>id<span class="nt">&lt;/th&gt;&lt;th&gt;</span>登录编码<span class="nt">&lt;/th&gt;&lt;th&gt;</span>姓名<span class="nt">&lt;/th&gt;&lt;th&gt;</span>出生日期<span class="nt">&lt;/th&gt;&lt;th&gt;</span>操作<span class="nt">&lt;/th&gt;&lt;/tr&gt;</span>
+</span><span class='line'><span class="nt">&lt;tbody</span> <span class="na">id=</span><span class="s">&quot;users&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;/tbody&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;/table&gt;&lt;br/&gt;</span>
+</span><span class='line'><span class="nt">&lt;span</span> <span class="na">id=</span><span class="s">&quot;pageInfo&quot;</span><span class="nt">&gt;&lt;/span&gt;</span> 共<span class="nt">&lt;span</span> <span class="na">id=</span><span class="s">&quot;pageCount&quot;</span><span class="nt">&gt;&lt;/span&gt;</span>条记录
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;1&quot;</span> <span class="na">class=</span><span class="s">&quot;page fp&quot;</span><span class="nt">&gt;</span>第一页<span class="nt">&lt;/a&gt;</span><span class="ni">&amp;nbsp;&amp;nbsp;</span>
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">class=</span><span class="s">&quot;page pp&quot;</span> <span class="nt">&gt;</span>上一页<span class="nt">&lt;/a&gt;</span><span class="ni">&amp;nbsp;&amp;nbsp;</span>
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">class=</span><span class="s">&quot;page np&quot;</span><span class="nt">&gt;</span>下一页<span class="nt">&lt;/a&gt;</span><span class="ni">&amp;nbsp;&amp;nbsp;</span>
+</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">class=</span><span class="s">&quot;page lp&quot;</span><span class="nt">&gt;</span>末一页<span class="nt">&lt;/a&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;分页页面效果：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/11/3.jpg' width='' height='' title='restful参考运行界面'><span class='caption-text'>restful参考运行界面</span></span></p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1499,271 +2290,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/11/07/linux/">Linux常用命令及配置备忘录</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-11-07T15:18:00+08:00" pubdate data-updated="true">2012年11月07日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;有些命令时间长了不用，会突然想不起来，现记录一下，以备后查：</p>
-
-<h2>工作相关：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nb">jobs</span>，查看后台的工作，-l 参数，可看到pid
-</span><span class='line'>
-</span><span class='line'><span class="nb">fg</span> ,将某个pid转前台，也可用： %工作序号
-</span><span class='line'>
-</span><span class='line'><span class="nb">bg</span>，将某个pid转后台。
-</span><span class='line'>
-</span><span class='line'>ctrl + z:将某个工作转后台，并且stop
-</span><span class='line'>
-</span><span class='line'>ctrl + c:将结束当前进程
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果在启动某个程序，想让它直接转至后台，请在命令最后加上  &amp;。</p>
-
-<h2>网络：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>netstat -lnpt，查看网络连接，还可以看到程序的pid
-</span><span class='line'>
-</span><span class='line'>wget url，可下载资源，当服务器与外网连通的情况下，安装jdk，tomcat等很有用。
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>进程，cpu使用率等：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>ps -aux,很详细，其中会有cpu使用率
-</span><span class='line'>
-</span><span class='line'>top，这个可以看到动态的cpu使用率，ctrl + c终止
-</span><span class='line'>
-</span><span class='line'><span class="nb">kill</span> -9 pid，强行结束，一般用这个以防止某些进程无法 <span class="nb">kill</span>死的情况
-</span><span class='line'>
-</span><span class='line'>pstree，树结构显示，可寻找进程间依赖关系
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>磁盘：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>df 查看每个挂载区使用大小，在磁盘空间不够时，请运行
-</span><span class='line'>
-</span><span class='line'>du -ssh，查看当前目录所占用空间
-</span><span class='line'>
-</span><span class='line'>ls -l，查看到文件的更多详情
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>ssh连接：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>ssh -q 用户名@主机ip
-</span><span class='line'>
-</span><span class='line'>rz -y ，可上传文件，并直接覆盖原文件
-</span><span class='line'>
-</span><span class='line'>sz 文件名，可下载服务串上的文件
-</span><span class='line'>
-</span><span class='line'>sudo  su - 用户名，可进行操作用的的切换
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>文件压缩</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>tar –zxvf filename.tar.gz 解压到当前目录，你也可以指定新的位置
-</span><span class='line'>
-</span><span class='line'>tar -zcvf 压缩文件名.tar.gz  目录或文件，注意z参数，指明要用gzip压缩，一般都要加上。
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>其它常见操作命令</h2>
-
-<p>我就不再解释：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>ls -l
-</span><span class='line'>
-</span><span class='line'><span class="nb">cd</span>
-</span><span class='line'>
-</span><span class='line'>mkdir
-</span><span class='line'>
-</span><span class='line'>rm
-</span><span class='line'>
-</span><span class='line'>rm -r
-</span><span class='line'>
-</span><span class='line'>cp file1, file2
-</span><span class='line'>
-</span><span class='line'>mv file1, file2
-</span><span class='line'>
-</span><span class='line'>ln -s file  link-name
-</span><span class='line'>
-</span><span class='line'>vim filename
-</span><span class='line'>
-</span><span class='line'>cat filename
-</span><span class='line'>
-</span><span class='line'><span class="nb">logout</span>
-</span><span class='line'>
-</span><span class='line'><span class="nb">exit</span>
-</span><span class='line'>
-</span><span class='line'>chmod
-</span><span class='line'>
-</span><span class='line'>chown
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>java下的一些常见命令：</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>catalina.sh start
-</span><span class='line'>
-</span><span class='line'>catalina.sh stop
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>java –cp .:/home/user_00/soft_setup/dev/romanticroom/WEB-INF/lib/* : /home/user_00/mysoft/tomcat6-1/lib/* com.maxsoft.app.romanticroom.facade.impl.AutoRun
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>mysql:</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>mysql -h10.181.48.24 -P3335 -u root
-</span><span class='line'>
-</span><span class='line'>mysqldump -h10.182.50.24 -P3335 -u root -p room &gt; room_server.sql
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;注意，这个sql导出后，要压缩打包后再传回备份。</p>
-
-<h2>memcached:</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'>/home/user_00/mysoft/memcached/bin/memcached -d -m 1024 -u user_00 -l 16.124.49.121 -p 9584
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>jdk环境变量配置：</h2>
-
-<p>&emsp;&emsp;JDK安装：</p>
-
-<p>&emsp;&emsp;安装完成jdk后，在home/user001/执行，vim .bashrc</p>
-
-<p>&emsp;&emsp;直接./xxxxx.bin解压jdk</p>
-
-<p>&emsp;&emsp;java环境变量配置：</p>
-
-<p>&emsp;&emsp;到usr_00的home下,vim .bashrc，在最后加入：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="nb">export </span><span class="nv">JAVA_HOME</span><span class="o">=</span>/usr/local/services/java/jdk1.6.0_31
-</span><span class='line'>
-</span><span class='line'><span class="nb">export </span><span class="nv">CLASSPATH</span><span class="o">=</span>.:<span class="nv">$JAVA_HOME</span>/jre/lib:<span class="nv">$JAVA_HOME</span>/lib/tools.jar
-</span><span class='line'>
-</span><span class='line'><span class="nb">export </span><span class="nv">JRE_HOME</span><span class="o">=</span><span class="nv">$JAVA_HOME</span>/jre
-</span><span class='line'>
-</span><span class='line'><span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$JAVA_HOME</span>/bin:<span class="nv">$PATH</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;为了让配置立即生效：source .bashrc</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/10/">&larr; 更多早期老文章</a>
@@ -1781,6 +2307,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/04/15/security3/">java安全那些事之三（RSA及https）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/04/14/security2/">Java安全那些事之二（base64,des）</a>
       </li>
     
@@ -1794,10 +2324,6 @@
     
       <li class="post">
         <a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/03/27/cache-redis/">缓存之redis</a>
       </li>
     
   </ul>

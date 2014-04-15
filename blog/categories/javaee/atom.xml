@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：javaEE | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/javaee/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-04-14T15:07:57+08:00</updated>
+  <updated>2014-04-15T15:21:23+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,302 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[java安全那些事之三（RSA及https）]]></title>
+    <link href="http://yanyaner.com/blog/2014/04/15/security3/"/>
+    <updated>2014-04-15T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/04/15/security3</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;大家也许看到过有些网站的登录功能都使用的是hppts协议开头的网址，这个https就使用了RSA加密算法，可以有效保护敏感信息在传输过程中的安全性（即使被截获也无法破解）。</p>
+
+<p>&emsp;&emsp;RSA算法属于不对称加密算法，信息发送方和接收方使用不同的密钥（即公钥私钥对）进行通讯，其中的公钥是可以对外公开的，私钥必须保密。信息发送方用公钥对信息进行加密，而信息接收方对信息的解密必须使用私钥，除此别无它法。反之，用私钥加密的信息也只能用公钥才能解密，因此，RSA算法不仅可以用作加密解决方案，也可以做为双方通讯过程中不可抵赖的凭证。示意图见下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/rsa.jpg' width='' height='' title='RSA加密解密示意图'><span class='caption-text'>RSA加密解密示意图</span></span></p>
+
+<p>&emsp;&emsp;在进行RSA加密解密之前，首先要生成公钥和私钥对。</p>
+
+<p>&emsp;&emsp;我先给大家介绍一种基于JKS（也就是java keystore）的公钥私钥保存方式，我们用下面的命令是生成一个别名是mykey.mm的test.keystore文件，打开keystore文件的密码我输入的是123456。</p>
+
+<p>```
+C:\key>keytool -genkey -alias mykey.mm -keyalg RSA -keystore test.keystore
+输入keystore密码：
+Keystore 密码太短 -至少必须为6个字符
+输入keystore密码：
+再次输入新密码:
+您的名字与姓氏是什么？
+  <a href="sc">Unknown</a>：  liu
+您的组织单位名称是什么？
+  <a href="sc">Unknown</a>：  maxsoft
+您的组织名称是什么？
+  <a href="sc">Unknown</a>：  maxsoft.com
+您所在的城市或区域名称是什么？
+  <a href="sc">Unknown</a>：  cd
+您所在的州或省份名称是什么？
+  <a href="sc">Unknown</a>：  sc
+该单位的两字母国家代码是什么
+  <a href="sc">Unknown</a>：  cn
+CN=liu, OU=maxsoft, O=maxsoft.com, L=cd, ST=sc, C=cn 正确吗？
+  <a href="y">否</a>：  y</p>
+
+<p>输入&lt;my.yy>的主密码</p>
+
+<pre><code>    （如果和 keystore 密码相同，按回车）：
+</code></pre>
+
+<p>C:\key>
+```</p>
+
+<p>&emsp;&emsp;上面的命令会在c:\key下生成一个test.keystore文件，这个文件中包含了公钥和私钥，java中使用test.keystore文件并进行加密解密的调用代码写法如下：</p>
+
+<p>``` java
+public static void main(String[] args) throws Exception {</p>
+
+<pre><code>    String alias = "mykey.mm";
+    String password = "123456";
+
+    KeyStore store = KeyStore.getInstance("JKS");
+    store.load(new FileInputStream("c://key//test.keystore"), password.toCharArray());
+
+    //得到公钥
+    PublicKey publickey =  store.getCertificate(alias).getPublicKey();
+
+    //得到私钥
+    PrivateKey privateKey = (PrivateKey)store.getKey(alias, password.toCharArray());
+
+    String orgStr = "言娃娃yanyaner.com";
+
+    //加密处理
+    Cipher cipherEncoder = Cipher.getInstance("RSA");
+    cipherEncoder.init(Cipher.ENCRYPT_MODE, publickey);
+    //加密字串结果
+    byte[] strEnc = cipherEncoder.doFinal(orgStr.getBytes());
+    System.out.println("RSA加密后的内容是：\r\n" + Base64.encode(strEnc));
+
+
+    //解密处理
+    Cipher cipherDecoder = Cipher.getInstance("RSA");
+    cipherDecoder.init(Cipher.DECRYPT_MODE, privateKey);
+    byte[] orgDec = cipherDecoder.doFinal(strEnc);
+    System.out.println("RSA解密后的内容是：\r\n" + new String(orgDec));
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;加密过程用到了公钥，而解密用到了私钥。反之亦然，即加密用私钥，解密用公钥。代码输出的结果是：</p>
+
+<p><code>
+RSA加密后的内容是：
+Mow+hRU2V8rt6lRjT1ydb7Lmdwmb1QeelDRxVh0O8kb6FZXWfs6fVuNMMDn8G7w5gA4mnheM+A/z
+OUaU83q1bsXWFni3p+ER9oOy/Wx0rwHGKIYxvqTyrYJgOVnpNrwwa5b2GljWVKdlai3BPgxzY+kk
+Oj2IsLcU9OyXmr5cqYdLlC47Vtb++CUGg+6X071cArTw90KYZk2TYSdawvS3BbgzFcA/BHz36vsK
+4Q7sjsHY2SG4ITiq8pAM3pXYHLbTvUH4SLBdJTMry1kEGqvgJA3dy63Ut+Rl43hZ+XJZICPPAvSo
+xD3Euo/5bhyO1Y8Jbdrj7C4eHADMZ+Zpn7RfGA==
+RSA解密后的内容是：
+言娃娃yanyaner.com
+</code></p>
+
+<p>&emsp;&emsp;接下来，我们使用另外一种公钥私钥保存的方式，我们通过openssl这种使用更为广泛的基于RSA的工具生成加密公钥私钥对。<!-- more--></p>
+
+<p>&emsp;&emsp;在windows下通过openssl来生成私钥，请在cmd中输入下面的命令，这个命令会生成私钥文件rsa_private.key，我们可以指定文件名：</p>
+
+<p><code>
+D:\temp\openssl&gt;openssl genrsa -out rsa_private.key 1024
+Generating RSA private key, 1024 bit long modulus
+....++++++
+........++++++
+unable to write 'random state'
+e is 65537 (0x10001)
+</code></p>
+
+<p>&emsp;&emsp;接下来再根据私钥来生成公钥文件rsa_public.key，如下命令：</p>
+
+<p><code>
+D:\temp\openssl&gt;openssl rsa -in  rsa_private.key -out rsa_public.key -pubout
+writing RSA key
+</code></p>
+
+<p>&emsp;&emsp;通过上面的命令，我们就生成了公钥和私钥文件，这时候的私钥还不能直接被java使用，接下来需要对rsa_private.key私钥文件进行PKCS#8编码，如下命令：</p>
+
+<p><code>
+D:\temp\openssl&gt;openssl pkcs8 -topk8 -in rsa_private.key -out pkcs8_rsa_private.key -nocrypt
+</code></p>
+
+<p>&emsp;&emsp;通过上面三个命令，我们在d:\temp目录下会存在三个文件，如下图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/ppkey_files.jpg' width='' height='' title='RSA密钥文件'><span class='caption-text'>RSA密钥文件</span></span></p>
+
+<p>&emsp;&emsp;好了，可以写java代码了。</p>
+
+<p>``` java
+/**</p>
+
+<pre><code> * 得到公钥对象
+ * @param publicKeyFile
+ * @return
+ * @throws Exception
+ */
+public static RSAPublicKey getRSAPublicKey(String publicKeyFile) throws Exception {
+    X509EncodedKeySpec keySpec= new X509EncodedKeySpec(readKeysAsByteArray(publicKeyFile));  
+    KeyFactory keyFactory= KeyFactory.getInstance("RSA");  
+    return (RSAPublicKey) keyFactory.generatePublic(keySpec);  
+}
+
+/**
+ * 得到私钥对象
+ * @param priveKeyFile
+ * @return
+ * @throws Exception
+ */
+public static RSAPrivateKey getRSAPrivateKey(String priveKeyFile) throws Exception {
+    PKCS8EncodedKeySpec keySpec= new PKCS8EncodedKeySpec(readKeysAsByteArray(priveKeyFile));  
+    KeyFactory keyFactory= KeyFactory.getInstance("RSA");  
+    return  (RSAPrivateKey) keyFactory.generatePrivate(keySpec); 
+}
+
+
+/**
+ * 读取密钥文件为byte数组
+ * @param fileName
+ * @return
+ * @throws Exception
+ */
+public static byte[] readKeysAsByteArray(String fileName) throws Exception {
+
+    BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName)));
+
+    String line = "";
+    StringBuilder sb = new StringBuilder();
+    while ((line = reader.readLine()) != null) {
+        if ( ! line.startsWith("-----")) {
+            sb.append(line).append("\r");
+        } 
+    }
+
+    BASE64Decoder base64Decoder= new BASE64Decoder();
+
+    return  base64Decoder.decodeBuffer(sb.toString());
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;需要解释的是，上面代码中的readKeysAsByteArray方法，是用来读取key文件的，因为key文件中的多余行我们要去掉，比如，下面就是一个私钥文件内容，文件头和尾都有多余的信息：</p>
+
+<p>```</p>
+
+<p>&mdash;&mdash;-BEGIN PRIVATE KEY&mdash;&mdash;&ndash;
+MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBANmxTOBVBVrl25Ge
+sCD3b57dxK7LLK2RiSrBvdoaBK/g5mVV5RggG3GI8cCC4gDv2oGWNdwbNJiGZreZ
+Knm4G0y5Pq86tuJO6vmYKrD0cEZlp0uh9b2cAeP3ry+87VwpIFnpaiXCzB6xhEb1
+2FvP8hbs/K7iHkLbysUB7F/XUbRPAgMBAAECgYEAj84lB6iCghqH4nlexlhOXzcG
+v6Ut3XbfkuQrY1F+uSSrblPApCBJoMWjVdXgMFhCEwrEh6NdKkjWwAApZADv3pXj
+m/LXQYwRaKExJtTdl38ujSfL/tN5vSaMqmnnDa6IMc0AfjjWHDuX5Jurqi47l8Rh
+yF4gSvXTfsAwD8ZT6XECQQD3I8orEj4fAAIKF4KvmHREl9yVKr+iqaT7q4q5C94i
+Gs/RyN421NiR9ns5+R3ooJ+mBufMsUTLQFvPgmcB+VfXAkEA4X8/owQ50xlB3lSC
+dHotY4rE7N3gCeLxN+FpzxK+6lZjelxjsQ0wFKMrvLjQFZWcDrLcCOFE3ldCJGOS
++3CYSQJALnR0yRnZwXv/5iO7NgSjPk2JciSh9xKKZ6A8KEJ509FUZSur0YS63N0H
+FsOkAplGyS+dHNXph4cmeuAZOr7C6wJBAIC5x3Yj326mqHdm/uHHLUn52djuAAsk
+xlcEEwbmyJ21mywqua5EvQHK9BjT19W6hk/NwtY+4rWaUmO7hBiNeiECQDhAAYha
+huZwqLVB/UUMdqxJreEee5q+SyaAn+aHLWCq0vYQ9DEU72vAhvgnQQ0oTLPkQ5od
+NBCD4J/2OGQOIH8=
+&mdash;&mdash;-END PRIVATE KEY&mdash;&mdash;&ndash;</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;信息发送方、接收方的代码，大家可以参照下面的示例代码写出：</p>
+
+<p>``` java
+public static void main(String[] args) throws Exception {</p>
+
+<pre><code>    RSAPublicKey publickey = getRSAPublicKey("D:/temp/openssl/rsa_public.key");
+    RSAPrivateKey privateKey = getRSAPrivateKey("D:/temp/openssl/pkcs8_rsa_private.key");
+
+    String orgStr = "言娃娃-yanyaner.com";
+
+    //加密处理
+    Cipher cipherEncoder = Cipher.getInstance("RSA");
+    cipherEncoder.init(Cipher.ENCRYPT_MODE, publickey);
+
+    //加密字串结果
+    byte[] strEnc = cipherEncoder.doFinal(orgStr.getBytes());
+
+    System.out.println("加密后的内容是：\r\n" + Base64.encode(strEnc));
+
+
+    //解密处理
+    Cipher cipherDecoder = Cipher.getInstance("RSA");
+    cipherDecoder.init(Cipher.DECRYPT_MODE, privateKey);
+
+    byte[] orgDec = cipherDecoder.doFinal(strEnc);
+    System.out.println("解密后的内容是：\r\n" + new String(orgDec));
+
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;最终输出结果是：</p>
+
+<p>```</p>
+
+<p>加密后的内容是：
+dzxXcllos3pROKeWGShl3uu0KQdRrJiYHhUGqcHT6DkPRW71cYFITj0XlwkIjaWGw8CyJbc5r/AR
+qwtuVFN/IybI/kUdfuAVrmDuIVn86rlkAEVbZTel8WOoUlRmlyflhbYUk0SeflcKdFgVELk5WVZ+
+J/DGn1kJ23KcIXbC1YM=</p>
+
+<p>解密后的内容是：
+言娃娃-yanyaner.com</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;通过阅读上面的调用代码，我想大家对RSA加密算法已经有了一些认识，在这些代码中我们发现，RSA的私钥的存放必须要得到很好的保护，如果私钥被他人得到，那么双方的通讯的内容也就公开了。</p>
+
+<p>&emsp;&emsp;最后，我给大家简单介绍一下tomcat中的基于RSA的https配置内容。配置tomcat的https支持hppts，首先也是要建立RSA证书，同样是基于JKS的，如下命令即可：</p>
+
+<p>```
+D:\temp\tomcat-cer>keytool -genkey -alias mytomcat -keyalg RSA -keystore tomcat.keystore
+输入密钥库口令:
+再次输入新口令:
+您的名字与姓氏是什么?
+您的组织单位名称是什么?
+您的组织名称是什么?
+您所在的城市或区域名称是什么?
+您所在的省/市/自治区名称是什么?
+该单位的双字母国家/地区代码是什么?
+CN=liu, OU=maxsoft, O=org, L=cd, ST=sc, C=cn是否正确?
+输入 <mytomcat> 的密钥口令</p>
+
+<pre><code>    (如果和密钥库口令相同, 按回车):
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;接下来修改tomcat 的 server.xml中Connector部分的配置：</p>
+
+<p>``` xml server.xml
+&lt;Connector protocol=&ldquo;org.apache.coyote.http11.Http11Protocol&rdquo;</p>
+
+<pre><code>           port="8443"  SSLEnabled="true"
+           maxThreads="150" scheme="https" secure="true"
+           clientAuth="false" sslProtocol="TLS" 
+           keystoreFile="D:/temp/tomcat-cer/tomcat.keystore"
+           keystorePass="123456"
+           /&gt;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;要注意的是，我将文件中的protocol由protocol=&ldquo;HTTP/1.1&rdquo; 改为了protocol=&ldquo;org.apache.coyote.http11.Http11Protocol"，因为我的tomcat6是6.0.36，会报No Certificate file specified or invalid file format错误，高版本的tomcat默认AprLifecycleListener是高为on的，你在配置文件中可以看到这个开关SSLEngine="on&rdquo; ，只有修改后才可以正确运行。</p>
+
+<p>&emsp;&emsp;进入浏览器访问你的项目，会发现https已经生效。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/browser_ssl_warning.jpg' width='' height='' title='浏览器中https警告'><span class='caption-text'>浏览器中https警告</span></span></p>
+
+<p>&emsp;&emsp;如果你不想让浏览器出现这样的警告，那么你就得到第三方认证的证书机构去申请密钥了，而不能像上面一样通过命令行自己生成密钥，因为我们生成的密钥浏览器认为有风险而不被信任(当然如果用户通过添加例外，浏览器仍然可以继续访问这个https的网站)。</p>
+
+<p>&emsp;&emsp;关于RSA的介绍先到此，下篇文章接着讲一些架构级的安全认证设计知识，请大家关注。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[java安全那些事之二（base64,des）]]></title>
@@ -89,7 +385,7 @@ public static byte[] desDecode(byte[] passedData, String privateKey) throws Exce
 
 <p>```</p>
 
-<p>&emsp;&emsp;上面的加密和解密方法中，均传入了一个desPrivateKey，这个key是两方共用的，调用示例代码如下，其中的desPrivateKey是随机生成的一个私钥，两方共同持有：</p>
+<p>&emsp;&emsp;上面的加密和解密方法中，均传入了一个desPrivateKey，这个key是两方共用的，调用示例代码如下，其中的desPrivateKey是随机生成的一个私钥，两方共同持有。</p>
 
 <p>``` java</p>
 
@@ -116,7 +412,7 @@ DES解密后的内容是：hello,刘江华
 
 <p>&emsp;&emsp;由此我们可以得出结论，DES算法的关键在于私钥的安全保管，如果信息发送方和接收方中的任何一个泄露了私钥，双方的通讯过程也就无法保密了，因此，密钥的保密是一个关键。</p>
 
-<p>&emsp;&emsp;下一篇文章，我继续给大家讲解RSA算法，RSA这是一种非对称加密算法，请大家随时关注我的博客。</p>
+<p>&emsp;&emsp;下一篇文章，我继续给大家讲解RSA算法及其应用，RSA这是一种非对称加密算法，请大家随时关注我的博客。</p>
 ]]></content>
   </entry>
   
@@ -701,93 +997,6 @@ public void setUserNameSessionKey(String userNameSessionKey) {
 <p>&emsp;&emsp;至此，spy程序这边基本开发完成了。目标服务器上，该如何配置呢？监控平台的消息处理者又该如何实现呢？</p>
 
 <p>&emsp;&emsp;且听下回分解。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[缓存之redis]]></title>
-    <link href="http://yanyaner.com/blog/2014/03/27/cache-redis/"/>
-    <updated>2014-03-27T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/03/27/cache-redis</id>
-    <content type="html"><![CDATA[<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/03/redis.jpg' width='' height='' title=''><span class='caption-text'></span></span></p>
-
-<p>&emsp;&emsp;缓存在软件系统中有着不可替代的作用，特别是访问量巨大的网站，我们对系统热点数据的缓存将会降低数据库的压力，提高系统性能。目前常用的缓存大致分为本地缓存和独立的缓存服务，本地缓存常用的有ehcached,oscached等，而独立的服务器缓存常用的有memcached、redis等。</p>
-
-<p>&emsp;&emsp;Redis is an open source, BSD licensed, advanced key-value store. It is often referred to as a data structure server since keys can contain strings, hashes, lists, sets and sorted sets.</p>
-
-<p>&emsp;&emsp;这是redis官网<a href="http://redis.io/">redis.io</a>对redis的描述，我们从中可以看出，它是一个高性能的、更加高级的key-value缓存服务器。其中的更加高级，可能是相对于memcached这种简单的缓存服务器而言。比如redis可以在不取回缓存对象的情况下，通过指令直接对缓存的数字类型进行加、减操作，也可以对缓存的list中的内容进行修改操作，还可以对缓存的字符串进行直接的修改操作等等，这些操作都不需要取回缓存中的数据，因此没有序列化、反序列化的开销，性能会更高。另外，redis对一些复杂数据结构的支持，可以满足一些特定场景下的需求，比如sorted sets。</p>
-
-<p>&emsp;&emsp;当然更高级、先进的redis，在功能强大的同时也增加了自身的复杂性。复杂可不是什么好事情，复杂的东西可能会给我们带来烦恼，实践证明，真正能够解决问题的方案一般都是简单的。因此，就redis和memcached而言，后者功能简单也更容易使用，这就造成了memcached在当前依然是缓存服务器中的老大（当然任何事都不能太绝对，我们在实际项目中可以根据不同的需求应用场景选择不同的缓存方案）。</p>
-
-<p>&emsp;&emsp;本文是入门级文章，我在讲解redis的同时，也会顺便提到memcached，以便于大家对比。<!-- more --></p>
-
-<p>&emsp;&emsp;先来安装redis，同样以windows系统为例（因为更多同鞋没有安装linux环境）。winodws的安装很简单，下载redis for windows的编译版本（地址在：<a href="http://code.google.com/p/servicestack/downloads/list">http://code.google.com/p/servicestack/downloads/list</a>），这是一个zip压缩包，将这个包解压到某个目录下，运行其中的redis-server.exe即可启动服务器。</p>
-
-<p>&emsp;&emsp;如果你要指定一些额外的配置参数，可以在运行cmd中指定redis的配置文件，比如：</p>
-
-<p>```
-redis-server.exe conf/myredis.conf，</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;这样就可以在myredis.conf中配置更多的信息了。比如：daemonize，logfile，database，dbfilename，slaveof,loglevel等等，其中有两个参数我要说一下。</p>
-
-<p>&emsp;&emsp;dbfilename参数，这个参数可以指定持久化文件名，默认是dump.rdb。这个参数说明redis可以将内存中缓存的东西进行持久化，如果您缓存服务器宕机重启了，redis下次重启时可以自动从这个文件中读取数据并恢复至内存中。这个功能在memcached中是没有的，memcached如果重新启动，缓存的数据将全部丢失。话又说回来，缓存的数据一般是来自数据库的，完全可以重新加载，系统在经过一段时间的运行后自然会重新填充到缓存服务器中的。当然，丢失缓存数据这对于一些大数据高并发发的网站来说，也许并不可接受，因为可能在瞬间造成数据库的极大访问压力而造成系统崩溃。</p>
-
-<p>&emsp;&emsp;另一个参数是slaveof，这个参数可以指定redis主服务器，也就是说redis可以做成主从结构的，通过这种架构来保证系统的高可用性。当然，memcached也可以做成主从结构，但memcache需要第三方的插件支持（可以下载memcached-repcached并安装）。主从结构可以做到当主服务器发生故障的时候，从服务器可以升级以继续提供服务。</p>
-
-<p>&emsp;&emsp;说到高可用性，另一个问题不得不提出，那就是分布式（即集群），因为缓存的东西都是在内在中的，一台服务器的内在毕竟有限，那我们就得搭建一个服务器集群在多台服务器上保存缓存的数据（即分片保存）。如何根据客户端的数据key找到集群中的正确的缓存服务器呢(实际项目中更有某台缓存服务器故障下线，或添加新的缓存服务器)？目前的做法是一致性hash，具体算法大家可以去查一下哦。</p>
-
-<p>&emsp;&emsp;对分布式的Redis的访问，java客户端程序Jedis中已有实现，具体代码如下：</p>
-
-<p>``` java</p>
-
-<p>List<JedisShardInfo> jdsInfoList =new ArrayList<JedisShardInfo>();
-//集群中的A服务器
-JedisShardInfo infoA = new JedisShardInfo(hostA, portA);
-//集群中的B服务器
-JedisShardInfo infoB = new JedisShardInfo(hostB, portB);</p>
-
-<p>//加入可用结点中
-jdsInfoList.add(infoA);
-jdsInfoList.add(infoB);</p>
-
-<p>//下面的Hashing.MURMUR_HASH就是由Jedis提供的分布式的hash key算法
-ShardedJedisPool pool =new ShardedJedisPool(config, jdsInfoList, Hashing.MURMUR_HASH, Sharded.DEFAULT_KEY_TAG_PATTERN);</p>
-
-<p>ShardedJedis jedis = pool.getResource();</p>
-
-<p>//下面就可以进行操作了哦</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;下面简单说一下，在java中如何访问redis。现在常用的客户端是jedis,具体的操作我也不想再写了，大家可以从这些方面去体验Redis的独特之处，我贴出网址。</p>
-
-<p>&emsp;&emsp;一、丰富数据类型的支持。<a href="http://www.open-open.com/lib/view/open1385173126448.html">redis中各种数据类型对应的jedis操作命令 </a>.</p>
-
-<p>&emsp;&emsp;二、对字符串的操作。<a href="http://blog.csdn.net/java2000_wl/article/details/8535486">redis &ndash; String字符串操作 </a>.</p>
-
-<p>&emsp;&emsp;三、事务等特性。<a href="http://www.blogways.net/blog/2013/06/02/jedis-demo.html">Redis的Java客户端Jedis的八种调用方式(事务、管道、分布式…)介绍</a>.</p>
-
-<p>&emsp;&emsp;四、其它的一些特殊用途，比如跨jvm主键生成器等。<a href="http://www.blogjava.net/masfay/archive/2012/07/03/382080.html">Jedis使用总结【pipeline】【分布式的id生成器】【分布式锁【watch】【multi】】【redis分布式】</a>.</p>
-
-<p>&emsp;&emsp;大家要注意的是，大部分Jedis api的操作上传入的参数都是String或byte[],如果我们需要把对象放入redis中去，必须对对象进行序列化，而从redis中读出来又得反序列化，比如下面的代码：</p>
-
-<p>``` java</p>
-
-<p>tx.set(&ldquo;key_user1&rdquo;.getBytes(), SerializationUtils.serialize(u));</p>
-
-<p>User u = (User)SerializationUtils.deserialize(jedis.get(&ldquo;key_user1&rdquo;.getBytes()));</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;其中SerializationUtils是由spring core提供的，你也可以使用apache工具包中提供的类似功能类，或都自己用对象流实现也是一样的。</p>
-
-<p>&emsp;&emsp;另外，如果您的项目中使用spring框架，您可以使用<a href="http://projects.spring.io/spring-data-redis/#quick-start">spring-data-redis</a>，spring data redis提供了几个常用的redis客户端的封装，以在高层面抽像出统一的使用接口（其实相当于适配器），建议在spring项目中采用这种方式。</p>
-
-<p>&emsp;&emsp;同时，taobao也开源了自己redis客户端<a href="https://github.com/taobao/tedis">tedis</a>，据说具有更好的性能和可用性，tedis还提供了object的高层api，使用起来更为方便。另外，taobao开源了很多的软件系统，对于中国的开源界来说是一件很好的事，相比腾讯这些自私的公司，品质自然不在一个档次，但阿里系统的开源源代码中似乎都不写什么注释说明的（比如druid连接池开源代码），也许是这些公司的牛人太忙了，也许是认为写了注释也没人会去看吧，呵呵。</p>
-
-<p>&emsp;&emsp;好,redis的内容先简单介绍到这吧。</p>
 ]]></content>
   </entry>
   

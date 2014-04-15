@@ -4,7 +4,7 @@
   <title><![CDATA[刘江华的博客]]></title>
   <link href="http://yanyaner.com/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-04-14T15:07:57+08:00</updated>
+  <updated>2014-04-15T15:21:23+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,486 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[java安全那些事之三（RSA及https）]]></title>
+    <link href="http://yanyaner.com/blog/2014/04/15/security3/"/>
+    <updated>2014-04-15T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/04/15/security3</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;大家也许看到过有些网站的登录功能都使用的是hppts协议开头的网址，这个https就使用了RSA加密算法，可以有效保护敏感信息在传输过程中的安全性（即使被截获也无法破解）。</p>
+
+<p>&emsp;&emsp;RSA算法属于不对称加密算法，信息发送方和接收方使用不同的密钥（即公钥私钥对）进行通讯，其中的公钥是可以对外公开的，私钥必须保密。信息发送方用公钥对信息进行加密，而信息接收方对信息的解密必须使用私钥，除此别无它法。反之，用私钥加密的信息也只能用公钥才能解密，因此，RSA算法不仅可以用作加密解决方案，也可以做为双方通讯过程中不可抵赖的凭证。示意图见下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2014/04/rsa.jpg' width='' height='' title='RSA加密解密示意图'><span class='caption-text'>RSA加密解密示意图</span></span></p>
+
+<p>&emsp;&emsp;在进行RSA加密解密之前，首先要生成公钥和私钥对。</p>
+
+<p>&emsp;&emsp;我先给大家介绍一种基于JKS（也就是java keystore）的公钥私钥保存方式，我们用下面的命令是生成一个别名是mykey.mm的test.keystore文件，打开keystore文件的密码我输入的是123456。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>C:\key&gt;keytool -genkey -alias mykey.mm -keyalg RSA -keystore test.keystore
+</span><span class='line'>输入keystore密码：
+</span><span class='line'>Keystore 密码太短 -至少必须为6个字符
+</span><span class='line'>输入keystore密码：
+</span><span class='line'>再次输入新密码:
+</span><span class='line'>您的名字与姓氏是什么？
+</span><span class='line'>  [Unknown]：  liu
+</span><span class='line'>您的组织单位名称是什么？
+</span><span class='line'>  [Unknown]：  maxsoft
+</span><span class='line'>您的组织名称是什么？
+</span><span class='line'>  [Unknown]：  maxsoft.com
+</span><span class='line'>您所在的城市或区域名称是什么？
+</span><span class='line'>  [Unknown]：  cd
+</span><span class='line'>您所在的州或省份名称是什么？
+</span><span class='line'>  [Unknown]：  sc
+</span><span class='line'>该单位的两字母国家代码是什么
+</span><span class='line'>  [Unknown]：  cn
+</span><span class='line'>CN=liu, OU=maxsoft, O=maxsoft.com, L=cd, ST=sc, C=cn 正确吗？
+</span><span class='line'>  [否]：  y
+</span><span class='line'>
+</span><span class='line'>输入&lt;my.yy&gt;的主密码
+</span><span class='line'>        （如果和 keystore 密码相同，按回车）：
+</span><span class='line'>
+</span><span class='line'>C:\key&gt;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的命令会在c:\key下生成一个test.keystore文件，这个文件中包含了公钥和私钥，java中使用test.keystore文件并进行加密解密的调用代码写法如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">alias</span> <span class="o">=</span> <span class="s">&quot;mykey.mm&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">String</span> <span class="n">password</span> <span class="o">=</span> <span class="s">&quot;123456&quot;</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">KeyStore</span> <span class="n">store</span> <span class="o">=</span> <span class="n">KeyStore</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;JKS&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">store</span><span class="o">.</span><span class="na">load</span><span class="o">(</span><span class="k">new</span> <span class="n">FileInputStream</span><span class="o">(</span><span class="s">&quot;c://key//test.keystore&quot;</span><span class="o">),</span> <span class="n">password</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//得到公钥</span>
+</span><span class='line'>      <span class="n">PublicKey</span> <span class="n">publickey</span> <span class="o">=</span>  <span class="n">store</span><span class="o">.</span><span class="na">getCertificate</span><span class="o">(</span><span class="n">alias</span><span class="o">).</span><span class="na">getPublicKey</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//得到私钥</span>
+</span><span class='line'>      <span class="n">PrivateKey</span> <span class="n">privateKey</span> <span class="o">=</span> <span class="o">(</span><span class="n">PrivateKey</span><span class="o">)</span><span class="n">store</span><span class="o">.</span><span class="na">getKey</span><span class="o">(</span><span class="n">alias</span><span class="o">,</span> <span class="n">password</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">orgStr</span> <span class="o">=</span> <span class="s">&quot;言娃娃yanyaner.com&quot;</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//加密处理</span>
+</span><span class='line'>      <span class="n">Cipher</span> <span class="n">cipherEncoder</span> <span class="o">=</span> <span class="n">Cipher</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;RSA&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">cipherEncoder</span><span class="o">.</span><span class="na">init</span><span class="o">(</span><span class="n">Cipher</span><span class="o">.</span><span class="na">ENCRYPT_MODE</span><span class="o">,</span> <span class="n">publickey</span><span class="o">);</span>
+</span><span class='line'>      <span class="c1">//加密字串结果</span>
+</span><span class='line'>      <span class="kt">byte</span><span class="o">[]</span> <span class="n">strEnc</span> <span class="o">=</span> <span class="n">cipherEncoder</span><span class="o">.</span><span class="na">doFinal</span><span class="o">(</span><span class="n">orgStr</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;RSA加密后的内容是：\r\n&quot;</span> <span class="o">+</span> <span class="n">Base64</span><span class="o">.</span><span class="na">encode</span><span class="o">(</span><span class="n">strEnc</span><span class="o">));</span>
+</span><span class='line'>      
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//解密处理</span>
+</span><span class='line'>      <span class="n">Cipher</span> <span class="n">cipherDecoder</span> <span class="o">=</span> <span class="n">Cipher</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;RSA&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">cipherDecoder</span><span class="o">.</span><span class="na">init</span><span class="o">(</span><span class="n">Cipher</span><span class="o">.</span><span class="na">DECRYPT_MODE</span><span class="o">,</span> <span class="n">privateKey</span><span class="o">);</span>
+</span><span class='line'>      <span class="kt">byte</span><span class="o">[]</span> <span class="n">orgDec</span> <span class="o">=</span> <span class="n">cipherDecoder</span><span class="o">.</span><span class="na">doFinal</span><span class="o">(</span><span class="n">strEnc</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;RSA解密后的内容是：\r\n&quot;</span> <span class="o">+</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">orgDec</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;加密过程用到了公钥，而解密用到了私钥。反之亦然，即加密用私钥，解密用公钥。代码输出的结果是：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">RSA</span><span class="err">加密后的内容是：</span>
+</span><span class='line'><span class="n">Mow</span><span class="o">+</span><span class="n">hRU2V8rt6lRjT1ydb7Lmdwmb1QeelDRxVh0O8kb6FZXWfs6fVuNMMDn8G7w5gA4mnheM</span><span class="o">+</span><span class="n">A</span><span class="o">/</span><span class="n">z</span>
+</span><span class='line'><span class="n">OUaU83q1bsXWFni3p</span><span class="o">+</span><span class="n">ER9oOy</span><span class="o">/</span><span class="n">Wx0rwHGKIYxvqTyrYJgOVnpNrwwa5b2GljWVKdlai3BPgxzY</span><span class="o">+</span><span class="n">kk</span>
+</span><span class='line'><span class="n">Oj2IsLcU9OyXmr5cqYdLlC47Vtb</span><span class="o">++</span><span class="n">CUGg</span><span class="o">+</span><span class="mi">6</span><span class="n">X071cArTw90KYZk2TYSdawvS3BbgzFcA</span><span class="o">/</span><span class="n">BHz36vsK</span>
+</span><span class='line'><span class="mi">4</span><span class="n">Q7sjsHY2SG4ITiq8pAM3pXYHLbTvUH4SLBdJTMry1kEGqvgJA3dy63Ut</span><span class="o">+</span><span class="n">Rl43hZ</span><span class="o">+</span><span class="n">XJZICPPAvSo</span>
+</span><span class='line'><span class="n">xD3Euo</span><span class="o">/</span><span class="mi">5</span><span class="n">bhyO1Y8Jbdrj7C4eHADMZ</span><span class="o">+</span><span class="n">Zpn7RfGA</span><span class="o">==</span>
+</span><span class='line'><span class="n">RSA</span><span class="err">解密后的内容是：</span>
+</span><span class='line'><span class="err">言娃娃</span><span class="n">yanyaner</span><span class="o">.</span><span class="na">com</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;接下来，我们使用另外一种公钥私钥保存的方式，我们通过openssl这种使用更为广泛的基于RSA的工具生成加密公钥私钥对。<!-- more--></p>
+
+<p>&emsp;&emsp;在windows下通过openssl来生成私钥，请在cmd中输入下面的命令，这个命令会生成私钥文件rsa_private.key，我们可以指定文件名：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nl">D:</span><span class="err">\</span><span class="n">temp</span><span class="err">\</span><span class="n">openssl</span><span class="o">&gt;</span><span class="n">openssl</span> <span class="n">genrsa</span> <span class="o">-</span><span class="n">out</span> <span class="n">rsa_private</span><span class="o">.</span><span class="na">key</span> <span class="mi">1024</span>
+</span><span class='line'><span class="n">Generating</span> <span class="n">RSA</span> <span class="kd">private</span> <span class="n">key</span><span class="o">,</span> <span class="mi">1024</span> <span class="n">bit</span> <span class="kt">long</span> <span class="n">modulus</span>
+</span><span class='line'><span class="o">....++++++</span>
+</span><span class='line'><span class="o">........++++++</span>
+</span><span class='line'><span class="n">unable</span> <span class="n">to</span> <span class="n">write</span> <span class="err">&#39;</span><span class="n">random</span> <span class="n">state</span><span class="err">&#39;</span>
+</span><span class='line'><span class="n">e</span> <span class="n">is</span> <span class="mi">65537</span> <span class="o">(</span><span class="mh">0x10001</span><span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;接下来再根据私钥来生成公钥文件rsa_public.key，如下命令：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nl">D:</span><span class="err">\</span><span class="n">temp</span><span class="err">\</span><span class="n">openssl</span><span class="o">&gt;</span><span class="n">openssl</span> <span class="n">rsa</span> <span class="o">-</span><span class="n">in</span>  <span class="n">rsa_private</span><span class="o">.</span><span class="na">key</span> <span class="o">-</span><span class="n">out</span> <span class="n">rsa_public</span><span class="o">.</span><span class="na">key</span> <span class="o">-</span><span class="n">pubout</span>
+</span><span class='line'><span class="n">writing</span> <span class="n">RSA</span> <span class="n">key</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;通过上面的命令，我们就生成了公钥和私钥文件，这时候的私钥还不能直接被java使用，接下来需要对rsa_private.key私钥文件进行PKCS#8编码，如下命令：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nl">D:</span><span class="err">\</span><span class="n">temp</span><span class="err">\</span><span class="n">openssl</span><span class="o">&gt;</span><span class="n">openssl</span> <span class="n">pkcs8</span> <span class="o">-</span><span class="n">topk8</span> <span class="o">-</span><span class="n">in</span> <span class="n">rsa_private</span><span class="o">.</span><span class="na">key</span> <span class="o">-</span><span class="n">out</span> <span class="n">pkcs8_rsa_private</span><span class="o">.</span><span class="na">key</span> <span class="o">-</span><span class="n">nocrypt</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;通过上面三个命令，我们在d:\temp目录下会存在三个文件，如下图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2014/04/ppkey_files.jpg' width='' height='' title='RSA密钥文件'><span class='caption-text'>RSA密钥文件</span></span></p>
+
+<p>&emsp;&emsp;好了，可以写java代码了。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 得到公钥对象</span>
+</span><span class='line'><span class="cm">  * @param publicKeyFile</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  * @throws Exception</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="n">RSAPublicKey</span> <span class="nf">getRSAPublicKey</span><span class="o">(</span><span class="n">String</span> <span class="n">publicKeyFile</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">X509EncodedKeySpec</span> <span class="n">keySpec</span><span class="o">=</span> <span class="k">new</span> <span class="n">X509EncodedKeySpec</span><span class="o">(</span><span class="n">readKeysAsByteArray</span><span class="o">(</span><span class="n">publicKeyFile</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">KeyFactory</span> <span class="n">keyFactory</span><span class="o">=</span> <span class="n">KeyFactory</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;RSA&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="o">(</span><span class="n">RSAPublicKey</span><span class="o">)</span> <span class="n">keyFactory</span><span class="o">.</span><span class="na">generatePublic</span><span class="o">(</span><span class="n">keySpec</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 得到私钥对象</span>
+</span><span class='line'><span class="cm">  * @param priveKeyFile</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  * @throws Exception</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="n">RSAPrivateKey</span> <span class="nf">getRSAPrivateKey</span><span class="o">(</span><span class="n">String</span> <span class="n">priveKeyFile</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">PKCS8EncodedKeySpec</span> <span class="n">keySpec</span><span class="o">=</span> <span class="k">new</span> <span class="n">PKCS8EncodedKeySpec</span><span class="o">(</span><span class="n">readKeysAsByteArray</span><span class="o">(</span><span class="n">priveKeyFile</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">KeyFactory</span> <span class="n">keyFactory</span><span class="o">=</span> <span class="n">KeyFactory</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;RSA&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span>  <span class="o">(</span><span class="n">RSAPrivateKey</span><span class="o">)</span> <span class="n">keyFactory</span><span class="o">.</span><span class="na">generatePrivate</span><span class="o">(</span><span class="n">keySpec</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 读取密钥文件为byte数组</span>
+</span><span class='line'><span class="cm">  * @param fileName</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  * @throws Exception</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">readKeysAsByteArray</span><span class="o">(</span><span class="n">String</span> <span class="n">fileName</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">BufferedReader</span> <span class="n">reader</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BufferedReader</span><span class="o">(</span><span class="k">new</span> <span class="n">InputStreamReader</span><span class="o">(</span><span class="k">new</span> <span class="n">FileInputStream</span><span class="o">(</span><span class="n">fileName</span><span class="o">)));</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">line</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">StringBuilder</span> <span class="n">sb</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">while</span> <span class="o">((</span><span class="n">line</span> <span class="o">=</span> <span class="n">reader</span><span class="o">.</span><span class="na">readLine</span><span class="o">())</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span> <span class="o">!</span> <span class="n">line</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="s">&quot;-----&quot;</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">sb</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">line</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="s">&quot;\r&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">BASE64Decoder</span> <span class="n">base64Decoder</span><span class="o">=</span> <span class="k">new</span> <span class="n">BASE64Decoder</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span>  <span class="n">base64Decoder</span><span class="o">.</span><span class="na">decodeBuffer</span><span class="o">(</span><span class="n">sb</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;需要解释的是，上面代码中的readKeysAsByteArray方法，是用来读取key文件的，因为key文件中的多余行我们要去掉，比如，下面就是一个私钥文件内容，文件头和尾都有多余的信息：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">-----</span><span class="n">BEGIN</span> <span class="n">PRIVATE</span> <span class="n">KEY</span><span class="o">-----</span>
+</span><span class='line'><span class="n">MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBANmxTOBVBVrl25Ge</span>
+</span><span class='line'><span class="n">sCD3b57dxK7LLK2RiSrBvdoaBK</span><span class="o">/</span><span class="n">g5mVV5RggG3GI8cCC4gDv2oGWNdwbNJiGZreZ</span>
+</span><span class='line'><span class="n">Knm4G0y5Pq86tuJO6vmYKrD0cEZlp0uh9b2cAeP3ry</span><span class="o">+</span><span class="mi">87</span><span class="n">VwpIFnpaiXCzB6xhEb1</span>
+</span><span class='line'><span class="mi">2</span><span class="n">FvP8hbs</span><span class="o">/</span><span class="n">K7iHkLbysUB7F</span><span class="o">/</span><span class="n">XUbRPAgMBAAECgYEAj84lB6iCghqH4nlexlhOXzcG</span>
+</span><span class='line'><span class="n">v6Ut3XbfkuQrY1F</span><span class="o">+</span><span class="n">uSSrblPApCBJoMWjVdXgMFhCEwrEh6NdKkjWwAApZADv3pXj</span>
+</span><span class='line'><span class="n">m</span><span class="o">/</span><span class="n">LXQYwRaKExJtTdl38ujSfL</span><span class="o">/</span><span class="n">tN5vSaMqmnnDa6IMc0AfjjWHDuX5Jurqi47l8Rh</span>
+</span><span class='line'><span class="n">yF4gSvXTfsAwD8ZT6XECQQD3I8orEj4fAAIKF4KvmHREl9yVKr</span><span class="o">+</span><span class="n">iqaT7q4q5C94i</span>
+</span><span class='line'><span class="n">Gs</span><span class="o">/</span><span class="n">RyN421NiR9ns5</span><span class="o">+</span><span class="n">R3ooJ</span><span class="o">+</span><span class="n">mBufMsUTLQFvPgmcB</span><span class="o">+</span><span class="n">VfXAkEA4X8</span><span class="o">/</span><span class="n">owQ50xlB3lSC</span>
+</span><span class='line'><span class="n">dHotY4rE7N3gCeLxN</span><span class="o">+</span><span class="n">FpzxK</span><span class="o">+</span><span class="mi">6</span><span class="n">lZjelxjsQ0wFKMrvLjQFZWcDrLcCOFE3ldCJGOS</span>
+</span><span class='line'><span class="o">+</span><span class="mi">3</span><span class="n">CYSQJALnR0yRnZwXv</span><span class="o">/</span><span class="mi">5</span><span class="n">iO7NgSjPk2JciSh9xKKZ6A8KEJ509FUZSur0YS63N0H</span>
+</span><span class='line'><span class="n">FsOkAplGyS</span><span class="o">+</span><span class="n">dHNXph4cmeuAZOr7C6wJBAIC5x3Yj326mqHdm</span><span class="o">/</span><span class="n">uHHLUn52djuAAsk</span>
+</span><span class='line'><span class="n">xlcEEwbmyJ21mywqua5EvQHK9BjT19W6hk</span><span class="o">/</span><span class="n">NwtY</span><span class="o">+</span><span class="mi">4</span><span class="n">rWaUmO7hBiNeiECQDhAAYha</span>
+</span><span class='line'><span class="n">huZwqLVB</span><span class="o">/</span><span class="n">UUMdqxJreEee5q</span><span class="o">+</span><span class="n">SyaAn</span><span class="o">+</span><span class="n">aHLWCq0vYQ9DEU72vAhvgnQQ0oTLPkQ5od</span>
+</span><span class='line'><span class="n">NBCD4J</span><span class="o">/</span><span class="mi">2</span><span class="n">OGQOIH8</span><span class="o">=</span>
+</span><span class='line'><span class="o">-----</span><span class="n">END</span> <span class="n">PRIVATE</span> <span class="n">KEY</span><span class="o">-----</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;信息发送方、接收方的代码，大家可以参照下面的示例代码写出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">RSAPublicKey</span> <span class="n">publickey</span> <span class="o">=</span> <span class="n">getRSAPublicKey</span><span class="o">(</span><span class="s">&quot;D:/temp/openssl/rsa_public.key&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">RSAPrivateKey</span> <span class="n">privateKey</span> <span class="o">=</span> <span class="n">getRSAPrivateKey</span><span class="o">(</span><span class="s">&quot;D:/temp/openssl/pkcs8_rsa_private.key&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">String</span> <span class="n">orgStr</span> <span class="o">=</span> <span class="s">&quot;言娃娃-yanyaner.com&quot;</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//加密处理</span>
+</span><span class='line'>      <span class="n">Cipher</span> <span class="n">cipherEncoder</span> <span class="o">=</span> <span class="n">Cipher</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;RSA&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">cipherEncoder</span><span class="o">.</span><span class="na">init</span><span class="o">(</span><span class="n">Cipher</span><span class="o">.</span><span class="na">ENCRYPT_MODE</span><span class="o">,</span> <span class="n">publickey</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//加密字串结果</span>
+</span><span class='line'>      <span class="kt">byte</span><span class="o">[]</span> <span class="n">strEnc</span> <span class="o">=</span> <span class="n">cipherEncoder</span><span class="o">.</span><span class="na">doFinal</span><span class="o">(</span><span class="n">orgStr</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;加密后的内容是：\r\n&quot;</span> <span class="o">+</span> <span class="n">Base64</span><span class="o">.</span><span class="na">encode</span><span class="o">(</span><span class="n">strEnc</span><span class="o">));</span>
+</span><span class='line'>      
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//解密处理</span>
+</span><span class='line'>      <span class="n">Cipher</span> <span class="n">cipherDecoder</span> <span class="o">=</span> <span class="n">Cipher</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;RSA&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">cipherDecoder</span><span class="o">.</span><span class="na">init</span><span class="o">(</span><span class="n">Cipher</span><span class="o">.</span><span class="na">DECRYPT_MODE</span><span class="o">,</span> <span class="n">privateKey</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="kt">byte</span><span class="o">[]</span> <span class="n">orgDec</span> <span class="o">=</span> <span class="n">cipherDecoder</span><span class="o">.</span><span class="na">doFinal</span><span class="o">(</span><span class="n">strEnc</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;解密后的内容是：\r\n&quot;</span> <span class="o">+</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">orgDec</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最终输出结果是：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="err">加密后的内容是：</span>
+</span><span class='line'><span class="n">dzxXcllos3pROKeWGShl3uu0KQdRrJiYHhUGqcHT6DkPRW71cYFITj0XlwkIjaWGw8CyJbc5r</span><span class="o">/</span><span class="n">AR</span>
+</span><span class='line'><span class="n">qwtuVFN</span><span class="o">/</span><span class="n">IybI</span><span class="o">/</span><span class="n">kUdfuAVrmDuIVn86rlkAEVbZTel8WOoUlRmlyflhbYUk0SeflcKdFgVELk5WVZ</span><span class="o">+</span>
+</span><span class='line'><span class="n">J</span><span class="o">/</span><span class="n">DGn1kJ23KcIXbC1YM</span><span class="o">=</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">解密后的内容是：</span>
+</span><span class='line'><span class="err">言娃娃</span><span class="o">-</span><span class="n">yanyaner</span><span class="o">.</span><span class="na">com</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;通过阅读上面的调用代码，我想大家对RSA加密算法已经有了一些认识，在这些代码中我们发现，RSA的私钥的存放必须要得到很好的保护，如果私钥被他人得到，那么双方的通讯的内容也就公开了。</p>
+
+<p>&emsp;&emsp;最后，我给大家简单介绍一下tomcat中的基于RSA的https配置内容。配置tomcat的https支持hppts，首先也是要建立RSA证书，同样是基于JKS的，如下命令即可：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nl">D:</span><span class="err">\</span><span class="n">temp</span><span class="err">\</span><span class="n">tomcat</span><span class="o">-</span><span class="n">cer</span><span class="o">&gt;</span><span class="n">keytool</span> <span class="o">-</span><span class="n">genkey</span> <span class="o">-</span><span class="n">alias</span> <span class="n">mytomcat</span> <span class="o">-</span><span class="n">keyalg</span> <span class="n">RSA</span> <span class="o">-</span><span class="n">keystore</span> <span class="n">tomcat</span><span class="o">.</span><span class="na">keystore</span>
+</span><span class='line'><span class="err">输入密钥库口令</span><span class="o">:</span>
+</span><span class='line'><span class="err">再次输入新口令</span><span class="o">:</span>
+</span><span class='line'><span class="err">您的名字与姓氏是什么</span><span class="o">?</span>
+</span><span class='line'>  <span class="o">[</span><span class="n">Unknown</span><span class="o">]:</span>  <span class="n">liu</span>
+</span><span class='line'><span class="err">您的组织单位名称是什么</span><span class="o">?</span>
+</span><span class='line'>  <span class="o">[</span><span class="n">Unknown</span><span class="o">]:</span>  <span class="n">maxsoft</span>
+</span><span class='line'><span class="err">您的组织名称是什么</span><span class="o">?</span>
+</span><span class='line'>  <span class="o">[</span><span class="n">Unknown</span><span class="o">]:</span>  <span class="n">org</span>
+</span><span class='line'><span class="err">您所在的城市或区域名称是什么</span><span class="o">?</span>
+</span><span class='line'>  <span class="o">[</span><span class="n">Unknown</span><span class="o">]:</span>  <span class="n">cd</span>
+</span><span class='line'><span class="err">您所在的省</span><span class="o">/</span><span class="err">市</span><span class="o">/</span><span class="err">自治区名称是什么</span><span class="o">?</span>
+</span><span class='line'>  <span class="o">[</span><span class="n">Unknown</span><span class="o">]:</span>  <span class="n">sc</span>
+</span><span class='line'><span class="err">该单位的双字母国家</span><span class="o">/</span><span class="err">地区代码是什么</span><span class="o">?</span>
+</span><span class='line'>  <span class="o">[</span><span class="n">Unknown</span><span class="o">]:</span>  <span class="n">cn</span>
+</span><span class='line'><span class="n">CN</span><span class="o">=</span><span class="n">liu</span><span class="o">,</span> <span class="n">OU</span><span class="o">=</span><span class="n">maxsoft</span><span class="o">,</span> <span class="n">O</span><span class="o">=</span><span class="n">org</span><span class="o">,</span> <span class="n">L</span><span class="o">=</span><span class="n">cd</span><span class="o">,</span> <span class="n">ST</span><span class="o">=</span><span class="n">sc</span><span class="o">,</span> <span class="n">C</span><span class="o">=</span><span class="n">cn</span><span class="err">是否正确</span><span class="o">?</span>
+</span><span class='line'>  <span class="o">[</span><span class="err">否</span><span class="o">]:</span>  <span class="n">y</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">输入</span> <span class="o">&lt;</span><span class="n">mytomcat</span><span class="o">&gt;</span> <span class="err">的密钥口令</span>
+</span><span class='line'>        <span class="o">(</span><span class="err">如果和密钥库口令相同</span><span class="o">,</span> <span class="err">按回车</span><span class="o">):</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;接下来修改tomcat 的 server.xml中Connector部分的配置：</p>
+
+<figure class='code'><figcaption><span>server.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;Connector</span> <span class="na">protocol=</span><span class="s">&quot;org.apache.coyote.http11.Http11Protocol&quot;</span>
+</span><span class='line'>             <span class="na">port=</span><span class="s">&quot;8443&quot;</span>  <span class="na">SSLEnabled=</span><span class="s">&quot;true&quot;</span>
+</span><span class='line'>               <span class="na">maxThreads=</span><span class="s">&quot;150&quot;</span> <span class="na">scheme=</span><span class="s">&quot;https&quot;</span> <span class="na">secure=</span><span class="s">&quot;true&quot;</span>
+</span><span class='line'>               <span class="na">clientAuth=</span><span class="s">&quot;false&quot;</span> <span class="na">sslProtocol=</span><span class="s">&quot;TLS&quot;</span>
+</span><span class='line'>             <span class="na">keystoreFile=</span><span class="s">&quot;D:/temp/tomcat-cer/tomcat.keystore&quot;</span>
+</span><span class='line'>             <span class="na">keystorePass=</span><span class="s">&quot;123456&quot;</span>
+</span><span class='line'>             <span class="nt">/&gt;</span>
+</span><span class='line'>          
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>&emsp;&emsp;要注意的是，我将文件中的protocol由protocol=&ldquo;HTTP/1.1&rdquo; 改为了protocol=&ldquo;org.apache.coyote.http11.Http11Protocol&#8221;，因为我的tomcat6是6.0.36，会报No Certificate file specified or invalid file format错误，高版本的tomcat默认AprLifecycleListener是高为on的，你在配置文件中可以看到这个开关SSLEngine=&#8221;on&rdquo; ，只有修改后才可以正确运行。</p>
+
+<p>&emsp;&emsp;进入浏览器访问你的项目，会发现https已经生效。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2014/04/browser_ssl_warning.jpg' width='' height='' title='浏览器中https警告'><span class='caption-text'>浏览器中https警告</span></span></p>
+
+<p>&emsp;&emsp;如果你不想让浏览器出现这样的警告，那么你就得到第三方认证的证书机构去申请密钥了，而不能像上面一样通过命令行自己生成密钥，因为我们生成的密钥浏览器认为有风险而不被信任(当然如果用户通过添加例外，浏览器仍然可以继续访问这个https的网站)。</p>
+
+<p>&emsp;&emsp;关于RSA的介绍先到此，下篇文章接着讲一些架构级的安全认证设计知识，请大家关注。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[java安全那些事之二（base64,des）]]></title>
@@ -127,7 +607,7 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;上面的加密和解密方法中，均传入了一个desPrivateKey，这个key是两方共用的，调用示例代码如下，其中的desPrivateKey是随机生成的一个私钥，两方共同持有：</p>
+<p>&emsp;&emsp;上面的加密和解密方法中，均传入了一个desPrivateKey，这个key是两方共用的，调用示例代码如下，其中的desPrivateKey是随机生成的一个私钥，两方共同持有。</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -163,7 +643,7 @@
 
 <p>&emsp;&emsp;由此我们可以得出结论，DES算法的关键在于私钥的安全保管，如果信息发送方和接收方中的任何一个泄露了私钥，双方的通讯过程也就无法保密了，因此，密钥的保密是一个关键。</p>
 
-<p>&emsp;&emsp;下一篇文章，我继续给大家讲解RSA算法，RSA这是一种非对称加密算法，请大家随时关注我的博客。</p>
+<p>&emsp;&emsp;下一篇文章，我继续给大家讲解RSA算法及其应用，RSA这是一种非对称加密算法，请大家随时关注我的博客。</p>
 ]]></content>
   </entry>
   
@@ -6273,195 +6753,6 @@
 <p>&emsp;&emsp;更可怕的是，在网上搜到的U盘启动盘制作软件，大部分都是这个300多M的程序，看来，这个病毒式的流氓程序，会在更多人的电脑中流行起来，还我，我们是懂一点计算机程序的专业人士，可以手工清楚这个程序，要是普通的电脑盲的话，将根本找不到问题的症结所在，也就只有默默忍受这一切。而写这个程序的团队，将会从中获益。</p>
 
 <p>&emsp;&emsp;希望看到此文的人，多转发转发，以免更多人上当。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[我的独立博客再次开放]]></title>
-    <link href="http://yanyaner.com/blog/2013/11/26/my-blog/"/>
-    <updated>2013-11-26T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/11/26/my-blog</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;有一天，突然看到山子在群里发了他的个人博客地址，感觉还不错，就多问了几句：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>冰雨 9:14:05 
-</span><span class='line'>山子，你的github博客，是怎么搭建的呢
-</span><span class='line'>冰雨 9:14:11 
-</span><span class='line'>搞得非常不错呢
-</span><span class='line'>李山 9:14:49 
-</span><span class='line'>就是自己做的静态页面，传到gitHub上了，gitHub  pages可以解析页面的
-</span><span class='line'>冰雨 9:15:11 
-</span><span class='line'>它支持什么？
-</span><span class='line'>冰雨 9:15:18 
-</span><span class='line'>html,php?
-</span><span class='line'>冰雨 9:15:22 
-</span><span class='line'>jsp支持否？
-</span><span class='line'>冰雨 9:15:26 
-</span><span class='line'>mysql呢？
-</span><span class='line'>李山 9:15:36 
-</span><span class='line'>只支持静态的页面
-</span><span class='line'>冰雨 9:16:02 
-</span><span class='line'>你的博客的页面，都是静态的？没有数据库？
-</span><span class='line'>李山 9:16:49 
-</span><span class='line'>没有的啊
-</span><span class='line'>冰雨 9:17:23 
-</span><span class='line'>那就是存手工操作，在本地编辑好，发布上去。
-</span><span class='line'>冰雨 9:17:32 
-</span><span class='line'>它的空间，最大是多少呢？
-</span><span class='line'>冰雨 9:17:49 
-</span><span class='line'>也没看到有广告，难道是存免费的？
-</span><span class='line'>李山 9:17:55 
-</span><span class='line'>空间不限制的
-</span><span class='line'>李山 9:18:20 
-</span><span class='line'>github就是免费的啊，可以随便整
-</span><span class='line'>冰雨 9:19:12 
-</span><span class='line'>我在博客上给你留言,是保存不上的吧？
-</span><span class='line'>李山 9:19:24 
-</span><span class='line'>保存的
-</span><span class='line'>李山 9:19:49 
-</span><span class='line'>评论是用的其他的插件
-</span><span class='line'>冰雨 9:20:01 
-</span><span class='line'>哦。存在哪的？ 
-</span><span class='line'>李山 9:20:48 
-</span><span class='line'>这个我是用的多说的插件，是存在多说的服务器上的
-</span><span class='line'>李山 9:21:00 
-</span><span class='line'>这个插件有好多的
-</span><span class='line'>冰雨 9:21:09 
-</span><span class='line'>哦，我看到了的。
-</span><span class='line'>冰雨 9:21:27 
-</span><span class='line'>那你本地，是用git上传的吧
-</span><span class='line'>李山 9:21:47 
-</span><span class='line'>嗯，做好页面直接传到gitHub上就行了
-</span><span class='line'>冰雨 9:23:20 
-</span><span class='line'>哦，那还不错
-</span><span class='line'>李山 9:24:26 
-</span><span class='line'>刘老，你也做一个啊
-</span><span class='line'>冰雨 9:26:04 
-</span><span class='line'>你的网页模板，用的是那个呢？
-</span><span class='line'>冰雨 9:26:27 
-</span><span class='line'>应该在本地安装一个cms，然后生成html ,再传上去
-</span><span class='line'>冰雨 9:26:33 
-</span><span class='line'>这样，是不是更好一些？
-</span><span class='line'>李山 9:27:31 
-</span><span class='line'>不用的，gitHub支持jekyll模版，可以用markdown做页面传上去后可以自动解析
-</span><span class='line'>冰雨 9:29:56 
-</span><span class='line'>哦，这么复杂
-</span><span class='line'>冰雨 9:30:05 
-</span><span class='line'>看来，要向你多学习才是
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;我以前的个人博客，是搭建在linode VPS上的，但因为后来的一些原因没再续费，博客也就停了。</p>
-
-<p>&emsp;&emsp;再后来，我的博客都放在了百度空间上，虽然百度空间各种体验都很差，但也只好将就着，忍着。</p>
-
-<p>&emsp;&emsp;当我从山子那了解到github上可以免费托管博客，在网上搜了一下，立即搭建了本地环境（说实话，在windows下搭建octopress还真麻烦，各种出错，还好，都一一解决了），将百度空间上的文章全部转到了新的博客系统上。</p>
-
-<p>&emsp;&emsp;转载几年前的老文章时才发现，近年来写的博客越来越少，而且含金量也越来越低。近期的博客更多的是关注代码、技术，而几年前的更加关注的是项目管理、架构。看来今后还得继续发表些高质量的东西，呵呵。</p>
-
-<p>&emsp;&emsp;学习，生活，工作，是人生的组成部分，哪一部分做不好，人生都将存在遗憾。这个新的博客也将记录更多给与工作、技术无关的内容，更多个人生活的内容。</p>
-
-<p>&emsp;&emsp;最后，欢迎各位，有空多来<a href="http://yanyaner.com">yanyaner.com</a>上看看，发现对你有帮助的东西，也希望多多交流。</p>
-
-<p>&emsp;&emsp;附：安装octopress步骤（要特别注意版本兼容问题，不要下载最新版本的软件哦）</p>
-
-<p>&emsp;&emsp;1、安装ruby环境，我下载的rubyinstaller-1.9.3-p545.exe。</p>
-
-<p>&emsp;&emsp;2、安装DevKit环境，我安装的是DevKit-tdm-32-4.5.2-20111229-1559-sfx.exe。
-安装完成后，进入安装目录，运行：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>ruby dk.rb init
-</span><span class='line'>ruby dk.rb install</span></code></pre></td></tr></table></div></figure>
-
-
-<p></p>
-
-<p>&emsp;&emsp;3、安装python, 我下载的是ActivePython-2.7.5.6-win32-x86.msi</p>
-
-<p>&emsp;&emsp;4、环境变量中增加：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>LANG=zh_CN.UTF-8
-</span><span class='line'>LC_ALL=zh_CN.UTF-8 </span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;5、进入octopress目录，运行：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>gem install bundler
-</span><span class='line'>bundle install </span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;6、编辑完你的博客文章后，进入octopress目录运行：rake generate即可生成html。</p>
-
-<p>&emsp;&emsp;把html上传到github服务器，可使用github官方工具，或者git gui(Git-1.9.0-preview20140217.exe)或其它git客户端工具。</p>
 ]]></content>
   </entry>
   

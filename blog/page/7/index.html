@@ -9,10 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;查数据： 1
-2
-3
-4 String hql2 = &quot;from Customer c &quot; + &quot;left join fetch c.orders o &quot; + &quot;where o.orderName like &#39;% &hellip;">
+  <meta name="description" content="&emsp;&emsp;工作流是一些项目的核心所在，比如OA系统，如何让工作流变得更加的简单、灵活、有效，是开发人员必须要考虑的。 &emsp;&emsp;如果你项目的流程比较简单，而且流程稳定，很少变化，你可以通过自定义几个类来实现工作流（比如：WorkFlow,AduitNode, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -61,6 +58,146 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/25/jbpm1/">Jbpm简单使用（1）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-25T15:18:00+08:00" pubdate data-updated="true">2013年03月25日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;工作流是一些项目的核心所在，比如OA系统，如何让工作流变得更加的简单、灵活、有效，是开发人员必须要考虑的。</p>
+
+<p>&emsp;&emsp;如果你项目的流程比较简单，而且流程稳定，很少变化，你可以通过自定义几个类来实现工作流（比如：WorkFlow,AduitNode,AduitInstance等等），但对于以工作流为核心的项目，最好使用第三方工作流框架。简单项目引入工作流框架是出力不讨好，所以，最好别用，再说每引入一个第三方框架，都增加了项目的不可控因素，也更加容易出现问题，也就是不到万不得已，不要冒然引入第三方的东西。</p>
+
+<p>&emsp;&emsp;jbpm是一个非常成熟的工作流框架，并且和spring有很好的集成，当然，jbmp本身比较复杂，学习曲线并不平坦。下面，我简单给大家讲讲jbpm4.4的使用，以及如何与现在业务进行整合。</p>
+
+<p>&emsp;&emsp;<strong>一、建表。</strong></p>
+
+<p>&emsp;&emsp;jbpm自身有一套表结构来持久化流程相关对象，大家可在\jbpm-4.4\install\src\db\create中找到相关数据库的建表脚本。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/03/2.jpg' width='' height='' title='jbpm生成的表结构'><span class='caption-text'>jbpm生成的表结构</span></span></p>
+
+<p>&emsp;&emsp;jbpm的持久化使用的是hibernate，所以，在配置sessionFactory时要注意，bean的id不能乱取。至于每张表中存的是什么，我们大可不必深究，除非你要研究jbpm，封装自己的工程流。</p>
+
+<p>&emsp;&emsp;<strong>二、在spring中加入jbpm核心对象。</strong></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="c">&lt;!-- jbpm配置 --&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;springHelper&quot;</span> <span class="na">class=</span><span class="s">&quot;org.jbpm.pvm.internal.processengine.SpringHelper&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;processEngine&quot;</span> <span class="na">factory-bean=</span><span class="s">&quot;springHelper&quot;</span> <span class="na">factory-method=</span><span class="s">&quot;createProcessEngine&quot;</span><span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;其中的processEngine为jbpm核心对象，有了它，几乎可以完成我们所有的工作。</p>
+
+<p>&emsp;&emsp;<strong>三、与业务的整合的方式</strong></p>
+
+<p>&emsp;&emsp;业务和jbpm的整合，我们需要明确业务和jbmp如何关联，主要有两种方式：第一种是在业务中保存流程定义、流程实例相对应的id，另一种是在jbpm中保存业务相关的主健（如果是hibernate，采用uuid主键比较适合），这两种方式大家任选一种即可。</p>
+
+<p>&emsp;&emsp;<strong>四、根据业务书写jpdl文件。</strong></p>
+
+<p>&emsp;&emsp;流程定义文件，可以采用jbpm的eclispe图形化插件来编写，也可以自己手工编写。</p>
+
+<p>&emsp;&emsp;下面是一个借款流程文：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="cp">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;process</span> <span class="na">name=</span><span class="s">&quot;loan&quot;</span> <span class="na">xmlns=</span><span class="s">&quot;http://jbpm.org/4.4/jpdl&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'> <span class="nt">&lt;start</span> <span class="na">name=</span><span class="s">&quot;start&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;startLoan&quot;</span> <span class="na">to=</span><span class="s">&quot;inputLoan&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'> <span class="nt">&lt;/start&gt;</span>
+</span><span class='line'>
+</span><span class='line'> <span class="nt">&lt;task</span> <span class="na">assignee=</span><span class="s">&quot;#{submiter}&quot;</span> <span class="na">name=</span><span class="s">&quot;inputLoan&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;submitApplication&quot;</span> <span class="na">to=</span><span class="s">&quot;managerCheck&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'> <span class="nt">&lt;/task&gt;</span>
+</span><span class='line'>
+</span><span class='line'> <span class="nt">&lt;task</span> <span class="na">assignee=</span><span class="s">&quot;manager&quot;</span> <span class="na">name=</span><span class="s">&quot;managerCheck&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;managerNotPass&quot;</span> <span class="na">to=</span><span class="s">&quot;cancel&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;managerPass&quot;</span> <span class="na">to=</span><span class="s">&quot;moneyCheck&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'> <span class="nt">&lt;/task&gt;</span>
+</span><span class='line'>
+</span><span class='line'> <span class="nt">&lt;decision</span> <span class="na">name=</span><span class="s">&quot;moneyCheck&quot;</span> <span class="na">expr=</span><span class="s">&quot;#{money&amp;gt;=5000?&#39;x1&#39;:&#39;x2&#39;}&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;x1&quot;</span> <span class="na">to=</span><span class="s">&quot;ceoCheck&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;x2&quot;</span> <span class="na">to=</span><span class="s">&quot;financeGet&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'> <span class="nt">&lt;/decision&gt;</span>
+</span><span class='line'>
+</span><span class='line'> <span class="nt">&lt;task</span> <span class="na">assignee=</span><span class="s">&quot;ceo&quot;</span> <span class="na">name=</span><span class="s">&quot;ceoCheck&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;ceoPass&quot;</span> <span class="na">to=</span><span class="s">&quot;financeGet&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;ceoNotPass&quot;</span> <span class="na">to=</span><span class="s">&quot;cancel&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'> <span class="nt">&lt;/task&gt;</span>
+</span><span class='line'>
+</span><span class='line'> <span class="nt">&lt;task</span> <span class="na">assignee=</span><span class="s">&quot;finance&quot;</span> <span class="na">name=</span><span class="s">&quot;financeGet&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'> <span class="nt">&lt;transition</span> <span class="na">name=</span><span class="s">&quot;finishFinance&quot;</span>  <span class="na">to=</span><span class="s">&quot;end&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'> <span class="nt">&lt;/task&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;end</span> <span class="na">name=</span><span class="s">&quot;end&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'> <span class="nt">&lt;end-cancel</span> <span class="na">name=</span><span class="s">&quot;cancel&quot;</span> <span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2581,50 +2718,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/01/09/art/">油画- 听雨复制</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-01-09T15:18:00+08:00" pubdate data-updated="true">2013年01月09日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;布面油画（40X50CM），有人喜欢这张画，我参考原作品《<a href="/blog/2012/11/22/art6/">雨.听雨</a>》，重新绘制了一张。</p>
-
-<p>&emsp;&emsp;这张复制自己的作品，应该是失败了，相比原作品，更加死板、僵硬，当时的感觉完全没有找到。我想，可能是已经没有了当时画第一张时的心境，另外，这张画的油画布过于细腻，我感觉不太适应。</p>
-
-<p>&emsp;&emsp;有空再创作一张这样的画，重温当时感觉，并放大情感。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/01/6.jpg' width='' height='' title='布面油画-听雨'><span class='caption-text'>布面油画-听雨</span></span></p>
-
-<p>&emsp;&emsp;看来，每一张作品，都一定要投入作者感情，能让自己感动的，方能感动观众。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/8/">&larr; 更多早期老文章</a>
@@ -2642,7 +2735,11 @@
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2014/04/13/security1/">Java安全那些事之一</a>
+        <a href="/blog/2014/04/14/security2/">Java安全那些事之二（base64,des）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/13/security1/">Java安全那些事之一(md5、sha)</a>
       </li>
     
       <li class="post">
@@ -2655,10 +2752,6 @@
     
       <li class="post">
         <a href="/blog/2014/03/27/cache-redis/">缓存之redis</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/03/10/db-read-write-split/">读写分离架构之mysql实例</a>
       </li>
     
   </ul>

@@ -4,7 +4,7 @@
   <title><![CDATA[刘江华的博客]]></title>
   <link href="http://yanyaner.com/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-04-14T00:18:05+08:00</updated>
+  <updated>2014-04-14T15:07:57+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -14,11 +14,165 @@
 
   
   <entry>
-    <title type="html"><![CDATA[java安全那些事之一]]></title>
+    <title type="html"><![CDATA[java安全那些事之二（base64,des）]]></title>
+    <link href="http://yanyaner.com/blog/2014/04/14/security2/"/>
+    <updated>2014-04-14T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/04/14/security2</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;和Hash的不可逆相比，还有一些算法是可逆的，也就是数据在发送方经过加密后，再传输至接收方，接收方对收到的信息后进行解密得到明文。</p>
+
+<p>&emsp;&emsp;我们先来看可逆算法中最简单的一种：Base64，请先看代码。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">b64result</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">Base64</span><span class="o">.</span><span class="na">encodeBase64</span><span class="o">(</span><span class="s">&quot;刘江华&quot;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">()));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;base64加密后密文是：&quot;</span> <span class="o">+</span> <span class="n">b64result</span><span class="o">);</span>
+</span><span class='line'><span class="n">String</span> <span class="n">orgStr</span> <span class="o">=</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">Base64</span><span class="o">.</span><span class="na">decodeBase64</span><span class="o">(</span><span class="n">b64result</span><span class="o">.</span><span class="na">getBytes</span><span class="o">()));</span>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;base64解密为明文是：&quot;</span> <span class="o">+</span> <span class="n">orgStr</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面代码的输出是：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">base64</span><span class="err">加密后密文是：</span><span class="mi">5</span><span class="n">YiY5rGf5Y2O</span>
+</span><span class='line'><span class="n">base64</span><span class="err">解密为明文是：刘江华</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;由此可见，base64加密算法会把明文加密后变成我们看不明白的密文，但我们也可以通过base64算法很快解密得到明文，这也就是说，如果信息在传输过程中被第三方截获，对方又知道你采用的是base64算法，那么你的密文也就无秘密可言。</p>
+
+<p>&emsp;&emsp;既然如此，是不是说base64就完全无用了呢？当然不是！如果我们仔细观察会发现，该算法输出的内容都是数字和字母之类的ascii可显示字符，而无论你的输入是中文还是特殊字符。这一特点对于信息传输过程中，明文中包含特殊字符而可能产生乱码的情况非常有用。比如：对要传输的内容进行base64编码，再通过http协议传输到接收方，接收方再按base64解码得到明文。base64还有其它的一些用处，比方说将byte[] 转换为可显示字符等等，我不再多说。base64运行示意图如下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2014/04/base64.jpg' width='' height='' title='base64加密解密示意图'><span class='caption-text'>base64加密解密示意图</span></span></p>
+
+<p>&emsp;&emsp;接下来，我们再来看看另外一种加密强度更好的方法：DES加密算法。DES属于对称加密算法，信息发送者通过一个私钥来加密信息后再传输，而信息接收者也使用同样的一个私钥完成信息的解密。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2014/04/des.jpg' width='' height='' title='des加密解密示意图'><span class='caption-text'>des加密解密示意图</span></span></p>
+
+<p>&emsp;&emsp;之所以称DES为对称加密算法，主要原因是信息发送方和信息接收方使用的是相同的密钥，上图中的private key就是。代码写出来就是下面这样的：<!-- more--></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * des加密示例代码</span>
+</span><span class='line'><span class="cm"> * @param orgData</span>
+</span><span class='line'><span class="cm"> * @param privateKey</span>
+</span><span class='line'><span class="cm"> * @return</span>
+</span><span class='line'><span class="cm"> * @throws Exception</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">desEncode</span><span class="o">(</span><span class="kt">byte</span><span class="o">[]</span> <span class="n">orgData</span><span class="o">,</span> <span class="n">String</span> <span class="n">privateKey</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">KeyGenerator</span> <span class="n">kgenerator</span> <span class="o">=</span> <span class="n">KeyGenerator</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;DES&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">kgenerator</span><span class="o">.</span><span class="na">init</span><span class="o">(</span><span class="k">new</span> <span class="n">SecureRandom</span><span class="o">(</span><span class="n">privateKey</span><span class="o">.</span><span class="na">getBytes</span><span class="o">()));</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Cipher</span> <span class="n">cipher</span> <span class="o">=</span> <span class="n">Cipher</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;DES&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">cipher</span><span class="o">.</span><span class="na">init</span><span class="o">(</span><span class="n">Cipher</span><span class="o">.</span><span class="na">ENCRYPT_MODE</span><span class="o">,</span> <span class="n">kgenerator</span><span class="o">.</span><span class="na">generateKey</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">cipher</span><span class="o">.</span><span class="na">doFinal</span><span class="o">(</span><span class="n">orgData</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * des解密示例代码</span>
+</span><span class='line'><span class="cm"> * @param passedData</span>
+</span><span class='line'><span class="cm"> * @param privateKey</span>
+</span><span class='line'><span class="cm"> * @return</span>
+</span><span class='line'><span class="cm"> * @throws Exception</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">desDecode</span><span class="o">(</span><span class="kt">byte</span><span class="o">[]</span> <span class="n">passedData</span><span class="o">,</span> <span class="n">String</span> <span class="n">privateKey</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">KeyGenerator</span> <span class="n">kgenerator</span> <span class="o">=</span> <span class="n">KeyGenerator</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;DES&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">kgenerator</span><span class="o">.</span><span class="na">init</span><span class="o">(</span><span class="k">new</span> <span class="n">SecureRandom</span><span class="o">(</span><span class="n">privateKey</span><span class="o">.</span><span class="na">getBytes</span><span class="o">()));</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Cipher</span> <span class="n">cipher</span> <span class="o">=</span> <span class="n">Cipher</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;DES&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">cipher</span><span class="o">.</span><span class="na">init</span><span class="o">(</span><span class="n">Cipher</span><span class="o">.</span><span class="na">DECRYPT_MODE</span><span class="o">,</span> <span class="n">kgenerator</span><span class="o">.</span><span class="na">generateKey</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">return</span> <span class="n">cipher</span><span class="o">.</span><span class="na">doFinal</span><span class="o">(</span><span class="n">passedData</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面的加密和解密方法中，均传入了一个desPrivateKey，这个key是两方共用的，调用示例代码如下，其中的desPrivateKey是随机生成的一个私钥，两方共同持有：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">String</span> <span class="n">orgStr</span> <span class="o">=</span> <span class="s">&quot;hello,刘江华&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">String</span> <span class="n">desPrivateKey</span> <span class="o">=</span> <span class="s">&quot;3c9909afec25354d551dae21590bb26e3&quot;</span><span class="o">;</span>
+</span><span class='line'>          
+</span><span class='line'>  <span class="kt">byte</span><span class="o">[]</span> <span class="n">en_bytes</span> <span class="o">=</span> <span class="n">desEncode</span><span class="o">(</span><span class="n">orgStr</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(),</span> <span class="n">desPrivateKey</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;DES加密后的内容是：&quot;</span> <span class="o">+</span> <span class="k">new</span> <span class="n">BASE64Encoder</span><span class="o">().</span><span class="na">encode</span><span class="o">(</span><span class="n">en_bytes</span><span class="o">));</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kt">byte</span><span class="o">[]</span> <span class="n">de_bytes</span> <span class="o">=</span> <span class="n">desDecode</span><span class="o">(</span><span class="n">en_bytes</span><span class="o">,</span> <span class="n">desPrivateKey</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;DES解密后的内容是：&quot;</span> <span class="o">+</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">de_bytes</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;代码执行后的输出如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">DES</span><span class="err">加密后的内容是：</span><span class="n">VExT39v</span><span class="o">/</span><span class="n">M504pQY</span><span class="o">/</span><span class="n">L</span><span class="o">+</span><span class="n">d84w</span><span class="o">==</span>
+</span><span class='line'><span class="n">DES</span><span class="err">解密后的内容是：</span><span class="n">hello</span><span class="o">,</span><span class="err">刘江华</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;由此我们可以得出结论，DES算法的关键在于私钥的安全保管，如果信息发送方和接收方中的任何一个泄露了私钥，双方的通讯过程也就无法保密了，因此，密钥的保密是一个关键。</p>
+
+<p>&emsp;&emsp;下一篇文章，我继续给大家讲解RSA算法，RSA这是一种非对称加密算法，请大家随时关注我的博客。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[java安全那些事之一(md5、sha)]]></title>
     <link href="http://yanyaner.com/blog/2014/04/13/security1/"/>
     <updated>2014-04-13T15:18:00+08:00</updated>
     <id>http://yanyaner.com/blog/2014/04/13/security1</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;安全攻防的世界，永远是道高一尺魔高一丈的世界，再强的安全防护在FBI面前几乎无密码可言，如果你去看看美国的楞镜门事件相关新闻就知道了。我并不是安全密码方面的专家，本文只是从应用角度给大家普及些许web应用系统中安全相关的一些知识，希望对大家开发普通的企业级应用及互联网应用有帮助。</p>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;安全攻防的世界，永远是道高一尺魔高一丈的世界，再强的安全防护在FBI面前几乎无密码可言，如果你去看看美国的楞镜门事件相关新闻就知道了。我并不是安全密码方面的专家，本文不想研究算法，只是从应用角度给大家普及些许web应用系统中安全相关的一些知识，希望对大家开发普通的企业级应用及互联网应用有帮助。</p>
 
 <p>&emsp;&emsp;先来看看加密及解密。</p>
 
@@ -6308,29 +6462,6 @@
 <p>&emsp;&emsp;6、编辑完你的博客文章后，进入octopress目录运行：rake generate即可生成html。</p>
 
 <p>&emsp;&emsp;把html上传到github服务器，可使用github官方工具，或者git gui(Git-1.9.0-preview20140217.exe)或其它git客户端工具。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[色彩稿- 程序猿]]></title>
-    <link href="http://yanyaner.com/blog/2013/10/09/art/"/>
-    <updated>2013-10-09T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/10/09/art</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;这是一张色彩稿，用水粉绘制，描绘程序员职业的一种精神状态。</p>
-
-<p>&emsp;&emsp;低沉、压抑而没有出口的空间内，一群程序员面向观众。</p>
-
-<p>&emsp;&emsp;红色警报灯与绿色灯光辉映，天天面对的项目进度曲线图表，杂乱的桌面上摆放着垃圾食品，永远充血的眼睛，这一切是大多数程序从业人员的常态。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/10/1.jpg' width='' height='' title='色彩稿- 程序猿'><span class='caption-text'>色彩稿- 程序猿</span></span></p>
-
-<p>&emsp;&emsp;狭隘、自我封闭、自大、自悲，表情呆滞、动作僵硬古板、穿着古怪&hellip;&hellip;.</p>
-
-<p>&emsp;&emsp;当然，我只是对程序员的某些部分进行了夸张放大，以此打动观众。</p>
-
-<p>&emsp;&emsp;有人看过此画，说不想再当程序员，我想，她应该是理解了其中的某些东西。</p>
-
-<p>&emsp;&emsp;在正式油画中，我将对色彩进行进一步简化，并对程序猿表情再度夸张，希望，最终的作品，有更多的人和我感同身受。</p>
 ]]></content>
   </entry>
   

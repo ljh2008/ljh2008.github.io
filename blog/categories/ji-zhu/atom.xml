@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-04-15T15:21:23+08:00</updated>
+  <updated>2014-04-16T17:55:37+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,199 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[java安全那些事之四（无状态安全认证）]]></title>
+    <link href="http://yanyaner.com/blog/2014/04/16/security4/"/>
+    <updated>2014-04-16T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/04/16/security4</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;本文简单讲述web系统间安全调用设计方面的一些知识。目前异构系统间常用的调用方式有webservice、基于restful的json等方式，当客户端调用服务器端的服务接口时，服务器一定要对客户端的这次调用进行安全验证，以确保调用者具备相应的资格。</p>
+
+<p>&emsp;&emsp;当客户端和服务器端完成一次调用的过程中，我们主要面临这样的一些威胁：</p>
+
+<p>&emsp;&emsp;1、数据包被截获并得到明文，暴漏用户敏感信息（比如公用wiff环境中的信息安全）。</p>
+
+<p>&emsp;&emsp;2、数据包被截获并篡改关键业务数据，再发送给服务器（比如修改转账数据包中的目的账号或金额等）。</p>
+
+<p>&emsp;&emsp;3、数据包被截获，并反复"回放"（即多次向服务器发送相同的数据包，多次执行业务）。</p>
+
+<p>&emsp;&emsp;4、其它的&hellip;..，以后有时间再继续补充，呵呵</p>
+
+<p>&emsp;&emsp;对于第1条，解决的办法相对比较简单，使用基于SSL的https协议交换数据即可，请大家参阅我的<a href="/blog/2014/04/15/security3/">《java安全那些事之三（RSA及https）》</a>一文。</p>
+
+<p>&emsp;&emsp;对于第2条，我们可以使用hash数据签名来防止数据被更改，想深入了解前请参阅我的<a href="/blog/2014/04/13/security1/">《java安全那些事之一(md5、sha)》</a>一文。</p>
+
+<p>&emsp;&emsp;至于第3条，我们可以在请求中添加时间戳的方式来处理。具体做法是：在发送请求的数中，包含生成本次客户端请求的毫秒，并将此一并加入第2条的hash签名生成中，服务器收到请求后对该时间进行验证，如果超过允许的时间范围，就认为是过期的请求不予处理（当然，更好的做法是在业务层设计某种机制来处理这种重复性将更好）。</p>
+
+<p>&emsp;&emsp;下面我写一个简单的demo，说明其中的交互原理，先看图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/sign_architect.jpg' width='' height='' title='认证安全调用示例图'><span class='caption-text'>认证安全调用示例图</span></span></p>
+
+<p>&emsp;&emsp;我的demo是一个webservice的例子，如果你是基于restful json的方式，本质上和本例是一样的，请自行类比。我先定义一个ws接口，接口中的sayHello方法是用来向客户问好的，如下：</p>
+
+<p>``` java IMyService.java
+import javax.jws.WebParam;
+import javax.jws.WebResult;
+import javax.jws.WebService;</p>
+
+<p>@WebService
+public interface IMyService {</p>
+
+<pre><code>/**
+ * 该方法向某人问好
+ * @param firstName 姓
+ * @param lastName  名
+ * @param appId     调用者id
+ * @param timeMs    调用时间ms
+ * @param sign      数据签名
+ * @return
+ */
+public @WebResult(name="helloResult")String 
+sayHello(@WebParam(name="fname")String firstName,
+        @WebParam(name="lname")String lastName,
+        @WebParam(name="appId")String appId, 
+        @WebParam(name="ts")long timeMs, 
+        @WebParam(name="sign")String sign );
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;正如上面的示意图所示，这个接口中除了传入业务需要的fname,lname之外，剩余的3个参数都是和安全验证相关的，appId是应服务方预先分配给我们的id，timeMs是客户发送该请求的时间，最后是数据签名。看看ws的实现类你就清楚了。<!-- more--></p>
+
+<p>``` java MyServiceImpl.java
+public class MyServiceImpl implements IMyService {</p>
+
+<pre><code>//超时时间间隔
+public static long howLong = 500;
+
+@Override
+public String sayHello(String firstName, String lastName, String appId, long time,  String sign) {
+
+    String key = DB.getKey(appId);
+    if (key == null) {
+        return "对不起，你没有授权！";
+    }
+
+    String str_sign = Md5Encrypt.md5(firstName + lastName  + time + appId + key);
+    if (! str_sign.equals(sign)) {
+        return "数字签名错误！";
+    }
+
+    long now = System.currentTimeMillis();
+
+    long dau = now - time;
+
+    if (dau &gt; howLong) {
+        return "时间戳验证失败！";
+    }
+
+    return "你好，" + firstName + lastName + "!";
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>``` java DB.java
+/<em>*
+ * 该类用来模拟数据库调用
+ * @author ljh
+ *
+ </em>/
+public class DB {</p>
+
+<pre><code>private static Map&lt;String, String&gt; db = new HashMap&lt;String, String&gt;();
+
+//保存经过我们授权的用户id及key
+static {
+    db.put("app001", "3c9909afec25354d551dae21590bb26e3");
+    db.put("app002", "7eyBedfger6fg44ydfsd3ssefsdfsdfsd");
+}
+
+public static String getKey(String who) {
+    return db.get(who);
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;实现类中的几个步骤需要说明：</p>
+
+<p>&emsp;&emsp;1、先在数据库中查询客户是否已授权过，只有通过授权的客户端调用才可以继续。如果该用户授权过，取得该用户的appkey。</p>
+
+<p>&emsp;&emsp;2、将业务参数，appid,ts等字段连接起来，加上appkey后一起做hash签名生成sign，本例中用的md5。</p>
+
+<p>&emsp;&emsp;3、将计算得到的签名和用户上传上来的签名进行比对，以判断数据是否被篡改，如果签名不一致，终止后续执行。</p>
+
+<p>&emsp;&emsp;4、获得当前服务器时间，并取出用户请求参数中的ts时间相减得到时间差，如果时间间隔超时了（这个超时时间要根据具体的环境确定，因为网络间调用本身就有延迟），就认为是无效的请求。</p>
+
+<p>&emsp;&emsp;5、执行真正的业务逻辑。</p>
+
+<p>&emsp;&emsp;6、调用对事后得给客户端发回响应，响应数据也采用相同的规则和方式生成sign，原理和服务器端的验证是一样的，客户端收到这个消息也要进行签名验证。</p>
+
+<p>&emsp;&emsp;在架构设计上，上面的几个步骤中我们可以把1~4步专门提取出来，放到另外的一个逻辑层中进行处理，比如：AOP或filter等方式，同理，第6步也可提取出来专门处理。</p>
+
+<p>&emsp;&emsp;客户端的调用代码，必须按照服务器要求的参数提交，并按同样的规则生成sign。下面是axis调用sayHello的ws的代码。</p>
+
+<p>``` java
+public class Client {</p>
+
+<pre><code>public static void main(String[] args) throws Exception {
+
+    String appId = "app001";
+    String myKey = "3c9909afec25354d551dae21590bb26e3";
+
+    String url = "http://localhost:8080/web_service_service/ws/helloService";
+
+    Service service =  new Service();
+    Call call = (Call) service.createCall();
+
+    call.setTargetEndpointAddress(new URL(url));
+
+    call.setOperationName(new QName("http://service.my.com/", "sayHello"));
+    call.addParameter(
+            "fname"
+            , XMLType.XSD_STRING, ParameterMode.IN);
+    call.addParameter(
+            "lname"
+            , XMLType.XSD_STRING, ParameterMode.IN);
+    call.addParameter(
+            "appId"
+            , XMLType.XSD_STRING, ParameterMode.IN);
+
+    call.addParameter(
+            "ts"
+            , XMLType.XSD_STRING, ParameterMode.IN);
+
+    call.addParameter(
+            "sign"
+            , XMLType.XSD_STRING, ParameterMode.IN);
+
+    call.setReturnType(org.apache.axis.encoding.XMLType.XSD_STRING);
+
+    long now = System.currentTimeMillis();
+
+    Object result = call.invoke(new Object[]{"言","娃娃", appId,  now,  Md5Encrypt.md5("言" + "娃娃"  + now + appId +  myKey)});
+
+    System.out.println(result); 
+
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;请大家注意call.invoke后面的参数，以及sign的生成规则，这个规则和服务器上的规则是一样的。另外，大家要注意，客户端上传的参数中一定要有appid，以表明自己的身份，appkey只用于生成hash过程中使用，服务器端也使用这个appkey来生成hash，因此，appkey必须要保密，如果appkey被他人获得，那么安全调用也就再无安全了。</p>
+
+<p>&emsp;&emsp;本文中给大家介绍的方法在很多系统中都有广泛的应用，比如在线支持接口，开放平台api调用接口等都是基于这种方式，另外，这种方式的安全认识还有一个巨大的好处：服务器端不需要维护客户端状态，这样一来服务器端集群的伸缩性就变得十分简单了。</p>
+
+<p>&emsp;&emsp;有想了解ws架构设计的同学，可以看我的《Webservice架构设计》(/blog/2011/04/11/webservice-architect/)一文。</p>
+
+<p>&emsp;&emsp;好了，本文先到此结束，后续安全性的文章请大家继续关注。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[java安全那些事之三（RSA及https）]]></title>
@@ -260,9 +453,9 @@ J/DGn1kJ23KcIXbC1YM=</p>
 
 <p>```</p>
 
-<p>&emsp;&emsp;通过阅读上面的调用代码，我想大家对RSA加密算法已经有了一些认识，在这些代码中我们发现，RSA的私钥的存放必须要得到很好的保护，如果私钥被他人得到，那么双方的通讯的内容也就公开了。</p>
+<p>&emsp;&emsp;通过阅读上面的调用代码，我想大家对RSA加密算法已经有了一些认识，在这些代码中我们发现，RSA的私钥的存放必须要得到很好的保护，如果私钥被他人得到，那么双方的通讯的内容也就公开了。有些童鞋在架构设计时也会考虑将密钥分段存放，这样的话没有任何一个人可以得到完整的密钥，在应用计算时再从各个地方得到分段并组装在一起，这样的安全性就比较高了。</p>
 
-<p>&emsp;&emsp;最后，我给大家简单介绍一下tomcat中的基于RSA的https配置内容。配置tomcat的https支持hppts，首先也是要建立RSA证书，同样是基于JKS的，如下命令即可：</p>
+<p>&emsp;&emsp;最后，我给大家简单介绍一下tomcat中的基于RSA的https配置内容(其实nginx这些服务器的https配置与之类似，明白了原理后，就是配置文件的写法不一样而已)。配置tomcat的https支持hppts，首先也是要建立RSA证书，同样是基于JKS的，如下命令即可：</p>
 
 <p>```
 D:\temp\tomcat-cer>keytool -genkey -alias mytomcat -keyalg RSA -keystore tomcat.keystore
@@ -716,287 +909,6 @@ public void testReciveMessage() throws Exception {
 <p>```</p>
 
 <p> &emsp;&emsp;先说到这吧。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[监控系统中的异步消息使用实例（一）]]></title>
-    <link href="http://yanyaner.com/blog/2014/04/08/async_message_architect1/"/>
-    <updated>2014-04-08T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/04/08/async_message_architect1</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;以后的文章要尽量做到通俗，让非技术人员都读得懂，道理就跟艺术作品一样，一件好的作品，不需要配任何文字说明就足以打动普通观众，做到雅俗共赏而且有深度和内涵，其实，这需要作者相当的功力。</p>
-
-<p>&emsp;&emsp;近期一些童鞋在实现一个监控系统，其中的一个功能是：对监控平台上布署的第三方应用业务方法执行细节进行监控，比如：方法调用者，调用者ip，应用系统名称，子系统名称，方法名称，执行耗时等信息。如何能够让监控系统得到目标机器上需要监控的业务方法执行情况呢？如何保证在监控的过程中不影响对方的业务的正常执行？下面我给出一种参考架构实现，这也是在概要设计的时候就应该明确的东西（专业名词叫架构原型）。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构'><span class='caption-text'>业务方法监控架构</span></span></p>
-
-<p>&emsp;&emsp;首先，MonitorPlatform是我们的监控平台（图中青色部分），targetServer上运行着需要监控的系统hotel project（图中黄色部分）,如果我们想要获得目标机器上的我们需要的信息，最简单的办法是运行一个spy程序在对方的机器上，图中的spy app是起这个作用的（当然你也可以使用jmx规范来实现类似功能），举个不恰当的例子，就好比你在某人的机器上安装了一个木马程序，通过远程控制端你就可以得到对方机器上你感兴趣的任何东西，甚至包括控制摄像头哦。</p>
-
-<p>&emsp;&emsp;其次，监控平台同时要监控多个目标系统，就我们例子中监控业务方法执行情况而言，就需要把监控得到的信息加以持久化以备后查，如果目标系统业务繁忙，而我们的spy app又要将取到的信息进行数据库持久化，数据库很可能会成为性能瓶颈从而造成性能问题，因此，我在这里采用了异步消息系统的设计，以缓解持久化压力。正如图所示，spy app将采集到的业务方法执行数据直接写入异步消息服务器的queue中，而monitor platform中的处理程序将从queue中取出消息，再进行后续的持久化处理。这种异步的消息设计方式可以有效缓解系统的压力，在很多项目中都可以采用（互联网项目中可用这种方式来"削峰"，缓解高并发压力）。</p>
-
-<p>&emsp;&emsp;最后一个问题,spy如何采集到目标机器业务方法的执行情况呢。最佳答案当然是AOP。大家可以参考我的另一篇文章<a href="/blog/2013/03/26/logger/">一种日志记录解决方案</a>。</p>
-
-<p>&emsp;&emsp;下面，我们一起来看看架构原型中的原代码实现吧。MethodLoggerMessage是需要持久化的消息对象，请注意实现Serializable接口。<!-- more --></p>
-
-<p>``` java MethodLoggerMessage.java</p>
-
-<p>package com.monitor.client.commons;</p>
-
-<p>import java.io.Serializable;
-import java.util.Date;</p>
-
-<p>/<em>*
- * 需要持久化的对象消息
- * @author ljh
- *
- </em>/
-public class MethodLoggerMessage implements Serializable {</p>
-
-<pre><code>//方法执行时间，单位：毫秒
-private double howLong;
-//方法名
-private String methodName;
-//执行者ip地址
-private String ip;
-//执行者session会话id
-private String sessionId;
-//执行者
-private String operater = "";
-//执行时间
-private Date execTimer;
-
-public double getHowLong() {
-    return howLong;
-}
-public void setHowLong(double howLong) {
-    this.howLong = howLong;
-}
-public String getMethodName() {
-    return methodName;
-}
-public void setMethodName(String methodName) {
-    this.methodName = methodName;
-}
-public String getIp() {
-    return ip;
-}
-public void setIp(String ip) {
-    this.ip = ip;
-}
-public String getOperater() {
-    return operater;
-}
-public void setOperater(String operater) {
-    this.operater = operater;
-}
-public String getSessionId() {
-    return sessionId;
-}
-public void setSessionId(String sessionId) {
-    this.sessionId = sessionId;
-}
-public Date getExecTimer() {
-    return execTimer;
-}
-public void setExecTimer(Date execTimer) {
-    this.execTimer = execTimer;
-}
-@Override
-public String toString() {
-    return "MethodLoggerMessage [howLong=" + howLong + ", methodName="
-            + methodName + ", ip=" + ip + ", sessionId=" + sessionId
-            + ", operater=" + operater + ", execTimer=" + execTimer + "]";
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;IMessageDao接口用来定义消息持久化行为，可以有很同种不同的实现版本，如基于消息的，关系数据库的或nosql的等等，有了这个接口，我们在intercepter中就可以做到拦截代码和持久化代码的解耦。</p>
-
-<p>``` java IMessageDao.java
-package com.monitor.client.dao;</p>
-
-<p>import java.io.Serializable;</p>
-
-<p>/<em>*
- * 持久化消息服务
- * @author ljh
- *
- </em>/
-public interface IMessageDao {</p>
-
-<pre><code>public void persist(Serializable msg);
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;接下来是消息持久化实现类源代码。因为采用了jms，因此我直接使用了spring对jms封装的模板方法实现。</p>
-
-<p>``` java JMSMessageDaoImpl.java
-package com.monitor.client.dao;</p>
-
-<p>import java.io.Serializable;</p>
-
-<p>import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.ObjectMessage;
-import javax.jms.Session;</p>
-
-<p>import org.springframework.jms.core.JmsTemplate;
-import org.springframework.jms.core.MessageCreator;</p>
-
-<p>/<em>*
- * jms消息处理实现
- * @author ljh
- *
- </em>/
-public class JMSMessageDaoImpl implements IMessageDao {</p>
-
-<pre><code>//jms模板
-private JmsTemplate jmsTemplate;
-//目标队列名称
-private String destinationName;
-
-@Override
-public void persist(final Serializable msg) {
-
-    MessageCreator mc = new MessageCreator() {
-
-        @Override
-        public Message createMessage(Session session) throws JMSException {
-            //创建对象消息，并发送之
-            ObjectMessage objMsg = session.createObjectMessage();   
-            objMsg.setObject(msg);
-
-            return objMsg;
-        }
-    };
-
-    if (destinationName == null) {
-        jmsTemplate.send(mc);
-    } else {
-        //发送到指定的目标
-        jmsTemplate.send(destinationName, mc);
-    }
-
-
-}
-
-public void setJmsTemplate(JmsTemplate jmsTemplate) {
-    this.jmsTemplate = jmsTemplate;
-}
-
-public void setDestinationName(String destinationName) {
-    this.destinationName = destinationName;
-}
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;最重要的就是这个拦截器实现了。环绕拦截器，功能最为强大。</p>
-
-<p>``` java SpyMethodIntercepter.java
-package com.monitor.client.spy;</p>
-
-<p>import java.util.Date;</p>
-
-<p>import javax.servlet.http.HttpServletRequest;</p>
-
-<p>import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;</p>
-
-<p>import com.monitor.client.commons.MethodLoggerMessage;
-import com.monitor.client.dao.IMessageDao;
-/<em>*
- * 目标服务器方法拦截器，调用信息可以通过异步消息机制持久化，具体要看IMessageDao实现
- * @author ljh
- *
- </em>/
-public class SpyMethodIntercepter implements MethodInterceptor{</p>
-
-<pre><code>public static final Logger LOG = LoggerFactory.getLogger(SpyMethodIntercepter.class);
-
-//消息处理dao
-private IMessageDao messageDao;
-//当前登录者在目标系统中的登录用户名之key,在配置第三方程序时注入
-private String userNameSessionKey = "loginedUserName";
-
-@Override
-public Object invoke(MethodInvocation method) throws Throwable {
-
-    //取方法执行时的开始时间
-    long start = System.nanoTime();
-
-    try {
-        return method.proceed();
-    } catch (Exception ex) {
-        throw ex;
-    } finally {
-
-        try {
-            //为了不影响目标方法的运行，这里再次try
-            //得到访问者request对象
-            ServletRequestAttributes sas = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
-            HttpServletRequest req = sas.getRequest();
-
-            //取方法执行后的时间
-            long end = System.nanoTime();
-
-            //方法执行时间
-            long howLong = end - start;
-            String methodName = method.getMethod().getName();
-
-            //持久化方法调用日志
-            MethodLoggerMessage logger = new MethodLoggerMessage();
-
-            logger.setMethodName(methodName);
-
-            //方法执行时间，单位：毫秒
-            logger.setHowLong((double)howLong/(1000*1000));
-
-            logger.setIp(req.getLocalAddr());
-            logger.setSessionId(sas.getSessionId());
-
-            if (req.getSession() != null) {
-                logger.setOperater((String)req.getSession().getAttribute(userNameSessionKey));
-            }
-
-            logger.setExecTimer(new Date());
-
-            messageDao.persist(logger);
-        } catch (Exception exc) {
-            //do nothing or LOG.debug(ex.getMessage());
-            LOG.warn("Error in spy: {}", exc);
-        }
-
-    }
-
-}
-
-public void setMessageDao(IMessageDao messageDao) {
-    this.messageDao = messageDao;
-}
-
-public void setUserNameSessionKey(String userNameSessionKey) {
-    this.userNameSessionKey = userNameSessionKey;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;至此，spy程序这边基本开发完成了。目标服务器上，该如何配置呢？监控平台的消息处理者又该如何实现呢？</p>
-
-<p>&emsp;&emsp;且听下回分解。</p>
 ]]></content>
   </entry>
   

@@ -9,7 +9,25 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;路由中的代码： 路由中的代码目录结构图 &emsp;&emsp;userAction.js中封装了用户相关的操作，取名为Action结尾，只是从ssh转型的命名习惯，直接上代码，并有注释： ">
+  <meta name="description" content="&emsp;&emsp;页面的展示，jade做为高性能的一个动态页面引擎，在代码的简洁性上也有很大的优势： &emsp;&emsp;先来看user_list.jade的代码： user_list.jade1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +76,130 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/08/09/nodejs-express-mysql-crud5/">node.js中基本于expresss、mysql的CRUD之五（代码实现）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;页面的展示，jade做为高性能的一个动态页面引擎，在代码的简洁性上也有很大的优势：</p>
+
+<p>&emsp;&emsp;先来看user_list.jade的代码：</p>
+
+<figure class='code'><figcaption><span>user_list.jade</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>doctype 5
+</span><span class='line'>html
+</span><span class='line'>    head
+</span><span class='line'>        title= title
+</span><span class='line'>        link(rel=&#39;stylesheet&#39;, href=&#39;../css/bootstrap.min.css&#39;)
+</span><span class='line'>        script(src=&#39;../js/jquery-1.7.2.min.js&#39;)
+</span><span class='line'>        script(src=&#39;../js/user.js&#39;)
+</span><span class='line'>        style
+</span><span class='line'>         #welcome{color:green}
+</span><span class='line'>         #who{color:gold}
+</span><span class='line'>         .row_op a{margin-left: 20px;cursor:pointer}
+</span><span class='line'>         .page a {margin-left: 15px;cursor:pointer}
+</span><span class='line'>    body
+</span><span class='line'>        div.container
+</span><span class='line'>            #welcome
+</span><span class='line'>             h3 欢迎
+</span><span class='line'>              span(id=&#39;who&#39;)
+</span><span class='line'>              登录成功！
+</span><span class='line'>              span
+</span><span class='line'>               a(href=&#39;../logout&#39;)退出系统
+</span><span class='line'>            div.row
+</span><span class='line'>             span 用户名称：
+</span><span class='line'>             input(type=&#39;text&#39;,id=&#39;queryWhat&#39;,class=&#39;input-medium search-query&#39;)
+</span><span class='line'>             button(class=&#39;btn&#39;,id=&#39;btn_query&#39;)搜索
+</span><span class='line'>            div(class=&#39;row&#39;,style=&#39;margin-top: 15px;&#39;)
+</span><span class='line'>             input(type=&#39;button&#39;,value=&#39;新增&#39;,class=&#39;btn&#39;,id=&#39;btn_to_add&#39;)
+</span><span class='line'>             input(type=&#39;button&#39;,value=&#39;批量删除&#39;,class=&#39;btn&#39;,id=&#39;btn_deletes&#39;)
+</span><span class='line'>            div.row
+</span><span class='line'>             div.span8
+</span><span class='line'>              table.table
+</span><span class='line'>               <span class="nt">&lt;tr&gt;&lt;th&gt;</span>选择<span class="nt">&lt;/th&gt;&lt;th&gt;</span>用户id<span class="nt">&lt;/th&gt;&lt;th&gt;</span>登录名<span class="nt">&lt;/th&gt;&lt;th&gt;</span>姓名<span class="nt">&lt;/th&gt;&lt;th&gt;</span>出生日期<span class="nt">&lt;/th&gt;&lt;th&gt;</span>操作<span class="nt">&lt;/th&gt;&lt;/tr&gt;</span>
+</span><span class='line'>               tbody(id=&#39;users&#39;)
+</span><span class='line'>            div(class=&#39;row&#39;,style=&#39;margin-top: 15px;&#39;)
+</span><span class='line'>             div#page_info.span4
+</span><span class='line'>             div.span8.page
+</span><span class='line'>              a.fp 首页
+</span><span class='line'>              a.pp 上一页
+</span><span class='line'>              a.np 下一页
+</span><span class='line'>              a.lp 末页
+</span></code></pre></td></tr></table></div></figure>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/08/09/nodejs-express-mysql-crud5/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -1612,58 +1754,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/06/08/art1/">油画-雨.都市骤雨</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-06-08T15:18:00+08:00" pubdate data-updated="true">2013年06月08日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;夜深了。窗外，暴风骤雨，欲望都市在风雨中飘摇………晶莹如碧玉雕琢的玫瑰，宁静，坚强，脆弱……</p>
-
-<p>&emsp;&emsp;谨以此画给在茫茫城市中为了生存而苦逼奋斗的人！</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/10.jpg' width='' height='' title='油画-雨.都市骤雨'><span class='caption-text'>油画-雨.都市骤雨</span></span></p>
-
-<p>&emsp;&emsp;雨.都市骤雨（60×80CM）。雨系列画中的另一张为 《<a href="/blog/2012/11/22/art6/">听雨</a>》，本张作品和 《<a href="/blog/2012/11/22/art6/">听雨</a>》 截然不同，更加强调一种力量的对比，以引发观者的思考。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/11.jpg' width='' height='' title='油画-雨.都市骤雨--局部1'><span class='caption-text'>油画-雨.都市骤雨&mdash;局部1</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/06/12.jpg' width='' height='' title='油画-雨.都市骤雨--局部2'><span class='caption-text'>油画-雨.都市骤雨&mdash;局部2</span></span></p>
-
-<p>&emsp;&emsp;我很喜欢纯正的七色光谱，正如你所见过的彩虹，记得上小学时老师用棱镜反射出的七彩色让人着迷。</p>
-
-<p>&emsp;&emsp;上面的花朵局部放大的图中，你可以发现，我在尽力表现这种感觉。</p>
-
-<p>&emsp;&emsp;有兴趣的朋友，可以通过《<a href="/blog/2013/06/08/art-step/">雨.都市骤雨-步骤解析</a>》了解此画创作过程。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; 更多早期老文章</a>
@@ -1681,6 +1771,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/04/15/security3/">java安全那些事之三（RSA及https）</a>
       </li>
     
@@ -1694,10 +1788,6 @@
     
       <li class="post">
         <a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a>
       </li>
     
   </ul>

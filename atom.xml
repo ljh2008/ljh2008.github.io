@@ -4,7 +4,7 @@
   <title><![CDATA[刘江华的博客]]></title>
   <link href="http://yanyaner.com/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-04-15T15:21:23+08:00</updated>
+  <updated>2014-04-16T17:55:37+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,319 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[java安全那些事之四（无状态安全认证）]]></title>
+    <link href="http://yanyaner.com/blog/2014/04/16/security4/"/>
+    <updated>2014-04-16T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/04/16/security4</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;本文简单讲述web系统间安全调用设计方面的一些知识。目前异构系统间常用的调用方式有webservice、基于restful的json等方式，当客户端调用服务器端的服务接口时，服务器一定要对客户端的这次调用进行安全验证，以确保调用者具备相应的资格。</p>
+
+<p>&emsp;&emsp;当客户端和服务器端完成一次调用的过程中，我们主要面临这样的一些威胁：</p>
+
+<p>&emsp;&emsp;1、数据包被截获并得到明文，暴漏用户敏感信息（比如公用wiff环境中的信息安全）。</p>
+
+<p>&emsp;&emsp;2、数据包被截获并篡改关键业务数据，再发送给服务器（比如修改转账数据包中的目的账号或金额等）。</p>
+
+<p>&emsp;&emsp;3、数据包被截获，并反复&#8221;回放&#8221;（即多次向服务器发送相同的数据包，多次执行业务）。</p>
+
+<p>&emsp;&emsp;4、其它的&hellip;..，以后有时间再继续补充，呵呵</p>
+
+<p>&emsp;&emsp;对于第1条，解决的办法相对比较简单，使用基于SSL的https协议交换数据即可，请大家参阅我的<a href="http://yanyaner.com/blog/2014/04/15/security3/">《java安全那些事之三（RSA及https）》</a>一文。</p>
+
+<p>&emsp;&emsp;对于第2条，我们可以使用hash数据签名来防止数据被更改，想深入了解前请参阅我的<a href="http://yanyaner.com/blog/2014/04/13/security1/">《java安全那些事之一(md5、sha)》</a>一文。</p>
+
+<p>&emsp;&emsp;至于第3条，我们可以在请求中添加时间戳的方式来处理。具体做法是：在发送请求的数中，包含生成本次客户端请求的毫秒，并将此一并加入第2条的hash签名生成中，服务器收到请求后对该时间进行验证，如果超过允许的时间范围，就认为是过期的请求不予处理（当然，更好的做法是在业务层设计某种机制来处理这种重复性将更好）。</p>
+
+<p>&emsp;&emsp;下面我写一个简单的demo，说明其中的交互原理，先看图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2014/04/sign_architect.jpg' width='' height='' title='认证安全调用示例图'><span class='caption-text'>认证安全调用示例图</span></span></p>
+
+<p>&emsp;&emsp;我的demo是一个webservice的例子，如果你是基于restful json的方式，本质上和本例是一样的，请自行类比。我先定义一个ws接口，接口中的sayHello方法是用来向客户问好的，如下：</p>
+
+<figure class='code'><figcaption><span>IMyService.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">javax.jws.WebParam</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">javax.jws.WebResult</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">javax.jws.WebService</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@WebService</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">IMyService</span> <span class="o">{</span>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 该方法向某人问好</span>
+</span><span class='line'><span class="cm">  * @param firstName 姓</span>
+</span><span class='line'><span class="cm">  * @param lastName  名</span>
+</span><span class='line'><span class="cm">  * @param appId     调用者id</span>
+</span><span class='line'><span class="cm">  * @param timeMs    调用时间ms</span>
+</span><span class='line'><span class="cm">  * @param sign      数据签名</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="nd">@WebResult</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;helloResult&quot;</span><span class="o">)</span><span class="n">String</span>
+</span><span class='line'>  <span class="n">sayHello</span><span class="o">(</span><span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fname&quot;</span><span class="o">)</span><span class="n">String</span> <span class="n">firstName</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;lname&quot;</span><span class="o">)</span><span class="n">String</span> <span class="n">lastName</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;appId&quot;</span><span class="o">)</span><span class="n">String</span> <span class="n">appId</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="o">)</span><span class="kt">long</span> <span class="n">timeMs</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;sign&quot;</span><span class="o">)</span><span class="n">String</span> <span class="n">sign</span> <span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;正如上面的示意图所示，这个接口中除了传入业务需要的fname,lname之外，剩余的3个参数都是和安全验证相关的，appId是应服务方预先分配给我们的id，timeMs是客户发送该请求的时间，最后是数据签名。看看ws的实现类你就清楚了。<!-- more--></p>
+
+<figure class='code'><figcaption><span>MyServiceImpl.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyServiceImpl</span> <span class="kd">implements</span> <span class="n">IMyService</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//超时时间间隔</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">long</span> <span class="n">howLong</span> <span class="o">=</span> <span class="mi">500</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">sayHello</span><span class="o">(</span><span class="n">String</span> <span class="n">firstName</span><span class="o">,</span> <span class="n">String</span> <span class="n">lastName</span><span class="o">,</span> <span class="n">String</span> <span class="n">appId</span><span class="o">,</span> <span class="kt">long</span> <span class="n">time</span><span class="o">,</span>  <span class="n">String</span> <span class="n">sign</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">key</span> <span class="o">=</span> <span class="n">DB</span><span class="o">.</span><span class="na">getKey</span><span class="o">(</span><span class="n">appId</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">key</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="s">&quot;对不起，你没有授权！&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">str_sign</span> <span class="o">=</span> <span class="n">Md5Encrypt</span><span class="o">.</span><span class="na">md5</span><span class="o">(</span><span class="n">firstName</span> <span class="o">+</span> <span class="n">lastName</span>  <span class="o">+</span> <span class="n">time</span> <span class="o">+</span> <span class="n">appId</span> <span class="o">+</span> <span class="n">key</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(!</span> <span class="n">str_sign</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">sign</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="s">&quot;数字签名错误！&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="kt">long</span> <span class="n">now</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="kt">long</span> <span class="n">dau</span> <span class="o">=</span> <span class="n">now</span> <span class="o">-</span> <span class="n">time</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">dau</span> <span class="o">&gt;</span> <span class="n">howLong</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="s">&quot;时间戳验证失败！&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;你好，&quot;</span> <span class="o">+</span> <span class="n">firstName</span> <span class="o">+</span> <span class="n">lastName</span> <span class="o">+</span> <span class="s">&quot;!&quot;</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>DB.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 该类用来模拟数据库调用</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">DB</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="kd">static</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">db</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;();</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//保存经过我们授权的用户id及key</span>
+</span><span class='line'>  <span class="kd">static</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">db</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;app001&quot;</span><span class="o">,</span> <span class="s">&quot;3c9909afec25354d551dae21590bb26e3&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">db</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;app002&quot;</span><span class="o">,</span> <span class="s">&quot;7eyBedfger6fg44ydfsd3ssefsdfsdfsd&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">getKey</span><span class="o">(</span><span class="n">String</span> <span class="n">who</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">who</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;实现类中的几个步骤需要说明：</p>
+
+<p>&emsp;&emsp;1、先在数据库中查询客户是否已授权过，只有通过授权的客户端调用才可以继续。如果该用户授权过，取得该用户的appkey。</p>
+
+<p>&emsp;&emsp;2、将业务参数，appid,ts等字段连接起来，加上appkey后一起做hash签名生成sign，本例中用的md5。</p>
+
+<p>&emsp;&emsp;3、将计算得到的签名和用户上传上来的签名进行比对，以判断数据是否被篡改，如果签名不一致，终止后续执行。</p>
+
+<p>&emsp;&emsp;4、获得当前服务器时间，并取出用户请求参数中的ts时间相减得到时间差，如果时间间隔超时了（这个超时时间要根据具体的环境确定，因为网络间调用本身就有延迟），就认为是无效的请求。</p>
+
+<p>&emsp;&emsp;5、执行真正的业务逻辑。</p>
+
+<p>&emsp;&emsp;6、调用对事后得给客户端发回响应，响应数据也采用相同的规则和方式生成sign，原理和服务器端的验证是一样的，客户端收到这个消息也要进行签名验证。</p>
+
+<p>&emsp;&emsp;在架构设计上，上面的几个步骤中我们可以把1~4步专门提取出来，放到另外的一个逻辑层中进行处理，比如：AOP或filter等方式，同理，第6步也可提取出来专门处理。</p>
+
+<p>&emsp;&emsp;客户端的调用代码，必须按照服务器要求的参数提交，并按同样的规则生成sign。下面是axis调用sayHello的ws的代码。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Client</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">appId</span> <span class="o">=</span> <span class="s">&quot;app001&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">String</span> <span class="n">myKey</span> <span class="o">=</span> <span class="s">&quot;3c9909afec25354d551dae21590bb26e3&quot;</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://localhost:8080/web_service_service/ws/helloService&quot;</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Service</span> <span class="n">service</span> <span class="o">=</span>  <span class="k">new</span> <span class="n">Service</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">Call</span> <span class="n">call</span> <span class="o">=</span> <span class="o">(</span><span class="n">Call</span><span class="o">)</span> <span class="n">service</span><span class="o">.</span><span class="na">createCall</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setTargetEndpointAddress</span><span class="o">(</span><span class="k">new</span> <span class="n">URL</span><span class="o">(</span><span class="n">url</span><span class="o">));</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setOperationName</span><span class="o">(</span><span class="k">new</span> <span class="n">QName</span><span class="o">(</span><span class="s">&quot;http://service.my.com/&quot;</span><span class="o">,</span> <span class="s">&quot;sayHello&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span>
+</span><span class='line'>              <span class="s">&quot;fname&quot;</span>
+</span><span class='line'>              <span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span>
+</span><span class='line'>              <span class="s">&quot;lname&quot;</span>
+</span><span class='line'>              <span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span>
+</span><span class='line'>              <span class="s">&quot;appId&quot;</span>
+</span><span class='line'>              <span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span>
+</span><span class='line'>              <span class="s">&quot;ts&quot;</span>
+</span><span class='line'>              <span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span>
+</span><span class='line'>              <span class="s">&quot;sign&quot;</span>
+</span><span class='line'>              <span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setReturnType</span><span class="o">(</span><span class="n">org</span><span class="o">.</span><span class="na">apache</span><span class="o">.</span><span class="na">axis</span><span class="o">.</span><span class="na">encoding</span><span class="o">.</span><span class="na">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="kt">long</span> <span class="n">now</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">call</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="k">new</span> <span class="n">Object</span><span class="o">[]{</span><span class="s">&quot;言&quot;</span><span class="o">,</span><span class="s">&quot;娃娃&quot;</span><span class="o">,</span> <span class="n">appId</span><span class="o">,</span>  <span class="n">now</span><span class="o">,</span>  <span class="n">Md5Encrypt</span><span class="o">.</span><span class="na">md5</span><span class="o">(</span><span class="s">&quot;言&quot;</span> <span class="o">+</span> <span class="s">&quot;娃娃&quot;</span>  <span class="o">+</span> <span class="n">now</span> <span class="o">+</span> <span class="n">appId</span> <span class="o">+</span>  <span class="n">myKey</span><span class="o">)});</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">result</span><span class="o">);</span>   
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;请大家注意call.invoke后面的参数，以及sign的生成规则，这个规则和服务器上的规则是一样的。另外，大家要注意，客户端上传的参数中一定要有appid，以表明自己的身份，appkey只用于生成hash过程中使用，服务器端也使用这个appkey来生成hash，因此，appkey必须要保密，如果appkey被他人获得，那么安全调用也就再无安全了。</p>
+
+<p>&emsp;&emsp;本文中给大家介绍的方法在很多系统中都有广泛的应用，比如在线支持接口，开放平台api调用接口等都是基于这种方式，另外，这种方式的安全认识还有一个巨大的好处：服务器端不需要维护客户端状态，这样一来服务器端集群的伸缩性就变得十分简单了。</p>
+
+<p>&emsp;&emsp;有想了解ws架构设计的同学，可以看我的《Webservice架构设计》(/blog/2011/04/11/webservice-architect/)一文。</p>
+
+<p>&emsp;&emsp;好了，本文先到此结束，后续安全性的文章请大家继续关注。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[java安全那些事之三（RSA及https）]]></title>
@@ -411,9 +724,9 @@
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>&emsp;&emsp;通过阅读上面的调用代码，我想大家对RSA加密算法已经有了一些认识，在这些代码中我们发现，RSA的私钥的存放必须要得到很好的保护，如果私钥被他人得到，那么双方的通讯的内容也就公开了。</p>
+<p>&emsp;&emsp;通过阅读上面的调用代码，我想大家对RSA加密算法已经有了一些认识，在这些代码中我们发现，RSA的私钥的存放必须要得到很好的保护，如果私钥被他人得到，那么双方的通讯的内容也就公开了。有些童鞋在架构设计时也会考虑将密钥分段存放，这样的话没有任何一个人可以得到完整的密钥，在应用计算时再从各个地方得到分段并组装在一起，这样的安全性就比较高了。</p>
 
-<p>&emsp;&emsp;最后，我给大家简单介绍一下tomcat中的基于RSA的https配置内容。配置tomcat的https支持hppts，首先也是要建立RSA证书，同样是基于JKS的，如下命令即可：</p>
+<p>&emsp;&emsp;最后，我给大家简单介绍一下tomcat中的基于RSA的https配置内容(其实nginx这些服务器的https配置与之类似，明白了原理后，就是配置文件的写法不一样而已)。配置tomcat的https支持hppts，首先也是要建立RSA证书，同样是基于JKS的，如下命令即可：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -6659,100 +6972,6 @@
 <p>&emsp;&emsp;作者将文章制作为图片格式发布，如果你用手机去浏览会非常的困难，因为这个网站不是响应式布局的，所以，还是建议你用电脑去看，或者把图片存下来，再在手持设备阅读吧。</p>
 
 <p>&emsp;&emsp;更多的名家介绍，大家可以直接去<a href="http://www.guokr.com/basket/7459">http://www.guokr.com/basket/7459</a>查看吧。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[万恶的u盘启动程序]]></title>
-    <link href="http://yanyaner.com/blog/2013/12/05/udisk/"/>
-    <updated>2013-12-05T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/12/05/udisk</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;前两天给一邻居家安装操作系统，由于他家的电脑没有光驱，只好自己做一个启动U盘。</p>
-
-<p>&emsp;&emsp;网上搜索了一下U盘启动盘制作程序，进入排名首位的站点是：www.uqidong.com ，名字就叫“U启动”，原来有专门做这个的网站，看来还真够专业的，不得暗暗佩服！</p>
-
-<p>&emsp;&emsp;马上download这个程序，居然有300多M，这是一个什么样的功能强大的程序呢？我记得以前下载的U盘启动盘制作程序，也就只有区区1~2M就搞定了啊。好不容易下载完成，点击安装，一路下一步，下一步直至完成，还算顺利。</p>
-
-<p>&emsp;&emsp;当我回到桌面一看，吃了一惊，冒出来好多个快捷网址链接，都是一些不相关的网站，并且还默默地在后台安装了一个新的浏览器，原来，www.uqidong.com 上的东西，是一个垃圾软件，流氓软件。</p>
-
-<p>&emsp;&emsp;启动软件，开始启动盘的制作，发现制作速度非常慢，其中，有些选项会提示将hao123设置为主页，真是垃圾中的垃圾，一个小小的启动盘制作软件，居然捆绑了这么多的无关软件和设置项在里面。</p>
-
-<p>&emsp;&emsp;这还没算完。我随后发现，IE，360浏览器，火狐浏览器的主页，全部被修改成了260260.com，并且访问localhost本地路径，也会跳转到260260.com，而260260.com则会跳转到hao123.com，随即，我将所有的浏览器主页恢复成原来的页面。</p>
-
-<p>&emsp;&emsp;紧接着，用360卫士进行插件扫描，发现又多扫描出4个广告相关插件，随即重新启动电脑。</p>
-
-<p>&emsp;&emsp;电脑重启后，我以为已经清除干净，但一访问本地localhost，又转到了hao123导航，看来，还有残余存在。我进入注册表编辑器，搜索所有的260260.com,hao123.com相关的项，全部删除，但问题依旧。</p>
-
-<p>&emsp;&emsp;后来，找到windows/system32/etc/host文件，打开一看，吓了一跳，里面被改得面目全非，添加了几十个localhost的网址映射，260260.com也在里面，我一个个删除，保存，问题依旧。</p>
-
-<p>&emsp;&emsp;再次打开host文件，发现刚才删除的内容，又被写回，只有再次删除，并将文件设置为只读，host文件的写入才被禁止，这真是一个病毒程序，如此之顽固。</p>
-
-<p>&emsp;&emsp;再访问本地localhost，又转到了hao123导航，还是老样子啊。这才发现，原来程序在本机安装了一个apache服务器，并且集成了php环境，我通过httpd.conf找到它的web目录，在index.php文件中，终于看到了源代码：<!--more--></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
-</span><span class='line'>  <span class="nv">$name1</span> <span class="o">=</span> <span class="s2">&quot;www.2345.com,2345.com,www.tao123.com,tao123.com&quot;</span><span class="p">;</span>
-</span><span class='line'>  <span class="nv">$name2</span> <span class="o">=</span> <span class="s2">&quot;www.xp519.com,xp519.com,www.xitongzhijia.net,xitongzhijia.net,www.386w.com,386w.com,www.xitong8.com,xitong8.com,www.hyghost.com,hyghost.com,moguxz.com,www.moguxz.com,www.xpxtzj.com,xpxtzj.com&quot;</span><span class="p">;</span>
-</span><span class='line'>  <span class="nv">$name3</span> <span class="o">=</span> <span class="s2">&quot;www.22mm.cc,www.mnsfz.com,www.4493.com,www.7160.com,www.youzi4.com,www.juemei.cc,www.mm131com,www.xiaojiuwo.com,www.tpdq.net,www.920mm.com,www.169pp.com,www.xgmm.cc,www.kmeitu.com,www.qq360x.com,www.123kmm.com,www.09218.com,www.mm3.cc,www.b4mm.com,www.tuku.com,www.xiaomm.cc,www.84420.com,www.gunianger.com,www.ii6i.com,www.mmkaixin.com,www.06324.com,www.6188.net,www.8mei.cc,www.mzitu.com,www.mmlin.com,www.mm588.com,www.meiniu.cc,www.t8a8.com,www.99521.com,www.kmeitu.com,www.909mm.com,www.169meitu.com,www.xiezhenku.com,www.yangyanmm.com,22mm.cc,mnsfz.com,4493.com,7160.com,youzi4.com,juemei.cc,mm131com,xiaojiuwo.com,tpdq.net,920mm.com,169pp.com,xgmm.cc,kmeitu.com,qq360x.com,123kmm.com,09218.com,mm3.cc,b4mm.com,tuku.com,xiaomm.cc,84420.com,gunianger.com,ii6i.com,mmkaixin.com,06324.com,6188.net,8mei.cc,mzitu.com,mmlin.com,mm588.com,meiniu.cc,t8a8.com,99521.com,kmeitu.com,909mm.com,169meitu.com,xiezhenku.com,yangyanmm.com,p.39yst.com,pic.39yst.com,tu.dddddd.net,tu.5239.com,pic.qm120.com,tuku.0789.net,meinv.nvxingku.com,tuku.meinv.com,tuku.0789.net,meinv.xinggan.com,tuku.piaoliang.com,mm.raorao.com,tuku.guimi.com&quot;</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="nv">$name1_404</span> <span class="o">=</span> <span class="s2">&quot;http://www.260260.com/?4&quot;</span><span class="p">;</span>
-</span><span class='line'>  <span class="nv">$name2_404</span> <span class="o">=</span> <span class="s2">&quot;http://www.xpxtw.com/?4&quot;</span><span class="p">;</span>
-</span><span class='line'>  <span class="nv">$name3_404</span> <span class="o">=</span> <span class="s2">&quot;http://www.xgxz.com/?4&quot;</span><span class="p">;</span>
-</span><span class='line'>  <span class="nv">$default_404</span> <span class="o">=</span> <span class="s2">&quot;http://www.260260.com/?4&quot;</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="nv">$server_name</span> <span class="o">=</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="s2">&quot;HTTP_HOST&quot;</span><span class="p">];</span>
-</span><span class='line'>   <span class="k">switch</span><span class="p">(</span><span class="nv">$server_name</span><span class="p">){</span>
-</span><span class='line'>  <span class="k">case</span> <span class="nb">strpos</span><span class="p">(</span><span class="nv">$name1</span><span class="p">,</span><span class="nv">$server_name</span><span class="p">)</span><span class="o">!==</span><span class="k">false</span><span class="o">:</span>
-</span><span class='line'>      <span class="nx">header</span><span class="p">(</span><span class="s2">&quot;Location:</span><span class="si">$name1_404</span><span class="s2">&quot;</span><span class="p">);</span>
-</span><span class='line'>      <span class="k">break</span><span class="p">;</span>
-</span><span class='line'>       <span class="k">case</span> <span class="nb">strpos</span><span class="p">(</span><span class="nv">$name2</span><span class="p">,</span><span class="nv">$server_name</span><span class="p">)</span><span class="o">!==</span><span class="k">false</span><span class="o">:</span>
-</span><span class='line'>      <span class="nx">header</span><span class="p">(</span><span class="s2">&quot;Location:</span><span class="si">$name2_404</span><span class="s2">&quot;</span><span class="p">);</span>
-</span><span class='line'>      <span class="k">break</span><span class="p">;</span>
-</span><span class='line'>      <span class="k">case</span> <span class="nb">strpos</span><span class="p">(</span><span class="nv">$name3</span><span class="p">,</span><span class="nv">$server_name</span><span class="p">)</span><span class="o">!==</span><span class="k">false</span><span class="o">:</span>
-</span><span class='line'>      <span class="nx">header</span><span class="p">(</span><span class="s2">&quot;Location:</span><span class="si">$name3_404</span><span class="s2">&quot;</span><span class="p">);</span>
-</span><span class='line'>      <span class="k">break</span><span class="p">;</span>
-</span><span class='line'>  <span class="k">default</span><span class="o">:</span>
-</span><span class='line'>      <span class="nx">header</span><span class="p">(</span><span class="s2">&quot;Location:</span><span class="si">$default_404</span><span class="s2">&quot;</span><span class="p">);</span>
-</span><span class='line'>          <span class="k">break</span><span class="p">;</span>
-</span><span class='line'>  <span class="p">}</span>
-</span><span class='line'>      <span class="cp">?&gt;</span><span class="x">&lt;meta http-equiv=&quot;refresh&quot; content=&quot;0;url=http://www.260260.com/?301&quot;&gt;</span>
-</span><span class='line'><span class="x">      </span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;源码中可以发现很多的无关网址，并且首页还通过refresh自动跳到260260上去，真的很无耻。</p>
-
-<p>&emsp;&emsp;停止这个apache服务（它已经做成了自启动），并删除服务器目录，问题得到解决。</p>
-
-<p>&emsp;&emsp;更可怕的是，在网上搜到的U盘启动盘制作软件，大部分都是这个300多M的程序，看来，这个病毒式的流氓程序，会在更多人的电脑中流行起来，还我，我们是懂一点计算机程序的专业人士，可以手工清楚这个程序，要是普通的电脑盲的话，将根本找不到问题的症结所在，也就只有默默忍受这一切。而写这个程序的团队，将会从中获益。</p>
-
-<p>&emsp;&emsp;希望看到此文的人，多转发转发，以免更多人上当。</p>
 ]]></content>
   </entry>
   

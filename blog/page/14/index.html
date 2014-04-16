@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;近些天，网站流量消耗巨大，通过查看nginx访问日志发现，有众多的ip频繁下载网站上的一些固定资源文件，而且每次访问的时间间隔非常近，很显示是非正确访问，进一步观察发现，这些ip并不是固定的，每天都不相同（估计是“肉机”），有些下载ip访问达到100次以上，有的20次， &hellip;">
+  <meta name="description" content="&emsp;&emsp;webservice定义了一种不同系统之间功能调用的标准，也就是RPC调用。在j2ee中，ejb提供了这种分布式的RPC，原理是用jndi发布ejb远程无状态bean，客户端得到bean的引用完成方法调用，这种方式对于同是java系统的调用非常的方便， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,486 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/04/06/webservice-cxf/">Webservice之cxf实现</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-04-06T15:18:00+08:00" pubdate data-updated="true">2011年04月06日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;webservice定义了一种不同系统之间功能调用的标准，也就是RPC调用。在j2ee中，ejb提供了这种分布式的RPC，原理是用jndi发布ejb远程无状态bean，客户端得到bean的引用完成方法调用，这种方式对于同是java系统的调用非常的方便，但对于异构系统的访问就非常的不便，特别是在互联网中，基于ejb调用的sockect连接可能无法穿过企业防火墙以完成方法的调用。</p>
+
+<p>&emsp;&emsp;webservice提供了一种标准的不同系统之间的调用，基于soap协议，底层可以选用http传输协议（可以穿过防火墙），而且中间信息传递是 xml格式的，消息体的打包和解析十分的方便，可以说ws就是基本于xml、http的远程RPC调用。</p>
+
+<p>&emsp;&emsp;java下常用的ws框架有axis2、xfire等，xfire已经升级为cxf，相对axis来说要，使用要简单得多，而且cxf与spring集成非常的紧密，下面我以具体实例来建立ws服务器，并写出了在cxf，axis以及php中的调用示例，本文中的示例可直接应用于生产环境。</p>
+
+<p>&emsp;&emsp;首先写出ws的接口，这里要用到外观模式。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@WebService</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">IWebServiceFacade</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">sayHello</span><span class="o">(</span><span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;uname&quot;</span><span class="o">)</span><span class="n">String</span> <span class="n">name</span><span class="o">);</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">User</span> <span class="nf">getFirstUserByParent</span><span class="o">(</span><span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;userParam&quot;</span><span class="o">)</span><span class="n">User</span> <span class="n">u</span><span class="o">);</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="nd">@WebResult</span><span class="o">(</span><span class="n">partName</span><span class="o">=</span><span class="s">&quot;users&quot;</span><span class="o">)</span><span class="n">List</span> <span class="n">getAllUsers</span><span class="o">();</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">add</span><span class="o">(</span><span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;num1&quot;</span><span class="o">)</span><span class="n">String</span> <span class="n">number1</span><span class="o">,</span> <span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;num2&quot;</span><span class="o">)</span><span class="kt">int</span> <span class="n">number2</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;为了让示例具有通用性，我定义了一些典型的方法，比如：方法接收对象类型参数，返加对象类型结果，返回集合类型结果，有两个参数的情况等等。</p>
+
+<p>&emsp;&emsp;该接口的实现代码如下（注意，bizService由spring注入）：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@WebService</span><span class="o">(</span><span class="n">endpointInterface</span><span class="o">=</span><span class="s">&quot;com.my.webservice.IWebServiceFacade&quot;</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">WebServiceFacadeImpl</span> <span class="kd">implements</span> <span class="n">IWebServiceFacade</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//本地业务接口</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">IBizService</span> <span class="n">bizService</span><span class="o">;</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">sayHello</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;Hello,&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">add</span><span class="o">(</span><span class="n">String</span> <span class="n">number1</span><span class="o">,</span> <span class="kt">int</span> <span class="n">number2</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="o">(</span><span class="n">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">number1</span><span class="o">)</span> <span class="o">+</span> <span class="n">number2</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">List</span> <span class="nf">getAllUsers</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//此处应调用 bizService方法完成，作为示例，我直接返回模拟数据</span>
+</span><span class='line'>      <span class="n">List</span> <span class="n">users</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">users</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">User</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;张三&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">users</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">User</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span><span class="s">&quot;李四&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">users</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">User</span><span class="o">(</span><span class="mi">3</span><span class="o">,</span><span class="s">&quot;王五&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">users</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">User</span> <span class="nf">getFirstUserByParent</span><span class="o">(</span><span class="n">User</span> <span class="n">u</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//此处应调用 bizService方法完成，作为示例，我直接返回模拟数据</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;example param user ,name is&quot;</span> <span class="o">+</span> <span class="n">u</span><span class="o">.</span><span class="na">getUserName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;, birth is:&quot;</span> <span class="o">+</span> <span class="n">u</span><span class="o">.</span><span class="na">getBirthday</span><span class="o">().</span><span class="na">toLocaleString</span><span class="o">());</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">new</span> <span class="nf">User</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span><span class="n">u</span><span class="o">.</span><span class="na">getUserName</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;--admin&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;至此，服务器端的代码已经完成了，但还需要一定的配置，在服务器上的配置代码片断如下（web.xml）：</p>
+
+<figure class='code'><figcaption><span>web.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;servlet&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;servlet-name&gt;</span>CXFServlet<span class="nt">&lt;/servlet-name&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;servlet-class&gt;</span>org.apache.cxf.transport.servlet.CXFServlet<span class="nt">&lt;/servlet-class&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;load-on-startup&gt;</span>1<span class="nt">&lt;/load-on-startup&gt;</span>
+</span><span class='line'><span class="nt">&lt;/servlet&gt;</span>
+</span><span class='line'><span class="nt">&lt;servlet-mapping&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;servlet-name&gt;</span>CXFServlet<span class="nt">&lt;/servlet-name&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;url-pattern&gt;</span>/services/*<span class="nt">&lt;/url-pattern&gt;</span>
+</span><span class='line'><span class="nt">&lt;/servlet-mapping&gt;</span>
+</span><span class='line'><span class="nt">&lt;listener&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;listener-class&gt;</span>org.springframework.web.context.ContextLoaderListener<span class="nt">&lt;/listener-class&gt;</span>
+</span><span class='line'><span class="nt">&lt;/listener&gt;</span>
+</span><span class='line'><span class="nt">&lt;context-param&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;param-name&gt;</span>contextConfigLocation<span class="nt">&lt;/param-name&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;param-value&gt;</span>/WEB-INF/classes/app_ws_server.xml<span class="nt">&lt;/param-value&gt;</span>
+</span><span class='line'><span class="nt">&lt;/context-param&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;app_ws_server.xml中（这是一个spring配置文件），关键配置代码如下：</p>
+
+<figure class='code'><figcaption><span>app_ws_server.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;import</span> <span class="na">resource=</span><span class="s">&quot;classpath:META-INF/cxf/cxf.xml&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;import</span> <span class="na">resource=</span><span class="s">&quot;classpath:META-INF/cxf/cxf-extension-soap.xml&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;import</span> <span class="na">resource=</span><span class="s">&quot;classpath:META-INF/cxf/cxf-servlet.xml&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;jaxws:endpoint</span> <span class="na">id=</span><span class="s">&quot;myWebService&quot;</span> <span class="na">address=</span><span class="s">&quot;/myWebService&quot;</span>        <span class="na">implementor=</span><span class="s">&quot;com.my.webservice.WebServiceFacadeImpl&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;/jaxws:endpoint&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;重新启动服务器，如果一切正常的话，在浏览器地址栏中输入<a href="#">http://localhost:8088/web_service_server/services/myWebService?wsdl</a>就可以看到wsdl文件，有了wsdl，其它客户端的调用将不存在问题。</p>
+
+<p>&emsp;&emsp;下面，我将写出不同客户端对上面的ws调用代码</p>
+
+<p>&emsp;&emsp;最为简单的是cxf自己的客户端调用方式，先写一篇spring配置文件，将要调用的客户端写入：</p>
+
+<figure class='code'><figcaption><span>ws-client.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;wsClient&quot;</span> <span class="na">class=</span><span class="s">&quot;com.my.webservice.IWebServiceFacade&quot;</span>
+</span><span class='line'>  <span class="na">factory-bean=</span><span class="s">&quot;wsClientProxy&quot;</span> <span class="na">factory-method=</span><span class="s">&quot;create&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;wsClientProxy&quot;</span> <span class="na">class=</span><span class="s">&quot;org.apache.cxf.jaxws.JaxWsProxyFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;serviceClass&quot;</span> <span class="na">value=</span><span class="s">&quot;com.my.webservice.IWebServiceFacade&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;address&quot;</span>
+</span><span class='line'>      <span class="na">value=</span><span class="s">&quot;http://localhost:8088/web_service_server/services/myWebService&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;cxf的测试代码如下，wsClient由测试框架自动注入，这种方式应该是在java下调用ws服务最简单的方法，和本地方法调用没有任何区别。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">WebServiceTest</span> <span class="kd">extends</span>
+</span><span class='line'>      <span class="n">AbstractDependencyInjectionSpringContextTests</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">IWebServiceFacade</span> <span class="n">wsClient</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testSayHello</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;====================&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">String</span> <span class="n">result</span> <span class="o">=</span> <span class="n">wsClient</span><span class="o">.</span><span class="na">sayHello</span><span class="o">(</span><span class="s">&quot;lovo&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">result</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;add:&quot;</span> <span class="o">+</span> <span class="n">wsClient</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="s">&quot;5&quot;</span><span class="o">,</span> <span class="mi">3</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="n">wsClient</span><span class="o">.</span><span class="na">getFirstUserByParent</span><span class="o">(</span><span class="k">new</span> <span class="n">User</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;刘江华&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">u</span><span class="o">.</span><span class="na">getUserName</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span> <span class="n">users</span> <span class="o">=</span> <span class="n">wsClient</span><span class="o">.</span><span class="na">getAllUsers</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;users List size: &quot;</span> <span class="o">+</span> <span class="n">users</span><span class="o">.</span><span class="na">size</span><span class="o">());</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">users</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="na">getUserName</span><span class="o">()</span> <span class="o">);</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">users</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="mi">0</span><span class="o">).</span><span class="na">getBirthday</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">protected</span> <span class="n">String</span><span class="o">[]</span> <span class="nf">getConfigLocations</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">setAutowireMode</span><span class="o">(</span><span class="n">AUTOWIRE_BY_NAME</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{</span><span class="s">&quot;classpath:ws-client.xml&quot;</span><span class="o">};</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setWsClient</span><span class="o">(</span><span class="n">IWebServiceFacade</span> <span class="n">wsClient</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">wsClient</span> <span class="o">=</span> <span class="n">wsClient</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;鉴于axis使用比较广泛，我写出了相应的调用代码，axis下调用代码相对来说要繁琐些，特别要注意在传对象参数时需要call.setProperty(AxisEngine.PROP_DOMULTIREFS, false)，关闭multirefs的生成（通过http抓包工具可以观察向服务器提交的请求），调用代码示例如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">String</span> <span class="n">endpoint</span> <span class="o">=</span> <span class="s">&quot;http://localhost:8088/web_service_server/services/myWebService&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">Service</span> <span class="n">service</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Service</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1">//测试sayHello</span>
+</span><span class='line'>      <span class="n">Call</span> <span class="n">call</span> <span class="o">=</span> <span class="o">(</span><span class="n">Call</span><span class="o">)</span> <span class="n">service</span><span class="o">.</span><span class="na">createCall</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setTargetEndpointAddress</span><span class="o">(</span><span class="k">new</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">URL</span><span class="o">(</span><span class="n">endpoint</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setOperationName</span><span class="o">(</span><span class="k">new</span> <span class="n">QName</span><span class="o">(</span><span class="s">&quot;http://webservice.my.com/&quot;</span><span class="o">,</span> <span class="s">&quot;sayHello&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span><span class="s">&quot;uname&quot;</span><span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">SOAP_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setReturnType</span><span class="o">(</span><span class="n">XMLType</span><span class="o">.</span><span class="na">SOAP_STRING</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">String</span> <span class="n">result</span> <span class="o">=</span> <span class="o">(</span><span class="n">String</span><span class="o">)</span> <span class="n">call</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="k">new</span> <span class="n">Object</span><span class="o">[]</span> <span class="o">{</span><span class="s">&quot;good&quot;</span><span class="o">});</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">result</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1">//测试add</span>
+</span><span class='line'>      <span class="n">call</span> <span class="o">=</span> <span class="o">(</span><span class="n">Call</span><span class="o">)</span> <span class="n">service</span><span class="o">.</span><span class="na">createCall</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setTargetEndpointAddress</span><span class="o">(</span><span class="k">new</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">URL</span><span class="o">(</span><span class="n">endpoint</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setOperationName</span><span class="o">(</span><span class="k">new</span> <span class="n">QName</span><span class="o">(</span><span class="s">&quot;http://webservice.my.com/&quot;</span><span class="o">,</span> <span class="s">&quot;add&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span><span class="s">&quot;num1&quot;</span><span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">SOAP_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span><span class="s">&quot;num2&quot;</span><span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">SOAP_INT</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setReturnType</span><span class="o">(</span><span class="n">XMLType</span><span class="o">.</span><span class="na">SOAP_INT</span><span class="o">);</span>
+</span><span class='line'>      <span class="c1">//参数顺序和addParameter一致</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">r</span> <span class="o">=</span> <span class="o">(</span><span class="n">Integer</span><span class="o">)</span> <span class="n">call</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="k">new</span> <span class="n">Object</span><span class="o">[]</span> <span class="o">{</span><span class="s">&quot;5&quot;</span><span class="o">,</span> <span class="s">&quot;3&quot;</span><span class="o">});</span>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">r</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1">//测试得到所有用户</span>
+</span><span class='line'>      <span class="n">call</span> <span class="o">=</span> <span class="o">(</span><span class="n">Call</span><span class="o">)</span> <span class="n">service</span><span class="o">.</span><span class="na">createCall</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setTargetEndpointAddress</span><span class="o">(</span><span class="k">new</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">URL</span><span class="o">(</span><span class="n">endpoint</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setOperationName</span><span class="o">(</span><span class="k">new</span> <span class="n">QName</span><span class="o">(</span><span class="s">&quot;http://webservice.my.com/&quot;</span><span class="o">,</span> <span class="s">&quot;getAllUsers&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setReturnType</span><span class="o">(</span><span class="n">org</span><span class="o">.</span><span class="na">apache</span><span class="o">.</span><span class="na">axis</span><span class="o">.</span><span class="na">encoding</span><span class="o">.</span><span class="na">XMLType</span><span class="o">.</span><span class="na">SOAP_VECTOR</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">Vector</span> <span class="n">v</span> <span class="o">=</span> <span class="o">(</span><span class="n">Vector</span><span class="o">)</span> <span class="n">call</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="k">new</span> <span class="n">Object</span><span class="o">[]</span> <span class="o">{});</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;</span> <span class="n">v</span><span class="o">.</span><span class="na">size</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">Vector</span> <span class="n">v2</span> <span class="o">=</span> <span class="o">(</span><span class="n">Vector</span><span class="o">)</span><span class="n">v</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+</span><span class='line'>          <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">v2</span><span class="o">.</span><span class="na">size</span><span class="o">();</span> <span class="n">j</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">v2</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">j</span><span class="o">)</span> <span class="o">+</span> <span class="s">&quot;  &quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">();</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1">//传入用户对象，得到一个用户</span>
+</span><span class='line'>      <span class="n">call</span> <span class="o">=</span> <span class="o">(</span><span class="n">Call</span><span class="o">)</span> <span class="n">service</span><span class="o">.</span><span class="na">createCall</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setTargetEndpointAddress</span><span class="o">(</span><span class="k">new</span> <span class="n">java</span><span class="o">.</span><span class="na">net</span><span class="o">.</span><span class="na">URL</span><span class="o">(</span><span class="n">endpoint</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setOperationName</span><span class="o">(</span><span class="k">new</span> <span class="n">QName</span><span class="o">(</span><span class="s">&quot;http://webservice.my.com/&quot;</span><span class="o">,</span> <span class="s">&quot;getFirstUserByParent&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">QName</span> <span class="n">qn</span> <span class="o">=</span> <span class="k">new</span> <span class="n">QName</span><span class="o">(</span><span class="s">&quot;http://webservice.my.com/&quot;</span><span class="o">,</span> <span class="s">&quot;user&quot;</span> <span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span><span class="s">&quot;userParam&quot;</span><span class="o">,</span><span class="n">qn</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="n">AxisEngine</span><span class="o">.</span><span class="na">PROP_DOMULTIREFS</span><span class="o">,</span> <span class="kc">false</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">registerTypeMapping</span><span class="o">(</span><span class="n">User</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">qn</span><span class="o">,</span> <span class="k">new</span> <span class="n">BeanSerializerFactory</span><span class="o">(</span><span class="n">User</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">qn</span><span class="o">),</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setReturnType</span><span class="o">(</span><span class="n">org</span><span class="o">.</span><span class="na">apache</span><span class="o">.</span><span class="na">axis</span><span class="o">.</span><span class="na">encoding</span><span class="o">.</span><span class="na">XMLType</span><span class="o">.</span><span class="na">SOAP_VECTOR</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="k">new</span> <span class="n">User</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot; 刘江华 &quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">v</span> <span class="o">=</span> <span class="o">(</span><span class="n">Vector</span><span class="o">)</span> <span class="n">call</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="k">new</span> <span class="n">Object</span><span class="o">[]</span> <span class="o">{</span><span class="n">u</span><span class="o">});</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">v</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，给出非java系统的一个客户端调用示例，php的调用代码如下（要注意，php默认情况下没有开启对soap的支持，需求修改php的配置文件）：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="nv">$ws</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:8088/web_service_server/services/myWebService?wsdl&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SoapClient</span><span class="p">(</span><span class="nv">$ws</span><span class="p">,</span> <span class="k">array</span> <span class="p">(</span><span class="s1">&#39;trace&#39;</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;uri&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;http://webservice.my.com/&#39;</span> <span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">echo</span><span class="p">(</span><span class="s2">&quot;sayHello ws call:&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nb">print_r</span><span class="p">(</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="na">sayHello</span><span class="p">(</span><span class="k">array</span><span class="p">(</span><span class="s1">&#39;uname&#39;</span><span class="o">=&gt;</span><span class="s1">&#39;ljh&#39;</span><span class="p">)));</span>
+</span><span class='line'><span class="k">echo</span><span class="p">(</span><span class="s2">&quot;&lt;br&gt;&lt;br&gt;&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="k">echo</span><span class="p">(</span><span class="s2">&quot;add ws call: &quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nb">print_r</span><span class="p">(</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="na">add</span><span class="p">(</span><span class="k">array</span><span class="p">(</span><span class="s1">&#39;num1&#39;</span><span class="o">=&gt;</span><span class="mi">5</span><span class="p">,</span><span class="s1">&#39;num2&#39;</span><span class="o">=&gt;</span><span class="mi">3</span><span class="p">)));</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">echo</span><span class="p">(</span><span class="s2">&quot;&lt;br&gt;&lt;br&gt;&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="k">echo</span><span class="p">(</span><span class="s2">&quot;getAllUsers ws call: &quot;</span><span class="p">);</span>
+</span><span class='line'><span class="nb">print_r</span><span class="p">(</span> <span class="nv">$client</span><span class="o">-&gt;</span><span class="na">getAllUsers</span><span class="p">());</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="k">echo</span><span class="p">(</span><span class="s2">&quot;&lt;br&gt;&lt;br&gt;&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="k">echo</span><span class="p">(</span><span class="s2">&quot;getFirstUserByParent ws call: &quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$aUser</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$aUser</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$aUser</span><span class="p">[</span><span class="s1">&#39;userName&#39;</span><span class="p">]</span><span class="o">=</span><span class="s1">&#39;刘江华&#39;</span><span class="p">;</span>
+</span><span class='line'><span class="nv">$aUser</span><span class="p">[</span><span class="s1">&#39;birthday&#39;</span><span class="p">]</span><span class="o">=</span><span class="nb">date</span><span class="p">(</span><span class="s2">&quot;Y-m-d&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">print_r</span><span class="p">(</span><span class="nv">$client</span><span class="o">-&gt;</span><span class="na">getFirstUserByParent</span><span class="p">(</span><span class="k">array</span><span class="p">(</span><span class="s1">&#39;userParam&#39;</span><span class="o">=&gt;</span><span class="nv">$aUser</span><span class="p">)));</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在客户端的调用中我们可以发现，php对ws的调用是相当的简单（请注意在构建SoapClient对象时传入了wsdl的路径，php就是根据wsdl来发送和接收服务器端数据的），正是由于这些原因，php在建站中被广泛使用（入门门槛比较低）。</p>
+
+<p>&emsp;&emsp;本篇文章主要讲的是ws的一些基本操作，至于在项目中的使用，还要考虑更多的一些因互，请关注我的下一篇博文《webservice架构设计》。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1093,421 +1573,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/01/11/quartz/">一个复杂的定时任务架构原型实现</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-01-11T15:18:00+08:00" pubdate data-updated="true">2011年01月11日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;我在前面的文章中讲过定时任务在项目中的应用 —<a href="/blog/2010/10/26/task/">【项目中定时任务实现方式比较】</a>，并且我推荐大家利用操作系统的定时任务去完成相应的功能，对于简单的定时任务，操作系统的定时任务功能完全没有问题的，但是，如果项目需求复杂一些，操作系统的定时任务恐怕就不能胜任了。最近，我们在重庆移动实时监控项目中就遇到了这个问题，下面贴出界面原型，并简单描述该部分的功能需求。</p>
-
-<p>&emsp;&emsp;实时监控系统中可以建立多个预警任务，每个预期任务中包含一个运行周期，运行周期从周期类型和天内频率两个方面来描述这个任务的执行触发条件，如下图所示：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/28.jpg' width='' height='' title='运行周期界面原型图'><span class='caption-text'>运行周期界面原型图</span></span></p>
-
-<p>&emsp;&emsp;每个预警任务建立完成后，还可以暂时、启动任务，或立即执行任务，并且预警任务的运行周期是可以修改的。预期任务列表界面原型如下图。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/14.jpg' width='' height='' title='预警任务列表图'><span class='caption-text'>预警任务列表图</span></span></p>
-
-<p>&emsp;&emsp;预警任务在达到运行周期中设定的触发条件后就会自动运行，在运行过程中，系统将向预警任务中设计的目标网元、数据源等监控目标进行通讯，并采集性能数据，经过整理后将结果存入每个预期任务对应的预警结果中。</p>
-
-<p>&emsp;&emsp;预警任务可以由人工单独运行（即：立即执行一次），或者按照设计的运行周期自动触发。</p>
-
-<p>&emsp;&emsp;很显示，在这个需求中，用操作系统的定时任务已经无法达到我们要求，原因是：每个预期任务的运行同期都不相同，而且比较复杂，并且预期任务可以随时修改，周期也可以修改，我们不可能在这些东西修改后，再去修改操作系统的配置文件。</p>
-
-<p>&emsp;&emsp;根据预警任务这一块的需求，我们在项目之初设计了架构原型，并写出了相应的代码，实现思路是在项目中深度整合quartz框架。架构原型设计图如下：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/13.png' width='' height='' title='预警任务自动运行类图设计'><span class='caption-text'>预警任务自动运行类图设计</span></span></p>
-
-<p>&emsp;&emsp;图中粉红色类为我们所写，兰色类为quartz所定义，黄色为spring定义。</p>
-
-<p>&emsp;&emsp;先来看WarningTask（预期任务）。我们在其中定义了cronExpression属性，该属性字符串为任务触发条件字符串，由 WarningTask类中的+ convertToCronExpression() : String方法生成（该方法实现代码有点复杂哦，呵呵）。任务运行时，将执行+ runTask() : void方法，该方法根据本对象的监控目标执行一次运行，运行过程中将网元设备上采集到的运行结果保存到数据库，显然，这个对象不再是失血对象了。 IWarningTaskService，完成WarningTask相关的业务操作。MyJobDetail，触发条件满足时的具体执行类，该类实现 quartz的job接口。</p>
-
-<p>&emsp;&emsp;首先要清楚一个预警任务具体执行流程如下，只有理解了该流程，才能在项目中灵活运用好quartz：</p>
-
-<p>&emsp;&emsp;（1）得到Scheduler任务调度类，此类在spring中已经定义好了，我们使用时从beanfactory中得到，代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">BeanFactory</span> <span class="n">bf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ClassPathXmlApplicationContext</span><span class="o">(</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">Scheduler</span> <span class="n">sfb</span> <span class="o">=</span> <span class="o">(</span><span class="n">Scheduler</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;scheduler&quot;</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（2）得到一个工作bean，即JobDetail,我们也从spring中得到（注:当然也可以自己new一个jobDetail对象，如果从spring容器中得到，注意将scope设置为”prototype”）：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">IWarningTaskService</span> <span class="n">warningService</span> <span class="o">=</span> <span class="o">(</span><span class="n">IWarningTaskService</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;warningTaskService&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">JobDetailBean</span> <span class="n">job</span> <span class="o">=</span> <span class="o">(</span><span class="n">JobDetailBean</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myJobDetail&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;wt_id&quot;</span><span class="o">,</span> <span class="o">(</span><span class="kt">long</span><span class="o">)</span><span class="mi">1</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;warningService&quot;</span><span class="o">,</span> <span class="n">warningService</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;每个预期任务都与一个JobDetail实例关联，我们通过向JobDetail实例中的JobDataMap中放入相应的预期任务数据（在一个工作组中，jobdetail的名称要唯一），本示例中我们放的是预期任务的id，以及预期任务业务对象。</p>
-
-<p>&emsp;&emsp;（3）新建一个CronTrigger，将JobDetail与触发器关联起来，要注意的是，每个Trigger都要有一个唯一的名字（在一个组中），以后要取出这个Trigger就非常容易了。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">CronTriggerBean</span> <span class="n">trigger1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CronTriggerBean</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setJobName</span><span class="o">(</span><span class="s">&quot;myJobDetail&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setCronExpression</span><span class="o">(</span><span class="s">&quot;0/1 * * * * ?&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setJobDetail</span><span class="o">(</span><span class="n">job</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（4）最后，就可以启动、暂停、或重新启动任务了，下面的代码演示了对任务的操作。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">addJob</span><span class="o">(</span><span class="n">trigger1</span><span class="o">.</span><span class="na">getJobDetail</span><span class="o">(),</span> <span class="kc">true</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">scheduleJob</span><span class="o">(</span><span class="n">trigger1</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//sfb.start();</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">CronTrigger</span> <span class="n">trigger2</span> <span class="o">=</span> <span class="o">(</span><span class="n">CronTrigger</span><span class="o">)</span><span class="n">sfb</span><span class="o">.</span><span class="na">getTrigger</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">,</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;修改运行周期为5秒&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">trigger2</span><span class="o">.</span><span class="na">setCronExpression</span><span class="o">(</span><span class="s">&quot;0/5 * * * * ?&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">rescheduleJob</span><span class="o">(</span><span class="n">trigger2</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">,</span> <span class="n">trigger2</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">10000</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;停止....&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">pauseTrigger</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">,</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">10000</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;再次重新启动.....&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">resumeTrigger</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">,</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;搞清楚了最基本的操作流程后，最重要的是如何在本项目中集成quartz，我们可以从下面几个技术点上来考虑：</p>
-
-<p>&emsp;&emsp;（1）如何在项目服务器启动时，将系统中已经有的预警任务全部运行起来？答案是：用监听器。架构原型中的代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">TaskServletContextListener</span> <span class="kd">implements</span> <span class="n">ServletContextListener</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'><span class="nd">@Override</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">contextInitialized</span><span class="o">(</span><span class="n">ServletContextEvent</span> <span class="n">sce</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">BeanFactory</span> <span class="n">bf</span> <span class="o">=</span> <span class="n">WebApplicationContextUtils</span><span class="o">.</span><span class="na">getWebApplicationContext</span><span class="o">(</span><span class="n">sce</span><span class="o">.</span><span class="na">getServletContext</span><span class="o">());</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">Scheduler</span> <span class="n">sfb</span> <span class="o">=</span> <span class="o">(</span><span class="n">Scheduler</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;scheduler&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">IWarningTaskService</span> <span class="n">wts</span> <span class="o">=</span> <span class="o">(</span><span class="n">IWarningTaskService</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;warningTaskService&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//通过预警任务业务类，得到所有的可运行任务</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">List</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="n">WarningTask</span><span class="o">&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">ws</span> <span class="o">=</span> <span class="n">wts</span><span class="o">.</span><span class="na">getAllWarningTasks</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//将每个预警任务跑起来</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">for</span> <span class="o">(</span><span class="n">WarningTask</span> <span class="nl">w:</span> <span class="n">ws</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="c1">//创建一个新的工作（从spring中得到）</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">JobDetailBean</span> <span class="n">job</span> <span class="o">=</span> <span class="o">(</span><span class="n">JobDetailBean</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myJobDetail&quot;</span><span class="o">);</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="c1">//给工作设计一个唯一名称，我们直接调用预警任务中的一个方法生成</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">w</span><span class="o">.</span><span class="na">generateQuartzRuningName</span><span class="o">());</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="c1">//将工作与一个预警任务关联在一起，这里是通过预警任务id</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;wt_id&quot;</span><span class="o">,</span> <span class="n">w</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;warningService&quot;</span><span class="o">,</span> <span class="n">wts</span><span class="o">);</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="c1">//新建Trigger，在构造方法中与job进行了联，Trigger名称也是唯一的，我们直接调用预警任务中的一个方法生成</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">CronTrigger</span> <span class="n">ct</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CronTrigger</span><span class="o">(</span><span class="n">w</span><span class="o">.</span><span class="na">generateQuartzRuningName</span><span class="o">(),</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">,</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>  
-</span><span class='line'>      <span class="c1">//设置触发条件，直接从预警任务中取到</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">ct</span><span class="o">.</span><span class="na">setCronExpression</span><span class="o">(</span><span class="n">w</span><span class="o">.</span><span class="na">getCronExpression</span><span class="o">());</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">sfb</span><span class="o">.</span><span class="na">addJob</span><span class="o">(</span><span class="n">job</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="c1">//开始运行此预期任务</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">sfb</span><span class="o">.</span><span class="na">scheduleJob</span><span class="o">(</span><span class="n">ct</span><span class="o">);</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>  
-</span><span class='line'>      <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//........................</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;最后在web.xml中加载些监听器，注意要在spring监听器之后加载。你需要重点看我写的每一行代码注释。</p>
-
-<p>&emsp;&emsp;（2）任务运行时，如何执行每个预警任务中的runTask()方法？核心代码在JobDetail中，需要用到JobDataMap中存放的预警任务id，代码如下所示：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyJobDetail</span> <span class="kd">implements</span>  <span class="n">Job</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'><span class="nd">@Override</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">(</span><span class="n">JobExecutionContext</span> <span class="n">jec</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">JobExecutionException</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="c1">//得到业务操作类</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">IWarningTaskService</span> <span class="n">warningService</span> <span class="o">=</span> <span class="o">(</span><span class="n">IWarningTaskService</span><span class="o">)</span><span class="n">jec</span><span class="o">.</span><span class="na">getJobDetail</span><span class="o">().</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;warningService&quot;</span><span class="o">);</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="c1">//得到与该工作任务相关的预警任务id</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">Long</span> <span class="n">id</span> <span class="o">=</span> <span class="o">(</span><span class="n">Long</span><span class="o">)</span><span class="n">jec</span><span class="o">.</span><span class="na">getJobDetail</span><span class="o">().</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;wt_id&quot;</span><span class="o">);</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="c1">//查出预警任务</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">WarningTask</span> <span class="n">wt</span> <span class="o">=</span> <span class="n">warningService</span><span class="o">.</span><span class="na">getWarningTaskById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="c1">//执行预警任务</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="n">wt</span><span class="o">.</span><span class="na">runTask</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;当然，预警任务的runTask方法实现时，需要要从spring beanfactory中得到相应的service，以处理执行后得到的数据。</p>
-
-<p>&emsp;&emsp;（3）在页面上对预警任务执行暂停、重启动等操作，代码就没有写了，我只说一下实现流程：</p>
-
-<p>&emsp;&emsp;a、获得页面传入的预期任务id；</p>
-
-<p>&emsp;&emsp;b、查询得到预警任务实例；</p>
-
-<p>&emsp;&emsp;c、从spring容器中得到Scheduler，根据预期任务实例生成的触发器名，取得触发器；</p>
-
-<p>&emsp;&emsp;d、对触发器进行相应的操作（pause, resume等）；</p>
-
-<p>&emsp;&emsp;f、对预警任务状态进行持久化。</p>
-
-<p>&emsp;&emsp;通过这个架构原型，我们对系统的一个技术点进行了验证，降低了系统后期的风险，并且为详细设计提供了依据。</p>
-
-<p>&emsp;&emsp;（附：quartz在spring配置代码，一共3个bean）</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;scheduler&quot;</span>
-</span><span class='line'>    <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.SchedulerFactoryBean&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;autoStartup&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;value&gt;</span>true<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;warningTaskService&quot;</span> <span class="na">class=</span><span class="s">&quot;com.yourcompany.yourproject.service.impl.WarningTaskServiceImpl&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;myJobDetail&quot;</span>
-</span><span class='line'>    <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.JobDetailBean&quot;</span> <span class="na">scope=</span><span class="s">&quot;prototype&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;jobClass&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;value&gt;</span>com.yourcompany.yourproject.service.impl.MyJobDetail<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/15/">&larr; 更多早期老文章</a>
@@ -1525,6 +1590,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/04/15/security3/">java安全那些事之三（RSA及https）</a>
       </li>
     
@@ -1538,10 +1607,6 @@
     
       <li class="post">
         <a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a>
       </li>
     
   </ul>

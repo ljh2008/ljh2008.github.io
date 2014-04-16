@@ -1,0 +1,583 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>java安全那些事之四（无状态安全认证） - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;本文简单讲述web系统间安全调用设计方面的一些知识。目前异构系统间常用的调用方式有webservice、基于restful的json等方式，当客户端调用服务器端的服务接口时，服务器一定要对客户端的这次调用进行安全验证，以确保调用者具备相应的资格。 &emsp;&emsp; &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2014/04/16/security4">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Java安全那些事之四（无状态安全认证）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-16T15:18:00+08:00" pubdate data-updated="true">2014年04月16日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;本文简单讲述web系统间安全调用设计方面的一些知识。目前异构系统间常用的调用方式有webservice、基于restful的json等方式，当客户端调用服务器端的服务接口时，服务器一定要对客户端的这次调用进行安全验证，以确保调用者具备相应的资格。</p>
+
+<p>&emsp;&emsp;当客户端和服务器端完成一次调用的过程中，我们主要面临这样的一些威胁：</p>
+
+<p>&emsp;&emsp;1、数据包被截获并得到明文，暴漏用户敏感信息（比如公用wiff环境中的信息安全）。</p>
+
+<p>&emsp;&emsp;2、数据包被截获并篡改关键业务数据，再发送给服务器（比如修改转账数据包中的目的账号或金额等）。</p>
+
+<p>&emsp;&emsp;3、数据包被截获，并反复&#8221;回放&#8221;（即多次向服务器发送相同的数据包，多次执行业务）。</p>
+
+<p>&emsp;&emsp;4、其它的&hellip;..，以后有时间再继续补充，呵呵</p>
+
+<p>&emsp;&emsp;对于第1条，解决的办法相对比较简单，使用基于SSL的https协议交换数据即可，请大家参阅我的<a href="/blog/2014/04/15/security3/">《java安全那些事之三（RSA及https）》</a>一文。</p>
+
+<p>&emsp;&emsp;对于第2条，我们可以使用hash数据签名来防止数据被更改，想深入了解前请参阅我的<a href="/blog/2014/04/13/security1/">《java安全那些事之一(md5、sha)》</a>一文。</p>
+
+<p>&emsp;&emsp;至于第3条，我们可以在请求中添加时间戳的方式来处理。具体做法是：在发送请求的数中，包含生成本次客户端请求的毫秒，并将此一并加入第2条的hash签名生成中，服务器收到请求后对该时间进行验证，如果超过允许的时间范围，就认为是过期的请求不予处理（当然，更好的做法是在业务层设计某种机制来处理这种重复性将更好）。</p>
+
+<p>&emsp;&emsp;下面我写一个简单的demo，说明其中的交互原理，先看图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/sign_architect.jpg' width='' height='' title='认证安全调用示例图'><span class='caption-text'>认证安全调用示例图</span></span></p>
+
+<p>&emsp;&emsp;我的demo是一个webservice的例子，如果你是基于restful json的方式，本质上和本例是一样的，请自行类比。我先定义一个ws接口，接口中的sayHello方法是用来向客户问好的，如下：</p>
+
+<figure class='code'><figcaption><span>IMyService.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">javax.jws.WebParam</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">javax.jws.WebResult</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">javax.jws.WebService</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@WebService</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">IMyService</span> <span class="o">{</span>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 该方法向某人问好</span>
+</span><span class='line'><span class="cm">  * @param firstName 姓</span>
+</span><span class='line'><span class="cm">  * @param lastName  名</span>
+</span><span class='line'><span class="cm">  * @param appId     调用者id</span>
+</span><span class='line'><span class="cm">  * @param timeMs    调用时间ms</span>
+</span><span class='line'><span class="cm">  * @param sign      数据签名</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="nd">@WebResult</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;helloResult&quot;</span><span class="o">)</span><span class="n">String</span>
+</span><span class='line'>  <span class="n">sayHello</span><span class="o">(</span><span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;fname&quot;</span><span class="o">)</span><span class="n">String</span> <span class="n">firstName</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;lname&quot;</span><span class="o">)</span><span class="n">String</span> <span class="n">lastName</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;appId&quot;</span><span class="o">)</span><span class="n">String</span> <span class="n">appId</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;ts&quot;</span><span class="o">)</span><span class="kt">long</span> <span class="n">timeMs</span><span class="o">,</span>
+</span><span class='line'>          <span class="nd">@WebParam</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;sign&quot;</span><span class="o">)</span><span class="n">String</span> <span class="n">sign</span> <span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;正如上面的示意图所示，这个接口中除了传入业务需要的fname,lname之外，剩余的3个参数都是和安全验证相关的，appId是应服务方预先分配给我们的id，timeMs是客户发送该请求的时间，最后是数据签名。看看ws的实现类你就清楚了。<!-- more--></p>
+
+<figure class='code'><figcaption><span>MyServiceImpl.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyServiceImpl</span> <span class="kd">implements</span> <span class="n">IMyService</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//超时时间间隔</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">long</span> <span class="n">howLong</span> <span class="o">=</span> <span class="mi">500</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">sayHello</span><span class="o">(</span><span class="n">String</span> <span class="n">firstName</span><span class="o">,</span> <span class="n">String</span> <span class="n">lastName</span><span class="o">,</span> <span class="n">String</span> <span class="n">appId</span><span class="o">,</span> <span class="kt">long</span> <span class="n">time</span><span class="o">,</span>  <span class="n">String</span> <span class="n">sign</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">key</span> <span class="o">=</span> <span class="n">DB</span><span class="o">.</span><span class="na">getKey</span><span class="o">(</span><span class="n">appId</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">key</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="s">&quot;对不起，你没有授权！&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">str_sign</span> <span class="o">=</span> <span class="n">Md5Encrypt</span><span class="o">.</span><span class="na">md5</span><span class="o">(</span><span class="n">firstName</span> <span class="o">+</span> <span class="n">lastName</span>  <span class="o">+</span> <span class="n">time</span> <span class="o">+</span> <span class="n">appId</span> <span class="o">+</span> <span class="n">key</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(!</span> <span class="n">str_sign</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">sign</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="s">&quot;数字签名错误！&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="kt">long</span> <span class="n">now</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="kt">long</span> <span class="n">dau</span> <span class="o">=</span> <span class="n">now</span> <span class="o">-</span> <span class="n">time</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">dau</span> <span class="o">&gt;</span> <span class="n">howLong</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="s">&quot;时间戳验证失败！&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;你好，&quot;</span> <span class="o">+</span> <span class="n">firstName</span> <span class="o">+</span> <span class="n">lastName</span> <span class="o">+</span> <span class="s">&quot;!&quot;</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>DB.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 该类用来模拟数据库调用</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">DB</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="kd">static</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">db</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;();</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//保存经过我们授权的用户id及key</span>
+</span><span class='line'>  <span class="kd">static</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">db</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;app001&quot;</span><span class="o">,</span> <span class="s">&quot;3c9909afec25354d551dae21590bb26e3&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">db</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;app002&quot;</span><span class="o">,</span> <span class="s">&quot;7eyBedfger6fg44ydfsd3ssefsdfsdfsd&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">getKey</span><span class="o">(</span><span class="n">String</span> <span class="n">who</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">who</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;实现类中的几个步骤需要说明：</p>
+
+<p>&emsp;&emsp;1、先在数据库中查询客户是否已授权过，只有通过授权的客户端调用才可以继续。如果该用户授权过，取得该用户的appkey。</p>
+
+<p>&emsp;&emsp;2、将业务参数，appid,ts等字段连接起来，加上appkey后一起做hash签名生成sign，本例中用的md5。</p>
+
+<p>&emsp;&emsp;3、将计算得到的签名和用户上传上来的签名进行比对，以判断数据是否被篡改，如果签名不一致，终止后续执行。</p>
+
+<p>&emsp;&emsp;4、获得当前服务器时间，并取出用户请求参数中的ts时间相减得到时间差，如果时间间隔超时了（这个超时时间要根据具体的环境确定，因为网络间调用本身就有延迟），就认为是无效的请求。</p>
+
+<p>&emsp;&emsp;5、执行真正的业务逻辑。</p>
+
+<p>&emsp;&emsp;6、调用对事后得给客户端发回响应，响应数据也采用相同的规则和方式生成sign，原理和服务器端的验证是一样的，客户端收到这个消息也要进行签名验证。</p>
+
+<p>&emsp;&emsp;在架构设计上，上面的几个步骤中我们可以把1~4步专门提取出来，放到另外的一个逻辑层中进行处理，比如：AOP或filter等方式，同理，第6步也可提取出来专门处理。</p>
+
+<p>&emsp;&emsp;客户端的调用代码，必须按照服务器要求的参数提交，并按同样的规则生成sign。下面是axis调用sayHello的ws的代码。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Client</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">appId</span> <span class="o">=</span> <span class="s">&quot;app001&quot;</span><span class="o">;</span>
+</span><span class='line'>      <span class="n">String</span> <span class="n">myKey</span> <span class="o">=</span> <span class="s">&quot;3c9909afec25354d551dae21590bb26e3&quot;</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">String</span> <span class="n">url</span> <span class="o">=</span> <span class="s">&quot;http://localhost:8080/web_service_service/ws/helloService&quot;</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Service</span> <span class="n">service</span> <span class="o">=</span>  <span class="k">new</span> <span class="n">Service</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">Call</span> <span class="n">call</span> <span class="o">=</span> <span class="o">(</span><span class="n">Call</span><span class="o">)</span> <span class="n">service</span><span class="o">.</span><span class="na">createCall</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setTargetEndpointAddress</span><span class="o">(</span><span class="k">new</span> <span class="n">URL</span><span class="o">(</span><span class="n">url</span><span class="o">));</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setOperationName</span><span class="o">(</span><span class="k">new</span> <span class="n">QName</span><span class="o">(</span><span class="s">&quot;http://service.my.com/&quot;</span><span class="o">,</span> <span class="s">&quot;sayHello&quot;</span><span class="o">));</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span>
+</span><span class='line'>              <span class="s">&quot;fname&quot;</span>
+</span><span class='line'>              <span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span>
+</span><span class='line'>              <span class="s">&quot;lname&quot;</span>
+</span><span class='line'>              <span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span>
+</span><span class='line'>              <span class="s">&quot;appId&quot;</span>
+</span><span class='line'>              <span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span>
+</span><span class='line'>              <span class="s">&quot;ts&quot;</span>
+</span><span class='line'>              <span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">addParameter</span><span class="o">(</span>
+</span><span class='line'>              <span class="s">&quot;sign&quot;</span>
+</span><span class='line'>              <span class="o">,</span> <span class="n">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">,</span> <span class="n">ParameterMode</span><span class="o">.</span><span class="na">IN</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">call</span><span class="o">.</span><span class="na">setReturnType</span><span class="o">(</span><span class="n">org</span><span class="o">.</span><span class="na">apache</span><span class="o">.</span><span class="na">axis</span><span class="o">.</span><span class="na">encoding</span><span class="o">.</span><span class="na">XMLType</span><span class="o">.</span><span class="na">XSD_STRING</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="kt">long</span> <span class="n">now</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">call</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="k">new</span> <span class="n">Object</span><span class="o">[]{</span><span class="s">&quot;言&quot;</span><span class="o">,</span><span class="s">&quot;娃娃&quot;</span><span class="o">,</span> <span class="n">appId</span><span class="o">,</span>  <span class="n">now</span><span class="o">,</span>  <span class="n">Md5Encrypt</span><span class="o">.</span><span class="na">md5</span><span class="o">(</span><span class="s">&quot;言&quot;</span> <span class="o">+</span> <span class="s">&quot;娃娃&quot;</span>  <span class="o">+</span> <span class="n">now</span> <span class="o">+</span> <span class="n">appId</span> <span class="o">+</span>  <span class="n">myKey</span><span class="o">)});</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">result</span><span class="o">);</span>   
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;请大家注意call.invoke后面的参数，以及sign的生成规则，这个规则和服务器上的规则是一样的。另外，大家要注意，客户端上传的参数中一定要有appid，以表明自己的身份，appkey只用于生成hash过程中使用，服务器端也使用这个appkey来生成hash，因此，appkey必须要保密，如果appkey被他人获得，那么安全调用也就再无安全了。</p>
+
+<p>&emsp;&emsp;本文中给大家介绍的方法在很多系统中都有广泛的应用，比如在线支持接口，开放平台api调用接口等都是基于这种方式，另外，这种方式的安全认识还有一个巨大的好处：服务器端不需要维护客户端状态，这样一来服务器端集群的伸缩性就变得十分简单了。</p>
+
+<p>&emsp;&emsp;有想了解ws架构设计的同学，可以看我的《Webservice架构设计》(/blog/2011/04/11/webservice-architect/)一文。</p>
+
+<p>&emsp;&emsp;好了，本文先到此结束，后续安全性的文章请大家继续关注。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-16T15:18:00+08:00" pubdate data-updated="true">2014年04月16日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/04/15/security3/" title="上一篇文章: java安全那些事之三（RSA及https）">&laquo;上一篇:&nbsp;&nbsp;java安全那些事之三（RSA及https）</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/15/security3/">java安全那些事之三（RSA及https）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/14/security2/">Java安全那些事之二（base64,des）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/13/security1/">Java安全那些事之一(md5、sha)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+  <h3></h3>
+  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-6635992117744268"
+     data-ad-slot="8248023769"
+     data-ad-format="auto"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="60">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2014 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：java | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-04-17T11:02:54+08:00</updated>
+  <updated>2014-05-26T15:39:24+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,111 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[java安全那些事之五（客户端安全）]]></title>
+    <link href="http://yanyaner.com/blog/2014/04/21/security5/"/>
+    <updated>2014-04-21T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/04/21/security5</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;安全问题的水很深，“乌云”平台上曝光的一些漏洞不凡BAT(百度、阿里、腾讯)等一些大的公司，这些公司一般都有专业的安全团队都会出问题，更何况一些小的公司。本文简单讲解前端的一些安全知识，以引起大家注意。</p>
+
+<p>&emsp;&emsp;前端常见的安全问题有：sql注入，xss以及csrf这几大类，而解决的核心思路就是：不要信任用户提交的任何东西。</p>
+
+<p>&emsp;&emsp;sql注入问题虽然是一个古老的问题，但目前仍然还是有很多系统存在这个漏洞，避免sql注入漏洞说来也是比较简单的，程序开发人员要特别注意的是：不要把用户的输入直接拼装成sql然后执行。java中的主流orm框架如hibernate、ibatis等都考虑到这个问题，如果你用原生jdbc编程则需要预编译你的sql得到PreparedStatement，另外，alibaba的druid数据源中如果开启了wall filter也具备jdbc底层的sql注入防护功能。</p>
+
+<p>&emsp;&emsp;再来看xss，xss是跨站脚本攻击，比如你的一个界面字段中用户输入了有具有执行能力的js代码，如果服务器端不做任何处理就将用户输入保存到数据库中，前端展示又直接将数据库中取出的内容拼在页面中，就会存在xss漏洞。当有其它用户在查看到这段信息时，就有可能把用户的cookie等信息发送到对方指定的服务器上，这真的是太危险了。</p>
+
+<p>&emsp;&emsp;xss的解决办法主要是对客户输入的内容进行过淲处理，也有人叫“消毒”。</p>
+
+<p>&emsp;&emsp;比如下面的一段代码，就实现了简单粗暴式的用户输入消毒。<!--more--></p>
+
+<p>``` java</p>
+
+<pre><code>private static Logger log = LoggerFactory.getLogger("[HtmlCodeUtil]");
+private static final String regEx_script = "&lt;[\\s]*?script[^&gt;]*?&gt;[\\s\\S]*?&lt;[\\s]*?\\/[\\s]*?script[\\s]*?&gt;";//定义script的正则表达式{或&lt;script[^&gt;]*?&gt;[\\s\\S]*?&lt;\\/script&gt; }
+private static final String regEx_style = "&lt;[\\s]*?style[^&gt;]*?&gt;[\\s\\S]*?&lt;[\\s]*?\\/[\\s]*?style[\\s]*?&gt;";  // 定义style的正则表达式{或&lt;style&gt;]*?&gt;[\s\S]*?&lt;\/style&gt; }
+private static final String regEx_html = "&lt;[^&gt;]+&gt;";  // 定义HTML标签的正则表达式
+private static Pattern p_script;
+private static Pattern p_style;
+private static Pattern p_html;
+
+/**
+ * 将字符串中的html内容替换成 “”
+ * @param inputString
+ * @return
+ */
+public static String html2Text(String inputHtmlString) {
+
+    Matcher m_script;
+    Matcher m_style;
+    Matcher m_html;
+
+    if (inputHtmlString == null) {
+        return "";
+    }
+    ;
+
+    try {
+        m_script = p_script.matcher(inputHtmlString);
+        inputHtmlString = m_script.replaceAll("");  // 过滤script标签
+
+        m_style = p_style.matcher(inputHtmlString);
+        inputHtmlString = m_style.replaceAll("");  // 过滤style标签
+
+        m_html = p_html.matcher(inputHtmlString);
+        inputHtmlString = m_html.replaceAll("");  // 过滤html标签
+    } catch (Exception e) {
+        log.error("filter html code error, content is:{}", inputHtmlString);
+        //清空
+        inputHtmlString = "您提交的内容有系统不允许的标签！";
+    }
+
+    return inputHtmlString; // 返回文本字符串
+}
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;使用如下测试代码：</p>
+
+<p>```java</p>
+
+<pre><code>public static void main(String[] args) {
+    System.out.println(HtmlUtils.htmlEscape("&lt;script&gt;while (true) {alert('aa');};&lt;/script&gt;&lt;p&gt;Hello&lt;/p&gt;"));
+}
+</code></pre>
+
+<p>```
+&emsp;&emsp;但是，上面的消毒代码过于简单粗暴，在一般在项目中我们可以使用开源的工具来帮助我们做过滤消毒的事。<a href="http://code.google.com/p/xssprotect/">xssprotect</a>、<a href="http://josephoconnell.com/java/xss-html-filter/">HTML filtering utility for Java</a>都实现了过滤消毒的功能。</p>
+
+<p>&emsp;&emsp;请大家看看HTML filtering使用的演示代码如下：</p>
+
+<p>```java</p>
+
+<pre><code>    String html = "&lt;script&gt;while (true) {alert('aa');};&lt;/script&gt;&lt;p&gt;Hello&lt;/p&gt;";
+
+    String result  = new HTMLFilter().filter(html);
+    System.out.println(result);
+
+
+    //输出的结果是：while (true) {alert('aa');};Hello
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;最后一个，也是比较棘手的个是CSRF漏洞攻击，CSRF和XSS不相同，CSRF以用户的身份进行合法的操作的一种攻击方式，也叫做跨站请求伪造。比如：伪造用户的一个合法请求<a href="">http://www.domain.com/addNews.do?title=发布重大新闻啦</a>,将这个地址放入一个超链接的href中，然后再发布到系统中。这个时候，如果一个合法用户登录成功后，无意中点击了这个链接，那么系统就会以他的身份发布一条新闻，而用户可能对自己发布新闻这个行为浑然不知。如果这个链接是一个转账或删除某些数据的操作，那么危险性就显而易见了。</p>
+
+<p>&emsp;&emsp;解决CSRF不能简单地用过滤消毒、不允许发布本站地址的url等方式解决（因为url可以通过另的方式发送给用户），我们需要另想办法。</p>
+
+<p>&emsp;&emsp;一种方案是使用restful风格设计系统api，get请求仅仅做等幂的数据查询，而post、delete、put会对数据进行修改，这样一来就可以防止链接中的CSRF修改数据带来的风险，但这并不能完全保证数据的安全，因为通过js、iframe、表单等方式还是可让伪造的地址以合法的身份运行，但是restful风格的设计确实可以提高CSRF攻击门槛，也是我们在今后所有项目中都必须采用的一种系统对外接口。</p>
+
+<p>&emsp;&emsp;也有人采用检测http referer的方式，如果referer不是本站域名中的，则不予功能的执行，就像很多网站图片防盗链接的做法相同，这种检测referer的方式也可以阻止很大一部分通过QQ、邮件发来的CSRF攻击链接。</p>
+
+<p>&emsp;&emsp;还有一种做法比较好，就是对每个url都带一个服务器端生成的token令牌，一个token用过一次后就失效（记得在struts1中就曾经有防止表单重复提交的功能，原理和我这讲的是相同的），这样可以有效防止CSRF，但同时也增加了系统的复杂性，因为服务器要在会话状态中记住每一个页面每一个操作链接的token，实际项目中可采用专门提取出来一个抽象层来做这事会更好些。</p>
+
+<p>&emsp;&emsp;还是那句话，“道高一尺魔高一丈”，今天看似安全的东西也许明天就出现漏洞，没有绝对的安全，做为企业必须要有安全意识，并随时关注安全方面的资讯及内容。更多xss与csrf的内容请大家参阅<a href="https://blog.tonyseek.com/post/introduce-to-xss-and-csrf/">《总结 XSS 与 CSRF 两种跨站攻击》</a>一文。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[java安全那些事之四（无状态安全认证）]]></title>
@@ -455,7 +560,7 @@ J/DGn1kJ23KcIXbC1YM=</p>
 
 <p>&emsp;&emsp;通过阅读上面的调用代码，我想大家对RSA加密算法已经有了一些认识，在这些代码中我们发现，RSA的私钥的存放必须要得到很好的保护，如果私钥被他人得到，那么双方的通讯的内容也就公开了。有些童鞋在架构设计时也会考虑将密钥分段存放，这样的话没有任何一个人可以得到完整的密钥，在应用计算时再从各个地方得到分段并组装在一起，这样的安全性就比较高了。</p>
 
-<p>&emsp;&emsp;最后，我给大家简单介绍一下tomcat中的基于RSA的https配置内容(其实nginx这些服务器的https配置与之类似，明白了原理后，就是配置文件的写法不一样而已)。配置tomcat的https支持hppts，首先也是要建立RSA证书，同样是基于JKS的，如下命令即可：</p>
+<p>&emsp;&emsp;最后，我给大家简单介绍一下tomcat(其实nginx这些服务器的https配置与之类似，明白了原理后，就是配置文件的写法不一样而已)中的基于RSA的https（https是在数据链路层进行通讯加密，这个协议用到了rsa,md5,des等一些加密算法，算是设计精妙）配置内容。配置tomcat的https支持hppts，首先也是要建立RSA证书，同样是基于JKS的，如下命令即可：</p>
 
 <p>```
 D:\temp\tomcat-cer>keytool -genkey -alias mytomcat -keyalg RSA -keystore tomcat.keystore
@@ -497,6 +602,8 @@ CN=liu, OU=maxsoft, O=org, L=cd, ST=sc, C=cn是否正确?
 <p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/browser_ssl_warning.jpg' width='' height='' title='浏览器中https警告'><span class='caption-text'>浏览器中https警告</span></span></p>
 
 <p>&emsp;&emsp;如果你不想让浏览器出现这样的警告，那么你就得到第三方认证的证书机构去申请密钥了，而不能像上面一样通过命令行自己生成密钥，因为我们生成的密钥浏览器认为有风险而不被信任(当然如果用户通过添加例外，浏览器仍然可以继续访问这个https的网站)。</p>
+
+<p>&emsp;&emsp;另外大家要注意的是，rsa算法比较耗费时间，效率低下，而且对要加密的内容长度上也有限制，因此一般可用来对密码等长度较短的明文加密。因此，在https通讯过程中，只有在通讯开始的握手过程中会使用rsa以交换对称加密密钥，在后期的数据通讯中都是采用的DES对称加密算法。</p>
 
 <p>&emsp;&emsp;关于RSA的介绍先到此，下篇文章接着讲一些架构级的安全认证设计知识，请大家关注。</p>
 ]]></content>
@@ -655,260 +762,6 @@ d24d011e9d67511deea2f1296adaa65db2c161f8537ed48d5893c06d712abdf4a229c98f8d0fd277
 <p>&emsp;&emsp;hash算法除了用于密码的安全性外，还经常用于数据签名，这一块的应用我在随后的文章中会提到。</p>
 
 <p>&emsp;&emsp;好了，这一部分先简单介绍到这，下一篇我们来看看Base64,DES,RSA等与加密解决信息有关的内容。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[监控系统中的异步消息使用实例（二）]]></title>
-    <link href="http://yanyaner.com/blog/2014/04/09/async_message_architect2/"/>
-    <updated>2014-04-09T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/04/09/async_message_architect2</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;接上节，再次贴出架构图，我们接下来要讲的是图中黄色部分的配置。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构'><span class='caption-text'>业务方法监控架构</span></span></p>
-
-<p>&emsp;&emsp;先将spy程序导成一个jar包，加入到需要监控的目标服务器lib目录，monitor_spy.jar结构如下所示：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/jarinfo.jpg' width='' height='' title='monitor_spy.jar结构'><span class='caption-text'>monitor_spy.jar结构</span></span></p>
-
-<p>&emsp;&emsp;为了能够实现对目标系统业务方法执行情况进行监控，需要将我们已经写好的拦截器配置到目标系统中去，下面是我的一个配置示例：</p>
-
-<p>``` xml spring-spy.xml</p>
-
-<pre><code>&lt;!-- jms连接工厂 --&gt;         
-&lt;bean id="jmsFactory" class="org.apache.activemq.pool.PooledConnectionFactoryBean"&gt;
-    &lt;property name="connectionFactory"&gt;
-        &lt;bean class="org.apache.activemq.ActiveMQConnectionFactory"&gt;
-            &lt;property name="brokerURL" value="tcp://localhost:61616"&gt;&lt;/property&gt;
-        &lt;/bean&gt;
-    &lt;/property&gt;
-    &lt;!-- 配置池中最大连接数据以及最大活动连接数 --&gt;
-    &lt;property name="maxConnections" value="100"&gt;&lt;/property&gt;
-    &lt;property name="maximumActive" value="100"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- jms模板方法 --&gt;    
-&lt;bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate"&gt;
-    &lt;constructor-arg ref="jmsFactory"&gt;
-    &lt;/constructor-arg&gt;
-    &lt;!-- 默认会创建queue类型的目标
-    &lt;property name="defaultDestinationName" value="queue/methodSpyLogger"&gt;&lt;/property&gt; --&gt;
-    &lt;property name="defaultDestination" ref="destinationQueue1"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- 发送消息的目的地 --&gt;
-&lt;bean id="destinationQueue1" class="org.apache.activemq.command.ActiveMQQueue"&gt;
-    &lt;!-- 设置消息队列的名字 --&gt;
-    &lt;constructor-arg  value="queue/methodSpyLogger" /&gt;
-&lt;/bean&gt;
-
-
-&lt;!-- 配置Spring和方法相关的监控 --&gt;
-&lt;bean id="method-pointcut" class="org.springframework.aop.support.JdkRegexpMethodPointcut"&gt;
-    &lt;property name="patterns"&gt;
-        &lt;list&gt;
-            &lt;value&gt;com.lovo.mis.xjgl.service.impl.*&lt;/value&gt;
-        &lt;/list&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- 方法AOP拦截器 --&gt;
-&lt;bean id="spy-method-interceptor"
-      class="com.monitor.client.spy.SpyMethodIntercepter"&gt;
-      &lt;property name="messageDao"&gt;
-        &lt;bean class="com.monitor.client.dao.JMSMessageDaoImpl"&gt;
-            &lt;property name="jmsTemplate" ref="jmsTemplate"&gt;&lt;/property&gt;
-        &lt;/bean&gt;
-      &lt;/property&gt;
-      &lt;property name="userNameSessionKey" value="loginUserName"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- 将切面应用到通知上 --&gt;
-&lt;aop:config proxy-target-class="true"&gt;
-    &lt;aop:advisor advice-ref="spy-method-interceptor"
-                 pointcut-ref="method-pointcut" /&gt;
-&lt;/aop:config&gt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;配置文件中有几个地方需要进行说明：<!-- more --></p>
-
-<p>&emsp;&emsp;1、目标机器要修改的部分是JdkRegexpMethodPointcut中的patterns，由patterns指定需要监控的业务类所在的位置。</p>
-
-<p>&emsp;&emsp;2、jmsFactory部分配置你的异步消息服务器连接信息，比如brokerURL等。</p>
-
-<p>&emsp;&emsp;3、jmsTemplate中，通过defaultDestination指定一个Destination，因为一个消息服务器上存在多个Destination。也可以通过defaultDestinationName直接指定消息Destination的名称，系统默认创建的是queue，也就是说，如果你要使用topic类型的消息，就必须通过defaultDestination指定一个Destination。</p>
-
-<p>&emsp;&emsp;4、messageDao可自由替换为其它实现类，比如你可以写一个mongoDB版本的实现以提供更好的性性，支持更大数据量。</p>
-
-<p>&emsp;&emsp;最后来看看消费者代码，是直接使用ActiveMQ驱动实现的。</p>
-
-<p>``` java</p>
-
-<pre><code>    ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("tcp://localhost:61616");
-
-    Connection connection = factory.createConnection();
-
-    //尝试真正建立连接，这里可以catch Exception
-    connection.start();
-
-    //得到一个会话，只有得到会话后，才可进行后续的操作
-    Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-    //创建一个目标队列
-    Destination queue = session.createQueue("queue/methodSpyLogger"); 
-
-    MessageConsumer consumer = session.createConsumer(queue);
-
-    //可通过其它一些机制，来改变flag为false，以退出处理
-    boolean flag = true;
-
-    while (flag) {
-        ObjectMessage msg = (ObjectMessage)consumer.receive();
-        MethodLoggerMessage myMsg = (MethodLoggerMessage)msg.getObject();
-
-        System.out.println(myMsg);
-        //这里，可调用dao或service，向关系数据库(或nosql)中保存msg中的内容");
-
-    }
-
-    session.close();
-
-    connection.close();
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;注意，如果队列中已经没有消息了，代码中的consumer.receive()会阻塞，直到有新的消息后再处理。我们也可以采用监听器的方式来处理消息服务器中的消息，比如下面的代码：</p>
-
-<p>``` java</p>
-
-<pre><code>    //处理消息者
-    MessageConsumer consumer = session.createConsumer(queue);
-
-    //处理多条消息
-    consumer.setMessageListener(new MessageListener() {
-        public void onMessage(Message msg) {
-           //转换，这可以对类型进行检测，使用instance of
-            TextMessage txtMsg = (TextMessage)msg;
-            try {
-                System.out.println("得到消息内容："+txtMsg.getText());
-                System.out.println("处理完一条消息！！");
-                //如果开启了事务，请session.commit();
-            } catch (JMSException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-    });
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;当目标程序运行时，我们可以打开ActiveMQ的管理界面，即可发现这个queue及上面的消费者。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/active_mq_admin.jpg' width='' height='' title='ActiveMQ的管理界面'><span class='caption-text'>ActiveMQ的管理界面</span></span></p>
-
-<p>&emsp;&emsp;大家还要注意的是，我们的AOP通知中，还获取了调用者的ip，访问者姓名等信息，这些和web环境相关的信息是通过类似于下面的代码实现的：</p>
-
-<p>``` java</p>
-
-<p>ServletRequestAttributes sas = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
-HttpServletRequest req = sas.getRequest();</p>
-
-<p>logger.setIp(req.getLocalAddr());
-logger.setSessionId(sas.getSessionId());</p>
-
-<p>if (req.getSession() != null) {</p>
-
-<pre><code>logger.setOperater((String)req.getSession().getAttribute(userNameSessionKey));
-</code></pre>
-
-<p>}</p>
-
-<p>```
- &emsp;&emsp;其中的RequestContextHolder是由spring封装，具体做法是将用户web相关的信息通过filter或listener放入ThreadLocal对象中，在需要的地方通过RequestContextHolder从ThreadLocal中取得，因此，你想让上面的代码正常工作，要记得在web.xml中添加一个spring已经写好的RequestContextListener监听器哦。</p>
-
-<p>``` xml  web.xml</p>
-
-<pre><code>&lt;listener&gt;
-    &lt;listener-class&gt;
-        org.springframework.web.context.request.RequestContextListener
-    &lt;/listener-class&gt;
-&lt;/listener&gt;
-</code></pre>
-
-<p>```</p>
-
-<p> &emsp;&emsp;当然，本例中所使用的消息服务器是ActiveMQ，这个服务器实现了JMS规范，在企业级应用场景中不会存在问题。如果在互联网行业中，由于会面临高并发、大流量等情况，ActiveMQ不能保证高可用性、稳定性及性能要求，这个时候我们可以考虑其它的第三方消息服务器，比如淘宝的taobao-metaq，alibaba-rocketmq等，这些服务器是经过实际考验的开源产品，值得在互联网场景中使用。当然，这些MQ服务器和JMS规范没有任何关系，JMS企业级要求中并没有考虑过多的并发、大数据量的需求。</p>
-
-<p> &emsp;&emsp;另外，kafka，rabbitmq等消息服务器也具有不错的性能，都可以进入架构的技术方案选型范围。比如，下面是一段rabbitmq的调用示例代码(注：rabbitmq需要er_lang并发程序包支持哦)，和JMS的调用相当类似。</p>
-
-<p>``` java
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;</p>
-
-<p>&hellip;&hellip;.//略去代码</p>
-
-<pre><code>@Test
-public void testSendMessage() throws Exception {
-    SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-
-    ConnectionFactory factory = new ConnectionFactory();
-    factory.setHost("localhost");
-
-    Connection connection = factory.newConnection();
-    Channel channel = connection.createChannel();
-
-    String message = sf.format(new Date()) + ":Hello!!!";
-    channel.basicPublish("", "queue/sendEmail", null, message.getBytes());
-
-
-    channel.close();
-    connection.close();
-
-    System.out.println("send message ok!");
-
-
-
-}
-
-
-@Test
-public void testReciveMessage() throws Exception {
-
-    System.out.println("recever starting.....");
-
-    String QUEUE_NAME = "queue/sendEmail";
-
-    SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-
-    ConnectionFactory factory = new ConnectionFactory();
-    factory.setHost("localhost");
-
-    Connection connection = factory.newConnection();
-    Channel channel = connection.createChannel();
-
-    channel.queueDeclare(QUEUE_NAME, false, false, false, null);
-
-    QueueingConsumer consumer = new QueueingConsumer(channel);
-    channel.basicConsume(QUEUE_NAME, false, consumer);
-
-    QueueingConsumer.Delivery delivery = consumer.nextDelivery();
-
-    String msg = new String(delivery.getBody());
-
-    System.out.println(msg);
-
-    System.out.println("rec end!!!");
-}
-</code></pre>
-
-<p>```</p>
-
-<p> &emsp;&emsp;先说到这吧。</p>
 ]]></content>
   </entry>
   

@@ -1,0 +1,418 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>java安全那些事之五（客户端安全） - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;安全问题的水很深，“乌云”平台上曝光的一些漏洞不凡BAT(百度、阿里、腾讯)等一些大的公司，这些公司一般都有专业的安全团队都会出问题，更何况一些小的公司。本文简单讲解前端的一些安全知识，以引起大家注意。 &emsp;&emsp;前端常见的安全问题有：sql注入， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2014/04/21/security5">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Java安全那些事之五（客户端安全）</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-21T15:18:00+08:00" pubdate data-updated="true">2014年04月21日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;安全问题的水很深，“乌云”平台上曝光的一些漏洞不凡BAT(百度、阿里、腾讯)等一些大的公司，这些公司一般都有专业的安全团队都会出问题，更何况一些小的公司。本文简单讲解前端的一些安全知识，以引起大家注意。</p>
+
+<p>&emsp;&emsp;前端常见的安全问题有：sql注入，xss以及csrf这几大类，而解决的核心思路就是：不要信任用户提交的任何东西。</p>
+
+<p>&emsp;&emsp;sql注入问题虽然是一个古老的问题，但目前仍然还是有很多系统存在这个漏洞，避免sql注入漏洞说来也是比较简单的，程序开发人员要特别注意的是：不要把用户的输入直接拼装成sql然后执行。java中的主流orm框架如hibernate、ibatis等都考虑到这个问题，如果你用原生jdbc编程则需要预编译你的sql得到PreparedStatement，另外，alibaba的druid数据源中如果开启了wall filter也具备jdbc底层的sql注入防护功能。</p>
+
+<p>&emsp;&emsp;再来看xss，xss是跨站脚本攻击，比如你的一个界面字段中用户输入了有具有执行能力的js代码，如果服务器端不做任何处理就将用户输入保存到数据库中，前端展示又直接将数据库中取出的内容拼在页面中，就会存在xss漏洞。当有其它用户在查看到这段信息时，就有可能把用户的cookie等信息发送到对方指定的服务器上，这真的是太危险了。</p>
+
+<p>&emsp;&emsp;xss的解决办法主要是对客户输入的内容进行过淲处理，也有人叫“消毒”。</p>
+
+<p>&emsp;&emsp;比如下面的一段代码，就实现了简单粗暴式的用户输入消毒。<!--more--></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="n">Logger</span> <span class="n">log</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="s">&quot;[HtmlCodeUtil]&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">regEx_script</span> <span class="o">=</span> <span class="s">&quot;&lt;[\\s]*?script[^&gt;]*?&gt;[\\s\\S]*?&lt;[\\s]*?\\/[\\s]*?script[\\s]*?&gt;&quot;</span><span class="o">;</span><span class="c1">//定义script的正则表达式{或&lt;script[^&gt;]*?&gt;[\\s\\S]*?&lt;\\/script&gt; }</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">regEx_style</span> <span class="o">=</span> <span class="s">&quot;&lt;[\\s]*?style[^&gt;]*?&gt;[\\s\\S]*?&lt;[\\s]*?\\/[\\s]*?style[\\s]*?&gt;&quot;</span><span class="o">;</span>  <span class="c1">// 定义style的正则表达式{或&lt;style&gt;]*?&gt;[\s\S]*?&lt;\/style&gt; }</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">regEx_html</span> <span class="o">=</span> <span class="s">&quot;&lt;[^&gt;]+&gt;&quot;</span><span class="o">;</span>  <span class="c1">// 定义HTML标签的正则表达式</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="n">Pattern</span> <span class="n">p_script</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="n">Pattern</span> <span class="n">p_style</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="n">Pattern</span> <span class="n">p_html</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * 将字符串中的html内容替换成 “”</span>
+</span><span class='line'><span class="cm">     * @param inputString</span>
+</span><span class='line'><span class="cm">     * @return</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">html2Text</span><span class="o">(</span><span class="n">String</span> <span class="n">inputHtmlString</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Matcher</span> <span class="n">m_script</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">Matcher</span> <span class="n">m_style</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">Matcher</span> <span class="n">m_html</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">inputHtmlString</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="s">&quot;&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">m_script</span> <span class="o">=</span> <span class="n">p_script</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">inputHtmlString</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">inputHtmlString</span> <span class="o">=</span> <span class="n">m_script</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">);</span>  <span class="c1">// 过滤script标签</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">m_style</span> <span class="o">=</span> <span class="n">p_style</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">inputHtmlString</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">inputHtmlString</span> <span class="o">=</span> <span class="n">m_style</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">);</span>  <span class="c1">// 过滤style标签</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">m_html</span> <span class="o">=</span> <span class="n">p_html</span><span class="o">.</span><span class="na">matcher</span><span class="o">(</span><span class="n">inputHtmlString</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">inputHtmlString</span> <span class="o">=</span> <span class="n">m_html</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">);</span>  <span class="c1">// 过滤html标签</span>
+</span><span class='line'>        <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&quot;filter html code error, content is:{}&quot;</span><span class="o">,</span> <span class="n">inputHtmlString</span><span class="o">);</span>
+</span><span class='line'>            <span class="c1">//清空</span>
+</span><span class='line'>            <span class="n">inputHtmlString</span> <span class="o">=</span> <span class="s">&quot;您提交的内容有系统不允许的标签！&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">inputHtmlString</span><span class="o">;</span> <span class="c1">// 返回文本字符串</span>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;使用如下测试代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">HtmlUtils</span><span class="o">.</span><span class="na">htmlEscape</span><span class="o">(</span><span class="s">&quot;&lt;script&gt;while (true) {alert(&#39;aa&#39;);};&lt;/script&gt;&lt;p&gt;Hello&lt;/p&gt;&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;但是，上面的消毒代码过于简单粗暴，在一般在项目中我们可以使用开源的工具来帮助我们做过滤消毒的事。<a href="http://code.google.com/p/xssprotect/">xssprotect</a>、<a href="http://josephoconnell.com/java/xss-html-filter/">HTML filtering utility for Java</a>都实现了过滤消毒的功能。</p>
+
+<p>&emsp;&emsp;请大家看看HTML filtering使用的演示代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">String</span> <span class="n">html</span> <span class="o">=</span> <span class="s">&quot;&lt;script&gt;while (true) {alert(&#39;aa&#39;);};&lt;/script&gt;&lt;p&gt;Hello&lt;/p&gt;&quot;</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">String</span> <span class="n">result</span>  <span class="o">=</span> <span class="k">new</span> <span class="n">HTMLFilter</span><span class="o">().</span><span class="na">filter</span><span class="o">(</span><span class="n">html</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">result</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//输出的结果是：while (true) {alert(&#39;aa&#39;);};Hello</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后一个，也是比较棘手的个是CSRF漏洞攻击，CSRF和XSS不相同，CSRF以用户的身份进行合法的操作的一种攻击方式，也叫做跨站请求伪造。比如：伪造用户的一个合法请求<a href="">http://www.domain.com/addNews.do?title=发布重大新闻啦</a>,将这个地址放入一个超链接的href中，然后再发布到系统中。这个时候，如果一个合法用户登录成功后，无意中点击了这个链接，那么系统就会以他的身份发布一条新闻，而用户可能对自己发布新闻这个行为浑然不知。如果这个链接是一个转账或删除某些数据的操作，那么危险性就显而易见了。</p>
+
+<p>&emsp;&emsp;解决CSRF不能简单地用过滤消毒、不允许发布本站地址的url等方式解决（因为url可以通过另的方式发送给用户），我们需要另想办法。</p>
+
+<p>&emsp;&emsp;一种方案是使用restful风格设计系统api，get请求仅仅做等幂的数据查询，而post、delete、put会对数据进行修改，这样一来就可以防止链接中的CSRF修改数据带来的风险，但这并不能完全保证数据的安全，因为通过js、iframe、表单等方式还是可让伪造的地址以合法的身份运行，但是restful风格的设计确实可以提高CSRF攻击门槛，也是我们在今后所有项目中都必须采用的一种系统对外接口。</p>
+
+<p>&emsp;&emsp;也有人采用检测http referer的方式，如果referer不是本站域名中的，则不予功能的执行，就像很多网站图片防盗链接的做法相同，这种检测referer的方式也可以阻止很大一部分通过QQ、邮件发来的CSRF攻击链接。</p>
+
+<p>&emsp;&emsp;还有一种做法比较好，就是对每个url都带一个服务器端生成的token令牌，一个token用过一次后就失效（记得在struts1中就曾经有防止表单重复提交的功能，原理和我这讲的是相同的），这样可以有效防止CSRF，但同时也增加了系统的复杂性，因为服务器要在会话状态中记住每一个页面每一个操作链接的token，实际项目中可采用专门提取出来一个抽象层来做这事会更好些。</p>
+
+<p>&emsp;&emsp;还是那句话，“道高一尺魔高一丈”，今天看似安全的东西也许明天就出现漏洞，没有绝对的安全，做为企业必须要有安全意识，并随时关注安全方面的资讯及内容。更多xss与csrf的内容请大家参阅<a href="https://blog.tonyseek.com/post/introduce-to-xss-and-csrf/">《总结 XSS 与 CSRF 两种跨站攻击》</a>一文。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-21T15:18:00+08:00" pubdate data-updated="true">2014年04月21日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/javaee/'>javaEE</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/04/16/security4/" title="上一篇文章: java安全那些事之四（无状态安全认证）">&laquo;上一篇:&nbsp;&nbsp;java安全那些事之四（无状态安全认证）</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/15/security3/">java安全那些事之三（RSA及https）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/14/security2/">Java安全那些事之二（base64,des）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/13/security1/">Java安全那些事之一(md5、sha)</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+  <h3></h3>
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-6635992117744268"
+     data-ad-slot="8027050961"
+     data-ad-format="auto"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="60">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2014 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

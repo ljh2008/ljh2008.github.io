@@ -9,7 +9,28 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;可用注解有： 有用于声明bean的Annotation： @Component @Controller（建议使用） @Repository（建议使用） @Service（建议使用） 有用于注入bean的Annotation： @Autowired @Qualifier @ &hellip;">
+  <meta name="description" content="基于junit4下的spring测试: 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+@Transactional
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration( &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +79,136 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/08/spring-test/">基于junit4下的spring测试</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-08T15:18:00+08:00" pubdate data-updated="true">2012年11月08日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>基于junit4下的spring测试:</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Transactional</span>
+</span><span class='line'><span class="nd">@RunWith</span><span class="o">(</span><span class="n">SpringJUnit4ClassRunner</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+</span><span class='line'><span class="nd">@ContextConfiguration</span><span class="o">(</span><span class="n">locations</span><span class="o">={</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">})</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BizServiceTest</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Resource</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;bizService&quot;</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">IIBizService</span> <span class="n">ss</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Test</span>
+</span><span class='line'>    <span class="nd">@Rollback</span><span class="o">(</span><span class="kc">false</span><span class="o">)</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">yourTestMethod</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1">//test code here</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">Assert</span><span class="o">.</span><span class="na">assertEquals</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>而基于junit3下的测试是这样的：</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">BizServiceInSpringTest</span> <span class="kd">extends</span>
+</span><span class='line'>        <span class="n">AbstractTransactionalSpringContextTests</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">IBizService</span> <span class="n">sts</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testMethod</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">assertEquals</span><span class="o">(</span><span class="s">&quot;yanwawa&quot;</span><span class="o">,</span> <span class="n">somevalue</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">//this.setComplete();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="n">String</span><span class="o">[]</span> <span class="nf">getConfigLocations</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">};</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setSts</span><span class="o">(</span><span class="n">IBizService</span> <span class="n">sts</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">sts</span> <span class="o">=</span> <span class="n">sts</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在这两种测试中，注解方式来得很简洁和灵活，建议大家使用。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1339,60 +1490,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/09/21/jvm-error/">PermGen Space溢出解决方法</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-09-21T15:18:00+08:00" pubdate data-updated="true">2012年09月21日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;tomcat在运行几天后，会出现PermGen space溢出错误而无法继续处理请求，解决方法是调整PermGen区域大小：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>JAVA_OPTS="-server -XX:PermSize=64M -XX:MaxPermSize=128m"</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;还有一种说法是使用Jrockit代替sun实现的jdk，但我没有试验。</p>
-
-<p>&emsp;&emsp;下面来看看对PermGen space的解释：</p>
-
-<p>&emsp;&emsp;PermGen space的全称是Permanent Generation space，是指内存的永久保存区域，这个内存区域用于：</p>
-
-<p>&emsp;&emsp;（1）这一部分用于存放Class和Meta的信息，Class在被 Load的时候被放入PermGen space区域，它和和存放Instance的Heap区域不同。</p>
-
-<p>&emsp;&emsp;（2） GC(Garbage Collection)不会在主程序运行期对PermGen space进行清理，所以如果你的APP会LOAD很多CLASS的话,就很可能出现PermGen space错误。</p>
-
-<p>&emsp;&emsp;这种错误常见在web服务器对JSP进行pre compile的时候。</p>
-
-<p>&emsp;&emsp;如果你的WEB APP下都用了大量的第三方jar，其大小超过了jvm默认的大小(4M)那么就会产生此错误信息了。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/11/">&larr; 更多早期老文章</a>
@@ -1410,6 +1507,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
       </li>
     
@@ -1423,10 +1524,6 @@
     
       <li class="post">
         <a href="/blog/2014/04/13/security1/">Java安全那些事之一(md5、sha)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a>
       </li>
     
   </ul>
@@ -1446,11 +1543,11 @@
 
 <section>
   <h3></h3>
-  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 <ins class="adsbygoogle"
      style="display:block"
      data-ad-client="ca-pub-6635992117744268"
-     data-ad-slot="8248023769"
+     data-ad-slot="8027050961"
      data-ad-format="auto"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});

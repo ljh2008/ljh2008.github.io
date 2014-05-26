@@ -479,7 +479,7 @@
 
 <p>&emsp;&emsp;通过阅读上面的调用代码，我想大家对RSA加密算法已经有了一些认识，在这些代码中我们发现，RSA的私钥的存放必须要得到很好的保护，如果私钥被他人得到，那么双方的通讯的内容也就公开了。有些童鞋在架构设计时也会考虑将密钥分段存放，这样的话没有任何一个人可以得到完整的密钥，在应用计算时再从各个地方得到分段并组装在一起，这样的安全性就比较高了。</p>
 
-<p>&emsp;&emsp;最后，我给大家简单介绍一下tomcat中的基于RSA的https配置内容(其实nginx这些服务器的https配置与之类似，明白了原理后，就是配置文件的写法不一样而已)。配置tomcat的https支持hppts，首先也是要建立RSA证书，同样是基于JKS的，如下命令即可：</p>
+<p>&emsp;&emsp;最后，我给大家简单介绍一下tomcat(其实nginx这些服务器的https配置与之类似，明白了原理后，就是配置文件的写法不一样而已)中的基于RSA的https（https是在数据链路层进行通讯加密，这个协议用到了rsa,md5,des等一些加密算法，算是设计精妙）配置内容。配置tomcat的https支持hppts，首先也是要建立RSA证书，同样是基于JKS的，如下命令即可：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -554,6 +554,8 @@
 <p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/browser_ssl_warning.jpg' width='' height='' title='浏览器中https警告'><span class='caption-text'>浏览器中https警告</span></span></p>
 
 <p>&emsp;&emsp;如果你不想让浏览器出现这样的警告，那么你就得到第三方认证的证书机构去申请密钥了，而不能像上面一样通过命令行自己生成密钥，因为我们生成的密钥浏览器认为有风险而不被信任(当然如果用户通过添加例外，浏览器仍然可以继续访问这个https的网站)。</p>
+
+<p>&emsp;&emsp;另外大家要注意的是，rsa算法比较耗费时间，效率低下，而且对要加密的内容长度上也有限制，因此一般可用来对密码等长度较短的明文加密。因此，在https通讯过程中，只有在通讯开始的握手过程中会使用rsa以交换对称加密密钥，在后期的数据通讯中都是采用的DES对称加密算法。</p>
 
 <p>&emsp;&emsp;关于RSA的介绍先到此，下篇文章接着讲一些架构级的安全认证设计知识，请大家关注。</p>
 </div>
@@ -640,6 +642,10 @@ var duoshuoQuery = {short_name:"ljh2008"};
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
       </li>
     
@@ -653,10 +659,6 @@ var duoshuoQuery = {short_name:"ljh2008"};
     
       <li class="post">
         <a href="/blog/2014/04/13/security1/">Java安全那些事之一(md5、sha)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a>
       </li>
     
   </ul>
@@ -676,11 +678,11 @@ var duoshuoQuery = {short_name:"ljh2008"};
 
 <section>
   <h3></h3>
-  <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 <ins class="adsbygoogle"
      style="display:block"
      data-ad-client="ca-pub-6635992117744268"
-     data-ad-slot="8248023769"
+     data-ad-slot="8027050961"
      data-ad-format="auto"></ins>
 <script>
 (adsbygoogle = window.adsbygoogle || []).push({});

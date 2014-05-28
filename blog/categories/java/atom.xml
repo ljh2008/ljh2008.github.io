@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：java | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-05-26T15:39:24+08:00</updated>
+  <updated>2014-05-28T17:55:38+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,389 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[java安全那些事之六（客户端安全）]]></title>
+    <link href="http://yanyaner.com/blog/2014/05/23/security6/"/>
+    <updated>2014-05-23T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/05/23/security6</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;这篇文章我想说一下客户端保存密码的安全性问题。目前在客户端保存用户登录密码的场景非常的普遍，尤其是在手机客户端应用中更为常见。下图是一个浏览器端中设计的保存密码界面。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/auto_login.jpg' width='' height='' title='保存密码及自动登录界面'><span class='caption-text'>保存密码及自动登录界面</span></span></p>
+
+<p>&emsp;&emsp;图中，用户可以选择保存自己的用户名和密码，如果用户选择了这一项，密码当然是保存在客户端的哦（浏览器中就是cookie）。在保存了上次登录密码的情况下客户端再次进行手动或自动登录时，客户端将取出自动保存的密码提交到服务器。</p>
+
+<p>&emsp;&emsp;我们可以想像到，如果将密码以明文的方式保存到客户端显然是不可取的。对密码进行加密处理后再保存客户端是一个可行的做法，但对密码加密的算法就值得我们去选择，base64肯定是不行的了，DES，RSA都是可以选择的加密方法，因为这些算法是可还原的算法，也就是说服务器收到加密密码后须还原成明文，再执行后续的登录业务。</p>
+
+<p>&emsp;&emsp;交互示意图如下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/seq_auto_login.jpg' width='' height='' title='保存密码登录处理时序'><span class='caption-text'>保存密码登录处理时序</span></span></p>
+
+<p>&emsp;&emsp;简单地给大家解释一下上图中的流程：</p>
+
+<p>&emsp;&emsp;客户端在第一次登录时，如果选择了记录用户名和密码，在第一次登录成功后系统将返回经过加密处理的密码，客户端在得加密密码后进行本地保存（时序2.1为客户端保存服务器端返回的经过加密处理的密码）。</p>
+
+<p>&emsp;&emsp;客户端在第二次登录时提交的是曾经保存的加密密码，服务器得到密码后检测出来是经过加密处理的密码（时序3.1的处理）。</p>
+
+<p>&emsp;&emsp;服务器端进行安全检测（比如本次登录ip和上次不同等方法），如果检测没有通过就进行异常处理，比如返回图片验证码让用户输入或要求用户重新输入密码等（时序3.2即是这个处理）。</p>
+
+<p>&emsp;&emsp;安全检测通过后，系统将解密还原加密的密码（时序3.3的处理），这个过程可能会用到密钥，如果采用的是RSA加密算法，这时可从数据库中取出模和指数生成私钥，以便进行解密处理。</p>
+
+<p>&emsp;&emsp;解密成功后，即可调用正常登录业务逻辑（时序3.4）。</p>
+
+<p>&emsp;&emsp;下图是在浏览器cookies中保存了加密密码的界面截图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/auto_login_cookies.jpg' width='' height='' title='cookies中的内容'><span class='caption-text'>cookies中的内容</span></span></p>
+
+<p>&emsp;&emsp;不多说了，下面给出演示代码，我用的是RSA密码加密算法。首先贴出登录的html代码:<!--more--></p>
+
+<p>``` html</p>
+
+<div class="container">
+         <div class="row" style="height: 50px;"></div>
+          <div class="row">
+              <div class="col-md-6 col-md-offset-2">
+                  <form class="form-horizontal" role="form" id="loginForm">
+                      <div class="form-group">
+                          <label  class="col-sm-4 control-label">登录编码:</label>
+                          <div class="col-sm-8">
+                              <input value="lovo" type="text" name="name" class="form-control"  placeholder="请输入用户名">
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label  class="col-sm-4 control-label">登录密码:</label>
+                          <div class="col-sm-8">
+                              <input value="111" type="password" name="password" id="i_pwd" class="form-control"  placeholder="请输入密码">
+                          </div>
+                      </div>
+                       <div class="form-group">
+                          <label  class="col-sm-4 control-label"></label>
+                          <div class="col-sm-8">
+                              <input value="1" type="checkbox" name="savePwd" id="chk_sp" >保存用户名和密码
+                              <input value="1" type="checkbox" name="autoLogin"  id="chk_al">自动登录
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <div class="col-sm-offset-5 ">
+                              <button type="button" class="btn btn-lg btn-primary" id="btn_login">登录</button>
+                              <button type="reset" class="btn btn-lg col-sm-offset-2">重置</button>
+                          </div>
+                      </div>
+                  </form>
+
+              </div>
+          </div>
+     </div>
+
+
+<p>```</p>
+
+<p>&emsp;&emsp;接下来是页面的行为，即js代码：</p>
+
+<p>``` js
+<link rel="stylesheet" href="lib/bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" href="lib/bootstrap/css/bootstrap-theme.min.css">
+<link rel="stylesheet"  href="css/project.css"></p>
+
+<script type="text/javascript" src="lib/jquery/jquery-1.7.2.min.js"></script>
+
+
+<script type="text/javascript" src="lib/cookie/jquery.cookie.js"></script>
+
+
+<script type="text/javascript">
+
+$(function(){
+    
+    if ($.cookie("pwd")) {
+        $("#i_pwd").val($.cookie("pwd"));
+        $("#chk_sp").attr("checked", "checked");
+    }
+
+    $("#btn_login").click(function(){   
+        
+        //登录系统调用
+        $.ajax({
+            url:"login",
+            type:"get",
+            data:$("#loginForm").serialize(),
+            //data:{"name":encodeURI($("input[name='name']").val()),"password":$("input[name='password']").val()},
+            dataType:"json",
+            success:function(result) {
+                if (result.code == 0) {
+                    alert(result.msg);
+                } else {
+                    if (!$.cookie("auto_login")) {
+                        alert("恭喜" + result.data.name + "登录成功！");
+                    }
+                    //进行cookie的设置
+                    if ($("#chk_sp").is(":checked")) {
+                        $.cookie("pwd",result.data.encyPwd,{expires:result.data.expires});
+                    } else {
+                        $.cookie("pwd","",{expires:-1});
+                    }
+                    
+                    if ($("#chk_al").is(":checked")) {
+                        $.cookie("auto_login","1",{expires:result.data.expires});
+                    } else {
+                        $.cookie("auto_login","",{expires:-1});
+                    }
+                    
+                    window.location.href = "main/pet_list.html";
+                }
+            }
+            
+        });
+
+    })
+    
+    if ($.cookie("auto_login")) {
+        $("#chk_al").attr("checked", "checked");
+        $("#btn_login").click();
+    }
+    
+});
+
+</script>
+
+
+<p>```</p>
+
+<p>&emsp;&emsp;服务器端登录部分的代码：</p>
+
+<p>``` java
+@Controller
+public class LoginAction {</p>
+
+<pre><code>@Resource
+private IMyService myService;
+
+//保存用户名和密码天数
+public static int EXPIRES_DAYS = 7;
+//加密后的密码后缀
+public static String ENCY_PWD_END = "*ENCY*";
+
+
+/**
+ * 登录系统
+ */
+@RequestMapping(value="/login", method=RequestMethod.GET)
+public void login(
+        @RequestParam("name") String nickName, 
+        @RequestParam("password") String password,
+        @RequestParam(value="savePwd",defaultValue="0") int savePassword,
+        HttpSession session,
+        HttpServletRequest request,
+        HttpServletResponse response
+        ) throws Exception {
+
+    //nickName = URLDecoder.decode(nickName,"utf-8");
+    nickName = new String(nickName.getBytes("iso8859-1"),"utf-8");
+
+
+    ObjectMapper om = new ObjectMapper();
+
+    ResponseResult result = new ResponseResult();
+
+    try {
+        if (password.endsWith(ENCY_PWD_END)) {
+            //加密的密码，取掉最后的标识 
+            Pet p = myService.getPetByNickName(nickName);
+            if (p == null) {
+                result.setCode(ResponseResult.FAIL);
+                result.setMsg("登录用户不存！");
+                om.writeValue(response.getOutputStream(), result);
+                return ;
+            }
+
+            //check safe
+            if (p.getLastLoginIp() != null 
+                    &amp;&amp; ! p.getLastLoginIp().equals(request.getRemoteAddr())) {
+                //安全检测规则，及安全检测失败的处理，由用户给出实现
+            }
+            //根据数据库保存的moduls和exponent生成私钥
+             RSAPrivateKey rpk = RSAUtil.generatePrivateKey(p.getPrivateModulus(), p.getPrivateExponent());
+
+            //将密码解密为原文处理
+            Cipher cipherDecoder = Cipher.getInstance("RSA");
+            cipherDecoder.init(Cipher.DECRYPT_MODE, rpk);
+            byte[] orgDec = cipherDecoder.doFinal(Hex.decodeHex(password.substring(0,password.length() - ENCY_PWD_END.length()).toCharArray()));
+
+            password = new String(orgDec) ;
+        }
+
+        Pet pet = myService.login(nickName, password);
+
+        session.setAttribute(IConst.LOGIN_KEY, pet);
+
+        Map data = new HashMap();
+        data.put("name", pet.getNickName());
+
+
+        //响应中加入cookie信息
+        Cookie cookie = new Cookie("pwd", "");
+
+        if (savePassword == 1) {
+            //用户需要保存密码
+
+            //生成rsa keyPair
+            Map keyPair = RSAUtil.generateKeyPair();
+            RSAPublicKey publicKey = (RSAPublicKey)keyPair.get(RSAUtil.PUBLIC_KEY);
+            RSAPrivateKey privateKey = (RSAPrivateKey)keyPair.get(RSAUtil.PRIVATE_KEY);
+
+            //下面私钥的模和指数保存至数据库
+            pet.setPrivateModulus(privateKey.getModulus().toString());
+            pet.setPrivateExponent(privateKey.getPrivateExponent().toString());
+            pet.setLastLoginIp(request.getRemoteAddr());
+
+            myService.updatePet(pet);
+
+            Cipher cipherEncoder = Cipher.getInstance("RSA");
+            cipherEncoder.init(Cipher.ENCRYPT_MODE, publicKey);
+            //加密字串结果
+            byte[] strEnc = cipherEncoder.doFinal(password.getBytes());
+
+            String encyPwd = Hex.encodeHexString(strEnc) + ENCY_PWD_END;
+
+            //响应中加入cookie信息
+            cookie.setValue(encyPwd);
+            cookie.setMaxAge(EXPIRES_DAYS*24*60*60);
+            //cookie.seth
+
+            data.put("encyPwd", encyPwd);
+            data.put("expires", EXPIRES_DAYS);
+        } else {
+            //删除cookie
+            cookie.setMaxAge(0);    
+        }
+
+        result.setData(data);
+
+        response.addCookie(cookie);
+        om.writeValue(response.getOutputStream(), result);
+
+    } catch (SecurityException se ) {
+        se.printStackTrace();
+
+        result.setCode(ResponseResult.FAIL);
+        result.setMsg(se.getMessage());
+
+        om.writeValue(response.getOutputStream(), result);
+    }
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>@Entity
+@Table(name=&ldquo;t_pet&rdquo;)
+@JsonFilter(&ldquo;myPet&rdquo;)
+class Pet {</p>
+
+<pre><code>private int id;
+private String nickName;
+private String password;
+private boolean gender;
+private Date birthday;
+
+
+private String privateModulus;
+private String privateExponent;
+private String lastLoginIp;
+//......略
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;最后贴出RSA工具类，因为上面的登录代码中用到了。</p>
+
+<p>``` java RSAUtil.java
+public class RSAUtil {</p>
+
+<pre><code>public static final String PUBLIC_KEY = "public_key";
+public static final String PRIVATE_KEY = "private_key";
+
+//生成RSA密钥的位数
+public static final int ENC_LENGTH = 512;
+
+public static Map generateKeyPair() {
+
+    KeyPairGenerator keyPairGen;
+    try {
+        keyPairGen = KeyPairGenerator.getInstance("RSA");
+        keyPairGen.initialize(ENC_LENGTH);
+        KeyPair keyPair = keyPairGen.generateKeyPair();
+
+        Map keys = new HashMap();
+        keys.put(PUBLIC_KEY, keyPair.getPublic());
+        keys.put(PRIVATE_KEY, keyPair.getPrivate());
+
+        return keys;
+
+    } catch (NoSuchAlgorithmException e) {
+        throw new RuntimeException(e);
+    }
+
+
+}
+
+/**
+ * 使用模和指数生成RSA公钥
+ * 注意：【此代码用了默认补位方式，为RSA/None/PKCS1Padding，不同JDK默认的补位方式可能不同，如Android默认是RSA
+ * /None/NoPadding】
+ * 
+ * @param modulus
+ *            模
+ * @param exponent
+ *            指数
+ * @return
+ */
+public static RSAPublicKey generatePublicKey(String modulus, String exponent) {
+    try {
+        BigInteger b1 = new BigInteger(modulus);
+        BigInteger b2 = new BigInteger(exponent);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        RSAPublicKeySpec keySpec = new RSAPublicKeySpec(b1, b2);
+        return (RSAPublicKey) keyFactory.generatePublic(keySpec);
+    } catch (Exception e) {
+        e.printStackTrace();
+        return null;
+    }
+}
+
+/**
+ * 使用模和指数生成RSA私钥
+ * 注意：【此代码用了默认补位方式，为RSA/None/PKCS1Padding，不同JDK默认的补位方式可能不同，如Android默认是RSA
+ * /None/NoPadding】
+ * 
+ * @param modulus
+ *            模
+ * @param exponent
+ *            指数
+ * @return
+ */
+public static RSAPrivateKey generatePrivateKey(String modulus,
+        String exponent) {
+    try {
+        BigInteger b1 = new BigInteger(modulus);
+        BigInteger b2 = new BigInteger(exponent);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        RSAPrivateKeySpec keySpec = new RSAPrivateKeySpec(b1, b2);
+        return (RSAPrivateKey) keyFactory.generatePrivate(keySpec);
+    } catch (Exception e) {
+        e.printStackTrace();
+        return null;
+    }
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;上面的代码写得比较乱且粗糙，仅供大家了解我描述的处理步骤哦。如果你要把上面的代码用于生产环境则必须进行重构，可考虑把所有的逻辑都放入login这个业务方法中。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[java安全那些事之五（客户端安全）]]></title>
@@ -713,55 +1096,6 @@ DES解密后的内容是：hello,刘江华
 <p>&emsp;&emsp;由此我们可以得出结论，DES算法的关键在于私钥的安全保管，如果信息发送方和接收方中的任何一个泄露了私钥，双方的通讯过程也就无法保密了，因此，密钥的保密是一个关键。</p>
 
 <p>&emsp;&emsp;下一篇文章，我继续给大家讲解RSA算法及其应用，RSA这是一种非对称加密算法，请大家随时关注我的博客。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[java安全那些事之一(md5、sha)]]></title>
-    <link href="http://yanyaner.com/blog/2014/04/13/security1/"/>
-    <updated>2014-04-13T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/04/13/security1</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;安全攻防的世界，永远是道高一尺魔高一丈的世界，再强的安全防护在FBI面前几乎无密码可言，如果你去看看美国的楞镜门事件相关新闻就知道了。我并不是安全密码方面的专家，本文不想研究算法，只是从应用角度给大家普及些许web应用系统中安全相关的一些知识，希望对大家开发普通的企业级应用及互联网应用有帮助。</p>
-
-<p>&emsp;&emsp;先来看看加密及解密。</p>
-
-<p>&emsp;&emsp;登录是任何一个系统都有的功能，在登录的过程中需要对用户提供的密码进行验证以检测其身份合法性，这点对于我们应用开发者而言，就是如何持久化用户的密码。如果仅仅以明文方式将用户密码保存在数据库中，那未免有些太“瓜西西”了，这就像CSDN所犯错一样低级。因此，我们一定要对用户密码进行相应的处理后再保存，即使被黑客拖库也可以防止用户密码的泄露。</p>
-
-<p>&emsp;&emsp;Hash是常用的方法。Hash一般翻译为"散列"或直接音译为"哈希"，就是把任意长度的输入变换成固定长度的散列输出。这种转换是一种压缩映射，也就是散列值的空间通常远小于输入的空间，不同的输入可能会散列成相同的输出，而不可能从散列值来唯一的确定输入值，简单的说就是一种将任意长度的消息压缩到某一固定长度的消息摘要。</p>
-
-<p>&emsp;&emsp;Hash常用的算法有md5、sha等，比如下面的代码：</p>
-
-<p>``` java
-System.out.println(DigestUtils.md5Hex(&ldquo;ljh&rdquo;));
-System.out.println(DigestUtils.sha256Hex(&ldquo;ljh&rdquo;));
-System.out.println(DigestUtils.sha384Hex(&ldquo;ljh&rdquo;));
-System.out.println(DigestUtils.sha512Hex(&ldquo;ljh&rdquo;));</p>
-
-<p><code>
-&amp;emsp;&amp;emsp;大家要注意上面这4行代码的输出结果长度分别是：32，64，96，128位长，如何你决定采用其中的一种hash来处理用户密码的消息接要并持久化，一定要注意数据库字段的长度设定哦。
-</code>
-67f87c9b32834504b4ddf432055d88bd
-871ca93f9e215997cc2d65b4a6924c706b69b09c4d419f89c24746d3ae04727b
-d24d011e9d67511deea2f1296adaa65db2c161f8537ed48d5893c06d712abdf4a229c98f8d0fd2776fd8119248949a72
-1def79cd9d613a9ceefa285902cd1eb2397b176fd16a09525f52947518c196e8e3349d017182b12726e6a74a0f553af2b6991034f0a9361671176c5f96c5a21b5YiY5rGf5Y2O
-```</p>
-
-<!-- more-->
-
-
-<p>&emsp;&emsp;上面我用到了MD5与SHA1 Hash算法，这两种算法的区别在于：MD5比SHA1运算速度快，但SHA1比MD5强度高，其中，hash输出结果长度越长代表保密强度越好。Hash算法理论上是不可逆的，这意味着你不可能通过hash值反向计算出原始信息，因此，如果你的数据库中保存的是用户密码的hash值，将无人能够知道用户的原始密码是什么了，就好比你的银行密码遗忘了，只有带有效证件去银行重新设置密码，而老的密码将夫人知晓，包括DBA、开发人员。</p>
-
-<p>&emsp;&emsp;那么，对于程序员来说，如何通过用户输入的密码来验证用户的身份呢？非常简单，基本流程是：得到用户输入的用户名及密码&mdash;>对输入的密码进行hash运算&mdash;>根据用户名到数据库中查询出这个用户&mdash;>取得数据库中保存的用户曾经的密码hash值&mdash;>比对两个hash值得出结论。</p>
-
-<p>&emsp;&emsp;既然Hash加密密码有这么多的好处，那Hash保存密码真的可以高枕无忧了么？非也。hash是可以进行暴力破解的（虽然代价非常大的，一般情况下不会采用，但也不能排除），现在比较流行的做法是反向hash查询，就是预先在一张巨大的表中保存事先计算出来的hash值，通过询这个表就可以得到明文了。因此，如果用户的密码足够简单而常见，通过一次hash计算出来的结果几乎无秘密可言。另外，你也可以到网上了解一下“彩虹表”RainbowCrack相关的内容<a href="http://my.oschina.net/jgy/blog/38252">彩虹表-破解哈希算法 MD5加密法</a>，以空间换时间。</p>
-
-<p>&emsp;&emsp;既然一次hash计算出来的保密性不好，那就多计算几次效果如何？比如：md5(md5(pwd))，答案是,这样的计算结果也是不安全，互联网上已经有多次hash计算结果的查询（有的是要收费的）。</p>
-
-<p>&emsp;&emsp;其中，最好的一种办法是，加“随机盐”，也就是为每个用户保存一个足够长的随机字符串，使用这个salt参与计算，再进行多次hash计算。比如：md5(md5(pwd + salt))，这种做法相对来说就安全多了。在具体的项目中，你可以再改进一下这个算法，增加些复杂性（比如:md5(username.hashcode() + sha384Hex(salt + md5(pwd + slat)))），并且，程序在生成每个用户的salt时，要足够随机、足够长，这种方式对付hash反向查询就十分有效了。</p>
-
-<p>&emsp;&emsp;hash算法除了用于密码的安全性外，还经常用于数据签名，这一块的应用我在随后的文章中会提到。</p>
-
-<p>&emsp;&emsp;好了，这一部分先简单介绍到这，下一篇我们来看看Base64,DES,RSA等与加密解决信息有关的内容。</p>
 ]]></content>
   </entry>
   

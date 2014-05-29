@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-05-28T17:55:38+08:00</updated>
+  <updated>2014-05-29T13:43:55+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,294 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[分享几段数据导入导出参考代码]]></title>
+    <link href="http://yanyaner.com/blog/2014/05/29/code-share-poi/"/>
+    <updated>2014-05-29T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/05/29/code-share-poi</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;给童鞋写的几段参考demo代码，有需要的可以参考一下哦：</p>
+
+<ol>
+<li><p>poi excel数据导入（导入数据是考虑该数据已经存在的情况，如果存在则进行更新操作）</p></li>
+<li><p>zip照片包导入（照片的导入会更新已经存在的照片并且会按业务规则建立照片目录分类存放）</p></li>
+<li><p>按模板导格式导出数据至excel中（excel导出需要提供一个excel文件模板，将数据直接写到模板中，这样才能更好地符合用户的实际业务场景）</p></li>
+</ol>
+
+
+<p>&emsp;&emsp;下面这demo写得非常简单，并没有考虑导入出错时给予调用者出错的细节信息，这些代码大家都可以继续完善。另外你也可以将表和excel的字段对应关系保存在数据库中，让用户通过界面自由定义指定映射关系（当然这需要更深层次的封装，这个代码我以后贴出来）。</p>
+
+<p>&emsp;&emsp;业务接口核心方法共3个，大家可以参考这种设计以简化调用者的复杂性：</p>
+
+<p>``` java ISystemService.java
+/<em>*
+ * demo系统业务接口
+ * @author ljh
+ *
+ </em>/
+public interface ISystemService {</p>
+
+<pre><code>public void importStudents(InputStream excelIs, int classesId);
+
+public void importStudentPhotos(byte[] zipFileByte, String uploadDir, int classesId);
+
+public void exportStudents(String title , InputStream templateFile, OutputStream outputFile);
+</code></pre>
+
+<p>}</p>
+
+<p>```
+&emsp;&emsp;业务实现类代码如下：<!-- more --></p>
+
+<p>``` java SystemServiceImpl.java
+/<em>*
+ * demo系统业务类实现
+ *
+ * @author ljh
+ *
+ </em>/
+@Service(&ldquo;systemService&rdquo;)
+@Transactional(readOnly = true)
+public class SystemServiceImpl implements ISystemService {</p>
+
+<pre><code>// 通用dao
+@Resource
+private IBaseDao dao;
+// 用来输出日志
+private static final Logger LOG = LoggerFactory
+        .getLogger(SystemServiceImpl.class);
+
+public void exportStudents(String title ,InputStream templateFile, OutputStream outputFile) {
+
+    try {
+        HSSFWorkbook wb = new HSSFWorkbook(templateFile);
+        HSSFSheet sheet = wb.getSheetAt(0);
+
+        //设置标题
+        sheet.getRow(0).getCell(0).setCellValue(title);
+
+        //取得模板行数据
+        HSSFRow templateRow = sheet.getRow(2);
+
+        //查询要导出的数据 
+        List&lt;Student&gt; students = dao.queryEntitys("from Student s", new Object[]{});
+
+        int startRow = 2;
+
+        for (Student s : students) {
+
+            HSSFRow row = sheet.createRow(startRow);
+
+            HSSFCell cell_id = row.createCell(0);
+            cell_id.setCellStyle(templateRow.getCell(0).getCellStyle());
+            cell_id.setCellValue(s.getId());
+
+            HSSFCell cell_name = row.createCell(1);
+            cell_name.setCellStyle(templateRow.getCell(1).getCellStyle());
+            cell_name.setCellValue(s.getName());
+
+            HSSFCell cell_sex = row.createCell(2);
+            cell_sex.setCellStyle(templateRow.getCell(2).getCellStyle());
+            cell_sex.setCellValue(s.getSex());
+
+            HSSFCell cell_bm_code = row.createCell(3);
+            cell_bm_code.setCellStyle(templateRow.getCell(3).getCellStyle());
+            cell_bm_code.setCellValue(s.getClasses().getCode() + s.getId());
+
+
+            HSSFCell cell_classes_code = row.createCell(4);
+            cell_classes_code.setCellStyle(templateRow.getCell(4).getCellStyle());
+            cell_classes_code.setCellValue(s.getClasses().getCode());
+
+            startRow = startRow + 1;
+        }
+
+        wb.write(outputFile);
+
+
+    } catch (Exception e) {
+        LOG.error("export excel error!", e);
+        throw new RuntimeException("导出excel文件出错！");
+    }
+
+}
+
+@Transactional(readOnly = false)
+public void importStudentPhotos(byte[] zipFileByte, String uploadDir, int classId) {
+
+            //班级编码
+            String classesCode = this.getClassesById(classId).getCode();
+
+            //解压缩zip文件
+            try {
+
+                String tempFileName = System.getProperty("java.io.tmpdir") +  UUID.randomUUID().toString();
+                File tempFile = new File(tempFileName);
+                FileUtils.writeByteArrayToFile(tempFile, zipFileByte);
+
+                //本班的所有学生
+                List&lt;Student&gt; students = new ArrayList&lt;Student&gt;(getClassesById(classId).getStudents());
+
+                ZipFile zipfile = new ZipFile(tempFile, "gb2312");
+                Enumeration&lt;ZipArchiveEntry&gt; entries = zipfile.getEntries();
+                while (entries.hasMoreElements()) { 
+
+                    ZipArchiveEntry entry = entries.nextElement();
+
+                    if (! entry.isDirectory()) {
+                        String name = entry.getName();
+                        String studentName = name.substring(name.lastIndexOf("/") + 1, name.lastIndexOf("."));
+
+                        for (Student stu : students) {
+                            if (studentName.equals(stu.getName())) {
+                                String newPhotoName = UUID.randomUUID().toString() + name.substring(name.lastIndexOf("."));
+                                if (! "upload/default.jpg".equals(stu.getPhoto())) {
+                                    newPhotoName = stu.getPhoto().substring(stu.getPhoto().lastIndexOf("/") + 1);
+                                }
+
+                                FileUtils.copyInputStreamToFile(zipfile.getInputStream(entry), 
+                                        new File(uploadDir + File.separator + classesCode + File.separator + newPhotoName));
+                                stu.setPhoto("upload/" + classesCode + "/" + newPhotoName);
+                                dao.updateEntity(stu);
+                                break;
+                            }
+                        }
+
+                    }
+                }
+
+            } catch (Exception e) {
+                LOG.error("import zip photo error.", e);
+                throw new IllegalArgumentException("导入学生照片信息失败，详细错误：" + e.getMessage());
+            }
+
+}
+
+@Override
+@Transactional(readOnly = false)
+public void importStudents(InputStream excelIs, int classesId) {
+
+    //查询出要导入的学生信息所在的班级
+    Classes classes = this.getClassesById(classesId);
+
+    try {
+
+        HSSFWorkbook excel = new HSSFWorkbook(excelIs);
+        HSSFSheet sheet = excel.getSheetAt(0);
+
+        int rows = sheet.getPhysicalNumberOfRows();
+
+        //有效行起始位置，因为原excel文件中，有两行标题
+        int startRow = 2;
+
+        for (int i = startRow; i &lt; rows; i++) {
+
+            HSSFRow row = sheet.getRow(i);
+            HSSFCell cell = row.getCell(1);
+
+            Student student = new Student();
+
+            //excel文件列顺序：序号，姓名，性别，年龄
+            student.setName(row.getCell(1).getStringCellValue());
+            student.setSex(row.getCell(2).getStringCellValue());
+            student.setAge((int) row.getCell(3).getNumericCellValue());
+            student.setClasses(classes);
+            student.setPassword("123");
+            student.setState(Student.STATE_STUDING);
+            student.setEmployment(false);
+            student.setCode(classesId + ""
+                    + (int) row.getCell(0).getNumericCellValue());
+
+            this.addStudent(student);
+
+        }
+
+    } catch (Exception e) {
+        // TODO Auto-generated catch block
+        //e.printStackTrace();
+        LOG.info("导入excel文件失败！", e);
+    }
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;前端控制器代码如下：</p>
+
+<p>``` java StudentAction.java
+@Controller
+public class StudentAction {</p>
+
+<pre><code>@Resource
+private ISystemService systemService;
+
+@Resource
+private WebApplicationContext appContext;
+
+
+private ObjectMapper om = new ObjectMapper();
+
+/**
+ * 导出学生信息到excel
+ * @param sid
+ * @param resp
+ * @throws Exception
+ */
+@RequestMapping(value = "/student/export_excel", method = RequestMethod.GET)
+public void exportStudents(HttpServletResponse resp) throws Exception {
+
+    String templateFile = appContext.getServletContext().getRealPath("template/student_template.xls");
+
+    String title = "xxxxxx缴费情况表（2014）";
+    String fileName = title + ".xls";
+
+    //设置客户端默认文件名
+    resp.addHeader("Content-Disposition", "attachment;filename=" + new String(fileName.getBytes(),"ISO8859-1"));
+
+    systemService.exportStudents(title, new FileInputStream(templateFile), resp.getOutputStream());
+
+}
+
+
+/**
+ * 导入学生照片信息
+ * @param sid
+ * @param resp
+ * @throws Exception
+ */
+@RequestMapping(value = "/student/importPhoto", method = RequestMethod.POST)
+public void inportStudentPhoto(@RequestParam("file")CommonsMultipartFile file,
+        @RequestParam("classId")int classId,
+        HttpServletResponse resp) throws Exception {
+
+
+    boolean successFlag = false;
+
+    String dir = appContext.getServletContext().getRealPath("upload");
+
+    try {
+        systemService.importStudentPhotos(file.getBytes(), dir , classId);
+        successFlag = true;
+    } catch (Exception ex) {
+
+    }
+
+    resp.getWriter().println("&lt;script&gt;parent.callBack("+successFlag+");&lt;/script&gt;");
+
+
+}
+
+//导入excle的action代码非常简单，我就不再写了
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;以前还写过一篇简单的excel导出代码，大家可以看看<a href="/blog/2012/10/30/poi-excel/">《Excel文件导出代码》</a>一文。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[java安全那些事之六（客户端安全）]]></title>
@@ -24,7 +312,7 @@
 
 <p>&emsp;&emsp;图中，用户可以选择保存自己的用户名和密码，如果用户选择了这一项，密码当然是保存在客户端的哦（浏览器中就是cookie）。在保存了上次登录密码的情况下客户端再次进行手动或自动登录时，客户端将取出自动保存的密码提交到服务器。</p>
 
-<p>&emsp;&emsp;我们可以想像到，如果将密码以明文的方式保存到客户端显然是不可取的。对密码进行加密处理后再保存客户端是一个可行的做法，但对密码加密的算法就值得我们去选择，base64肯定是不行的了，DES，RSA都是可以选择的加密方法，因为这些算法是可还原的算法，也就是说服务器收到加密密码后须还原成明文，再执行后续的登录业务。</p>
+<p>&emsp;&emsp;我们可以想像到，如果将密码以明文的方式保存到客户端显然是不可取的。对密码进行加密处理后再保存客户端是一个可行的做法，但对密码加密的算法就值得我们去选择，base64肯定是不行的了，DES、RSA都是可以选择的加密方法，因为这些算法是可还原的算法，也就是说服务器收到加密密码后须还原成明文，再执行后续的登录业务。</p>
 
 <p>&emsp;&emsp;交互示意图如下：</p>
 
@@ -989,113 +1277,6 @@ CN=liu, OU=maxsoft, O=org, L=cd, ST=sc, C=cn是否正确?
 <p>&emsp;&emsp;另外大家要注意的是，rsa算法比较耗费时间，效率低下，而且对要加密的内容长度上也有限制，因此一般可用来对密码等长度较短的明文加密。因此，在https通讯过程中，只有在通讯开始的握手过程中会使用rsa以交换对称加密密钥，在后期的数据通讯中都是采用的DES对称加密算法。</p>
 
 <p>&emsp;&emsp;关于RSA的介绍先到此，下篇文章接着讲一些架构级的安全认证设计知识，请大家关注。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[java安全那些事之二（base64,des）]]></title>
-    <link href="http://yanyaner.com/blog/2014/04/14/security2/"/>
-    <updated>2014-04-14T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/04/14/security2</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;和Hash的不可逆相比，还有一些算法是可逆的，也就是数据在发送方经过加密后，再传输至接收方，接收方对收到的信息后进行解密得到明文。</p>
-
-<p>&emsp;&emsp;我们先来看可逆算法中最简单的一种：Base64，请先看代码。</p>
-
-<p><code>java
-String b64result = new String(Base64.encodeBase64("刘江华".getBytes()));
-System.out.println("base64加密后密文是：" + b64result);
-String orgStr = new String(Base64.decodeBase64(b64result.getBytes()));
-System.out.println("base64解密为明文是：" + orgStr);
-</code></p>
-
-<p>&emsp;&emsp;上面代码的输出是：</p>
-
-<p><code>
-base64加密后密文是：5YiY5rGf5Y2O
-base64解密为明文是：刘江华
-</code></p>
-
-<p>&emsp;&emsp;由此可见，base64加密算法会把明文加密后变成我们看不明白的密文，但我们也可以通过base64算法很快解密得到明文，这也就是说，如果信息在传输过程中被第三方截获，对方又知道你采用的是base64算法，那么你的密文也就无秘密可言。</p>
-
-<p>&emsp;&emsp;既然如此，是不是说base64就完全无用了呢？当然不是！如果我们仔细观察会发现，该算法输出的内容都是数字和字母之类的ascii可显示字符，而无论你的输入是中文还是特殊字符。这一特点对于信息传输过程中，明文中包含特殊字符而可能产生乱码的情况非常有用。比如：对要传输的内容进行base64编码，再通过http协议传输到接收方，接收方再按base64解码得到明文。base64还有其它的一些用处，比方说将byte[] 转换为可显示字符等等，我不再多说。base64运行示意图如下：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/base64.jpg' width='' height='' title='base64加密解密示意图'><span class='caption-text'>base64加密解密示意图</span></span></p>
-
-<p>&emsp;&emsp;接下来，我们再来看看另外一种加密强度更好的方法：DES加密算法。DES属于对称加密算法，信息发送者通过一个私钥来加密信息后再传输，而信息接收者也使用同样的一个私钥完成信息的解密。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/des.jpg' width='' height='' title='des加密解密示意图'><span class='caption-text'>des加密解密示意图</span></span></p>
-
-<p>&emsp;&emsp;之所以称DES为对称加密算法，主要原因是信息发送方和信息接收方使用的是相同的密钥，上图中的private key就是。代码写出来就是下面这样的：<!-- more--></p>
-
-<p>``` java</p>
-
-<pre><code>/**
- * des加密示例代码
- * @param orgData
- * @param privateKey
- * @return
- * @throws Exception
- */
-public static byte[] desEncode(byte[] orgData, String privateKey) throws Exception {
-
-    KeyGenerator kgenerator = KeyGenerator.getInstance("DES");
-    kgenerator.init(new SecureRandom(privateKey.getBytes()));
-
-    Cipher cipher = Cipher.getInstance("DES");
-    cipher.init(Cipher.ENCRYPT_MODE, kgenerator.generateKey());
-
-    return cipher.doFinal(orgData);
-}
-
-/**
- * des解密示例代码
- * @param passedData
- * @param privateKey
- * @return
- * @throws Exception
- */
-public static byte[] desDecode(byte[] passedData, String privateKey) throws Exception {
-
-    KeyGenerator kgenerator = KeyGenerator.getInstance("DES");
-    kgenerator.init(new SecureRandom(privateKey.getBytes()));
-
-    Cipher cipher = Cipher.getInstance("DES");
-    cipher.init(Cipher.DECRYPT_MODE, kgenerator.generateKey());
-
-    return cipher.doFinal(passedData);
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;上面的加密和解密方法中，均传入了一个desPrivateKey，这个key是两方共用的，调用示例代码如下，其中的desPrivateKey是随机生成的一个私钥，两方共同持有。</p>
-
-<p>``` java</p>
-
-<pre><code>    String orgStr = "hello,刘江华";
-
-    String desPrivateKey = "3c9909afec25354d551dae21590bb26e3";
-
-    byte[] en_bytes = desEncode(orgStr.getBytes(), desPrivateKey);
-
-    System.out.println("DES加密后的内容是：" + new BASE64Encoder().encode(en_bytes));
-
-    byte[] de_bytes = desDecode(en_bytes, desPrivateKey);
-    System.out.println("DES解密后的内容是：" + new String(de_bytes));
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;代码执行后的输出如下：</p>
-
-<p><code>
-DES加密后的内容是：VExT39v/M504pQY/L+d84w==
-DES解密后的内容是：hello,刘江华
-</code></p>
-
-<p>&emsp;&emsp;由此我们可以得出结论，DES算法的关键在于私钥的安全保管，如果信息发送方和接收方中的任何一个泄露了私钥，双方的通讯过程也就无法保密了，因此，密钥的保密是一个关键。</p>
-
-<p>&emsp;&emsp;下一篇文章，我继续给大家讲解RSA算法及其应用，RSA这是一种非对称加密算法，请大家随时关注我的博客。</p>
 ]]></content>
   </entry>
   

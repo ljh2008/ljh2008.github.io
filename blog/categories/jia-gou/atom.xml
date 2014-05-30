@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：架构 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/jia-gou/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-05-29T13:43:55+08:00</updated>
+  <updated>2014-05-30T11:14:49+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,123 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[分布式文件系统fastdfs解析之一(安装)]]></title>
+    <link href="http://yanyaner.com/blog/2014/05/30/fastDFS-setup/"/>
+    <updated>2014-05-30T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/05/30/fastDFS-setup</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;fastdfs是一个轻量级的分布式文件系统服务，它在互联网项目中有比较广泛的用途，类似的还有tfs等，但fastdfs和hadoop这些又不相同，hadoop是分布式存储计算框架，比较重量级，而fastdfs针对的是海量的小文件。</p>
+
+<p>&emsp;&emsp;项目中经常会有这样一些应用场景，比如：文件服务器需要存储海量的用户文件并且对外提供用户的访问操作；文件服务器需要高可用性和高性能；文件服务器需要实现负载均衡；文件服务器可实时扩容等等，这些需求在Fastdfs中有实现，因此它可以满足大部的项目需求。</p>
+
+<p>&emsp;&emsp;先给大家简单介绍一下fastdfs的原理，下面这张图有助于大家了解分布式文件系统的原理（hadoop之类的分布式体系与之有相似之处）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/seq_fastdfs.jpg' width='' height='' title='fastdfs调用时序图'><span class='caption-text'>fastdfs调用时序图</span></span></p>
+
+<p>&emsp;&emsp;上面这张图中客户端针对文件服务系统的调用，首先得通过tracker服务器，这个服务器充当了调度者的作用。客户端可以是任何的程序客户端，比如java客户端、php客户端、nginx插件客户端等。</p>
+
+<p>&emsp;&emsp;在客户端调用之前先得启动tracker server，然后再分别启动各个storage server，每个storage server启动后会注册自己的信息到指定的tracker server中（其实，tracker server服务器也可以有多个，从高可用性方面考虑我们一般会启动多个tracker server实例）。</p>
+
+<p>&emsp;&emsp;storage server负责具体文件的存储。storage server按照分组的方式来保存文件的，比如group1,group2等。一个组中可以有多台服务器，同一个组里的所有服务器中保存的文件内容都是相同的，因为同一个组中的服务器之间会相互自动同步文件，这样就实现了冗余备份及负载均衡的功能（负载均衡由tracker server调试的哦）。</p>
+
+<p>&emsp;&emsp;不同组中的storage server之间是独立的，当系统存储容量不够时，通过添加新服务器并分配到新的组中，tracker server发现新的服务器后会自动调度以实现后续客户文件的写入位置。</p>
+
+<p>&emsp;&emsp;上图中，客户通过询问tracker server得到可用的storage server（tracker server会通过负载均衡及各个storage的存储可用容量大小算法决定，当然这个也可以在配置文件中指定），客户端得到storage server后进行相应的文件操作，同组服务器间会根据操作的结果进行文件同步（时序9，10是同步操作）。</p>
+
+<p>&emsp;&emsp;好了，原理先说到这。下面，我将给大家简单介绍FastDfs的安装及使用，以及一些注意事项。</p>
+
+<p>&emsp;&emsp;我的服务器是ubuntu server，我计划安装在两台服务器上，ip分别是:192.168.68.133, 192.168.68.136，暂时简称为1号服务器，2号服务器。</p>
+
+<p>&emsp;&emsp;一号服务器上，将安装一个tracker server实例，一个位于group1中的storage server实例，一个位于group2中storage server实例。二号服务器上，也将安装一个tracker server实例，一个位于group1中的storage server实例。需要大家注意的是，fastdfs中一台服务器上可以安装多个组，但一个组中的多个storade server必须安装在不同的服务器上，并且同组中的storage server的服务端口必须一致，否则无法实现文件同步。</p>
+
+<p>&emsp;&emsp;我先在一号服务器192.168.68.133上安装fastdfs。首先要准备安装环境，不同的linux发行版本可能会有所不同，我用的服务器版本是ubuntu 12.04 server，以下的操作均以这个版本的ubuntu服务器为例。<!--more--></p>
+
+<p><code>
+vim /etc/profile
+export LANGUAGE="en_US.UTF-8"
+export LANG=en_US:zh_CN.UTF-8
+export LC_ALL=C
+</code>
+&emsp;&emsp;接下来让语言环境配置参数立即生效：</p>
+
+<p><code>
+source /etc/profile
+</code>
+&emsp;&emsp;再接着，安装fastdfs编译依赖包，大家要注意的是少一个依赖都不行，我先前安装时缺少了libevent-dev，致使安装不成功但安装过程又不报错，花费了大量的时间。</p>
+
+<p>```
+aptitude install libevent
+apt-get install libevent-dev</p>
+
+<p>sudo apt-get update
+sudo aptitude install build-essential m4</p>
+
+<p>sudo ln -s /lib/lsb/init-functions  /etc/init.d/functions</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;好了，环境准备好了后就到<a href="https://code.google.com/p/fastdfs">fastdfs官网</a>上去下载安装包吧，地址<a href="https://code.google.com/p/fastdfs/downloads/list">https://code.google.com/p/fastdfs/downloads/list</a>，我下载的是
+FastDFS_v4.06.tar.gz ，如果你想要安装最新版本，请用svn去下载最新的5.x版本。</p>
+
+<p><code>
+tar -zxvf FastDFS_v4.06.tar.gz
+cd FastDFS
+</code>
+&emsp;&emsp;这样就进入了源代码目录，我们先要对安装的目录做一个规划(4.06版本默认的安装目录似乎不太合理)，我将fastdfs的所有文件都安装到/usr/local/fastdfs中，配置文件存放在/usr/local/fastdfs/conf下，这就需要我们修改源代码目录下的make.sh，下面是一些要修改的地方：</p>
+
+<p><code>
+vim make.sh
+</code></p>
+
+<p>&emsp;&emsp;需要对：</p>
+
+<ol>
+<li><p> TARGET_PREFIX，TARGET_CONF_PATH进行修改;</p></li>
+<li><p> 需要对libpthread.so、libpthread.a的路径进行修改，这和ubuntu有关，其它linux发行版本并不需要改这个(你可以用find / -name &lsquo;libpthread.so&rsquo;  ，以及ind / -name &lsquo;libpthread.a&rsquo;  找到这两文件在系统中的位置)；</p></li>
+<li><p> 另外要对mkdir,cp操作的几个路径进行修改为我们配置文件所在的路径。</p></li>
+</ol>
+
+
+<p>&emsp;&emsp;我贴出make.sh修改过的地方，请大家自行对照：</p>
+
+<p>```
+TARGET_PREFIX=/usr/local/fastdfs
+TARGET_CONF_PATH=/usr/local/fastdfs/conf</p>
+
+<p>if [ -f /usr/lib/i386-linux-gnu/libpthread.so ] || [ -f /usr/local/lib/libpthread.so ] || [ -f /lib64/libpthread.so ] || [ -f /usr/lib64/libpthread.so ] || [ -f /usr/lib/i386-linux-gnu/libpthread.a ] || [ -f /usr/local/lib/libpthread.a ] || [ -f /lib64/libpthread.a ] || [ -f /usr/lib64/libpthread.a ]; then
+&hellip;&hellip;&hellip;&hellip;
+&hellip;&hellip;&hellip;&hellip;</p>
+
+<p>if [ &ldquo;$uname&rdquo; = &ldquo;Linux&rdquo; ]; then</p>
+
+<pre><code>if [ "$WITH_LINUX_SERVICE" = "1" ]; then
+  if [ ! -d /usr/local/fastdfs/conf ]; then
+    mkdir -p /usr/local/fastdfs/conf
+    cp -f conf/tracker.conf /usr/local/fastdfs/conf/
+    cp -f conf/storage.conf /usr/local/fastdfs/conf/
+    cp -f conf/client.conf /usr/local/fastdfs/conf/
+    cp -f conf/http.conf /usr/local/fastdfs/conf/
+    cp -f conf/mime.types /usr/local/fastdfs/conf/
+  fi
+</code></pre>
+
+<p>&hellip;&hellip;&hellip;&hellip;</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;下面开始安装吧，如下命令：</p>
+
+<p><code>
+sudo make;
+sudo make install;
+sudo make clean;
+</code>
+&emsp;&emsp;不同的linux发行版本可能存在依赖包没有安装而报错，具体情况需要根据出错信息具体解决，我试过redhead,freebsd,openSuse,centos几个系统，都是要进行一些环境的配置才可以安装成功。</p>
+
+<p>&emsp;&emsp;下一篇文章我将按照文章开头的服务器规划进行具体的配置，请大家关注。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[监控系统中的异步消息使用实例（二）]]></title>
@@ -1117,324 +1234,6 @@ public User someBizMethod(int userId) {
 <p>&emsp;&emsp;这样的话，我们就可以充分利用不同框架的优势，达到取长补短的目的。也许你会说，这种方式就是把增、删、改交由hibernate来做，把查询交由ibatis来做。本质上看确实如此，但实际项目中要灵活去做，比如hibernate除了增删改外也可以做查询，特别是简单的查询，这样也可以更好的利用到hibernate的缓存。</p>
 
 <p>&emsp;&emsp;我在<a href="/blog/2010/11/01/p4">四种持久层设计方案比较</a>中，对查询的分离有所介绍，有兴趣的可以去看看其中的一个方案，另外，CQRS架构、mysql读写分离也有这方面的含义。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[事务中的并发处理]]></title>
-    <link href="http://yanyaner.com/blog/2013/06/27/hibernate-transaction/"/>
-    <updated>2013-06-27T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/06/27/hibernate-transaction</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;在项目中，事务是不可缺少的，但是如何在一个业务事务中正确的处理并发，确不是一件容易的事。下面，我通过一个简单的例子来说明这个问题，并给出一些解决办法。</p>
-
-<p>&emsp;&emsp;这个例子也许并不恰当，但足够简单：宠物&mdash;&ndash;>宠物日记，一对多双向关联，持久层使用hibernate框架实现。</p>
-
-<p>``` java Epet.java
-public class Epet{</p>
-
-<pre><code>private int id;
-private String name;
-private String password;
-
-//日记集合
-private Set&lt;Diary&gt; diarys = new HashSet&lt;Diary&gt;();
-//日记的总积分，为了提高效率而设置的冗余字段
-private int integralCount;
-</code></pre>
-
-<p>}
-```</p>
-
-<p>``` java Diary.java
-public class Diary{</p>
-
-<pre><code>private int id;
-private String title;
-private Date publishDate;
-//日记积分
-private int integral;
-//日记所属宠物
-private Epet epet;
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;假设为了提高效率，我们在epet对象中，添加了该宠物所有日记的总积分，我们现在需要一个业务方法，用来计算宠物的总积分，并持久化到数据库中。</p>
-
-<p>&emsp;&emsp;实现代码如下：</p>
-
-<p>``` java</p>
-
-<pre><code>    Epet e = (Epet)ht.get(Epet.class, epetId, LockMode.UPGRADE);
-    int count = 0;
-    for (Iterator&lt;Diary&gt; its = e.getDiarys().iterator();its.hasNext();) {
-        count = count + its.next().getIntegral();
-    }
-    e.setIntegralCount(count);
-
-    epetDao.updateEpet(e);
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;上面的代码，考虑到要修改总积分，首先对读取的epet加锁，然后取出每一篇日记，累加积分，最后更新宠物对象，通过观察输出的sql语句，我们会发现这段代码有问题，并不能保存业务约束的完整性。系统对日记的查询，并没有加锁，也就是说，这段时间内，完全有可能存在其它事务修改日志积分，或添加、删除日记的情况。</p>
-
-<p>&emsp;&emsp;也许你会说，把该方法的数据库隔离级别设置为ISOLATION_REPEATABLE_READ，但经过我的测试，这个级别在mysql,orcle中也是存在问题的，原因是：mysql的可重复读是通过内部缓存实现，也说是说，你在事务中查完的数据，它会缓存起来，事务中再说，返回的是缓存中的数据，在这个过程中，其它事务是可以成功修改数据的；oracle是不支持可重复读的，所以，设置隔离级别不靠谱。</p>
-
-<p>&emsp;&emsp;那我们把代码改进一下，自己来加锁，代码如下：</p>
-
-<p>``` java</p>
-
-<pre><code>    ht.execute(new HibernateCallback() {    
-        @Override
-        public Object doInHibernate(Session session) throws HibernateException,
-                SQLException {
-
-            Epet e = (Epet)ht.get(Epet.class, epetid);
-
-            List&lt;Diary&gt; ds = session.createQuery("from Diary d where d.epet.id = ?")
-            .setParameter(0, 1).setLockMode("d", LockMode.UPGRADE)
-            .list();
-            int count = 0;
-            for (Diary d : ds) {
-                count = count + d.getIntegral();
-            }
-            e.setIntegralCount(count);
-            epetDao.updateEpet(e);
-
-            return null;
-        }
-    });
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;注意setLockMode(&ldquo;d&rdquo;, LockMode.UPGRADE)部分的代码，这段代码可以保证在事务期间，没有人修改日记积分，因此，从业务上说，在事务执行这段期间，统计的总积分是正确的。</p>
-
-<p>&emsp;&emsp;用悲观锁把部分数据锁定，在项目中并不建议使用，因为这样会在并发环境中带来性能问题。</p>
-
-<p>&emsp;&emsp;再次改进，在Epet对象和Diary对象中，都加上version字段，使用乐观锁控制事务，代码如下：</p>
-
-<p>``` java</p>
-
-<pre><code>    Epet e = (Epet)ht.get(Epet.class, epetId);
-    int count = 0;
-    for (Iterator&lt;Diary&gt; its = e.getDiarys().iterator();its.hasNext();) {
-        count = count + its.next().getIntegral();
-    }
-    e.setIntegralCount(count);
-
-    epetDao.updateEpet(e);
-
-    //再次查询状态每个diary的状态，看是否被它人修改过
-    for (Iterator&lt;Diary&gt; its = e.getDiarys().iterator();its.hasNext();) {
-        Diary d = its.next();
-        int ver = d.getVersion();
-        //注意，在mysql中，要想成功refresh得到最新数据，必须设置隔离级别是ISOLATION_READ_COMMITTED
-        ht.refresh(d);
-        if (d.getVersion() != ver) {
-            throw new RuntimeException("订单状态已被改变！");
-        }
-    }
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;上面的这段代码在最后再次检查是否有人修改了日记，如果日记版本号与之前一致，则提交事务，但是，这段代码也并非没有问题，因为在事务最后提交的过程中，还是会存在并发修改日记的情况，所以，业务事务的处理非常麻烦，要考虑到业务规则的满足，并不是我们想像的那么简单。</p>
-
-<p>&emsp;&emsp;从业务上来讲，我们只关心在我的事务中，日记的积分不被它人修改，因此，上面的代码还可以再次修改，只关注积分值，减少并发冲突问题，代码如下：</p>
-
-<p>``` java</p>
-
-<pre><code>     //再次查询状态每个diary的状态，看是否被它人修改过
-    for (Iterator&lt;Diary&gt; its = e.getDiarys().iterator();its.hasNext();) {
-        Diary d = its.next();
-        int integral = d.getIntegral();
-        //注意，在mysql中，要想成功refresh得到最新数据，必须设置隔离级别是ISOLATION_READ_COMMITTED
-        ht.refresh(d);
-        if (d.getIntegral() != integral) {
-            throw new RuntimeException("订单状态已被改变！");
-        }
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;红色字体部分，取日记的积分，只是为了减少并发冲突出现的可能性，但依然没办法保证业务约束完整，要想保存业务约束及规则的满足，最好的办法是使用富血模型去做，对日记的任何操作，都必须通过它的聚合根，也就是epet对象去实现，示例代码如下：</p>
-
-<p>&emsp;&emsp;以下方法都是写在Epet对象中的：</p>
-
-<p>``` java</p>
-
-<pre><code>/**
- * 重新计算积分
- */
-public void reCalculateIntegral() {
-    int count = 0;
-    for (Iterator&lt;Diary&gt; its = this.getDiarys().iterator();its.hasNext();) {
-        count = count + its.next().getIntegral();
-    }
-    this.setIntegralCount(count);
-}
-
-/**
- * 添加日记
- */  
-
- public void addDiary(Diary d) {
-    this.getBaseDao().save(d);
-    this.getDiarys().add(d);
-    d.setEpet(this);
-    reCalculateIntegral();
-    this.getBaseDao().update(this);
-}
-
-/**
- * 修改日记
- */
-public void updateDiary(Diary d) {
-    this.getBaseDao().update(d);
-    reCalculateIntegral();
-    this.getBaseDao().update(this);
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;而对应的facade中的代码如下（注意：事务是控制在facade上的哦）：</p>
-
-<p>``` java</p>
-
-<p>  //增删改日记(事务控制在此，乐观锁保证业务约束的完整性)</p>
-
-<pre><code>public void addDiary(int petId, Diary d) {
-    Epet e = (Epet)ht.get(Epet.class, petId);
-    e.addDiary(d); 
-}
-
-public void updateDiary(Diary d){
-    //这里再次按id查询epet，无性能损耗，因为有缓存
-    Epet e = (Epet)ht.get(Epet.class, d.getEpet().getId());
-    e.updateDiary(d);
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;从上面的代码可以看到，所有对日记的修改，都必须通过聚合根epet对象，而epet上是有基于version的乐观锁的，因些，最后的这部分代码基本满足了我们的业务约束及事务的并发控制。</p>
-
-<p>&emsp;&emsp;还有一种情况，如果在我们这个场景中，如果事务的失败对用户来说是不能容忍的，比如：添加一篇宠物日记会花费用户30分钟的录入时间，如果最终事务失败，用户无疑非常的沮丧，这种情况该如何应对了？接下来，我给大家继续讲解离线事务锁的示例。</p>
-
-<p>&emsp;&emsp;先看乐观离线事务锁，这种锁不是用来解决事务失败而用户不能接受的情况，而是一个超长的业务事务，比如30分钟，而在最终提交事务时，系统要检测到这种冲突，下面是乐观离线锁的实现示例代码：</p>
-
-<p>``` java</p>
-
-<pre><code>    //长事务，离线乐观锁
-    Epet e = ss.getEpetById(1);
-    Map&lt;String, Epet&gt; session = new HashMap&lt;String, Epet&gt;();
-
-    session.put("epet_in_http_session", e);
-    //给用户发回响应resopnse
-
-    //长时间的编辑
-    Thread.sleep(10000);
-
-    //最后一步，提交
-    //这里不要从数据库中重查，而是直接使用先前保存的那个，可能是httpsession，也可能是序列化至外部
-    Epet e2 = session.get("epet_in_http_session");
-    e2.setName("小强22");
-    //重新保存，version乐观锁会保证并发冲突，如果出现冲突，你会得到类似org.hibernate.StaleObjectStateException: Row was updated or deleted by another transaction (or unsaved-value mapping was incorrect)的错误信息。
-    ss.updateEpet(e2);
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;如果用户对事务冲突不可容忍，我们就只能使用悲观离线锁，本质上来就，就是用户自己去实现对象的锁定，代码如下：</p>
-
-<p> &emsp;&emsp;先在epet中加上这三个新的属性：</p>
-
-<p>``` java</p>
-
-<pre><code>//锁定标示： true已锁定，false:未锁定
-private boolean locked;
-//锁定者
-private String locker;
-//锁定时间
-private Date lockedTime;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;epet中再加上和悲观锁相关的几个方法：</p>
-
-<p>``` java</p>
-
-<p>   /**</p>
-
-<pre><code> * 锁定对象
- * @param locker
- */
-public void lockEpet(String locker) {
-    if (this.isLockedBy(locker)) {
-        return;
-    }
-    if (this.isLocked()) {
-        throw new RuntimeException("该对象已被"+this.getLocker()+"被锁定！");
-    }
-    this.setLocked(true);
-    this.setLocker(locker);
-    this.setLockedTime(new Date());
-    getBaseDao().update(this);
-}
-
-/**
- * 解锁对象
- * @param locker
- */
-public void unLockEpet(String locker) {
-    if (!this.getLocker().equals(locker)) {
-        throw new RuntimeException("解锁失败：解铃还需系铃人！");
-    }
-    this.setLocked(false);
-    getBaseDao().update(this);
-}
-/**
- * 检测对象是否被某人锁定
- * @param locker
- * @return
- */
-public boolean isLockedBy(String locker) {
-    if (locker.equals(this.getLocker())  &amp;&amp;  this.isLocked()) {
-        return true;
-    }
-    return false;
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;在业务类中，我们也需要加上几个类似的方法实现，事务也控制在这个上面：</p>
-
-<p>``` java</p>
-
-<pre><code>public void lockEpet(int epetid, String locker) {
-    Epet e = (Epet)ht.get(Epet.class, epetid, LockMode.UPGRADE);
-    e.lockEpet(locker);
-}
-
-public void unLockEpet(int epetid, String locker) {
-    Epet e = (Epet)ht.get(Epet.class, epetid, LockMode.UPGRADE);
-    e.unLockEpet(locker);    
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;在悲观离线锁的使用过程中要特别小心，做某些业务操作时，一定要确保已经成功获得了锁，写相关功能的程序员必须要清楚地知道这一点，因为，这种锁是程序员自己去实现的。</p>
-
-<p>&emsp;&emsp;这种悲观锁的实现中，还需要防止死锁，比如：对多个对象的锁定，还有就是，需要某种检测机制，把超过某个业务时间的锁释放。</p>
-
-<p>&emsp;&emsp;要想解决好事务的并发处理非常的不容易，因为这个问题本来就是和业务领域密切相关的一个问题，需要我们从业务方面去分析解决。转换为一对多，关系越简单越好。</p>
 ]]></content>
   </entry>
   

@@ -9,9 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;给童鞋写的几段参考demo代码，有需要的可以参考一下哦： poi excel数据导入（导入数据是考虑该数据已经存在的情况，如果存在则进行更新操作）
-zip照片包导入（照片的导入会更新已经存在的照片并且会按业务规则建立照片目录分类存放）
-按模板导格式导出数据至excel中（ &hellip;">
+  <meta name="description" content="&emsp;&emsp;fastdfs是一个轻量级的分布式文件系统服务，它在互联网项目中有比较广泛的用途，类似的还有tfs等，但fastdfs和hadoop这些又不相同，hadoop是分布式存储计算框架，比较重量级，而fastdfs针对的是海量的小文件。 &emsp;&emsp; &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -60,6 +58,69 @@ zip照片包导入（照片的导入会更新已经存在的照片并且会按�
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-05-30T15:18:00+08:00" pubdate data-updated="true">2014年05月30日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;fastdfs是一个轻量级的分布式文件系统服务，它在互联网项目中有比较广泛的用途，类似的还有tfs等，但fastdfs和hadoop这些又不相同，hadoop是分布式存储计算框架，比较重量级，而fastdfs针对的是海量的小文件。</p>
+
+<p>&emsp;&emsp;项目中经常会有这样一些应用场景，比如：文件服务器需要存储海量的用户文件并且对外提供用户的访问操作；文件服务器需要高可用性和高性能；文件服务器需要实现负载均衡；文件服务器可实时扩容等等，这些需求在Fastdfs中有实现，因此它可以满足大部的项目需求。</p>
+
+<p>&emsp;&emsp;先给大家简单介绍一下fastdfs的原理，下面这张图有助于大家了解分布式文件系统的原理（hadoop之类的分布式体系与之有相似之处）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/seq_fastdfs.jpg' width='' height='' title='fastdfs调用时序图'><span class='caption-text'>fastdfs调用时序图</span></span></p>
+
+<p>&emsp;&emsp;上面这张图中客户端针对文件服务系统的调用，首先得通过tracker服务器，这个服务器充当了调度者的作用。客户端可以是任何的程序客户端，比如java客户端、php客户端、nginx插件客户端等。</p>
+
+<p>&emsp;&emsp;在客户端调用之前先得启动tracker server，然后再分别启动各个storage server，每个storage server启动后会注册自己的信息到指定的tracker server中（其实，tracker server服务器也可以有多个，从高可用性方面考虑我们一般会启动多个tracker server实例）。</p>
+
+<p>&emsp;&emsp;storage server负责具体文件的存储。storage server按照分组的方式来保存文件的，比如group1,group2等。一个组中可以有多台服务器，同一个组里的所有服务器中保存的文件内容都是相同的，因为同一个组中的服务器之间会相互自动同步文件，这样就实现了冗余备份及负载均衡的功能（负载均衡由tracker server调试的哦）。</p>
+
+<p>&emsp;&emsp;不同组中的storage server之间是独立的，当系统存储容量不够时，通过添加新服务器并分配到新的组中，tracker server发现新的服务器后会自动调度以实现后续客户文件的写入位置。</p>
+
+<p>&emsp;&emsp;上图中，客户通过询问tracker server得到可用的storage server（tracker server会通过负载均衡及各个storage的存储可用容量大小算法决定，当然这个也可以在配置文件中指定），客户端得到storage server后进行相应的文件操作，同组服务器间会根据操作的结果进行文件同步（时序9，10是同步操作）。</p>
+
+<p>&emsp;&emsp;好了，原理先说到这。下面，我将给大家简单介绍FastDfs的安装及使用，以及一些注意事项。</p>
+
+<p>&emsp;&emsp;我的服务器是ubuntu server，我计划安装在两台服务器上，ip分别是:192.168.68.133, 192.168.68.136，暂时简称为1号服务器，2号服务器。</p>
+
+<p>&emsp;&emsp;一号服务器上，将安装一个tracker server实例，一个位于group1中的storage server实例，一个位于group2中storage server实例。二号服务器上，也将安装一个tracker server实例，一个位于group1中的storage server实例。需要大家注意的是，fastdfs中一台服务器上可以安装多个组，但一个组中的多个storade server必须安装在不同的服务器上，并且同组中的storage server的服务端口必须一致，否则无法实现文件同步。</p>
+
+<p>&emsp;&emsp;我先在一号服务器192.168.68.133上安装fastdfs。首先要准备安装环境，不同的linux发行版本可能会有所不同，我用的服务器版本是ubuntu 12.04 server，以下的操作均以这个版本的ubuntu服务器为例。</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/05/30/fastDFS-setup/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -910,55 +971,6 @@ zip照片包导入（照片的导入会更新已经存在的照片并且会按�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/03/27/cache-redis/">缓存之redis</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-03-27T12:18:00+08:00" pubdate data-updated="true">2014年03月27日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/03/redis.jpg' width='' height='' title=''><span class='caption-text'></span></span></p>
-
-<p>&emsp;&emsp;缓存在软件系统中有着不可替代的作用，特别是访问量巨大的网站，我们对系统热点数据的缓存将会降低数据库的压力，提高系统性能。目前常用的缓存大致分为本地缓存和独立的缓存服务，本地缓存常用的有ehcached,oscached等，而独立的服务器缓存常用的有memcached、redis等。</p>
-
-<p>&emsp;&emsp;Redis is an open source, BSD licensed, advanced key-value store. It is often referred to as a data structure server since keys can contain strings, hashes, lists, sets and sorted sets.</p>
-
-<p>&emsp;&emsp;这是redis官网<a href="http://redis.io/">redis.io</a>对redis的描述，我们从中可以看出，它是一个高性能的、更加高级的key-value缓存服务器。其中的更加高级，可能是相对于memcached这种简单的缓存服务器而言。比如redis可以在不取回缓存对象的情况下，通过指令直接对缓存的数字类型进行加、减操作，也可以对缓存的list中的内容进行修改操作，还可以对缓存的字符串进行直接的修改操作等等，这些操作都不需要取回缓存中的数据，因此没有序列化、反序列化的开销，性能会更高。另外，redis对一些复杂数据结构的支持，可以满足一些特定场景下的需求，比如sorted sets。</p>
-
-<p>&emsp;&emsp;当然更高级、先进的redis，在功能强大的同时也增加了自身的复杂性。复杂可不是什么好事情，复杂的东西可能会给我们带来烦恼，实践证明，真正能够解决问题的方案一般都是简单的。因此，就redis和memcached而言，后者功能简单也更容易使用，这就造成了memcached在当前依然是缓存服务器中的老大（当然任何事都不能太绝对，我们在实际项目中可以根据不同的需求应用场景选择不同的缓存方案）。</p>
-
-<p>&emsp;&emsp;本文是入门级文章，我在讲解redis的同时，也会顺便提到memcached，以便于大家对比。</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014/03/27/cache-redis/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; 更多早期老文章</a>
@@ -974,6 +986,10 @@ zip照片包导入（照片的导入会更新已经存在的照片并且会按�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/05/29/code-share-poi/">分享几段数据导入导出参考代码</a>
       </li>
     
@@ -987,10 +1003,6 @@ zip照片包导入（照片的导入会更新已经存在的照片并且会按�
     
       <li class="post">
         <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/15/security3/">java安全那些事之三（RSA及https）</a>
       </li>
     
   </ul>

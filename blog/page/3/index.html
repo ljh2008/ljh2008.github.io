@@ -9,7 +9,13 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;本篇文章介绍如何搭建一个maven工程。 &emsp;&emsp;我们以eclipse kepler为例，kepler版本的eclipse自带有maven插件，可以省去我们自己安装的过程，着实比较方便。 &emsp;&emsp;在新建项目向导中，我们选择maven工程， &hellip;">
+  <meta name="description" content="&emsp;&emsp;在我们的子项目中，可以使用parent节点继承父项目的pom，如下： 1
+2
+3
+4
+5
+6
+&lt;parent&gt; &lt;groupId&gt;com.ljh.ms&lt;/groupId&gt; &lt;artifactId&gt;car-parents&lt &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +64,64 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/12/25/maven-project-detail/">在项目中使用maven之三&#8211;深入细节</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-12-25T15:18:00+08:00" pubdate data-updated="true">2013年12月25日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;在我们的子项目中，可以使用parent节点继承父项目的pom，如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;parent&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;groupId&gt;</span>com.ljh.ms<span class="nt">&lt;/groupId&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;artifactId&gt;</span>car-parents<span class="nt">&lt;/artifactId&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;version&gt;</span>0.0.1-SNAPSHOT<span class="nt">&lt;/version&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;relativePath&gt;</span>../car_parents/pom.xml<span class="nt">&lt;/relativePath&gt;</span>
+</span><span class='line'><span class="nt">&lt;/parent&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这段配置文件中，首先定义了我们要继承的父项目坐标信息，再使用relativePath节点具体指明父POM所在的物理路径（要注意：父项目的packaging类型设定的是pom，而不是jar或war哦）。</p>
+
+<p>&emsp;&emsp;接下来，我贴出dao项目模块的pom文件，内容如下：</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/12/25/maven-project-detail/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -705,83 +769,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/09/28/angular-js2/">一步步教你用angular.js实现一个基本应用&#8212;第二部分</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-09-28T15:18:00+08:00" pubdate data-updated="true">2013年09月28日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;angular.js同时也是一个客户端的MVC框架，它有自己的控制器，可以对客户端的程序结构进行有效规范，比如，我们可以通过$routeProvider，定义整个系统的路由表，示例代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$routeProvider</span>
-</span><span class='line'>        <span class="p">.</span><span class="nx">when</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,{</span><span class="nx">controller</span><span class="o">:</span><span class="nx">loginCtrl</span><span class="p">,</span> <span class="nx">templateUrl</span><span class="o">:</span><span class="s1">&#39;login.html&#39;</span><span class="p">})</span>
-</span><span class='line'>        <span class="p">.</span><span class="nx">when</span><span class="p">(</span><span class="s2">&quot;/user_list&quot;</span><span class="p">,{</span><span class="nx">controller</span><span class="o">:</span><span class="s2">&quot;userCtrl&quot;</span><span class="p">,</span> <span class="nx">templateUrl</span><span class="o">:</span><span class="s1">&#39;main/main.html&#39;</span><span class="p">})</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;其中，when中的第一个参数为本地路径（注意，仅仅是angular.js在本地的路径，而并非向服务器请求的路径），后面的controller参数定义了控制器的名称，再后面的templateUrl参数定义处理完成后的数据展示页面。</p>
-
-<p>&emsp;&emsp;这是一个标准的<strong>MVC</strong>格式。</p>
-
-<p>&emsp;&emsp;如果和struts等服务器端MVC框架对比来看，你可以这样去理解：</p>
-
-<p>&emsp;&emsp;一、$routeProvider中定义的路由表，相当于你在struts-config.xml中定义的内容。</p>
-
-<p>&emsp;&emsp;二、controller中定义的相当于应用控制器action，在一个controller中，可以定义多个方法，这些方法执行过程中，你可以调用service中的东西，或者直接向服务器发出请求。</p>
-
-<p>&emsp;&emsp;三、数据的共享，通过$scope作用域实现，直接把从服务端得到的数据，放到该作用域中即可。当然，这个$scope作用域仅仅和本次页面相关，如果想在更大作用域中共享数据，可以使用$rootScope，但我更建议大家使用service，原因后面给大家讲。</p>
-
-<p>四、页面跳转后数据的展示，通过ng-repeat,ng-if，等等一系列指令去实现，这类似于java世界中的JSTL，EL。</p>
-
-<p>&emsp;&emsp;五、数据绑定，通过ng-model自动完成，java世界中要由框架去完成这个装配及转换。</p>
-
-<p>&emsp;&emsp;好了，以上仅仅是一个简单的类比，希望对大家理解有所帮助。</p>
-
-<p>&emsp;&emsp;还有一些常用的操作，属于基本功，大家要有所了解。</p>
-
-<p>&emsp;&emsp;<strong>一、通常，angular.js属于单页面应用</strong>，我们会通过ng-view实现把部分的页面内容，加载到这个区域中，如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;div</span> <span class="na">ng-view</span><span class="nt">&gt;&lt;/div&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2013/09/28/angular-js2/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/4/">&larr; 更多早期老文章</a>
@@ -799,6 +786,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/05/29/code-share-poi/">分享几段数据导入导出参考代码</a>
       </li>
     
@@ -812,10 +803,6 @@
     
       <li class="post">
         <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/15/security3/">java安全那些事之三（RSA及https）</a>
       </li>
     
   </ul>

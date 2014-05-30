@@ -9,7 +9,28 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;spring对持久层的事务管理采用的aop实现，在spring底层，aop是使用的代理模式实现的，代理模式在java中一般有jdk 动态代理以及cglib实现的更为高效的代理，jdk动态代理采用的是标准代理模式（大家可以看看标准代理模式的uml图），被代理对象必须要实现接口 &hellip;">
+  <meta name="description" content="&emsp;&emsp;nodejs的非阻塞，异步调用方式，给nodejs带来了非常好的性能，但这同时也给我们编程带来了复杂性，先来看来下面一个文件上传的代码： 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+//用户注册，可上传照片 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +79,100 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/07/29/nodejs-sync/">node.js中的同步</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-07-29T15:18:00+08:00" pubdate data-updated="true">2013年07月29日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;nodejs的非阻塞，异步调用方式，给nodejs带来了非常好的性能，但这同时也给我们编程带来了复杂性，先来看来下面一个文件上传的代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="c1">//用户注册，可上传照片</span>
+</span><span class='line'><span class="nx">exports</span><span class="p">.</span><span class="nx">reg</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">files</span> <span class="o">=</span> <span class="nx">req</span><span class="p">.</span><span class="nx">files</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">dir</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">resolve</span><span class="p">(</span><span class="nx">__dirname</span><span class="p">,</span> <span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot;public&quot;</span><span class="p">,</span> <span class="s2">&quot;upload&quot;</span><span class="p">)</span> <span class="p">;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">filename</span> <span class="o">=</span> <span class="nx">uuid</span><span class="p">.</span><span class="nx">v4</span><span class="p">()</span><span class="o">+</span><span class="nx">path</span><span class="p">.</span><span class="nx">extname</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">size</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">fs</span><span class="p">.</span><span class="nx">copy</span><span class="p">(</span><span class="nx">files</span><span class="p">.</span><span class="nx">photo</span><span class="p">.</span><span class="nx">path</span><span class="p">,</span> <span class="nx">dir</span> <span class="o">+</span> <span class="s1">&#39;\\&#39;</span> <span class="o">+</span> <span class="nx">filename</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">){</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;copy file success!&quot;</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/&#39;</span> <span class="o">+</span> <span class="nx">filename</span>  <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">&#39;reg/reg_success&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">regName</span><span class="o">:</span> <span class="nx">req</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">uname</span><span class="p">,</span><span class="nx">photo</span><span class="o">:</span><span class="s1">&#39;upload/default.jpeg&#39;</span>  <span class="p">});</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这段代码，以我们传统的代码顺序执行思路来看，没有任何问题，但在nodejs中情况就不同了。请大家注意其中的fs.copy方法，文件的处理是在一个异步回调中完成的，因此，当我们给客户端发回响应的时候，fs.copy也许还没有执行完成，客户将看不到我们上传的文件。当然，这段代码改起来相对来说还是简单的，只需把res.render(&lsquo;reg/reg_success&rsquo;, { regName: req.body.uname,photo:&lsquo;upload/&rsquo; + filename  });这行代码，移到console.log(&ldquo;copy file success!&rdquo;);之前即可，但对于一些复杂的同步操作，就没有这么简单了。</p>
+
+<p>&emsp;&emsp;nodejs中也有很多同步的第三方插件，比如：step, async，seq我们先来看看seq插件的用法。</p>
+
+<p>&emsp;&emsp;先在package.json中添加对seq的依赖：&#8221;seq&#8221;:&ldquo;*&#8221;，cmd下转至项目目录并运行npm install安装seq。</p>
+
+<p>&emsp;&emsp;假设我有三个函数，f1,f2,f3,代码如下：</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/07/29/nodejs-sync/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -2840,52 +2955,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/05/08/art1/">油画-合江亭.爱情斑马线</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-05-08T15:18:00+08:00" pubdate data-updated="true">2013年05月08日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;有些人出现了，又走了。 然后，一切回归原点， 只是多了一份沉甸甸的回忆。 时光打磨，没有让它暗淡。那些出现在年华里的人，不论属于爱情，还是友情，都同样叫人怀念，刻骨铭心。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/05/6.jpg' width='' height='' title='油画-合江亭.爱情斑马线'><span class='caption-text'>油画-合江亭.爱情斑马线</span></span></p>
-
-<p>&emsp;&emsp;合江亭.爱情斑马线（50×60CM）。这是一张关于情感的作品，爱情是一个永恒的主题，在经历了热恋过后的恋人们，是否还信守当初彼此间那份海誓山盟的誓言，在即将到来的生命的尽头，是否还有你我彼此的依偎、缠绵&hellip;&hellip;</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/05/7.jpg' width='' height='' title='爱情斑马线--局部'><span class='caption-text'>爱情斑马线&mdash;局部</span></span></p>
-
-<p>&emsp;&emsp;晨曦中，忙忙碌碌上班的身影，现代都市的快节奏生活，让我们忽略了彼此之间一些最本质、最重要的东西，这些缺失的东西，正是我想表达的内容。I love you, I love you forever!</p>
-
-<p>更多细节请阅《<a href="/blog/2013/05/08/art-step/">合江亭.爱情斑马线-步骤解析</a>》</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/6/">&larr; 更多早期老文章</a>
@@ -2903,6 +2972,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/05/29/code-share-poi/">分享几段数据导入导出参考代码</a>
       </li>
     
@@ -2916,10 +2989,6 @@
     
       <li class="post">
         <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/15/security3/">java安全那些事之三（RSA及https）</a>
       </li>
     
   </ul>

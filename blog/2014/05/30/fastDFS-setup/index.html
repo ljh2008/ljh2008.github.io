@@ -1,0 +1,421 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>分布式文件系统fastdfs解析之一(安装) - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;fastdfs是一个轻量级的分布式文件系统服务，它在互联网项目中有比较广泛的用途，类似的还有tfs等，但fastdfs和hadoop这些又不相同，hadoop是分布式存储计算框架，比较重量级，而fastdfs针对的是海量的小文件。 &emsp;&emsp; &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2014/05/30/fastDFS-setup">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于我</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">分布式文件系统fastdfs解析之一(安装)</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-05-30T15:18:00+08:00" pubdate data-updated="true">2014年05月30日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;fastdfs是一个轻量级的分布式文件系统服务，它在互联网项目中有比较广泛的用途，类似的还有tfs等，但fastdfs和hadoop这些又不相同，hadoop是分布式存储计算框架，比较重量级，而fastdfs针对的是海量的小文件。</p>
+
+<p>&emsp;&emsp;项目中经常会有这样一些应用场景，比如：文件服务器需要存储海量的用户文件并且对外提供用户的访问操作；文件服务器需要高可用性和高性能；文件服务器需要实现负载均衡；文件服务器可实时扩容等等，这些需求在Fastdfs中有实现，因此它可以满足大部的项目需求。</p>
+
+<p>&emsp;&emsp;先给大家简单介绍一下fastdfs的原理，下面这张图有助于大家了解分布式文件系统的原理（hadoop之类的分布式体系与之有相似之处）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/seq_fastdfs.jpg' width='' height='' title='fastdfs调用时序图'><span class='caption-text'>fastdfs调用时序图</span></span></p>
+
+<p>&emsp;&emsp;上面这张图中客户端针对文件服务系统的调用，首先得通过tracker服务器，这个服务器充当了调度者的作用。客户端可以是任何的程序客户端，比如java客户端、php客户端、nginx插件客户端等。</p>
+
+<p>&emsp;&emsp;在客户端调用之前先得启动tracker server，然后再分别启动各个storage server，每个storage server启动后会注册自己的信息到指定的tracker server中（其实，tracker server服务器也可以有多个，从高可用性方面考虑我们一般会启动多个tracker server实例）。</p>
+
+<p>&emsp;&emsp;storage server负责具体文件的存储。storage server按照分组的方式来保存文件的，比如group1,group2等。一个组中可以有多台服务器，同一个组里的所有服务器中保存的文件内容都是相同的，因为同一个组中的服务器之间会相互自动同步文件，这样就实现了冗余备份及负载均衡的功能（负载均衡由tracker server调试的哦）。</p>
+
+<p>&emsp;&emsp;不同组中的storage server之间是独立的，当系统存储容量不够时，通过添加新服务器并分配到新的组中，tracker server发现新的服务器后会自动调度以实现后续客户文件的写入位置。</p>
+
+<p>&emsp;&emsp;上图中，客户通过询问tracker server得到可用的storage server（tracker server会通过负载均衡及各个storage的存储可用容量大小算法决定，当然这个也可以在配置文件中指定），客户端得到storage server后进行相应的文件操作，同组服务器间会根据操作的结果进行文件同步（时序9，10是同步操作）。</p>
+
+<p>&emsp;&emsp;好了，原理先说到这。下面，我将给大家简单介绍FastDfs的安装及使用，以及一些注意事项。</p>
+
+<p>&emsp;&emsp;我的服务器是ubuntu server，我计划安装在两台服务器上，ip分别是:192.168.68.133, 192.168.68.136，暂时简称为1号服务器，2号服务器。</p>
+
+<p>&emsp;&emsp;一号服务器上，将安装一个tracker server实例，一个位于group1中的storage server实例，一个位于group2中storage server实例。二号服务器上，也将安装一个tracker server实例，一个位于group1中的storage server实例。需要大家注意的是，fastdfs中一台服务器上可以安装多个组，但一个组中的多个storade server必须安装在不同的服务器上，并且同组中的storage server的服务端口必须一致，否则无法实现文件同步。</p>
+
+<p>&emsp;&emsp;我先在一号服务器192.168.68.133上安装fastdfs。首先要准备安装环境，不同的linux发行版本可能会有所不同，我用的服务器版本是ubuntu 12.04 server，以下的操作均以这个版本的ubuntu服务器为例。<!--more--></p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>vim /etc/profile
+</span><span class='line'>export LANGUAGE="en_US.UTF-8"
+</span><span class='line'>export LANG=en_US:zh_CN.UTF-8
+</span><span class='line'>export LC_ALL=C</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;接下来让语言环境配置参数立即生效：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>source /etc/profile</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;再接着，安装fastdfs编译依赖包，大家要注意的是少一个依赖都不行，我先前安装时缺少了libevent-dev，致使安装不成功但安装过程又不报错，花费了大量的时间。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>aptitude install libevent
+</span><span class='line'>apt-get install libevent-dev
+</span><span class='line'>
+</span><span class='line'>sudo apt-get update
+</span><span class='line'>sudo aptitude install build-essential m4
+</span><span class='line'>
+</span><span class='line'>sudo ln -s /lib/lsb/init-functions  /etc/init.d/functions
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好了，环境准备好了后就到<a href="https://code.google.com/p/fastdfs">fastdfs官网</a>上去下载安装包吧，地址<a href="https://code.google.com/p/fastdfs/downloads/list">https://code.google.com/p/fastdfs/downloads/list</a>，我下载的是
+FastDFS_v4.06.tar.gz ，如果你想要安装最新版本，请用svn去下载最新的5.x版本。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>tar -zxvf FastDFS_v4.06.tar.gz
+</span><span class='line'>cd FastDFS </span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这样就进入了源代码目录，我们先要对安装的目录做一个规划(4.06版本默认的安装目录似乎不太合理)，我将fastdfs的所有文件都安装到/usr/local/fastdfs中，配置文件存放在/usr/local/fastdfs/conf下，这就需要我们修改源代码目录下的make.sh，下面是一些要修改的地方：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>vim make.sh</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;需要对：</p>
+
+<ol>
+<li><p> TARGET_PREFIX，TARGET_CONF_PATH进行修改;</p></li>
+<li><p> 需要对libpthread.so、libpthread.a的路径进行修改，这和ubuntu有关，其它linux发行版本并不需要改这个(你可以用find / -name &lsquo;libpthread.so&rsquo;  ，以及ind / -name &lsquo;libpthread.a&rsquo;  找到这两文件在系统中的位置)；</p></li>
+<li><p> 另外要对mkdir,cp操作的几个路径进行修改为我们配置文件所在的路径。</p></li>
+</ol>
+
+
+<p>&emsp;&emsp;我贴出make.sh修改过的地方，请大家自行对照：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>TARGET_PREFIX=/usr/local/fastdfs
+</span><span class='line'>TARGET_CONF_PATH=/usr/local/fastdfs/conf
+</span><span class='line'>
+</span><span class='line'>if [ -f /usr/lib/i386-linux-gnu/libpthread.so ] || [ -f /usr/local/lib/libpthread.so ] || [ -f /lib64/libpthread.so ] || [ -f /usr/lib64/libpthread.so ] || [ -f /usr/lib/i386-linux-gnu/libpthread.a ] || [ -f /usr/local/lib/libpthread.a ] || [ -f /lib64/libpthread.a ] || [ -f /usr/lib64/libpthread.a ]; then
+</span><span class='line'>............
+</span><span class='line'>............
+</span><span class='line'>
+</span><span class='line'>if [ "$uname" = "Linux" ]; then
+</span><span class='line'>    if [ "$WITH_LINUX_SERVICE" = "1" ]; then
+</span><span class='line'>      if [ ! -d /usr/local/fastdfs/conf ]; then
+</span><span class='line'>        mkdir -p /usr/local/fastdfs/conf
+</span><span class='line'>        cp -f conf/tracker.conf /usr/local/fastdfs/conf/
+</span><span class='line'>        cp -f conf/storage.conf /usr/local/fastdfs/conf/
+</span><span class='line'>        cp -f conf/client.conf /usr/local/fastdfs/conf/
+</span><span class='line'>        cp -f conf/http.conf /usr/local/fastdfs/conf/
+</span><span class='line'>        cp -f conf/mime.types /usr/local/fastdfs/conf/
+</span><span class='line'>      fi
+</span><span class='line'>
+</span><span class='line'>    
+</span><span class='line'>............
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;下面开始安装吧，如下命令：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo make;
+</span><span class='line'>sudo make install;
+</span><span class='line'>sudo make clean;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;不同的linux发行版本可能存在依赖包没有安装而报错，具体情况需要根据出错信息具体解决，我试过redhead,freebsd,openSuse,centos几个系统，都是要进行一些环境的配置才可以安装成功。</p>
+
+<p>&emsp;&emsp;下一篇文章我将按照文章开头的服务器规划进行具体的配置，请大家关注。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-05-30T15:18:00+08:00" pubdate data-updated="true">2014年05月30日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>, <a class='category' href='/blog/categories/jia-gou/'>架构</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/05/29/code-share-poi/" title="上一篇文章: 分享几段数据导入导出参考代码">&laquo;上一篇:&nbsp;&nbsp;分享几段数据导入导出参考代码</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/05/29/code-share-poi/">分享几段数据导入导出参考代码</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/05/23/security6/">Java安全那些事之六（客户端安全）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+  <h3></h3>
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-6635992117744268"
+     data-ad-slot="8027050961"
+     data-ad-format="auto"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="60">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2014 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

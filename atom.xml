@@ -4,7 +4,7 @@
   <title><![CDATA[刘江华的博客]]></title>
   <link href="http://yanyaner.com/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-05-29T13:43:55+08:00</updated>
+  <updated>2014-05-30T11:14:49+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,157 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[分布式文件系统fastdfs解析之一(安装)]]></title>
+    <link href="http://yanyaner.com/blog/2014/05/30/fastDFS-setup/"/>
+    <updated>2014-05-30T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/05/30/fastDFS-setup</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;fastdfs是一个轻量级的分布式文件系统服务，它在互联网项目中有比较广泛的用途，类似的还有tfs等，但fastdfs和hadoop这些又不相同，hadoop是分布式存储计算框架，比较重量级，而fastdfs针对的是海量的小文件。</p>
+
+<p>&emsp;&emsp;项目中经常会有这样一些应用场景，比如：文件服务器需要存储海量的用户文件并且对外提供用户的访问操作；文件服务器需要高可用性和高性能；文件服务器需要实现负载均衡；文件服务器可实时扩容等等，这些需求在Fastdfs中有实现，因此它可以满足大部的项目需求。</p>
+
+<p>&emsp;&emsp;先给大家简单介绍一下fastdfs的原理，下面这张图有助于大家了解分布式文件系统的原理（hadoop之类的分布式体系与之有相似之处）。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2014/04/seq_fastdfs.jpg' width='' height='' title='fastdfs调用时序图'><span class='caption-text'>fastdfs调用时序图</span></span></p>
+
+<p>&emsp;&emsp;上面这张图中客户端针对文件服务系统的调用，首先得通过tracker服务器，这个服务器充当了调度者的作用。客户端可以是任何的程序客户端，比如java客户端、php客户端、nginx插件客户端等。</p>
+
+<p>&emsp;&emsp;在客户端调用之前先得启动tracker server，然后再分别启动各个storage server，每个storage server启动后会注册自己的信息到指定的tracker server中（其实，tracker server服务器也可以有多个，从高可用性方面考虑我们一般会启动多个tracker server实例）。</p>
+
+<p>&emsp;&emsp;storage server负责具体文件的存储。storage server按照分组的方式来保存文件的，比如group1,group2等。一个组中可以有多台服务器，同一个组里的所有服务器中保存的文件内容都是相同的，因为同一个组中的服务器之间会相互自动同步文件，这样就实现了冗余备份及负载均衡的功能（负载均衡由tracker server调试的哦）。</p>
+
+<p>&emsp;&emsp;不同组中的storage server之间是独立的，当系统存储容量不够时，通过添加新服务器并分配到新的组中，tracker server发现新的服务器后会自动调度以实现后续客户文件的写入位置。</p>
+
+<p>&emsp;&emsp;上图中，客户通过询问tracker server得到可用的storage server（tracker server会通过负载均衡及各个storage的存储可用容量大小算法决定，当然这个也可以在配置文件中指定），客户端得到storage server后进行相应的文件操作，同组服务器间会根据操作的结果进行文件同步（时序9，10是同步操作）。</p>
+
+<p>&emsp;&emsp;好了，原理先说到这。下面，我将给大家简单介绍FastDfs的安装及使用，以及一些注意事项。</p>
+
+<p>&emsp;&emsp;我的服务器是ubuntu server，我计划安装在两台服务器上，ip分别是:192.168.68.133, 192.168.68.136，暂时简称为1号服务器，2号服务器。</p>
+
+<p>&emsp;&emsp;一号服务器上，将安装一个tracker server实例，一个位于group1中的storage server实例，一个位于group2中storage server实例。二号服务器上，也将安装一个tracker server实例，一个位于group1中的storage server实例。需要大家注意的是，fastdfs中一台服务器上可以安装多个组，但一个组中的多个storade server必须安装在不同的服务器上，并且同组中的storage server的服务端口必须一致，否则无法实现文件同步。</p>
+
+<p>&emsp;&emsp;我先在一号服务器192.168.68.133上安装fastdfs。首先要准备安装环境，不同的linux发行版本可能会有所不同，我用的服务器版本是ubuntu 12.04 server，以下的操作均以这个版本的ubuntu服务器为例。<!--more--></p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>vim /etc/profile
+</span><span class='line'>export LANGUAGE="en_US.UTF-8"
+</span><span class='line'>export LANG=en_US:zh_CN.UTF-8
+</span><span class='line'>export LC_ALL=C</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;接下来让语言环境配置参数立即生效：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>source /etc/profile</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;再接着，安装fastdfs编译依赖包，大家要注意的是少一个依赖都不行，我先前安装时缺少了libevent-dev，致使安装不成功但安装过程又不报错，花费了大量的时间。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>aptitude install libevent
+</span><span class='line'>apt-get install libevent-dev
+</span><span class='line'>
+</span><span class='line'>sudo apt-get update
+</span><span class='line'>sudo aptitude install build-essential m4
+</span><span class='line'>
+</span><span class='line'>sudo ln -s /lib/lsb/init-functions  /etc/init.d/functions
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好了，环境准备好了后就到<a href="https://code.google.com/p/fastdfs">fastdfs官网</a>上去下载安装包吧，地址<a href="https://code.google.com/p/fastdfs/downloads/list">https://code.google.com/p/fastdfs/downloads/list</a>，我下载的是
+FastDFS_v4.06.tar.gz ，如果你想要安装最新版本，请用svn去下载最新的5.x版本。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>tar -zxvf FastDFS_v4.06.tar.gz
+</span><span class='line'>cd FastDFS </span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这样就进入了源代码目录，我们先要对安装的目录做一个规划(4.06版本默认的安装目录似乎不太合理)，我将fastdfs的所有文件都安装到/usr/local/fastdfs中，配置文件存放在/usr/local/fastdfs/conf下，这就需要我们修改源代码目录下的make.sh，下面是一些要修改的地方：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>vim make.sh</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;需要对：</p>
+
+<ol>
+<li><p> TARGET_PREFIX，TARGET_CONF_PATH进行修改;</p></li>
+<li><p> 需要对libpthread.so、libpthread.a的路径进行修改，这和ubuntu有关，其它linux发行版本并不需要改这个(你可以用find / -name &lsquo;libpthread.so&rsquo;  ，以及ind / -name &lsquo;libpthread.a&rsquo;  找到这两文件在系统中的位置)；</p></li>
+<li><p> 另外要对mkdir,cp操作的几个路径进行修改为我们配置文件所在的路径。</p></li>
+</ol>
+
+
+<p>&emsp;&emsp;我贴出make.sh修改过的地方，请大家自行对照：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>TARGET_PREFIX=/usr/local/fastdfs
+</span><span class='line'>TARGET_CONF_PATH=/usr/local/fastdfs/conf
+</span><span class='line'>
+</span><span class='line'>if [ -f /usr/lib/i386-linux-gnu/libpthread.so ] || [ -f /usr/local/lib/libpthread.so ] || [ -f /lib64/libpthread.so ] || [ -f /usr/lib64/libpthread.so ] || [ -f /usr/lib/i386-linux-gnu/libpthread.a ] || [ -f /usr/local/lib/libpthread.a ] || [ -f /lib64/libpthread.a ] || [ -f /usr/lib64/libpthread.a ]; then
+</span><span class='line'>............
+</span><span class='line'>............
+</span><span class='line'>
+</span><span class='line'>if [ "$uname" = "Linux" ]; then
+</span><span class='line'>    if [ "$WITH_LINUX_SERVICE" = "1" ]; then
+</span><span class='line'>      if [ ! -d /usr/local/fastdfs/conf ]; then
+</span><span class='line'>        mkdir -p /usr/local/fastdfs/conf
+</span><span class='line'>        cp -f conf/tracker.conf /usr/local/fastdfs/conf/
+</span><span class='line'>        cp -f conf/storage.conf /usr/local/fastdfs/conf/
+</span><span class='line'>        cp -f conf/client.conf /usr/local/fastdfs/conf/
+</span><span class='line'>        cp -f conf/http.conf /usr/local/fastdfs/conf/
+</span><span class='line'>        cp -f conf/mime.types /usr/local/fastdfs/conf/
+</span><span class='line'>      fi
+</span><span class='line'>
+</span><span class='line'>    
+</span><span class='line'>............
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;下面开始安装吧，如下命令：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sudo make;
+</span><span class='line'>sudo make install;
+</span><span class='line'>sudo make clean;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;不同的linux发行版本可能存在依赖包没有安装而报错，具体情况需要根据出错信息具体解决，我试过redhead,freebsd,openSuse,centos几个系统，都是要进行一些环境的配置才可以安装成功。</p>
+
+<p>&emsp;&emsp;下一篇文章我将按照文章开头的服务器规划进行具体的配置，请大家关注。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[分享几段数据导入导出参考代码]]></title>
@@ -7030,378 +7181,6 @@
 <p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/hudson-icon.jpg' width='' height='' title='Hudson图标示例'><span class='caption-text'>Hudson图标示例</span></span></p>
 
 <p>&emsp;&emsp;暂时写这些吧，以后继续补充。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[在项目中使用maven之三--深入细节]]></title>
-    <link href="http://yanyaner.com/blog/2013/12/25/maven-project-detail/"/>
-    <updated>2013-12-25T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2013/12/25/maven-project-detail</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;在我们的子项目中，可以使用parent节点继承父项目的pom，如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;parent&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;groupId&gt;</span>com.ljh.ms<span class="nt">&lt;/groupId&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;artifactId&gt;</span>car-parents<span class="nt">&lt;/artifactId&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;version&gt;</span>0.0.1-SNAPSHOT<span class="nt">&lt;/version&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;relativePath&gt;</span>../car_parents/pom.xml<span class="nt">&lt;/relativePath&gt;</span>
-</span><span class='line'><span class="nt">&lt;/parent&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;这段配置文件中，首先定义了我们要继承的父项目坐标信息，再使用relativePath节点具体指明父POM所在的物理路径（要注意：父项目的packaging类型设定的是pom，而不是jar或war哦）。</p>
-
-<p>&emsp;&emsp;接下来，我贴出dao项目模块的pom文件，内容如下：<!--more--></p>
-
-<figure class='code'><figcaption><span>pom.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;project</span> <span class="na">xmlns=</span><span class="s">&quot;http://maven.apache.org/POM/4.0.0&quot;</span> <span class="na">xmlns:xsi=</span><span class="s">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span>
-</span><span class='line'>  <span class="na">xsi:schemaLocation=</span><span class="s">&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;modelVersion&gt;</span>4.0.0<span class="nt">&lt;/modelVersion&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="nt">&lt;groupId&gt;</span>com.ljh.ms<span class="nt">&lt;/groupId&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;artifactId&gt;</span>car-dao<span class="nt">&lt;/artifactId&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;version&gt;</span>0.0.1-SNAPSHOT<span class="nt">&lt;/version&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;packaging&gt;</span>jar<span class="nt">&lt;/packaging&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="nt">&lt;parent&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;groupId&gt;</span>com.ljh.ms<span class="nt">&lt;/groupId&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;artifactId&gt;</span>car-parents<span class="nt">&lt;/artifactId&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;version&gt;</span>0.0.1-SNAPSHOT<span class="nt">&lt;/version&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;relativePath&gt;</span>../car_parents/pom.xml<span class="nt">&lt;/relativePath&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/parent&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="nt">&lt;name&gt;</span>car-dao<span class="nt">&lt;/name&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;url&gt;</span>http://maven.apache.org<span class="nt">&lt;/url&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="nt">&lt;properties&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;project.build.sourceEncoding&gt;</span>UTF-8<span class="nt">&lt;/project.build.sourceEncoding&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/properties&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="nt">&lt;dependencies&gt;</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="nt">&lt;dependency&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;groupId&gt;</span>com.ljh.ms<span class="nt">&lt;/groupId&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;artifactId&gt;</span>car-core<span class="nt">&lt;/artifactId&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;version&gt;</span>0.0.1-SNAPSHOT<span class="nt">&lt;/version&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;/dependency&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="nt">&lt;/dependencies&gt;</span>
-</span><span class='line'><span class="nt">&lt;/project&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;大家可以看到，这个pom继承了parent pom中的内容，dependency部分看起来才会这么简洁（当然，也有人不建议这么做，做法是在每个子项目dependency中明确定义了所有的依赖，这样感觉会更严谨些）。</p>
-
-<p>&emsp;&emsp;另外，我们这篇文件中仅定义了对car-core的依赖，car-core又依赖了framework子项目，maven可以正确的处理这样的依赖传递。</p>
-
-<p>&emsp;&emsp;在完成了dao的实现代码后，我们要编写相应的测试代码来验证实现的正确性，部分代码在下面已贴出，大家要注意一下这个文件所在的路径。</p>
-
-<figure class='code'><figcaption><span>/car-dao/src/test/java/com/ljh/ms/car/dao/UserDaoTest.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Transactional</span>
-</span><span class='line'><span class="nd">@RunWith</span><span class="o">(</span><span class="n">SpringJUnit4ClassRunner</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
-</span><span class='line'><span class="nd">@ContextConfiguration</span><span class="o">(</span><span class="n">locations</span><span class="o">={</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">})</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserDaoTest</span> <span class="o">{</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="nd">@Resource</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="n">IUserDao</span> <span class="n">userDao</span><span class="o">;</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="nd">@Test</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">testUserDao</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>      <span class="n">List</span><span class="o">&lt;</span><span class="n">User</span><span class="o">&gt;</span> <span class="n">us</span> <span class="o">=</span> <span class="n">userDao</span><span class="o">.</span><span class="na">getAllUsers</span><span class="o">();</span>
-</span><span class='line'>      <span class="n">Assert</span><span class="o">.</span><span class="na">assertEquals</span><span class="o">(</span><span class="mi">9</span><span class="o">,</span> <span class="n">us</span><span class="o">.</span><span class="na">size</span><span class="o">());</span>
-</span><span class='line'>  <span class="o">.......</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在这个测试类上，我们可以在文件上点右键，run As JUnit test，即可看到结果。但是，我更加建议大家用maven的统一测试，在pom.xml上，选择run as maven test，如下图：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/maven_run_as.jpg' width='' height='' title='运行maven测试'><span class='caption-text'>运行maven测试</span></span></p>
-
-<p>&emsp;&emsp;通过观察控制台的输出，即可知道测试是否成功。</p>
-
-<figure class='code'><figcaption><span>/car-dao/src/test/java/com/ljh/ms/car/dao/UserDaoTest.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">.....</span>
-</span><span class='line'><span class="mi">2013</span><span class="o">-</span><span class="mi">12</span><span class="o">-</span><span class="mi">25</span> <span class="mi">11</span><span class="o">:</span><span class="mi">45</span><span class="o">:</span><span class="mi">08</span><span class="o">,</span><span class="mi">625</span> <span class="n">INFO</span> <span class="o">[</span><span class="n">org</span><span class="o">.</span><span class="na">hibernate</span><span class="o">.</span><span class="na">impl</span><span class="o">.</span><span class="na">SessionFactoryImpl</span><span class="o">]</span> <span class="o">-</span> <span class="n">closing</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">Results</span> <span class="o">:</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">Tests</span> <span class="nl">run:</span> <span class="mi">1</span><span class="o">,</span> <span class="nl">Failures:</span> <span class="mi">0</span><span class="o">,</span> <span class="nl">Errors:</span> <span class="mi">0</span><span class="o">,</span> <span class="nl">Skipped:</span> <span class="mi">0</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">[</span><span class="n">INFO</span><span class="o">]</span> <span class="o">------------------------------------------------------------------------</span>
-</span><span class='line'><span class="o">[</span><span class="n">INFO</span><span class="o">]</span> <span class="n">BUILD</span> <span class="n">SUCCESS</span>
-</span><span class='line'><span class="o">[</span><span class="n">INFO</span><span class="o">]</span> <span class="o">------------------------------------------------------------------------</span>
-</span><span class='line'><span class="o">[</span><span class="n">INFO</span><span class="o">]</span> <span class="n">Total</span> <span class="nl">time:</span> <span class="mf">17.234</span><span class="n">s</span>
-</span><span class='line'><span class="o">[</span><span class="n">INFO</span><span class="o">]</span> <span class="n">Finished</span> <span class="nl">at:</span> <span class="n">Wed</span> <span class="n">Dec</span> <span class="mi">25</span> <span class="mi">11</span><span class="o">:</span><span class="mi">45</span><span class="o">:</span><span class="mi">08</span> <span class="n">CST</span> <span class="mi">2013</span>
-</span><span class='line'><span class="o">[</span><span class="n">INFO</span><span class="o">]</span> <span class="n">Final</span> <span class="nl">Memory:</span> <span class="mi">4</span><span class="n">M</span><span class="o">/</span><span class="mi">8</span><span class="n">M</span>
-</span><span class='line'><span class="o">[</span><span class="n">INFO</span><span class="o">]</span> <span class="o">------------------------------------------------------------------------</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;按照同样的TDD流程，我们完成对service子项目的开发，最近完成对web端的开发。</p>
-
-<p>&emsp;&emsp;maven的web项目目录结构跟eclipse标准Dyna web项目结构不同，下面贴出项目结构图。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2013/12/project_struct3.jpg' width='' height='' title='maven web项目结构'><span class='caption-text'>maven web项目结构</span></span></p>
-
-<p>&emsp;&emsp;在maven web工程项目中，有些目录需要大家手工建立，比如resources，默认建出的web工程中是不存在这个目录的。另外，在maven的web项目中，我们所依赖的其它模块都已打包成jar的形式存放在WEB-INF/lib目录中，而在classes目录下则会没有东西，这样一来，以前的一些配置可能要进行修改，比如，下面是加载spring配置文件的代码。</p>
-
-<figure class='code'><figcaption><span>web.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;context-param&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;param-name&gt;</span>contextConfigLocation<span class="nt">&lt;/param-name&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;param-value&gt;</span>/WEB-INF/classes/config/spring/spring*.xml<span class="nt">&lt;/param-value&gt;</span>
-</span><span class='line'><span class="nt">&lt;/context-param&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;需要改成下面这样，才不会有问题：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;param-name&gt;</span>contextConfigLocation<span class="nt">&lt;/param-name&gt;</span>
-</span><span class='line'><span class="nt">&lt;param-value&gt;</span>classpath*:config/spring/spring*.xml<span class="nt">&lt;/param-value&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;另外，如果项目中有对spring文件引用的地方，也要修改为import引入的方式，配置代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'> <span class="c">&lt;!-- 引入其它jar包中的文件，须用这种方式 --&gt;</span>
-</span><span class='line'><span class="nt">&lt;import</span> <span class="na">resource=</span><span class="s">&quot;classpath*:config/spring/spring-core.xml&quot;</span><span class="nt">/&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;最后，给大家介绍一下maven的常用命令。</p>
-
-<ul>
-<li>编译源代码: mvn compile</li>
-<li>编译测试代码：mvn test-compile</li>
-<li>单元测试: mvn test</li>
-<li>构建并打包： mvn package</li>
-<li>清理： mvn clean</li>
-<li>安装： mvn clean install</li>
-<li>发布： mvn clean deploy</li>
-<li>在服务器上运行： mvn jetty:run</li>
-<li>等等&hellip;&hellip;</li>
-</ul>
-
-
-<p>&emsp;&emsp;上面的命令可以组合使用，大家要注意的是：package只是本地打包，install会部署包到本地仓库，而deploy则会将artifact发布到仓库服务器中，比如：nexus的私有仓库。另外，在命令中还可以加一些参数，比如： -X 会显示更多的信息， -U 会强制从私服上下载SNAPSHOT最新版本。</p>
-
-<p>如果要对整个项目进行打包，发布，我们只需要在car_parents项目中的pom.xml文件上运行相应的maven命令即可，下面是我在总项目中运行instlll的输出，我们可以看到，每个子项目的都进行了test,install：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'>Tests run: 0, Failures: 0, Errors: 0, Skipped: 0
-</span><span class='line'>
-</span><span class='line'>[INFO]
-</span><span class='line'>[INFO] --- maven-war-plugin:2.4:war (default-war) @ car-web ---
-</span><span class='line'>[INFO] Packaging webapp
-</span><span class='line'>[INFO] Assembling webapp [car-web] in [F:\lovo\my\car-web\target\car-web]
-</span><span class='line'>[INFO] Processing war project
-</span><span class='line'>[INFO] Copying webapp resources [F:\lovo\my\car-web\src\main\webapp]
-</span><span class='line'>[INFO] Building jar: F:\lovo\my\car-web\target\car-web\WEB-INF\lib\car-web-0.0.1-SNAPSHOT.jar
-</span><span class='line'>[INFO] Webapp assembled in [2375 msecs]
-</span><span class='line'>[INFO] Building war: F:\lovo\my\car-web\target\car_ms.war
-</span><span class='line'>[INFO]
-</span><span class='line'>[INFO] --- maven-install-plugin:2.3.1:install (default-install) @ car-web ---
-</span><span class='line'>[INFO] Installing F:\lovo\my\car-web\target\car_ms.war to F:\java\maven\com\ljh\ms\car-web\0.0.1-SNAPSHOT\car-web-0.0.1-SNAPSHOT.war
-</span><span class='line'>[INFO] Installing F:\lovo\my\car-web\pom.xml to F:\java\maven\com\ljh\ms\car-web\0.0.1-SNAPSHOT\car-web-0.0.1-SNAPSHOT.pom
-</span><span class='line'>[INFO] ------------------------------------------------------------------------
-</span><span class='line'>[INFO] Reactor Summary:
-</span><span class='line'>[INFO]
-</span><span class='line'>[INFO] car-parents ....................................... SUCCESS [0.719s]
-</span><span class='line'>[INFO] framework ......................................... SUCCESS [1.969s]
-</span><span class='line'>[INFO] car-core .......................................... SUCCESS [0.531s]
-</span><span class='line'>[INFO] car-dao ........................................... SUCCESS [2.937s]
-</span><span class='line'>[INFO] car-service ....................................... SUCCESS [2.719s]
-</span><span class='line'>[INFO] car-web Maven Webapp .............................. SUCCESS [7.203s]
-</span><span class='line'>[INFO] ------------------------------------------------------------------------
-</span><span class='line'>[INFO] BUILD SUCCESS
-</span><span class='line'>[INFO] ------------------------------------------------------------------------
-</span><span class='line'>[INFO] Total time: 16.297s
-</span><span class='line'>[INFO] Finished at: Wed Dec 25 16:31:53 CST 2013
-</span><span class='line'>[INFO] Final Memory: 6M/12M
-</span><span class='line'>[INFO] ------------------------------------------------------------------------
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;总的来说，maven的所有操作都是通过相应插件完成的，而maven本身仅充当了一个平台，大家在实际的工作中可以寻找更多有用的插件来增强maven功能。</p>
-
-<p>&emsp;&emsp;好了，maven的入门介绍先到此为止吧。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'>2013-1-3补充：
-</span><span class='line'>如果大家要引用第三方artifact，而这个artifact在maven仓库中（包括本地和私服）并没有登记，这是就需要我们手工注册了。
-</span><span class='line'>比如，我要引用mynio-0.1.1.jar这个包到项目中，须在cmd窗口中执行下面的命令：
-</span><span class='line'>mvn install:install-file -DgroupId=com.my.nio -DartifactId=mynio -Dversion=0.1.1 -Dpackaging=jar -Dfile=C:\temp\mynio-0.1.1.jar
-</span><span class='line'>如此，maven将会把temp下的jar复制到本地仓库中，要注意articfactId的命名，maven会用artifactId+version做为包的名称哦。
-</span><span class='line'>最后，在项目中定义这个artifact的依赖即可：
-</span><span class='line'><span class="nt">&lt;dependency&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;groupId&gt;</span>com.my.nio<span class="nt">&lt;/groupId&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;artifactId&gt;</span>mynio<span class="nt">&lt;/artifactId&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;version&gt;</span>0.1.1<span class="nt">&lt;/version&gt;</span>
-</span><span class='line'><span class="nt">&lt;/dependency&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'>2013-1-16再补充：
-</span><span class='line'>有这样的应用场景，在打war过程中，需要将一些配置文件
-</span><span class='line'>（比如数据库连接信息的properties文件）打包到WEB-INF/classes下。
-</span><span class='line'>而这些配置文件又在另一个maven工程中，解决办法如下：
-</span><span class='line'><span class="nt">&lt;plugin&gt;</span>
-</span><span class='line'>              <span class="nt">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="nt">&lt;/groupId&gt;</span>
-</span><span class='line'>              <span class="nt">&lt;artifactId&gt;</span>maven-war-plugin<span class="nt">&lt;/artifactId&gt;</span>
-</span><span class='line'>              <span class="nt">&lt;version&gt;</span>2.4<span class="nt">&lt;/version&gt;</span>
-</span><span class='line'>              <span class="nt">&lt;configuration&gt;</span>   
-</span><span class='line'>                  <span class="nt">&lt;webResources&gt;</span>
-</span><span class='line'>                      <span class="nt">&lt;resource&gt;</span>
-</span><span class='line'>                          <span class="nt">&lt;directory&gt;</span>../car-core/src/main/resources<span class="nt">&lt;/directory&gt;</span>
-</span><span class='line'>                          <span class="nt">&lt;includes&gt;</span>
-</span><span class='line'>                             <span class="nt">&lt;include&gt;</span>**/*.*<span class="nt">&lt;/include&gt;</span>
-</span><span class='line'>                          <span class="nt">&lt;/includes&gt;</span>
-</span><span class='line'>                          <span class="nt">&lt;targetPath&gt;</span>WEB-INF/classes<span class="nt">&lt;/targetPath&gt;</span>
-</span><span class='line'>                      <span class="nt">&lt;/resource&gt;</span>
-</span><span class='line'>                  <span class="nt">&lt;/webResources&gt;</span>
-</span><span class='line'>                  
-</span><span class='line'>                  <span class="nt">&lt;archive&gt;</span>
-</span><span class='line'>                  ..............以下略去
-</span><span class='line'>请注意上面的resource节点中的内容。
-</span></code></pre></td></tr></table></div></figure>
-
 ]]></content>
   </entry>
   

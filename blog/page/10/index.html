@@ -9,10 +9,15 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;jquery validate是一个使用非常广泛的客户端验证框架，扩展性好，功能强大，你可以按下面步骤使用： 一、先导入js包: 1
+  <meta name="description" content="&emsp;&emsp;首先，在要显示gantt图的页面中引入css及js脚本，如下： 1
 2
 3
-&lt;script type=&quot;text/javascript&quot; src=&quot;js/jquery-1. &hellip;">
+4
+5
+6
+7
+8
+&lt;link rel=&quot;stylesheet&quot; type=&quot;text/css&quot; href=&quot;css/jquery-ui-1. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -53,7 +58,7 @@
   <li><a href="/">博客文章</a></li>
   <li><a href="/blog/archives">全部文章</a></li>
   <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
-  <li><a href="/about">关于我</a></li>
+  <li><a href="/about">关于老刘</a></li>
 </ul>
 
 </nav>
@@ -61,6 +66,169 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/28/js-gant/">Jquery Ui甘特图绘制</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-28T15:18:00+08:00" pubdate data-updated="true">2012年11月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;首先，在要显示gantt图的页面中引入css及js脚本，如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">type=</span><span class="s">&quot;text/css&quot;</span> <span class="na">href=</span><span class="s">&quot;css/jquery-ui-1.8.4.css&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">type=</span><span class="s">&quot;text/css&quot;</span> <span class="na">href=</span><span class="s">&quot;css/jquery.ganttView.css&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;js/jquery-1.4.2.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;js/jquery-ui-1.8.4.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;js/date.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;js/jquery.ganttView.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;其次，在action中，需要生成此插件所需要的json数据格式，演示代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>     <span class="kt">int</span> <span class="n">projectId</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">String</span> <span class="n">projectName</span> <span class="o">=</span> <span class="s">&quot;银行管理系统&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">List</span> <span class="n">pps</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Problem</span> <span class="n">p1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Problem</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span><span class="s">&quot;登录界面验证错误&quot;</span><span class="o">,</span><span class="s">&quot;new Date(2012,10,1)&quot;</span><span class="o">,</span><span class="s">&quot;new Date(2012,10,5)&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Problem</span> <span class="n">p2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Problem</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span><span class="s">&quot;发评论参数有误&quot;</span><span class="o">,</span><span class="s">&quot;new Date(2012,10,3)&quot;</span><span class="o">,</span><span class="s">&quot;new Date(2012,10,8)&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Problem</span> <span class="n">p3</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Problem</span><span class="o">(</span><span class="mi">3</span><span class="o">,</span><span class="s">&quot;认证异常&quot;</span><span class="o">,</span><span class="s">&quot;new Date(2012,10,1)&quot;</span><span class="o">,</span><span class="s">&quot;new Date(2012,10,20)&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">Problem</span> <span class="n">p4</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Problem</span><span class="o">(</span><span class="mi">4</span><span class="o">,</span><span class="s">&quot;验证码生成空白&quot;</span><span class="o">,</span><span class="s">&quot;new Date(2012,10,11)&quot;</span><span class="o">,</span><span class="s">&quot;new Date(2012,11,15)&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">pps</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">p1</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">pps</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">p2</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">pps</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">p3</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">pps</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">p4</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">Map</span> <span class="n">m</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">m</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;series&quot;</span><span class="o">,</span> <span class="n">pps</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">m</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">,</span> <span class="n">projectName</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">m</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">,</span> <span class="n">projectId</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">om</span><span class="o">.</span><span class="na">setDateFormat</span><span class="o">(</span><span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy,MM,dd&quot;</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">List</span> <span class="n">final_array</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">final_array</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">m</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">String</span> <span class="n">result</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">final_array</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">request</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="s">&quot;result&quot;</span><span class="o">,</span> <span class="n">result</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="s">&quot;\&quot;new&quot;</span><span class="o">,</span> <span class="s">&quot;new&quot;</span><span class="o">).</span><span class="na">replace</span><span class="o">(</span><span class="s">&quot;)\&quot;&quot;</span><span class="o">,</span> <span class="s">&quot;)&quot;</span>  <span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">request</span><span class="o">.</span><span class="na">getRequestDispatcher</span><span class="o">(</span><span class="s">&quot;index.jsp&quot;</span><span class="o">).</span><span class="na">forward</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，页面上带得定义一个div，用来显示图表，并添加显示js代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>    <span class="kd">var</span> <span class="nx">ganttData</span> <span class="o">=</span> <span class="nx">$</span><span class="p">{</span><span class="nx">result</span><span class="p">};</span>
+</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#my_gantt&quot;</span><span class="p">).</span><span class="nx">ganttView</span><span class="p">({</span>
+</span><span class='line'>            <span class="nx">data</span><span class="o">:</span><span class="nx">ganttData</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">slideWidth</span><span class="o">:</span><span class="mi">800</span><span class="p">,</span>
+</span><span class='line'>            <span class="nx">behavior</span><span class="o">:</span><span class="p">{</span>
+</span><span class='line'>                <span class="nx">onClick</span><span class="o">:</span><span class="kd">function</span><span class="p">(){</span><span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;ok&quot;</span><span class="p">);}</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="p">});</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="o">&lt;</span><span class="err">/script&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;该插件下载地址：<a href="https://github.com/thegrubbsian/jquery.ganttView">https://github.com/thegrubbsian/jquery.ganttView</a></p>
+
+<p>&emsp;&emsp;总结：本插件功能较弱，比如：日期的传递比较麻烦，每个进度上没有封装id等，但对于一个简单的展示，已经足够了。</p>
+
+<p>&emsp;&emsp;界面截图：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/11/2.jpg' width='' height='' title='项目进度图，基于jquery ui插件实现'><span class='caption-text'>项目进度图，基于jquery ui插件实现</span></span></p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1286,52 +1454,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/10/31/art5/">油画- 新都桥.塔公寺映像</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-31T15:18:00+08:00" pubdate data-updated="true">2012年10月31日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;纸本油画，塔公寺。</p>
-
-<p>&emsp;&emsp;十一期间出游，路线：泸定，丹巴，新都桥，康定，海螺沟，十分难忘的一次出行。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/10/3.jpg' width='' height='' title='纸本油画-塔公寺'><span class='caption-text'>纸本油画-塔公寺</span></span></p>
-
-<p>&emsp;&emsp;异常蓝的天空，美丽的草原，让人心旷神怡。</p>
-
-<p>&emsp;&emsp;虐诚的僧人们在朗诵经文，通往寺庙的小路边挂满了经幡，它们在柔和的风中传送着经文，相恋的一对马儿，悠闲地享受着这一切&hellip;&hellip;，一曲《天籁之爱》最能表现这个场景（我现在的手机铃声，仍旧是这个曲子）。</p>
-
-<p>&emsp;&emsp;画上的落款是孩他妈写的，显得有些生硬，有人说这是一败笔，当然，这也算是两人的一次小小合作吧。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/11/">&larr; 更多早期老文章</a>
@@ -1349,6 +1471,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析-配置</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
       </li>
     
@@ -1362,10 +1488,6 @@
     
       <li class="post">
         <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
       </li>
     
   </ul>

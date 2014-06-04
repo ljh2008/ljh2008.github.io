@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-05-30T11:14:49+08:00</updated>
+  <updated>2014-06-04T13:59:08+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,440 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[分布式文件系统fastdfs解析-配置]]></title>
+    <link href="http://yanyaner.com/blog/2014/06/03/fastDFS-config/"/>
+    <updated>2014-06-03T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/06/03/fastDFS-config</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;我计划在两台服务器上安装fdfs，ip分别是:192.168.68.133（1号服务器）, 192.168.68.136（2号服务器），fdfs在两台服务器上的安装部署图如下。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/fdfs_deploy.jpg' width='' height='' title='fastdfs部署示意图'><span class='caption-text'>fastdfs部署示意图</span></span></p>
+
+<p>&emsp;&emsp;1号服务器上安装tracker实例一个，storage实例2个，分别位于group1,group2两个不同的组中；2号服务器上也安装tracker实例一个，storage实例1个，这个storage和1号服务器中的其中一个storage位于同一个组中。下面给大家贴出具体配置。</p>
+
+<p>&emsp;&emsp;1号服务器中，我们先： vim /usr/local/fastdfs/conf/storage_ids.conf</p>
+
+<p>```</p>
+
+<h1><id>  &lt;group_name>  &lt;ip_or_hostname></h1>
+
+<p>100001   group1  192.168.68.133
+100002   group2  192.168.68.133
+100003   group1  192.168.68.136
+```</p>
+
+<p>&emsp;&emsp;在这个文件中为所有存储服务器指定id, 这样可以免更换ip带来的影响，也就是说当服务器ip发生改变后只需要更改这个文件中的ip地址即可。</p>
+
+<p>&emsp;&emsp;编辑tracker.conf，vim /usr/local/fastdfs/conf/tracker.conf配置文件，以下仅仅列出我改过的或者我认为需要给大家说明的配置项，没有贴出的均保持配置文件中的默认值。</p>
+
+<p>```</p>
+
+<h1>the tracker server port</h1>
+
+<p>port=22122</p>
+
+<h1>the base path to store data and log files</h1>
+
+<p>base_path=/var/fastdfs/tracker</p>
+
+<h1>the method of selecting group to upload files</h1>
+
+<h1>0: round robin</h1>
+
+<h1>1: specify group</h1>
+
+<h1>2: load balance, select the max free space group to upload file</h1>
+
+<p>store_lookup=2</p>
+
+<h1>which group to upload file</h1>
+
+<h1>when store_lookup set to 1, must set store_group to the group name</h1>
+
+<p>store_group=group2</p>
+
+<h1>unix group name to run this program,</h1>
+
+<h1>not set (empty) means run by the group of current user</h1>
+
+<p>run_by_group=</p>
+
+<h1>unix username to run this program,</h1>
+
+<h1>not set (empty) means run by current user</h1>
+
+<p>run_by_user=</p>
+
+<h1>if use storage ID instead of IP address</h1>
+
+<h1>default value is false</h1>
+
+<h1>since V4.00</h1>
+
+<p>use_storage_id = true</p>
+
+<h1>the max time of storage sync a file</h1>
+
+<h1>default value is 300 seconds</h1>
+
+<h1>since V2.00</h1>
+
+<p>storage_sync_file_max_time = 300</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;现对上面列出的一些配置项进行解释：</p>
+
+<p>&emsp;&emsp;<strong>port</strong>：tracker服务器的端口号，如果一台服务器上要运行多个tracker实例就需要更改此端口号以避免冲突。</p>
+
+<p>&emsp;&emsp;<strong>base_path</strong>：tracker自身配置信息以及日志信息保存的位置，这个目录本不会占用太大的空间，但日志文件会随着使用而慢慢变大。</p>
+
+<p>&emsp;&emsp;<strong>store_lookup</strong>：负载分配机制，2表示选择存储空间最大的组来保存文件。</p>
+
+<p>&emsp;&emsp;<strong>run_by_group，run_by_user</strong>：指定运行tracker的用户组及用户，这是为了保存系统的安全，我们一般会为fdfs新建组及用户。</p>
+
+<p>&emsp;&emsp;<strong>use_storage_id</strong>：使用存储服务器id替代ip地址，我们刚才编辑的storage_ids.conf中指定了每个实例的id。</p>
+
+<p>&emsp;&emsp;<strong>storage_sync_file_max_time</strong>：同一组中的不同storate进行文件同步的时间，默认是5分钟内完成同步，你可以根据实际情况把这个值改小（改变这个值后可以观察到文件同步的效果，这个值不要设置得太小以避免造成系统同步网络压力）。</p>
+
+<p>&emsp;&emsp;接下来我们配置本台服务器上的storage实例，先配置storage1.conf实例，这个实例位于group1中。</p>
+
+<p>&emsp;&emsp;vim /usr/local/fastdfs/conf/storage1.conf，同样限于篇幅，我仅仅贴出重要配置项，其它的使用默认值。<!-- more--></p>
+
+<p>```</p>
+
+<h1>the name of the group this storage server belongs to</h1>
+
+<p>group_name=group1</p>
+
+<h1>the storage server port</h1>
+
+<p>port=23001</p>
+
+<h1>the base path to store data and log files</h1>
+
+<p>base_path=/var/fastdfs/storage1</p>
+
+<h1>store_path#, based 0, if store_path0 not exists, it&rsquo;s value is base_path</h1>
+
+<h1>the paths must be exist</h1>
+
+<p>store_path0=/var/fastdfs/store_group1_path0</p>
+
+<h1>tracker_server can ocur more than once, and tracker_server format is</h1>
+
+<h1>&ldquo;host:port&rdquo;, host can be hostname or ip address</h1>
+
+<p>tracker_server=192.168.68.133:22122
+tracker_server=192.168.68.136:22122</p>
+
+<p>run_by_group=
+run_by_user=</p>
+
+<p>```
+&emsp;&emsp;现在对上面的配置项进行解释：</p>
+
+<p>&emsp;&emsp;<strong>group_name</strong>：本storage实例所属的组名称。</p>
+
+<p>&emsp;&emsp;<strong>port</strong>：storage的端口号，同一组的storage实例必须采用同样的端口号，这就是说同一组中的storage实例必须部署在不同学的机器上，因为同一台机器上的端口号不能相同。</p>
+
+<p>&emsp;&emsp;<strong>base_path</strong>：本storage的配置数据及运行日志文件存放的位置，和tracker中的base_path含义相同。</p>
+
+<p>&emsp;&emsp;<strong>store_path0</strong>：真正的用户上传文件保存的位置目录，fastDfs会在该目录下新建许多子目录，在第一次启动实例时会进行这个操作。store_path可以有多个，一般可以分配成单独的磁盘挂载点。</p>
+
+<p>&emsp;&emsp;<strong>tracker_server</strong>：指定本storaged的信息会注册到哪些tracker中去，故这里的tracker_server可以配置多个。</p>
+
+<p>&emsp;&emsp;<strong>run_by_group、run_by_user</strong>与tracker中的含义相同，不再细说。</p>
+
+<p>&emsp;&emsp;接下来，我们再来看本服务器上的另一个storage实例，这个实例是运行在group2中的，端口号与上面配置的那个storage是不同的，请看配置关键项：</p>
+
+<p>```</p>
+
+<h1>the name of the group this storage server belongs to</h1>
+
+<p>group_name=group2</p>
+
+<h1>the storage server port</h1>
+
+<p>port=23002</p>
+
+<p>base_path=/var/fastdfs/storage2</p>
+
+<h1>store_path#, based 0, if store_path0 not exists, it&rsquo;s value is base_path</h1>
+
+<h1>the paths must be exist</h1>
+
+<p>store_path0=/var/fastdfs/store_group2_path0</p>
+
+<h1>tracker_server can ocur more than once, and tracker_server format is</h1>
+
+<h1>&ldquo;host:port&rdquo;, host can be hostname or ip address</h1>
+
+<p>tracker_server=192.168.68.133:22122</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;上面配置文件中的内容和storage1.conf中的类似，只不过group_name、port不相同，两个文件的保存路径也是不同的，经过这些配置后，我们就可以启动服务实例了。</p>
+
+<p>&emsp;&emsp;先来启动tracker实例，先编辑启动脚本文，vim /etc/init.d/fdfs_trackerd。</p>
+
+<p>``` sh fdfs_trackerd</p>
+
+<h1>!/bin/bash</h1>
+
+<p>#</p>
+
+<h1>fdfs_trackerd Starts fdfs_trackerd</h1>
+
+<p>#
+#</p>
+
+<h1>chkconfig: 2345 99 01</h1>
+
+<h1>description: FastDFS tracker server</h1>
+
+<h3>BEGIN INIT INFO</h3>
+
+<h1>Provides: $fdfs_trackerd</h1>
+
+<h3>END INIT INFO</h3>
+
+<h1>Source function library.</h1>
+
+<p>. /etc/init.d/functions
+FastDfs=&lsquo;/usr/local/fastdfs&rsquo;
+CONF=&ldquo;$FastDfs/conf/tracker.conf&rdquo;
+if [ ! -f $CONF ]; then
+  echo &ldquo;file $CONF does not exist!&rdquo;
+  exit 2
+fi
+PRG=&ldquo;$FastDfs/bin/fdfs_trackerd&rdquo;
+if [ ! -f $PRG ]; then
+  echo &ldquo;file $PRG does not exist!&rdquo;
+  exit 2
+fi
+Stop=&ldquo;$FastDfs/bin/stop.sh&rdquo;
+if [ ! -f $Stop ]; then
+  echo &ldquo;file $Stop does not exist!&rdquo;
+  exit 2
+fi
+Restart=&ldquo;$FastDfs/bin/restart.sh&rdquo;
+if [ ! -f $Restart ]; then
+  echo &ldquo;file $Restart does not exist!&rdquo;
+  exit 2
+fi
+RETVAL=0
+start() {</p>
+
+<pre><code>echo -n $"Starting FastDFS tracker server: "
+$PRG $CONF &amp;
+RETVAL=$?
+echo
+return $RETVAL
+</code></pre>
+
+<p>}
+stop() {</p>
+
+<pre><code>echo -n $"Stop FastDFS tracker server: "
+$Stop $PRG $CONF
+RETVAL=$?
+return $RETVAL
+</code></pre>
+
+<p>}
+rhstatus() {</p>
+
+<pre><code>status fdfs_trackerd
+</code></pre>
+
+<p>}
+restart() {</p>
+
+<pre><code>    $Restart $PRG $CONF &amp;
+</code></pre>
+
+<p>}
+case &ldquo;$1&rdquo; in
+  start)</p>
+
+<pre><code>start
+;;
+</code></pre>
+
+<p>  stop)</p>
+
+<pre><code>stop
+;;
+</code></pre>
+
+<p>  status)</p>
+
+<pre><code>rhstatus
+;;
+</code></pre>
+
+<p>  restart|reload)</p>
+
+<pre><code>restart
+;;
+</code></pre>
+
+<p>  condrestart)</p>
+
+<pre><code>restart
+;;
+</code></pre>
+
+<p>  *)</p>
+
+<pre><code>echo $"Usage: $0 {start|stop|status|restart|condrestart}"
+exit 1
+</code></pre>
+
+<p>esac
+exit $?
+```</p>
+
+<p>&emsp;&emsp;这篇启动脚本中，主要修改的地方是FastDfs及CONF变量参数，这两个用来指定tracker配置文件所在的位置。</p>
+
+<p>&emsp;&emsp;完成编辑后，使用命令：sudo /etc/init.d/fdfs_trackerd start，即可完成服务器的启动，如果启动成功你可通过netstat -lnpt查看到tracker的端口号。</p>
+
+<p>&emsp;&emsp;接下来，将fdfs_storaged拷贝为fdfs_storaged1，用于启动storage1实例，要修改的地方也是FastDfs及CONF参数，这两个参数用来指定storage1.conf文件的在的目录及配置文件的名称。</p>
+
+<p>``` sh fdfs_storaged1</p>
+
+<h1>!/bin/bash</h1>
+
+<p>#</p>
+
+<h1>fdfs_storaged Starts fdfs_storaged</h1>
+
+<p>#
+#</p>
+
+<h1>chkconfig: 2345 99 01</h1>
+
+<h1>description: FastDFS storage server</h1>
+
+<h3>BEGIN INIT INFO</h3>
+
+<h1>Provides: $fdfs_storaged</h1>
+
+<h3>END INIT INFO</h3>
+
+<h1>Source function library.</h1>
+
+<p>. /etc/init.d/functions
+FastDfs=&lsquo;/usr/local/fastdfs&rsquo;
+CONF=&ldquo;$FastDfs/conf/storage1.conf&rdquo;
+if [ ! -f $CONF ]; then
+  echo &ldquo;file $CONF does not exist!&rdquo;
+  exit 2
+fi
+PRG=&ldquo;$FastDfs/bin/fdfs_storaged&rdquo;
+if [ ! -f $PRG ]; then
+  echo &ldquo;file $PRG does not exist!&rdquo;
+  exit 2
+fi
+Stop=&ldquo;$FastDfs/bin/stop.sh&rdquo;
+if [ ! -f $Stop ]; then
+  echo &ldquo;file $Stop does not exist!&rdquo;
+  exit 2
+fi
+Restart=&ldquo;$FastDfs/bin/restart.sh&rdquo;
+if [ ! -f $Restart ]; then
+  echo &ldquo;file $Restart does not exist!&rdquo;
+  exit 2
+fi
+RETVAL=0
+start() {</p>
+
+<pre><code>echo -n $"Starting FastDFS storage server: "
+$PRG $CONF &amp;
+RETVAL=$?
+echo
+return $RETVAL
+</code></pre>
+
+<p>}
+stop() {</p>
+
+<pre><code>echo -n $"Stop FastDFS storage server: "
+$Stop $PRG $CONF
+RETVAL=$?
+return $RETVAL
+</code></pre>
+
+<p>}
+rhstatus() {</p>
+
+<pre><code>status fdfs_storaged
+</code></pre>
+
+<p>}
+restart() {</p>
+
+<pre><code>    $Restart $PRG $CONF &amp;
+</code></pre>
+
+<p>}
+case &ldquo;$1&rdquo; in
+  start)</p>
+
+<pre><code>start
+;;
+</code></pre>
+
+<p>  stop)</p>
+
+<pre><code>stop
+;;
+</code></pre>
+
+<p>  status)</p>
+
+<pre><code>rhstatus
+;;
+</code></pre>
+
+<p>  restart|reload)</p>
+
+<pre><code>restart
+;;
+</code></pre>
+
+<p>  condrestart)</p>
+
+<pre><code>restart
+;;
+</code></pre>
+
+<p>  *)</p>
+
+<pre><code>echo $"Usage: $0 {start|stop|status|restart|condrestart}"
+exit 1
+</code></pre>
+
+<p>esac</p>
+
+<p>exit $?
+```</p>
+
+<p>&emsp;&emsp;好，该来启动storaged1实例了，命令： sudo /etc/init.d/fdfs_storaged1 start，如果是第一次启动会观察到创建存储目录的过程。</p>
+
+<p>&emsp;&emsp;启动storaged2实例的过程和storaged1相同，先编辑fdfs_storaged2文件，再fdfs_storaged2 start即完成。</p>
+
+<p>&emsp;&emsp;当1号服务器上的fdfs全部服务都成功启动后，我们可以看到如下目录结构会建立起来。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/fdfs_dir_struct.jpg' width='' height='' title='fastdfs目录结构'><span class='caption-text'>fastdfs目录结构</span></span></p>
+
+<p>&emsp;&emsp;至此，1号服务器上的所有配置及服务启动工作已经完成。2号服务器的配置及服务实例启动与1号服务器基本相同，惟一需要大家要注意的是group的名称，port端口号等，要和1号服务器相“呼应”，同时，我们在2号服务器上也配置了一个tracker实例以保证高可用性。</p>
+
+<p>&emsp;&emsp;好了，fastDFS的配置先告一段落，下一篇我们来聊聊客户端对fastDFS的调用，除了java客户端外，还包括tengine-2.0.1服务器上访问插件的配置。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[分布式文件系统fastdfs解析之一(安装)]]></title>
@@ -40,7 +474,9 @@
 
 <p>&emsp;&emsp;我的服务器是ubuntu server，我计划安装在两台服务器上，ip分别是:192.168.68.133, 192.168.68.136，暂时简称为1号服务器，2号服务器。</p>
 
-<p>&emsp;&emsp;一号服务器上，将安装一个tracker server实例，一个位于group1中的storage server实例，一个位于group2中storage server实例。二号服务器上，也将安装一个tracker server实例，一个位于group1中的storage server实例。需要大家注意的是，fastdfs中一台服务器上可以安装多个组，但一个组中的多个storade server必须安装在不同的服务器上，并且同组中的storage server的服务端口必须一致，否则无法实现文件同步。</p>
+<p>&emsp;&emsp;一号服务器上，将安装一个tracker server实例，一个位于group1中的storage server实例，一个位于group2中storage server实例。</p>
+
+<p>&emsp;&emsp;二号服务器上，也将安装一个tracker server实例，一个位于group1中的storage server实例。需要大家注意的是，fastdfs中一台服务器上可以安装多个组，但一个组中的多个storade server必须安装在不同的服务器上，并且同组中的storage server的服务端口必须一致，否则无法实现文件同步。</p>
 
 <p>&emsp;&emsp;我先在一号服务器192.168.68.133上安装fastdfs。首先要准备安装环境，不同的linux发行版本可能会有所不同，我用的服务器版本是ubuntu 12.04 server，以下的操作均以这个版本的ubuntu服务器为例。<!--more--></p>
 
@@ -903,199 +1339,6 @@ public static String html2Text(String inputHtmlString) {
 <p>&emsp;&emsp;还有一种做法比较好，就是对每个url都带一个服务器端生成的token令牌，一个token用过一次后就失效（记得在struts1中就曾经有防止表单重复提交的功能，原理和我这讲的是相同的），这样可以有效防止CSRF，但同时也增加了系统的复杂性，因为服务器要在会话状态中记住每一个页面每一个操作链接的token，实际项目中可采用专门提取出来一个抽象层来做这事会更好些。</p>
 
 <p>&emsp;&emsp;还是那句话，“道高一尺魔高一丈”，今天看似安全的东西也许明天就出现漏洞，没有绝对的安全，做为企业必须要有安全意识，并随时关注安全方面的资讯及内容。更多xss与csrf的内容请大家参阅<a href="https://blog.tonyseek.com/post/introduce-to-xss-and-csrf/">《总结 XSS 与 CSRF 两种跨站攻击》</a>一文。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[java安全那些事之四（无状态安全认证）]]></title>
-    <link href="http://yanyaner.com/blog/2014/04/16/security4/"/>
-    <updated>2014-04-16T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/04/16/security4</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;本文简单讲述web系统间安全调用设计方面的一些知识。目前异构系统间常用的调用方式有webservice、基于restful的json等方式，当客户端调用服务器端的服务接口时，服务器一定要对客户端的这次调用进行安全验证，以确保调用者具备相应的资格。</p>
-
-<p>&emsp;&emsp;当客户端和服务器端完成一次调用的过程中，我们主要面临这样的一些威胁：</p>
-
-<p>&emsp;&emsp;1、数据包被截获并得到明文，暴漏用户敏感信息（比如公用wiff环境中的信息安全）。</p>
-
-<p>&emsp;&emsp;2、数据包被截获并篡改关键业务数据，再发送给服务器（比如修改转账数据包中的目的账号或金额等）。</p>
-
-<p>&emsp;&emsp;3、数据包被截获，并反复"回放"（即多次向服务器发送相同的数据包，多次执行业务）。</p>
-
-<p>&emsp;&emsp;4、其它的&hellip;..，以后有时间再继续补充，呵呵</p>
-
-<p>&emsp;&emsp;对于第1条，解决的办法相对比较简单，使用基于SSL的https协议交换数据即可，请大家参阅我的<a href="/blog/2014/04/15/security3/">《java安全那些事之三（RSA及https）》</a>一文。</p>
-
-<p>&emsp;&emsp;对于第2条，我们可以使用hash数据签名来防止数据被更改，想深入了解前请参阅我的<a href="/blog/2014/04/13/security1/">《java安全那些事之一(md5、sha)》</a>一文。</p>
-
-<p>&emsp;&emsp;至于第3条，我们可以在请求中添加时间戳的方式来处理。具体做法是：在发送请求的数中，包含生成本次客户端请求的毫秒，并将此一并加入第2条的hash签名生成中，服务器收到请求后对该时间进行验证，如果超过允许的时间范围，就认为是过期的请求不予处理（当然，更好的做法是在业务层设计某种机制来处理这种重复性将更好）。</p>
-
-<p>&emsp;&emsp;下面我写一个简单的demo，说明其中的交互原理，先看图：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/sign_architect.jpg' width='' height='' title='认证安全调用示例图'><span class='caption-text'>认证安全调用示例图</span></span></p>
-
-<p>&emsp;&emsp;我的demo是一个webservice的例子，如果你是基于restful json的方式，本质上和本例是一样的，请自行类比。我先定义一个ws接口，接口中的sayHello方法是用来向客户问好的，如下：</p>
-
-<p>``` java IMyService.java
-import javax.jws.WebParam;
-import javax.jws.WebResult;
-import javax.jws.WebService;</p>
-
-<p>@WebService
-public interface IMyService {</p>
-
-<pre><code>/**
- * 该方法向某人问好
- * @param firstName 姓
- * @param lastName  名
- * @param appId     调用者id
- * @param timeMs    调用时间ms
- * @param sign      数据签名
- * @return
- */
-public @WebResult(name="helloResult")String 
-sayHello(@WebParam(name="fname")String firstName,
-        @WebParam(name="lname")String lastName,
-        @WebParam(name="appId")String appId, 
-        @WebParam(name="ts")long timeMs, 
-        @WebParam(name="sign")String sign );
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;正如上面的示意图所示，这个接口中除了传入业务需要的fname,lname之外，剩余的3个参数都是和安全验证相关的，appId是应服务方预先分配给我们的id，timeMs是客户发送该请求的时间，最后是数据签名。看看ws的实现类你就清楚了。<!-- more--></p>
-
-<p>``` java MyServiceImpl.java
-public class MyServiceImpl implements IMyService {</p>
-
-<pre><code>//超时时间间隔
-public static long howLong = 500;
-
-@Override
-public String sayHello(String firstName, String lastName, String appId, long time,  String sign) {
-
-    String key = DB.getKey(appId);
-    if (key == null) {
-        return "对不起，你没有授权！";
-    }
-
-    String str_sign = Md5Encrypt.md5(firstName + lastName  + time + appId + key);
-    if (! str_sign.equals(sign)) {
-        return "数字签名错误！";
-    }
-
-    long now = System.currentTimeMillis();
-
-    long dau = now - time;
-
-    if (dau &gt; howLong) {
-        return "时间戳验证失败！";
-    }
-
-    return "你好，" + firstName + lastName + "!";
-}
-</code></pre>
-
-<p>}
-```</p>
-
-<p>``` java DB.java
-/<em>*
- * 该类用来模拟数据库调用
- * @author ljh
- *
- </em>/
-public class DB {</p>
-
-<pre><code>private static Map&lt;String, String&gt; db = new HashMap&lt;String, String&gt;();
-
-//保存经过我们授权的用户id及key
-static {
-    db.put("app001", "3c9909afec25354d551dae21590bb26e3");
-    db.put("app002", "7eyBedfger6fg44ydfsd3ssefsdfsdfsd");
-}
-
-public static String getKey(String who) {
-    return db.get(who);
-}
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;实现类中的几个步骤需要说明：</p>
-
-<p>&emsp;&emsp;1、先在数据库中查询客户是否已授权过，只有通过授权的客户端调用才可以继续。如果该用户授权过，取得该用户的appkey。</p>
-
-<p>&emsp;&emsp;2、将业务参数，appid,ts等字段连接起来，加上appkey后一起做hash签名生成sign，本例中用的md5。</p>
-
-<p>&emsp;&emsp;3、将计算得到的签名和用户上传上来的签名进行比对，以判断数据是否被篡改，如果签名不一致，终止后续执行。</p>
-
-<p>&emsp;&emsp;4、获得当前服务器时间，并取出用户请求参数中的ts时间相减得到时间差，如果时间间隔超时了（这个超时时间要根据具体的环境确定，因为网络间调用本身就有延迟），就认为是无效的请求。</p>
-
-<p>&emsp;&emsp;5、执行真正的业务逻辑。</p>
-
-<p>&emsp;&emsp;6、调用对事后得给客户端发回响应，响应数据也采用相同的规则和方式生成sign，原理和服务器端的验证是一样的，客户端收到这个消息也要进行签名验证。</p>
-
-<p>&emsp;&emsp;在架构设计上，上面的几个步骤中我们可以把1~4步专门提取出来，放到另外的一个逻辑层中进行处理，比如：AOP或filter等方式，同理，第6步也可提取出来专门处理。</p>
-
-<p>&emsp;&emsp;客户端的调用代码，必须按照服务器要求的参数提交，并按同样的规则生成sign。下面是axis调用sayHello的ws的代码。</p>
-
-<p>``` java
-public class Client {</p>
-
-<pre><code>public static void main(String[] args) throws Exception {
-
-    String appId = "app001";
-    String myKey = "3c9909afec25354d551dae21590bb26e3";
-
-    String url = "http://localhost:8080/web_service_service/ws/helloService";
-
-    Service service =  new Service();
-    Call call = (Call) service.createCall();
-
-    call.setTargetEndpointAddress(new URL(url));
-
-    call.setOperationName(new QName("http://service.my.com/", "sayHello"));
-    call.addParameter(
-            "fname"
-            , XMLType.XSD_STRING, ParameterMode.IN);
-    call.addParameter(
-            "lname"
-            , XMLType.XSD_STRING, ParameterMode.IN);
-    call.addParameter(
-            "appId"
-            , XMLType.XSD_STRING, ParameterMode.IN);
-
-    call.addParameter(
-            "ts"
-            , XMLType.XSD_STRING, ParameterMode.IN);
-
-    call.addParameter(
-            "sign"
-            , XMLType.XSD_STRING, ParameterMode.IN);
-
-    call.setReturnType(org.apache.axis.encoding.XMLType.XSD_STRING);
-
-    long now = System.currentTimeMillis();
-
-    Object result = call.invoke(new Object[]{"言","娃娃", appId,  now,  Md5Encrypt.md5("言" + "娃娃"  + now + appId +  myKey)});
-
-    System.out.println(result); 
-
-}
-</code></pre>
-
-<p>}
-```</p>
-
-<p>&emsp;&emsp;请大家注意call.invoke后面的参数，以及sign的生成规则，这个规则和服务器上的规则是一样的。另外，大家要注意，客户端上传的参数中一定要有appid，以表明自己的身份，appkey只用于生成hash过程中使用，服务器端也使用这个appkey来生成hash，因此，appkey必须要保密，如果appkey被他人获得，那么安全调用也就再无安全了。</p>
-
-<p>&emsp;&emsp;本文中给大家介绍的方法在很多系统中都有广泛的应用，比如在线支持接口，开放平台api调用接口等都是基于这种方式，另外，这种方式的安全认识还有一个巨大的好处：服务器端不需要维护客户端状态，这样一来服务器端集群的伸缩性就变得十分简单了。</p>
-
-<p>&emsp;&emsp;有想了解ws架构设计的同学，可以看我的<a href="/blog/2011/04/11/webservice-architect/">《Webservice架构设计》</a>一文。</p>
-
-<p>&emsp;&emsp;好了，本文先到此结束，后续安全性的文章请大家继续关注。</p>
 ]]></content>
   </entry>
   

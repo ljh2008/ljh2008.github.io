@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;fastdfs是一个轻量级的分布式文件系统服务，它在互联网项目中有比较广泛的用途，类似的还有tfs等，但fastdfs和hadoop这些又不相同，hadoop是分布式存储计算框架，比较重量级，而fastdfs针对的是海量的小文件。 &emsp;&emsp; &hellip;">
+  <meta name="description" content="&emsp;&emsp;我计划在两台服务器上安装fdfs，ip分别是:192.168.68.133（1号服务器）, 192.168.68.136（2号服务器），fdfs在两台服务器上的安装部署图如下。 fastdfs部署示意图 &emsp;&emsp;1号服务器上安装tracker实例一个， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -50,7 +50,7 @@
   <li><a href="/">博客文章</a></li>
   <li><a href="/blog/archives">全部文章</a></li>
   <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
-  <li><a href="/about">关于我</a></li>
+  <li><a href="/about">关于老刘</a></li>
 </ul>
 
 </nav>
@@ -58,6 +58,154 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析-配置</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-06-03T15:18:00+08:00" pubdate data-updated="true">2014年06月03日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;我计划在两台服务器上安装fdfs，ip分别是:192.168.68.133（1号服务器）, 192.168.68.136（2号服务器），fdfs在两台服务器上的安装部署图如下。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/fdfs_deploy.jpg' width='' height='' title='fastdfs部署示意图'><span class='caption-text'>fastdfs部署示意图</span></span></p>
+
+<p>&emsp;&emsp;1号服务器上安装tracker实例一个，storage实例2个，分别位于group1,group2两个不同的组中；2号服务器上也安装tracker实例一个，storage实例1个，这个storage和1号服务器中的其中一个storage位于同一个组中。下面给大家贴出具体配置。</p>
+
+<p>&emsp;&emsp;1号服务器中，我们先： vim /usr/local/fastdfs/conf/storage_ids.conf</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'># &lt;id&gt;  &lt;group_name&gt;  &lt;ip_or_hostname&gt;
+</span><span class='line'>100001   group1  192.168.68.133
+</span><span class='line'>100002   group2  192.168.68.133
+</span><span class='line'>100003   group1  192.168.68.136</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在这个文件中为所有存储服务器指定id, 这样可以免更换ip带来的影响，也就是说当服务器ip发生改变后只需要更改这个文件中的ip地址即可。</p>
+
+<p>&emsp;&emsp;编辑tracker.conf，vim /usr/local/fastdfs/conf/tracker.conf配置文件，以下仅仅列出我改过的或者我认为需要给大家说明的配置项，没有贴出的均保持配置文件中的默认值。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'># the tracker server port
+</span><span class='line'>port=22122
+</span><span class='line'>
+</span><span class='line'># the base path to store data and log files
+</span><span class='line'>base_path=/var/fastdfs/tracker
+</span><span class='line'>
+</span><span class='line'># the method of selecting group to upload files
+</span><span class='line'># 0: round robin
+</span><span class='line'># 1: specify group
+</span><span class='line'># 2: load balance, select the max free space group to upload file
+</span><span class='line'>store_lookup=2
+</span><span class='line'>
+</span><span class='line'># which group to upload file
+</span><span class='line'># when store_lookup set to 1, must set store_group to the group name
+</span><span class='line'>store_group=group2
+</span><span class='line'>
+</span><span class='line'>#unix group name to run this program, 
+</span><span class='line'>#not set (empty) means run by the group of current user
+</span><span class='line'>run_by_group=
+</span><span class='line'>
+</span><span class='line'>#unix username to run this program,
+</span><span class='line'>#not set (empty) means run by current user
+</span><span class='line'>run_by_user=
+</span><span class='line'>
+</span><span class='line'># if use storage ID instead of IP address
+</span><span class='line'># default value is false
+</span><span class='line'># since V4.00
+</span><span class='line'>use_storage_id = true
+</span><span class='line'>
+</span><span class='line'># the max time of storage sync a file
+</span><span class='line'># default value is 300 seconds
+</span><span class='line'># since V2.00
+</span><span class='line'>storage_sync_file_max_time = 300
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;现对上面列出的一些配置项进行解释：</p>
+
+<p>&emsp;&emsp;<strong>port</strong>：tracker服务器的端口号，如果一台服务器上要运行多个tracker实例就需要更改此端口号以避免冲突。</p>
+
+<p>&emsp;&emsp;<strong>base_path</strong>：tracker自身配置信息以及日志信息保存的位置，这个目录本不会占用太大的空间，但日志文件会随着使用而慢慢变大。</p>
+
+<p>&emsp;&emsp;<strong>store_lookup</strong>：负载分配机制，2表示选择存储空间最大的组来保存文件。</p>
+
+<p>&emsp;&emsp;<strong>run_by_group，run_by_user</strong>：指定运行tracker的用户组及用户，这是为了保存系统的安全，我们一般会为fdfs新建组及用户。</p>
+
+<p>&emsp;&emsp;<strong>use_storage_id</strong>：使用存储服务器id替代ip地址，我们刚才编辑的storage_ids.conf中指定了每个实例的id。</p>
+
+<p>&emsp;&emsp;<strong>storage_sync_file_max_time</strong>：同一组中的不同storate进行文件同步的时间，默认是5分钟内完成同步，你可以根据实际情况把这个值改小（改变这个值后可以观察到文件同步的效果，这个值不要设置得太小以避免造成系统同步网络压力）。</p>
+
+<p>&emsp;&emsp;接下来我们配置本台服务器上的storage实例，先配置storage1.conf实例，这个实例位于group1中。</p>
+
+<p>&emsp;&emsp;vim /usr/local/fastdfs/conf/storage1.conf，同样限于篇幅，我仅仅贴出重要配置项，其它的使用默认值。</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/06/03/fastDFS-config/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -109,7 +257,9 @@
 
 <p>&emsp;&emsp;我的服务器是ubuntu server，我计划安装在两台服务器上，ip分别是:192.168.68.133, 192.168.68.136，暂时简称为1号服务器，2号服务器。</p>
 
-<p>&emsp;&emsp;一号服务器上，将安装一个tracker server实例，一个位于group1中的storage server实例，一个位于group2中storage server实例。二号服务器上，也将安装一个tracker server实例，一个位于group1中的storage server实例。需要大家注意的是，fastdfs中一台服务器上可以安装多个组，但一个组中的多个storade server必须安装在不同的服务器上，并且同组中的storage server的服务端口必须一致，否则无法实现文件同步。</p>
+<p>&emsp;&emsp;一号服务器上，将安装一个tracker server实例，一个位于group1中的storage server实例，一个位于group2中storage server实例。</p>
+
+<p>&emsp;&emsp;二号服务器上，也将安装一个tracker server实例，一个位于group1中的storage server实例。需要大家注意的是，fastdfs中一台服务器上可以安装多个组，但一个组中的多个storade server必须安装在不同的服务器上，并且同组中的storage server的服务端口必须一致，否则无法实现文件同步。</p>
 
 <p>&emsp;&emsp;我先在一号服务器192.168.68.133上安装fastdfs。首先要准备安装环境，不同的linux发行版本可能会有所不同，我用的服务器版本是ubuntu 12.04 server，以下的操作均以这个版本的ubuntu服务器为例。</div>
   
@@ -920,57 +1070,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/04/08/async_message_architect1/">监控系统中的异步消息使用实例（一）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-04-08T12:18:00+08:00" pubdate data-updated="true">2014年04月08日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;以后的文章要尽量做到通俗，让非技术人员都读得懂，道理就跟艺术作品一样，一件好的作品，不需要配任何文字说明就足以打动普通观众，做到雅俗共赏而且有深度和内涵，其实，这需要作者相当的功力。</p>
-
-<p>&emsp;&emsp;近期一些童鞋在实现一个监控系统，其中的一个功能是：对监控平台上布署的第三方应用业务方法执行细节进行监控，比如：方法调用者，调用者ip，应用系统名称，子系统名称，方法名称，执行耗时等信息。如何能够让监控系统得到目标机器上需要监控的业务方法执行情况呢？如何保证在监控的过程中不影响对方的业务的正常执行？下面我给出一种参考架构实现，这也是在概要设计的时候就应该明确的东西（专业名词叫架构原型）。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构'><span class='caption-text'>业务方法监控架构</span></span></p>
-
-<p>&emsp;&emsp;首先，MonitorPlatform是我们的监控平台（图中青色部分），targetServer上运行着需要监控的系统hotel project（图中黄色部分）,如果我们想要获得目标机器上的我们需要的信息，最简单的办法是运行一个spy程序在对方的机器上，图中的spy app是起这个作用的（当然你也可以使用jmx规范来实现类似功能），举个不恰当的例子，就好比你在某人的机器上安装了一个木马程序，通过远程控制端你就可以得到对方机器上你感兴趣的任何东西，甚至包括控制摄像头哦。</p>
-
-<p>&emsp;&emsp;其次，监控平台同时要监控多个目标系统，就我们例子中监控业务方法执行情况而言，就需要把监控得到的信息加以持久化以备后查，如果目标系统业务繁忙，而我们的spy app又要将取到的信息进行数据库持久化，数据库很可能会成为性能瓶颈从而造成性能问题，因此，我在这里采用了异步消息系统的设计，以缓解持久化压力。正如图所示，spy app将采集到的业务方法执行数据直接写入异步消息服务器的queue中，而monitor platform中的处理程序将从queue中取出消息，再进行后续的持久化处理。这种异步的消息设计方式可以有效缓解系统的压力，在很多项目中都可以采用（互联网项目中可用这种方式来&#8221;削峰&#8221;，缓解高并发压力）。</p>
-
-<p>&emsp;&emsp;最后一个问题,spy如何采集到目标机器业务方法的执行情况呢。最佳答案当然是AOP。大家可以参考我的另一篇文章<a href="/blog/2013/03/26/logger/">一种日志记录解决方案</a>。</p>
-
-<p>&emsp;&emsp;下面，我们一起来看看架构原型中的原代码实现吧。MethodLoggerMessage是需要持久化的消息对象，请注意实现Serializable接口。</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014/04/08/async_message_architect1/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; 更多早期老文章</a>
@@ -986,6 +1085,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析-配置</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
       </li>
     
@@ -999,10 +1102,6 @@
     
       <li class="post">
         <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/16/security4/">Java安全那些事之四（无状态安全认证）</a>
       </li>
     
   </ul>

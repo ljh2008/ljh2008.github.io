@@ -1,0 +1,810 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>分布式文件系统fastdfs解析-配置 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;我计划在两台服务器上安装fdfs，ip分别是:192.168.68.133（1号服务器）, 192.168.68.136（2号服务器），fdfs在两台服务器上的安装部署图如下。 fastdfs部署示意图 &emsp;&emsp;1号服务器上安装tracker实例一个， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2014/06/03/fastDFS-config">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于老刘</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">分布式文件系统fastdfs解析-配置</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-06-03T15:18:00+08:00" pubdate data-updated="true">2014年06月03日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;我计划在两台服务器上安装fdfs，ip分别是:192.168.68.133（1号服务器）, 192.168.68.136（2号服务器），fdfs在两台服务器上的安装部署图如下。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/fdfs_deploy.jpg' width='' height='' title='fastdfs部署示意图'><span class='caption-text'>fastdfs部署示意图</span></span></p>
+
+<p>&emsp;&emsp;1号服务器上安装tracker实例一个，storage实例2个，分别位于group1,group2两个不同的组中；2号服务器上也安装tracker实例一个，storage实例1个，这个storage和1号服务器中的其中一个storage位于同一个组中。下面给大家贴出具体配置。</p>
+
+<p>&emsp;&emsp;1号服务器中，我们先： vim /usr/local/fastdfs/conf/storage_ids.conf</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'># &lt;id&gt;  &lt;group_name&gt;  &lt;ip_or_hostname&gt;
+</span><span class='line'>100001   group1  192.168.68.133
+</span><span class='line'>100002   group2  192.168.68.133
+</span><span class='line'>100003   group1  192.168.68.136</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在这个文件中为所有存储服务器指定id, 这样可以免更换ip带来的影响，也就是说当服务器ip发生改变后只需要更改这个文件中的ip地址即可。</p>
+
+<p>&emsp;&emsp;编辑tracker.conf，vim /usr/local/fastdfs/conf/tracker.conf配置文件，以下仅仅列出我改过的或者我认为需要给大家说明的配置项，没有贴出的均保持配置文件中的默认值。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'># the tracker server port
+</span><span class='line'>port=22122
+</span><span class='line'>
+</span><span class='line'># the base path to store data and log files
+</span><span class='line'>base_path=/var/fastdfs/tracker
+</span><span class='line'>
+</span><span class='line'># the method of selecting group to upload files
+</span><span class='line'># 0: round robin
+</span><span class='line'># 1: specify group
+</span><span class='line'># 2: load balance, select the max free space group to upload file
+</span><span class='line'>store_lookup=2
+</span><span class='line'>
+</span><span class='line'># which group to upload file
+</span><span class='line'># when store_lookup set to 1, must set store_group to the group name
+</span><span class='line'>store_group=group2
+</span><span class='line'>
+</span><span class='line'>#unix group name to run this program, 
+</span><span class='line'>#not set (empty) means run by the group of current user
+</span><span class='line'>run_by_group=
+</span><span class='line'>
+</span><span class='line'>#unix username to run this program,
+</span><span class='line'>#not set (empty) means run by current user
+</span><span class='line'>run_by_user=
+</span><span class='line'>
+</span><span class='line'># if use storage ID instead of IP address
+</span><span class='line'># default value is false
+</span><span class='line'># since V4.00
+</span><span class='line'>use_storage_id = true
+</span><span class='line'>
+</span><span class='line'># the max time of storage sync a file
+</span><span class='line'># default value is 300 seconds
+</span><span class='line'># since V2.00
+</span><span class='line'>storage_sync_file_max_time = 300
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;现对上面列出的一些配置项进行解释：</p>
+
+<p>&emsp;&emsp;<strong>port</strong>：tracker服务器的端口号，如果一台服务器上要运行多个tracker实例就需要更改此端口号以避免冲突。</p>
+
+<p>&emsp;&emsp;<strong>base_path</strong>：tracker自身配置信息以及日志信息保存的位置，这个目录本不会占用太大的空间，但日志文件会随着使用而慢慢变大。</p>
+
+<p>&emsp;&emsp;<strong>store_lookup</strong>：负载分配机制，2表示选择存储空间最大的组来保存文件。</p>
+
+<p>&emsp;&emsp;<strong>run_by_group，run_by_user</strong>：指定运行tracker的用户组及用户，这是为了保存系统的安全，我们一般会为fdfs新建组及用户。</p>
+
+<p>&emsp;&emsp;<strong>use_storage_id</strong>：使用存储服务器id替代ip地址，我们刚才编辑的storage_ids.conf中指定了每个实例的id。</p>
+
+<p>&emsp;&emsp;<strong>storage_sync_file_max_time</strong>：同一组中的不同storate进行文件同步的时间，默认是5分钟内完成同步，你可以根据实际情况把这个值改小（改变这个值后可以观察到文件同步的效果，这个值不要设置得太小以避免造成系统同步网络压力）。</p>
+
+<p>&emsp;&emsp;接下来我们配置本台服务器上的storage实例，先配置storage1.conf实例，这个实例位于group1中。</p>
+
+<p>&emsp;&emsp;vim /usr/local/fastdfs/conf/storage1.conf，同样限于篇幅，我仅仅贴出重要配置项，其它的使用默认值。<!-- more--></p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'># the name of the group this storage server belongs to
+</span><span class='line'>group_name=group1
+</span><span class='line'>
+</span><span class='line'># the storage server port
+</span><span class='line'>port=23001
+</span><span class='line'>
+</span><span class='line'># the base path to store data and log files
+</span><span class='line'>base_path=/var/fastdfs/storage1
+</span><span class='line'>
+</span><span class='line'># store_path#, based 0, if store_path0 not exists, it's value is base_path
+</span><span class='line'># the paths must be exist
+</span><span class='line'>store_path0=/var/fastdfs/store_group1_path0
+</span><span class='line'>
+</span><span class='line'># tracker_server can ocur more than once, and tracker_server format is
+</span><span class='line'>#  "host:port", host can be hostname or ip address
+</span><span class='line'>tracker_server=192.168.68.133:22122
+</span><span class='line'>tracker_server=192.168.68.136:22122
+</span><span class='line'>
+</span><span class='line'>run_by_group=
+</span><span class='line'>run_by_user=
+</span><span class='line'>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;现在对上面的配置项进行解释：</p>
+
+<p>&emsp;&emsp;<strong>group_name</strong>：本storage实例所属的组名称。</p>
+
+<p>&emsp;&emsp;<strong>port</strong>：storage的端口号，同一组的storage实例必须采用同样的端口号，这就是说同一组中的storage实例必须部署在不同学的机器上，因为同一台机器上的端口号不能相同。</p>
+
+<p>&emsp;&emsp;<strong>base_path</strong>：本storage的配置数据及运行日志文件存放的位置，和tracker中的base_path含义相同。</p>
+
+<p>&emsp;&emsp;<strong>store_path0</strong>：真正的用户上传文件保存的位置目录，fastDfs会在该目录下新建许多子目录，在第一次启动实例时会进行这个操作。store_path可以有多个，一般可以分配成单独的磁盘挂载点。</p>
+
+<p>&emsp;&emsp;<strong>tracker_server</strong>：指定本storaged的信息会注册到哪些tracker中去，故这里的tracker_server可以配置多个。</p>
+
+<p>&emsp;&emsp;<strong>run_by_group、run_by_user</strong>与tracker中的含义相同，不再细说。</p>
+
+<p>&emsp;&emsp;接下来，我们再来看本服务器上的另一个storage实例，这个实例是运行在group2中的，端口号与上面配置的那个storage是不同的，请看配置关键项：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'># the name of the group this storage server belongs to
+</span><span class='line'>group_name=group2
+</span><span class='line'>
+</span><span class='line'># the storage server port
+</span><span class='line'>port=23002
+</span><span class='line'>
+</span><span class='line'>base_path=/var/fastdfs/storage2
+</span><span class='line'>
+</span><span class='line'># store_path#, based 0, if store_path0 not exists, it's value is base_path
+</span><span class='line'># the paths must be exist
+</span><span class='line'>store_path0=/var/fastdfs/store_group2_path0
+</span><span class='line'>
+</span><span class='line'># tracker_server can ocur more than once, and tracker_server format is
+</span><span class='line'>#  "host:port", host can be hostname or ip address
+</span><span class='line'>tracker_server=192.168.68.133:22122
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面配置文件中的内容和storage1.conf中的类似，只不过group_name、port不相同，两个文件的保存路径也是不同的，经过这些配置后，我们就可以启动服务实例了。</p>
+
+<p>&emsp;&emsp;先来启动tracker实例，先编辑启动脚本文，vim /etc/init.d/fdfs_trackerd。</p>
+
+<figure class='code'><figcaption><span>fdfs_trackerd</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="c">#!/bin/bash</span>
+</span><span class='line'><span class="c">#</span>
+</span><span class='line'><span class="c"># fdfs_trackerd Starts fdfs_trackerd</span>
+</span><span class='line'><span class="c">#</span>
+</span><span class='line'><span class="c">#</span>
+</span><span class='line'><span class="c"># chkconfig: 2345 99 01</span>
+</span><span class='line'><span class="c"># description: FastDFS tracker server</span>
+</span><span class='line'><span class="c">### BEGIN INIT INFO</span>
+</span><span class='line'><span class="c"># Provides: $fdfs_trackerd</span>
+</span><span class='line'><span class="c">### END INIT INFO</span>
+</span><span class='line'><span class="c"># Source function library.</span>
+</span><span class='line'>. /etc/init.d/functions
+</span><span class='line'><span class="nv">FastDfs</span><span class="o">=</span><span class="s1">&#39;/usr/local/fastdfs&#39;</span>
+</span><span class='line'><span class="nv">CONF</span><span class="o">=</span><span class="s2">&quot;$FastDfs/conf/tracker.conf&quot;</span>
+</span><span class='line'><span class="k">if</span> <span class="o">[</span> ! -f <span class="nv">$CONF</span> <span class="o">]</span>; <span class="k">then</span>
+</span><span class='line'><span class="k">  </span><span class="nb">echo</span> <span class="s2">&quot;file $CONF does not exist!&quot;</span>
+</span><span class='line'>  <span class="nb">exit </span>2
+</span><span class='line'><span class="k">fi</span>
+</span><span class='line'><span class="nv">PRG</span><span class="o">=</span><span class="s2">&quot;$FastDfs/bin/fdfs_trackerd&quot;</span>
+</span><span class='line'><span class="k">if</span> <span class="o">[</span> ! -f <span class="nv">$PRG</span> <span class="o">]</span>; <span class="k">then</span>
+</span><span class='line'><span class="k">  </span><span class="nb">echo</span> <span class="s2">&quot;file $PRG does not exist!&quot;</span>
+</span><span class='line'>  <span class="nb">exit </span>2
+</span><span class='line'><span class="k">fi</span>
+</span><span class='line'><span class="nv">Stop</span><span class="o">=</span><span class="s2">&quot;$FastDfs/bin/stop.sh&quot;</span>
+</span><span class='line'><span class="k">if</span> <span class="o">[</span> ! -f <span class="nv">$Stop</span> <span class="o">]</span>; <span class="k">then</span>
+</span><span class='line'><span class="k">  </span><span class="nb">echo</span> <span class="s2">&quot;file $Stop does not exist!&quot;</span>
+</span><span class='line'>  <span class="nb">exit </span>2
+</span><span class='line'><span class="k">fi</span>
+</span><span class='line'><span class="nv">Restart</span><span class="o">=</span><span class="s2">&quot;$FastDfs/bin/restart.sh&quot;</span>
+</span><span class='line'><span class="k">if</span> <span class="o">[</span> ! -f <span class="nv">$Restart</span> <span class="o">]</span>; <span class="k">then</span>
+</span><span class='line'><span class="k">  </span><span class="nb">echo</span> <span class="s2">&quot;file $Restart does not exist!&quot;</span>
+</span><span class='line'>  <span class="nb">exit </span>2
+</span><span class='line'><span class="k">fi</span>
+</span><span class='line'><span class="nv">RETVAL</span><span class="o">=</span>0
+</span><span class='line'>start<span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="nb">echo</span> -n <span class="s2">$&quot;Starting FastDFS tracker server: &quot;</span>
+</span><span class='line'>    <span class="nv">$PRG</span> <span class="nv">$CONF</span> &amp;
+</span><span class='line'>    <span class="nv">RETVAL</span><span class="o">=</span><span class="nv">$?</span>
+</span><span class='line'>    <span class="nb">echo</span>
+</span><span class='line'><span class="nb">    </span><span class="k">return</span> <span class="nv">$RETVAL</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>stop<span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="nb">echo</span> -n <span class="s2">$&quot;Stop FastDFS tracker server: &quot;</span>
+</span><span class='line'>    <span class="nv">$Stop</span> <span class="nv">$PRG</span> <span class="nv">$CONF</span>
+</span><span class='line'>    <span class="nv">RETVAL</span><span class="o">=</span><span class="nv">$?</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nv">$RETVAL</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>rhstatus<span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    status fdfs_trackerd
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>restart<span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="nv">$Restart</span> <span class="nv">$PRG</span> <span class="nv">$CONF</span> &amp;
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="k">case</span> <span class="s2">&quot;$1&quot;</span> in
+</span><span class='line'>  start<span class="o">)</span>
+</span><span class='line'>    start
+</span><span class='line'>    ;;
+</span><span class='line'>  stop<span class="o">)</span>
+</span><span class='line'>    stop
+</span><span class='line'>    ;;
+</span><span class='line'>  status<span class="o">)</span>
+</span><span class='line'>    rhstatus
+</span><span class='line'>    ;;
+</span><span class='line'>  restart|reload<span class="o">)</span>
+</span><span class='line'>    restart
+</span><span class='line'>    ;;
+</span><span class='line'>  condrestart<span class="o">)</span>
+</span><span class='line'>    restart
+</span><span class='line'>    ;;
+</span><span class='line'>  *<span class="o">)</span>
+</span><span class='line'>    <span class="nb">echo</span> <span class="s2">$&quot;Usage: $0 {start|stop|status|restart|condrestart}&quot;</span>
+</span><span class='line'>    <span class="nb">exit </span>1
+</span><span class='line'><span class="k">esac</span>
+</span><span class='line'><span class="nb">exit</span> <span class="nv">$?</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;这篇启动脚本中，主要修改的地方是FastDfs及CONF变量参数，这两个用来指定tracker配置文件所在的位置。</p>
+
+<p>&emsp;&emsp;完成编辑后，使用命令：sudo /etc/init.d/fdfs_trackerd start，即可完成服务器的启动，如果启动成功你可通过netstat -lnpt查看到tracker的端口号。</p>
+
+<p>&emsp;&emsp;接下来，将fdfs_storaged拷贝为fdfs_storaged1，用于启动storage1实例，要修改的地方也是FastDfs及CONF参数，这两个参数用来指定storage1.conf文件的在的目录及配置文件的名称。</p>
+
+<figure class='code'><figcaption><span>fdfs_storaged1</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'><span class="c">#!/bin/bash</span>
+</span><span class='line'><span class="c">#</span>
+</span><span class='line'><span class="c"># fdfs_storaged Starts fdfs_storaged</span>
+</span><span class='line'><span class="c">#</span>
+</span><span class='line'><span class="c">#</span>
+</span><span class='line'><span class="c"># chkconfig: 2345 99 01</span>
+</span><span class='line'><span class="c"># description: FastDFS storage server</span>
+</span><span class='line'><span class="c">### BEGIN INIT INFO</span>
+</span><span class='line'><span class="c"># Provides: $fdfs_storaged</span>
+</span><span class='line'><span class="c">### END INIT INFO</span>
+</span><span class='line'><span class="c"># Source function library.</span>
+</span><span class='line'>. /etc/init.d/functions
+</span><span class='line'><span class="nv">FastDfs</span><span class="o">=</span><span class="s1">&#39;/usr/local/fastdfs&#39;</span>
+</span><span class='line'><span class="nv">CONF</span><span class="o">=</span><span class="s2">&quot;$FastDfs/conf/storage1.conf&quot;</span>
+</span><span class='line'><span class="k">if</span> <span class="o">[</span> ! -f <span class="nv">$CONF</span> <span class="o">]</span>; <span class="k">then</span>
+</span><span class='line'><span class="k">  </span><span class="nb">echo</span> <span class="s2">&quot;file $CONF does not exist!&quot;</span>
+</span><span class='line'>  <span class="nb">exit </span>2
+</span><span class='line'><span class="k">fi</span>
+</span><span class='line'><span class="nv">PRG</span><span class="o">=</span><span class="s2">&quot;$FastDfs/bin/fdfs_storaged&quot;</span>
+</span><span class='line'><span class="k">if</span> <span class="o">[</span> ! -f <span class="nv">$PRG</span> <span class="o">]</span>; <span class="k">then</span>
+</span><span class='line'><span class="k">  </span><span class="nb">echo</span> <span class="s2">&quot;file $PRG does not exist!&quot;</span>
+</span><span class='line'>  <span class="nb">exit </span>2
+</span><span class='line'><span class="k">fi</span>
+</span><span class='line'><span class="nv">Stop</span><span class="o">=</span><span class="s2">&quot;$FastDfs/bin/stop.sh&quot;</span>
+</span><span class='line'><span class="k">if</span> <span class="o">[</span> ! -f <span class="nv">$Stop</span> <span class="o">]</span>; <span class="k">then</span>
+</span><span class='line'><span class="k">  </span><span class="nb">echo</span> <span class="s2">&quot;file $Stop does not exist!&quot;</span>
+</span><span class='line'>  <span class="nb">exit </span>2
+</span><span class='line'><span class="k">fi</span>
+</span><span class='line'><span class="nv">Restart</span><span class="o">=</span><span class="s2">&quot;$FastDfs/bin/restart.sh&quot;</span>
+</span><span class='line'><span class="k">if</span> <span class="o">[</span> ! -f <span class="nv">$Restart</span> <span class="o">]</span>; <span class="k">then</span>
+</span><span class='line'><span class="k">  </span><span class="nb">echo</span> <span class="s2">&quot;file $Restart does not exist!&quot;</span>
+</span><span class='line'>  <span class="nb">exit </span>2
+</span><span class='line'><span class="k">fi</span>
+</span><span class='line'><span class="nv">RETVAL</span><span class="o">=</span>0
+</span><span class='line'>start<span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nb">echo</span> -n <span class="s2">$&quot;Starting FastDFS storage server: &quot;</span>
+</span><span class='line'>  <span class="nv">$PRG</span> <span class="nv">$CONF</span> &amp;
+</span><span class='line'>  <span class="nv">RETVAL</span><span class="o">=</span><span class="nv">$?</span>
+</span><span class='line'>  <span class="nb">echo</span>
+</span><span class='line'><span class="nb"> </span><span class="k">return</span> <span class="nv">$RETVAL</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>stop<span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nb">echo</span> -n <span class="s2">$&quot;Stop FastDFS storage server: &quot;</span>
+</span><span class='line'>  <span class="nv">$Stop</span> <span class="nv">$PRG</span> <span class="nv">$CONF</span>
+</span><span class='line'>  <span class="nv">RETVAL</span><span class="o">=</span><span class="nv">$?</span>
+</span><span class='line'>  <span class="k">return</span> <span class="nv">$RETVAL</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>rhstatus<span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  status fdfs_storaged
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>restart<span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="nv">$Restart</span> <span class="nv">$PRG</span> <span class="nv">$CONF</span> &amp;
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="k">case</span> <span class="s2">&quot;$1&quot;</span> in
+</span><span class='line'>  start<span class="o">)</span>
+</span><span class='line'>      start
+</span><span class='line'>  ;;
+</span><span class='line'>  stop<span class="o">)</span>
+</span><span class='line'>      stop
+</span><span class='line'>  ;;
+</span><span class='line'>  status<span class="o">)</span>
+</span><span class='line'>      rhstatus
+</span><span class='line'>  ;;
+</span><span class='line'>  restart|reload<span class="o">)</span>
+</span><span class='line'>      restart
+</span><span class='line'>  ;;
+</span><span class='line'>  condrestart<span class="o">)</span>
+</span><span class='line'>      restart
+</span><span class='line'>  ;;
+</span><span class='line'>  *<span class="o">)</span>
+</span><span class='line'>  <span class="nb">echo</span> <span class="s2">$&quot;Usage: $0 {start|stop|status|restart|condrestart}&quot;</span>
+</span><span class='line'>  <span class="nb">exit </span>1
+</span><span class='line'><span class="k">esac</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">exit</span> <span class="nv">$?</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好，该来启动storaged1实例了，命令： sudo /etc/init.d/fdfs_storaged1 start，如果是第一次启动会观察到创建存储目录的过程。</p>
+
+<p>&emsp;&emsp;启动storaged2实例的过程和storaged1相同，先编辑fdfs_storaged2文件，再fdfs_storaged2 start即完成。</p>
+
+<p>&emsp;&emsp;当1号服务器上的fdfs全部服务都成功启动后，我们可以看到如下目录结构会建立起来。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/fdfs_dir_struct.jpg' width='' height='' title='fastdfs目录结构'><span class='caption-text'>fastdfs目录结构</span></span></p>
+
+<p>&emsp;&emsp;至此，1号服务器上的所有配置及服务启动工作已经完成。2号服务器的配置及服务实例启动与1号服务器基本相同，惟一需要大家要注意的是group的名称，port端口号等，要和1号服务器相“呼应”，同时，我们在2号服务器上也配置了一个tracker实例以保证高可用性。</p>
+
+<p>&emsp;&emsp;好了，fastDFS的配置先告一段落，下一篇我们来聊聊客户端对fastDFS的调用，除了java客户端外，还包括tengine-2.0.1服务器上访问插件的配置。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-06-03T15:18:00+08:00" pubdate data-updated="true">2014年06月03日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>, <a class='category' href='/blog/categories/jia-gou/'>架构</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/05/30/fastDFS-setup/" title="上一篇文章: 分布式文件系统fastdfs解析之一(安装)">&laquo;上一篇:&nbsp;&nbsp;分布式文件系统fastdfs解析之一(安装)</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析-配置</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/05/29/code-share-poi/">分享几段数据导入导出参考代码</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/05/23/security6/">Java安全那些事之六（客户端安全）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+  <h3></h3>
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-6635992117744268"
+     data-ad-slot="8027050961"
+     data-ad-format="auto"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="60">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2014 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

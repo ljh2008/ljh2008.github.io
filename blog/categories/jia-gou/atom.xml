@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：架构 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/jia-gou/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-05-30T11:14:49+08:00</updated>
+  <updated>2014-06-04T13:59:08+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,440 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[分布式文件系统fastdfs解析-配置]]></title>
+    <link href="http://yanyaner.com/blog/2014/06/03/fastDFS-config/"/>
+    <updated>2014-06-03T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/06/03/fastDFS-config</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;我计划在两台服务器上安装fdfs，ip分别是:192.168.68.133（1号服务器）, 192.168.68.136（2号服务器），fdfs在两台服务器上的安装部署图如下。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/fdfs_deploy.jpg' width='' height='' title='fastdfs部署示意图'><span class='caption-text'>fastdfs部署示意图</span></span></p>
+
+<p>&emsp;&emsp;1号服务器上安装tracker实例一个，storage实例2个，分别位于group1,group2两个不同的组中；2号服务器上也安装tracker实例一个，storage实例1个，这个storage和1号服务器中的其中一个storage位于同一个组中。下面给大家贴出具体配置。</p>
+
+<p>&emsp;&emsp;1号服务器中，我们先： vim /usr/local/fastdfs/conf/storage_ids.conf</p>
+
+<p>```</p>
+
+<h1><id>  &lt;group_name>  &lt;ip_or_hostname></h1>
+
+<p>100001   group1  192.168.68.133
+100002   group2  192.168.68.133
+100003   group1  192.168.68.136
+```</p>
+
+<p>&emsp;&emsp;在这个文件中为所有存储服务器指定id, 这样可以免更换ip带来的影响，也就是说当服务器ip发生改变后只需要更改这个文件中的ip地址即可。</p>
+
+<p>&emsp;&emsp;编辑tracker.conf，vim /usr/local/fastdfs/conf/tracker.conf配置文件，以下仅仅列出我改过的或者我认为需要给大家说明的配置项，没有贴出的均保持配置文件中的默认值。</p>
+
+<p>```</p>
+
+<h1>the tracker server port</h1>
+
+<p>port=22122</p>
+
+<h1>the base path to store data and log files</h1>
+
+<p>base_path=/var/fastdfs/tracker</p>
+
+<h1>the method of selecting group to upload files</h1>
+
+<h1>0: round robin</h1>
+
+<h1>1: specify group</h1>
+
+<h1>2: load balance, select the max free space group to upload file</h1>
+
+<p>store_lookup=2</p>
+
+<h1>which group to upload file</h1>
+
+<h1>when store_lookup set to 1, must set store_group to the group name</h1>
+
+<p>store_group=group2</p>
+
+<h1>unix group name to run this program,</h1>
+
+<h1>not set (empty) means run by the group of current user</h1>
+
+<p>run_by_group=</p>
+
+<h1>unix username to run this program,</h1>
+
+<h1>not set (empty) means run by current user</h1>
+
+<p>run_by_user=</p>
+
+<h1>if use storage ID instead of IP address</h1>
+
+<h1>default value is false</h1>
+
+<h1>since V4.00</h1>
+
+<p>use_storage_id = true</p>
+
+<h1>the max time of storage sync a file</h1>
+
+<h1>default value is 300 seconds</h1>
+
+<h1>since V2.00</h1>
+
+<p>storage_sync_file_max_time = 300</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;现对上面列出的一些配置项进行解释：</p>
+
+<p>&emsp;&emsp;<strong>port</strong>：tracker服务器的端口号，如果一台服务器上要运行多个tracker实例就需要更改此端口号以避免冲突。</p>
+
+<p>&emsp;&emsp;<strong>base_path</strong>：tracker自身配置信息以及日志信息保存的位置，这个目录本不会占用太大的空间，但日志文件会随着使用而慢慢变大。</p>
+
+<p>&emsp;&emsp;<strong>store_lookup</strong>：负载分配机制，2表示选择存储空间最大的组来保存文件。</p>
+
+<p>&emsp;&emsp;<strong>run_by_group，run_by_user</strong>：指定运行tracker的用户组及用户，这是为了保存系统的安全，我们一般会为fdfs新建组及用户。</p>
+
+<p>&emsp;&emsp;<strong>use_storage_id</strong>：使用存储服务器id替代ip地址，我们刚才编辑的storage_ids.conf中指定了每个实例的id。</p>
+
+<p>&emsp;&emsp;<strong>storage_sync_file_max_time</strong>：同一组中的不同storate进行文件同步的时间，默认是5分钟内完成同步，你可以根据实际情况把这个值改小（改变这个值后可以观察到文件同步的效果，这个值不要设置得太小以避免造成系统同步网络压力）。</p>
+
+<p>&emsp;&emsp;接下来我们配置本台服务器上的storage实例，先配置storage1.conf实例，这个实例位于group1中。</p>
+
+<p>&emsp;&emsp;vim /usr/local/fastdfs/conf/storage1.conf，同样限于篇幅，我仅仅贴出重要配置项，其它的使用默认值。<!-- more--></p>
+
+<p>```</p>
+
+<h1>the name of the group this storage server belongs to</h1>
+
+<p>group_name=group1</p>
+
+<h1>the storage server port</h1>
+
+<p>port=23001</p>
+
+<h1>the base path to store data and log files</h1>
+
+<p>base_path=/var/fastdfs/storage1</p>
+
+<h1>store_path#, based 0, if store_path0 not exists, it&rsquo;s value is base_path</h1>
+
+<h1>the paths must be exist</h1>
+
+<p>store_path0=/var/fastdfs/store_group1_path0</p>
+
+<h1>tracker_server can ocur more than once, and tracker_server format is</h1>
+
+<h1>&ldquo;host:port&rdquo;, host can be hostname or ip address</h1>
+
+<p>tracker_server=192.168.68.133:22122
+tracker_server=192.168.68.136:22122</p>
+
+<p>run_by_group=
+run_by_user=</p>
+
+<p>```
+&emsp;&emsp;现在对上面的配置项进行解释：</p>
+
+<p>&emsp;&emsp;<strong>group_name</strong>：本storage实例所属的组名称。</p>
+
+<p>&emsp;&emsp;<strong>port</strong>：storage的端口号，同一组的storage实例必须采用同样的端口号，这就是说同一组中的storage实例必须部署在不同学的机器上，因为同一台机器上的端口号不能相同。</p>
+
+<p>&emsp;&emsp;<strong>base_path</strong>：本storage的配置数据及运行日志文件存放的位置，和tracker中的base_path含义相同。</p>
+
+<p>&emsp;&emsp;<strong>store_path0</strong>：真正的用户上传文件保存的位置目录，fastDfs会在该目录下新建许多子目录，在第一次启动实例时会进行这个操作。store_path可以有多个，一般可以分配成单独的磁盘挂载点。</p>
+
+<p>&emsp;&emsp;<strong>tracker_server</strong>：指定本storaged的信息会注册到哪些tracker中去，故这里的tracker_server可以配置多个。</p>
+
+<p>&emsp;&emsp;<strong>run_by_group、run_by_user</strong>与tracker中的含义相同，不再细说。</p>
+
+<p>&emsp;&emsp;接下来，我们再来看本服务器上的另一个storage实例，这个实例是运行在group2中的，端口号与上面配置的那个storage是不同的，请看配置关键项：</p>
+
+<p>```</p>
+
+<h1>the name of the group this storage server belongs to</h1>
+
+<p>group_name=group2</p>
+
+<h1>the storage server port</h1>
+
+<p>port=23002</p>
+
+<p>base_path=/var/fastdfs/storage2</p>
+
+<h1>store_path#, based 0, if store_path0 not exists, it&rsquo;s value is base_path</h1>
+
+<h1>the paths must be exist</h1>
+
+<p>store_path0=/var/fastdfs/store_group2_path0</p>
+
+<h1>tracker_server can ocur more than once, and tracker_server format is</h1>
+
+<h1>&ldquo;host:port&rdquo;, host can be hostname or ip address</h1>
+
+<p>tracker_server=192.168.68.133:22122</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;上面配置文件中的内容和storage1.conf中的类似，只不过group_name、port不相同，两个文件的保存路径也是不同的，经过这些配置后，我们就可以启动服务实例了。</p>
+
+<p>&emsp;&emsp;先来启动tracker实例，先编辑启动脚本文，vim /etc/init.d/fdfs_trackerd。</p>
+
+<p>``` sh fdfs_trackerd</p>
+
+<h1>!/bin/bash</h1>
+
+<p>#</p>
+
+<h1>fdfs_trackerd Starts fdfs_trackerd</h1>
+
+<p>#
+#</p>
+
+<h1>chkconfig: 2345 99 01</h1>
+
+<h1>description: FastDFS tracker server</h1>
+
+<h3>BEGIN INIT INFO</h3>
+
+<h1>Provides: $fdfs_trackerd</h1>
+
+<h3>END INIT INFO</h3>
+
+<h1>Source function library.</h1>
+
+<p>. /etc/init.d/functions
+FastDfs=&lsquo;/usr/local/fastdfs&rsquo;
+CONF=&ldquo;$FastDfs/conf/tracker.conf&rdquo;
+if [ ! -f $CONF ]; then
+  echo &ldquo;file $CONF does not exist!&rdquo;
+  exit 2
+fi
+PRG=&ldquo;$FastDfs/bin/fdfs_trackerd&rdquo;
+if [ ! -f $PRG ]; then
+  echo &ldquo;file $PRG does not exist!&rdquo;
+  exit 2
+fi
+Stop=&ldquo;$FastDfs/bin/stop.sh&rdquo;
+if [ ! -f $Stop ]; then
+  echo &ldquo;file $Stop does not exist!&rdquo;
+  exit 2
+fi
+Restart=&ldquo;$FastDfs/bin/restart.sh&rdquo;
+if [ ! -f $Restart ]; then
+  echo &ldquo;file $Restart does not exist!&rdquo;
+  exit 2
+fi
+RETVAL=0
+start() {</p>
+
+<pre><code>echo -n $"Starting FastDFS tracker server: "
+$PRG $CONF &amp;
+RETVAL=$?
+echo
+return $RETVAL
+</code></pre>
+
+<p>}
+stop() {</p>
+
+<pre><code>echo -n $"Stop FastDFS tracker server: "
+$Stop $PRG $CONF
+RETVAL=$?
+return $RETVAL
+</code></pre>
+
+<p>}
+rhstatus() {</p>
+
+<pre><code>status fdfs_trackerd
+</code></pre>
+
+<p>}
+restart() {</p>
+
+<pre><code>    $Restart $PRG $CONF &amp;
+</code></pre>
+
+<p>}
+case &ldquo;$1&rdquo; in
+  start)</p>
+
+<pre><code>start
+;;
+</code></pre>
+
+<p>  stop)</p>
+
+<pre><code>stop
+;;
+</code></pre>
+
+<p>  status)</p>
+
+<pre><code>rhstatus
+;;
+</code></pre>
+
+<p>  restart|reload)</p>
+
+<pre><code>restart
+;;
+</code></pre>
+
+<p>  condrestart)</p>
+
+<pre><code>restart
+;;
+</code></pre>
+
+<p>  *)</p>
+
+<pre><code>echo $"Usage: $0 {start|stop|status|restart|condrestart}"
+exit 1
+</code></pre>
+
+<p>esac
+exit $?
+```</p>
+
+<p>&emsp;&emsp;这篇启动脚本中，主要修改的地方是FastDfs及CONF变量参数，这两个用来指定tracker配置文件所在的位置。</p>
+
+<p>&emsp;&emsp;完成编辑后，使用命令：sudo /etc/init.d/fdfs_trackerd start，即可完成服务器的启动，如果启动成功你可通过netstat -lnpt查看到tracker的端口号。</p>
+
+<p>&emsp;&emsp;接下来，将fdfs_storaged拷贝为fdfs_storaged1，用于启动storage1实例，要修改的地方也是FastDfs及CONF参数，这两个参数用来指定storage1.conf文件的在的目录及配置文件的名称。</p>
+
+<p>``` sh fdfs_storaged1</p>
+
+<h1>!/bin/bash</h1>
+
+<p>#</p>
+
+<h1>fdfs_storaged Starts fdfs_storaged</h1>
+
+<p>#
+#</p>
+
+<h1>chkconfig: 2345 99 01</h1>
+
+<h1>description: FastDFS storage server</h1>
+
+<h3>BEGIN INIT INFO</h3>
+
+<h1>Provides: $fdfs_storaged</h1>
+
+<h3>END INIT INFO</h3>
+
+<h1>Source function library.</h1>
+
+<p>. /etc/init.d/functions
+FastDfs=&lsquo;/usr/local/fastdfs&rsquo;
+CONF=&ldquo;$FastDfs/conf/storage1.conf&rdquo;
+if [ ! -f $CONF ]; then
+  echo &ldquo;file $CONF does not exist!&rdquo;
+  exit 2
+fi
+PRG=&ldquo;$FastDfs/bin/fdfs_storaged&rdquo;
+if [ ! -f $PRG ]; then
+  echo &ldquo;file $PRG does not exist!&rdquo;
+  exit 2
+fi
+Stop=&ldquo;$FastDfs/bin/stop.sh&rdquo;
+if [ ! -f $Stop ]; then
+  echo &ldquo;file $Stop does not exist!&rdquo;
+  exit 2
+fi
+Restart=&ldquo;$FastDfs/bin/restart.sh&rdquo;
+if [ ! -f $Restart ]; then
+  echo &ldquo;file $Restart does not exist!&rdquo;
+  exit 2
+fi
+RETVAL=0
+start() {</p>
+
+<pre><code>echo -n $"Starting FastDFS storage server: "
+$PRG $CONF &amp;
+RETVAL=$?
+echo
+return $RETVAL
+</code></pre>
+
+<p>}
+stop() {</p>
+
+<pre><code>echo -n $"Stop FastDFS storage server: "
+$Stop $PRG $CONF
+RETVAL=$?
+return $RETVAL
+</code></pre>
+
+<p>}
+rhstatus() {</p>
+
+<pre><code>status fdfs_storaged
+</code></pre>
+
+<p>}
+restart() {</p>
+
+<pre><code>    $Restart $PRG $CONF &amp;
+</code></pre>
+
+<p>}
+case &ldquo;$1&rdquo; in
+  start)</p>
+
+<pre><code>start
+;;
+</code></pre>
+
+<p>  stop)</p>
+
+<pre><code>stop
+;;
+</code></pre>
+
+<p>  status)</p>
+
+<pre><code>rhstatus
+;;
+</code></pre>
+
+<p>  restart|reload)</p>
+
+<pre><code>restart
+;;
+</code></pre>
+
+<p>  condrestart)</p>
+
+<pre><code>restart
+;;
+</code></pre>
+
+<p>  *)</p>
+
+<pre><code>echo $"Usage: $0 {start|stop|status|restart|condrestart}"
+exit 1
+</code></pre>
+
+<p>esac</p>
+
+<p>exit $?
+```</p>
+
+<p>&emsp;&emsp;好，该来启动storaged1实例了，命令： sudo /etc/init.d/fdfs_storaged1 start，如果是第一次启动会观察到创建存储目录的过程。</p>
+
+<p>&emsp;&emsp;启动storaged2实例的过程和storaged1相同，先编辑fdfs_storaged2文件，再fdfs_storaged2 start即完成。</p>
+
+<p>&emsp;&emsp;当1号服务器上的fdfs全部服务都成功启动后，我们可以看到如下目录结构会建立起来。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/fdfs_dir_struct.jpg' width='' height='' title='fastdfs目录结构'><span class='caption-text'>fastdfs目录结构</span></span></p>
+
+<p>&emsp;&emsp;至此，1号服务器上的所有配置及服务启动工作已经完成。2号服务器的配置及服务实例启动与1号服务器基本相同，惟一需要大家要注意的是group的名称，port端口号等，要和1号服务器相“呼应”，同时，我们在2号服务器上也配置了一个tracker实例以保证高可用性。</p>
+
+<p>&emsp;&emsp;好了，fastDFS的配置先告一段落，下一篇我们来聊聊客户端对fastDFS的调用，除了java客户端外，还包括tengine-2.0.1服务器上访问插件的配置。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[分布式文件系统fastdfs解析之一(安装)]]></title>
@@ -40,7 +474,9 @@
 
 <p>&emsp;&emsp;我的服务器是ubuntu server，我计划安装在两台服务器上，ip分别是:192.168.68.133, 192.168.68.136，暂时简称为1号服务器，2号服务器。</p>
 
-<p>&emsp;&emsp;一号服务器上，将安装一个tracker server实例，一个位于group1中的storage server实例，一个位于group2中storage server实例。二号服务器上，也将安装一个tracker server实例，一个位于group1中的storage server实例。需要大家注意的是，fastdfs中一台服务器上可以安装多个组，但一个组中的多个storade server必须安装在不同的服务器上，并且同组中的storage server的服务端口必须一致，否则无法实现文件同步。</p>
+<p>&emsp;&emsp;一号服务器上，将安装一个tracker server实例，一个位于group1中的storage server实例，一个位于group2中storage server实例。</p>
+
+<p>&emsp;&emsp;二号服务器上，也将安装一个tracker server实例，一个位于group1中的storage server实例。需要大家注意的是，fastdfs中一台服务器上可以安装多个组，但一个组中的多个storade server必须安装在不同的服务器上，并且同组中的storage server的服务端口必须一致，否则无法实现文件同步。</p>
 
 <p>&emsp;&emsp;我先在一号服务器192.168.68.133上安装fastdfs。首先要准备安装环境，不同的linux发行版本可能会有所不同，我用的服务器版本是ubuntu 12.04 server，以下的操作均以这个版本的ubuntu服务器为例。<!--more--></p>
 
@@ -770,470 +1206,6 @@ D:\server\db\mysql-proxy\bin\mysql-proxy.exe
 <p>&emsp;&emsp;应用程序中通过连接localhost:4040即可操作mysql数据库了，后台的一切都是通过mysql-proxy去处理的，数据库连接对应用程序变得透明了，我们的任务也就完成了。</p>
 
 <p>&emsp;&emsp;下篇给出读写分离的性能测试数据。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[项目中ibatis与hibernate混用示例详解]]></title>
-    <link href="http://yanyaner.com/blog/2014/03/06/ibatis-hibernate-in-query/"/>
-    <updated>2014-03-06T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/03/06/ibatis-hibernate-in-query</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;对于一般的项目hibernate足以胜任，但在选择一个框架时都要考虑适用场景（比如非功能性需求），hibernate也不例外，比如：复杂多条件组合查询对于hibernate来说并不方便（我们需要手工拼接sql）。基于这样的原因，很多项目中会引入ibatis来做复杂查询操作以做为补充，这主要是针对编码复杂度的考虑，性能也是其次的一个因素（其实hibernate也不存在问题的，你还记得到hibernater中有SqlQuery么，呵呵）。</p>
-
-<p>&emsp;&emsp;下面我给出一个简单的ibatis与hibernate混用示例，并在最后说明在实际使用过程中应该注意的问题。先来看spring的核心配置文件：</p>
-
-<p>``` xml spring-core.xml</p>
-
-<pre><code>&lt;!-- 读取配置参数 --&gt;
-&lt;bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"&gt;
-    &lt;property name="location"&gt;
-        &lt;value&gt;classpath:database.properties&lt;/value&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- 配置数据源 --&gt;
-&lt;bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
-      init-method="init" destroy-method="close"
-&gt;
-    &lt;property name="driverClassName"&gt;
-        &lt;value&gt;${driverClassName}&lt;/value&gt;
-    &lt;/property&gt;
-    &lt;property name="url"&gt;
-        &lt;value&gt;${url}&lt;/value&gt;
-    &lt;/property&gt;
-    &lt;property name="username"&gt;
-        &lt;value&gt;${username}&lt;/value&gt;
-    &lt;/property&gt;
-    &lt;property name="password"&gt;
-        &lt;value&gt;${pwd}&lt;/value&gt;
-    &lt;/property&gt;
-    &lt;property name="defaultAutoCommit"&gt;
-        &lt;value&gt;false&lt;/value&gt;
-    &lt;/property&gt;
-    &lt;property name="initialSize" value="1" /&gt;
-    &lt;property name="filters" value="stat,log4j" /&gt;
-    &lt;property name="name" value="myDatasource1"&gt;&lt;/property&gt;
-    &lt;!-- 最大活动连接数，也就是连接池中的最大缓存连接数 --&gt;
-    &lt;property name="maxActive" value="20" /&gt;
-    &lt;!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 --&gt;
-    &lt;property name="timeBetweenEvictionRunsMillis" value="10000" /&gt;
-    &lt;!-- 配置一个连接在池中最小生存的时间，单位是毫秒 --&gt;
-    &lt;property name="minEvictableIdleTimeMillis" value="10000" /&gt;
-    &lt;property name="minIdle" value="1" /&gt; 
-
-
-&lt;/bean&gt;
-
-&lt;!-- hibernate参数配置文件，包括缓存的信息 --&gt;
-&lt;bean id="hibernateProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean"&gt;
-    &lt;property name="location"&gt;
-        &lt;value&gt;classpath:hibernate-config.properties&lt;/value&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-
-
-&lt;!--  配置sessionFactory--&gt;
-&lt;bean id="sessionFactory" class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean"&gt;
-    &lt;property name="dataSource"&gt;
-        &lt;ref bean="dataSource" /&gt;
-    &lt;/property&gt;
-    &lt;property name="hibernateProperties" ref="hibernateProperties"&gt;&lt;/property&gt;
-    &lt;property name="packagesToScan"&gt;
-        &lt;list&gt;
-            &lt;value&gt;com.my.monitor.model&lt;/value&gt;
-        &lt;/list&gt;
-    &lt;/property&gt; 
-&lt;/bean&gt;
-
-&lt;!-- 配置事务管理器 --&gt;
-&lt;bean id="transactionManager"
-    class="org.springframework.orm.hibernate3.HibernateTransactionManager"&gt;
-    &lt;property name="sessionFactory" ref="sessionFactory"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- 对注解事务的支持 --&gt;
-&lt;tx:annotation-driven transaction-manager="transactionManager" /&gt;
-
-&lt;!-- 注解驱动 --&gt;
-&lt;context:component-scan base-package="com.my.monitor" &gt;&lt;/context:component-scan&gt; 
-
-&lt;!-- hibernate通用dao --&gt;
-&lt;bean id="hibernateBaseDao"
-    class="com.my.ms.framework.persistence.hibernate.BaseDaoHibernateImpl"&gt;
-    &lt;property name="sessionFactory" ref="sessionFactory"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- ibatis通用dao，一般用于查询 --&gt;
-&lt;bean id="ibatisBaseDao" class="com.my.ms.framework.persistence.ibatis.BaseDao"&gt;
-    &lt;property name="sqlMapClient"&gt;
-        &lt;bean class="org.springframework.orm.ibatis.SqlMapClientFactoryBean"&gt;
-            &lt;property name="dataSource" ref="dataSource"&gt;&lt;/property&gt;
-            &lt;property name="configLocation"&gt;
-                &lt;value&gt;classpath:config/ibatis/sqlMapConfig.xml&lt;/value&gt;
-            &lt;/property&gt;
-        &lt;/bean&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;这里封装了两个baseDao，分别针对的是hibernate与ibatis书写，源代码如下：<!-- more --></p>
-
-<p>``` java BaseDaoHibernateImpl.java
-package com.my.ms.framework.persistence.hibernate;</p>
-
-<p>import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;</p>
-
-<p>import org.hibernate.HibernateException;
-import org.hibernate.Query;
-import org.hibernate.Session;
-import org.springframework.orm.hibernate3.HibernateCallback;
-import org.springframework.orm.hibernate3.support.HibernateDaoSupport;
-import org.springframework.util.Assert;</p>
-
-<p>import com.my.ms.framework.persistence.model.Page;</p>
-
-<p>public class BaseDaoHibernateImpl extends HibernateDaoSupport implements</p>
-
-<pre><code>    IBaseDao {
-
-@Override
-public void addEntity(Object entity) {
-    getHibernateTemplate().save(entity);
-}
-
-@Override
-public void updateEntity(Object entity) {
-    getHibernateTemplate().update(entity);
-}
-
-@Override
-public void deleteEntity(Object entity) {
-    getHibernateTemplate().delete(entity);
-}
-
-@Override
-public void deleteEntityById(Class clazz, Serializable id) {
-    getHibernateTemplate().delete(this.queryEntityById(clazz, id));
-}
-
-@Override
-public &lt;T&gt; T queryEntityById(Class&lt;T&gt; clazz, Serializable id) {
-    return getHibernateTemplate().get(clazz, id);
-}
-
-@Override
-public List queryEntitys(String queryString, Object[] values) {
-    return getHibernateTemplate().find(queryString, values);
-}
-
-@Override
-public Page queryEntityByPage(int pageNo, int pageSize, String queryString,
-        Object[] parameters) {
-    Assert.isTrue(pageNo &gt; 0, "起始页不能小于0！");
-    // 去除select 子句，未考虑union的情况
-    int beginPos = queryString.toLowerCase().indexOf("from");
-    Assert.isTrue(beginPos != -1, queryString + "无效，必须包含from关键字");
-    String hql4Count = " select count(*)  "
-            + queryString.substring(beginPos);
-    return queryEntityByPage(pageNo, pageSize, queryString, hql4Count,
-            parameters);
-}
-
-@Override
-public Page queryEntityByPage(final int pageNo, final int pageSize,
-        final String queryString4Data, final String queryString4Count,
-        final Object[] parameters) {
-    Assert.hasText(queryString4Count, "用于计数的hql不能为空!");
-    Assert.hasText(queryString4Data, "用于查询的hql不能为空！");
-    Assert.isTrue(pageNo &gt; 0, "起始页不能小于0！");
-    return (Page) getHibernateTemplate().execute(new HibernateCallback() {
-
-        public Object doInHibernate(Session session)
-                throws HibernateException {
-
-            // 根据指定的参数执行hibernate hql查询
-            List countlist = getHibernateTemplate().find(queryString4Count,
-                    parameters);
-
-            long totalCount = ((Long) countlist.get(0)).longValue();
-            // 如果记录总数小于1则返回空的Page
-            if (totalCount &lt; 1)
-                return new Page(pageNo, pageSize, new ArrayList(), 0);
-            int startIndex = Page.getStartOfPage(pageNo, pageSize);
-            Query query = getSession().createQuery(queryString4Data);
-            for (int i = 0; i &lt; parameters.length; i++) {
-                query.setParameter(i, parameters[i]);
-            }
-            List list = query.setFirstResult(startIndex)
-                    .setMaxResults(pageSize).list();
-            return new Page(pageNo, pageSize, list, (int) totalCount);
-        }
-
-    });
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>针对ibatis的baseDao封装，主要是添加了一个分页方法，代码如下：</p>
-
-<p>``` java BaseDao.java</p>
-
-<p>package com.my.ms.framework.persistence.ibatis;</p>
-
-<p>import java.util.Map;</p>
-
-<p>import org.springframework.orm.ibatis.SqlMapClientTemplate;</p>
-
-<p>import com.my.ms.framework.persistence.model.Page;</p>
-
-<p>public class BaseDao extends SqlMapClientTemplate {</p>
-
-<pre><code>/**
- * 分页查询(sql语句块中的分页参数，请使用start与end)
- * @param pageNo
- * @param pageSize
- * @param sqlId4Data
- * @param sqlId4count
- * @param queryParam
- * @return
- */
-public Page queryEntityByPage(int pageNo, int pageSize, String sqlId4Data, String sqlId4Count, Map queryParam) {
-
-    queryParam.put("start", (pageNo - 1) * pageSize);
-    queryParam.put("end", pageSize);
-
-    Page page = new Page(pageNo, pageSize);
-
-    page.setData(queryForList(sqlId4Data, queryParam));
-    page.setRowcounts(((Number)queryForObject(sqlId4Count, queryParam)).intValue());
-
-    return page;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;上面两个实现的分页部分，用到了Page对象，请看分页对象的代码：</p>
-
-<p>``` java</p>
-
-<p>package com.my.ms.framework.persistence.model;</p>
-
-<p>import java.util.List;</p>
-
-<p>/<em>*
- * 分页对象
- * @author ljh
- *
- </em>/
-public class Page<T> {</p>
-
-<pre><code>/**
- * 数据对象
- */
-private List&lt;T&gt; data;
-
-private int rowcounts;
-/**
- * 页码
- */
-private int pageNo;
-/**
- * 最大显示页数
- */
-private int pageSize;
-
-public Page(){
-
-}
-
-public Page(int pageNo, int pageSize) {
-    this.pageNo = pageNo;
-    this.pageSize = pageSize;
-}
-
-public Page(int pageNo, int pageSize, List&lt;T&gt; data, int rowcounts) {
-    this.pageNo = pageNo;
-    this.pageSize = pageSize;
-    this.data = data;
-    this.rowcounts = rowcounts;
-}
-
-//计算该页对应的数据库下标
-public static int getStartOfPage(int pageNo, int pageSize) {
-    if (0 &gt; pageNo)
-        throw new IllegalArgumentException("页面索引不能小于0!");
-    return (pageNo - 1) * pageSize;
-}
-
-
-//共有多少页
-public int getPages() {
-    if (rowcounts % pageSize == 0) 
-    {
-        return rowcounts/pageSize;
-    } else {
-        return rowcounts/pageSize + 1;
-    }
-}
-
-public int getFirstNo() {
-    return 1;
-}
-
-public int getLastNo() {
-    return getPages();
-}
-
-public int getPreNo() {
-    if (pageNo - 1 &gt; 0 ) {
-        return pageNo - 1;
-    } else {
-        return 1;
-    }
-} 
-
-public int getNextNo() {
-    if (pageNo + 1  &lt;= getPages()) {
-        return pageNo + 1;
-    }
-    return getPages();
-}
-
-
-
-public List&lt;T&gt; getData() {
-    return data;
-}
-
-public void setData(List&lt;T&gt; data) {
-    this.data = data;
-}
-
-public int getPageNo() {
-    return pageNo;
-}
-
-public void setPageNo(int pageNo) {
-    this.pageNo = pageNo;
-}
-
-public int getPageSize() {
-    return pageSize;
-}
-
-public void setPageSize(int pageSize) {
-    this.pageSize = pageSize;
-}
-
-public int getRowcounts() {
-    return rowcounts;
-}
-
-public void setRowcounts(int rowcounts) {
-    this.rowcounts = rowcounts;
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;具体使用时就比较方便了，下面是一个调用示例：</p>
-
-<p>``` java UserServiceImpl.java</p>
-
-<p>@Service
-@Transactional(readOnly=false)
-public class UserServiceImpl implements IUserService{</p>
-
-<pre><code>@Resource
-private IBaseDao hibernateDao;
-
-@Resource
-private BaseDao ibatisDao;
-
-@Override
-public User someBizMethod(int userId) {
-
-    ......
-
-    User u1 = (User)hibernateDao.queryEntityById(User.class, userId);
-    u1.setUserName(u2.getUserName() + "hibernate");
-    hibernateDao.updateEntity(u1);
-
-    User u2 = (User)ibatisDao.queryForObject("znjk.getUserById", userId);
-    u2.setUserName(u2.getUserName() + "ibatis");
-    ibatisDao.update("znjk.updateUser",  u2);
-
-    ......
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;好了，在上面的示例中还存在一些必须要弄明白的问题。</p>
-
-<p>&emsp;&emsp;一、事务管理问题。大家可以看到，我在spring文件中只配置了一个事务管理器，并且是hibernate的事务管理器，那么，有人就有会疑问：hibernater的事务可以应用在ibatis的dao上么？答案是肯定的。至于原因，你想想spring事务管理是通过AOP来实现的，并且最终映射到底层的话，事务是通过在jdbc的connection上完成的，而在我上面的这个业务方法中，两个dao拿到的是同一个连接，因此，方法中的所有操作都在一个事务环境中了，这个事务是通过hibernate事务管理器启动的。</p>
-
-<p>&emsp;&emsp;二、缓存同步问题。两个框架都有自己不同的缓存配置及实现，而且互不相关。因为这个原因，我上面的代码没法对保证缓存的一致性，所以，我的建议是：ibatis仅仅只做复杂查询，hibernate什么都可以做。此外，还有一个方案是，配置ibatis的数据源事务管理器，在不同的方法中，通过@Transactional注解来指定这个业务方法使用的事务管理器（比如：@Transactional(readOnly=false,value=&ldquo;dataSourceTransactionManager&rdquo;)），也就是说，在每一个方法中不存在两个dao混用的情况，而在不同的方法中，用不同的事务管理器操作事务的提交。</p>
-
-<p>&emsp;&emsp;ibatis的优势在于查询，特别是类似下面的组合查询，十分的方便。复杂查询更是如此。</p>
-
-<p>``` xml
-<sql id="where4pet"></p>
-
-<pre><code>    &lt;dynamic prepend="where"&gt;
-        &lt;isNotNull property="nickName" prepend="and"&gt;
-            f_nick_name like '%$nickName$%'
-        &lt;/isNotNull&gt;
-        &lt;isNotNull property="password" prepend="and"&gt;
-            f_password like '%$password$%'
-        &lt;/isNotNull&gt;
-        &lt;isNotNull property="birthday" prepend="and"&gt;
-            f_birthday = #birthday#
-        &lt;/isNotNull&gt;
-        &lt;isNotNull property="gender" prepend="and"&gt;
-            &lt;isEqual compareProperty="gender" compareValue="true"&gt;
-                f_gender = 'T'
-            &lt;/isEqual&gt;
-            &lt;isEqual compareProperty="gender" compareValue="false"&gt;
-                f_gender = 'F'
-            &lt;/isEqual&gt;
-        &lt;/isNotNull&gt;
-        &lt;isNotNull property="age" prepend="and"&gt;
-            f_age = #age#
-        &lt;/isNotNull&gt;
-    &lt;/dynamic&gt;
-&lt;/sql&gt;
-
-&lt;select id="getPetByPage4data" resultMap="resultMapPet" &gt;
-    select *
-    from t_pet
-    &lt;include refid="where4pet"/&gt;
-    order by $field$
-    limit #start#, #end#
-&lt;/select&gt;
-&lt;select id="getPetByPage4count" resultClass="int"&gt;
-    select count(*)
-    from t_pet
-    &lt;include refid="where4pet"/&gt;
-&lt;/select&gt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;这样的话，我们就可以充分利用不同框架的优势，达到取长补短的目的。也许你会说，这种方式就是把增、删、改交由hibernate来做，把查询交由ibatis来做。本质上看确实如此，但实际项目中要灵活去做，比如hibernate除了增删改外也可以做查询，特别是简单的查询，这样也可以更好的利用到hibernate的缓存。</p>
-
-<p>&emsp;&emsp;我在<a href="/blog/2010/11/01/p4">四种持久层设计方案比较</a>中，对查询的分离有所介绍，有兴趣的可以去看看其中的一个方案，另外，CQRS架构、mysql读写分离也有这方面的含义。</p>
 ]]></content>
   </entry>
   

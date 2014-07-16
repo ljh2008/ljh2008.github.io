@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;首先说一下为什么要把apache换成nginx。 &emsp;&emsp;在目前的web服务器市场，apache的市场占有率应该在70%左右，可见其应用之广泛。apache有不错的性能及强大的模块配置功能，安全性也不 错。后来发现，很多访问量比较大的网站，都换成了nginx &hellip;">
+  <meta name="description" content="&emsp;&emsp;最近要给一朋友分配ftp账号，才发现以前是非常熟悉的配置流程全忘记了，没得法，又去google了一下，找回了原来的感觉，赶紧记下来一些东西，供以后查阅。 &emsp;&emsp;我用的是pure-ftp，该ftp服务器具有非常好的安全性，首先要加一个ftp用户组， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,76 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2010/10/27/pure-ftp/">Pure-ftp备忘录</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2010-10-27T15:18:00+08:00" pubdate data-updated="true">2010年10月27日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;最近要给一朋友分配ftp账号，才发现以前是非常熟悉的配置流程全忘记了，没得法，又去google了一下，找回了原来的感觉，赶紧记下来一些东西，供以后查阅。</p>
+
+<p>&emsp;&emsp;我用的是pure-ftp，该ftp服务器具有非常好的安全性，首先要加一个ftp用户组，再添加ftp用户，这两个用是linux系统中实实在在的用户组和用户，你可以用基本的linux命令搞定（但要注意，为了安全性考虑，请不要分配实际可操作的home目录与 bin目录权限给用户），组名和用户名随便取就是了。其实，你也可以不建，完全用系统中现有的用户和组，但是，为了ftp的统一管理，还是建议专门为 ftp建一个。</p>
+
+<p>&emsp;&emsp;下面是要建立pure-ftp虚拟用户，并将该用户绑定到系统中的一个实际用户上，并设置该ftp用户的可操作目录就完成了，但是，这个可操作目录，真实用户一定要有可操作的权限，比如读，写，或读写。</p>
+
+<p>&emsp;&emsp;我是直接修改以前的一个pure-ftp账号，改变目录用户组，给用户组赋写入权限，命令如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>sudo pure-pw usermod 虚拟用户名 -d /var/XXX目录
+</span><span class='line'>
+</span><span class='line'>sudo chown xx:ftpgroups -r /var/XXX目录
+</span><span class='line'>
+</span><span class='line'>sudo chmod -r g+w /var/XXX目录
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;成功后，要重新生成信息库，并重启pure-ftp服务器，命令如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>sudo pure-pw mkdb
+</span><span class='line'>
+</span><span class='line'>sudo /etc/init.d/pure-ftpd restart
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好，到此一切搞定，可能还要重新启动一下项目服务器，检查一下项目的文件上传，图片上传，页面图片显示是否正常，有问题的话，还得调整其它用户的权限，有些麻烦。</p>
+
+<p>&emsp;&emsp;一般情况下，项目应用服务器tomcat我都不会轻易重启，记得有一次生启后造成ucenter同步登录解析超慢。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1100,47 +1170,9 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/10/10/hello-world/">活在这个世上，应该留下点什么</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-10-10T15:18:00+08:00" pubdate data-updated="true">2010年10月10日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;今天我的独立博客正式开通了。</p>
-
-<p>&emsp;&emsp;我想，人来到这个世上，应该留下一些自已的东西，比如在互联网上，博客就是一种很好的方式。</p>
-
-<p>&emsp;&emsp;本博从今天起，将记录我的工作、生活、学习中的点滴和任何我想留下的东西，欢迎大家常来这里看看。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
+    
+      <a class="prev" href="/blog/page/19/">&larr; 更多早期老文章</a>
     
     <a href="/blog/archives">所有文章</a>
     
@@ -1153,6 +1185,10 @@
     <section>
   <h1>最近文章</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
@@ -1168,10 +1204,6 @@
     
       <li class="post">
         <a href="/blog/2014/05/29/code-share-poi/">分享几段数据导入导出参考代码</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/05/23/security6/">Java安全那些事之六（客户端安全）</a>
       </li>
     
   </ul>

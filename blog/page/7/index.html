@@ -9,12 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;错误信息如下： 1
-2
-3
-4
-5 org.springframework.dao.InvalidDataAccessApiUsageException:
-Write operations are not allowed in read-only mode ( &hellip;">
+  <meta name="description" content="&emsp;&emsp;Restful中的put请求，一般表示对原有对象的修改，但是在spring mvc中，通过@RequestParam、@ModelAttribute注解均不能得到请求数据（虽然可以通过@RequestBody得到请求字符串，但必须要自己在spring mvc中解析封装， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -63,6 +58,324 @@ Write operations are not allowed in read-only mode ( &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/04/25/spring-mvc-put-submit/">让spring Mvc完美支持restful的put提交方式</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-25T15:18:00+08:00" pubdate data-updated="true">2013年04月25日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;Restful中的put请求，一般表示对原有对象的修改，但是在spring mvc中，通过@RequestParam、@ModelAttribute注解均不能得到请求数据（虽然可以通过@RequestBody得到请求字符串，但必须要自己在spring mvc中解析封装，但已失去spring mvc数据绑定优势），其实，这个问题的根本原因不在spring mvc，你可以尝试一下request.getParameter等几个获取请求参数的几个方法，均得不到任何数据。</p>
+
+<p>&emsp;&emsp;怎么办呢？我这里提供一种解决方式，即在请求包装器中，自已来解析所需要的数据。</p>
+
+<p>&emsp;&emsp;代码中需要用到包装器类：</p>
+
+<figure class='code'><figcaption><span>PutMethodFilter.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 对put请求进行过滤处理，主要是解析请求参数</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> * Servlet Filter implementation class PutMethodFilter</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">PutMethodFilter</span> <span class="kd">implements</span> <span class="n">Filter</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * Default constructor.</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">PutMethodFilter</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * @see Filter#destroy()</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">destroy</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * @see Filter#doFilter(ServletRequest, ServletResponse, FilterChain)</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">ServletRequest</span> <span class="n">request</span><span class="o">,</span> <span class="n">ServletResponse</span> <span class="n">response</span><span class="o">,</span>
+</span><span class='line'>          <span class="n">FilterChain</span> <span class="n">chain</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span><span class="o">,</span> <span class="n">ServletException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">HttpServletRequest</span> <span class="n">req</span> <span class="o">=</span> <span class="o">(</span><span class="n">HttpServletRequest</span><span class="o">)</span> <span class="n">request</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">// PUT请求不能通过 request.getparameter()得到参数</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="s">&quot;PUT&quot;</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getMethod</span><span class="o">())</span> <span class="o">||</span> <span class="s">&quot;DELETE&quot;</span><span class="o">.</span><span class="na">equalsIgnoreCase</span><span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getMethod</span><span class="o">()))</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">BufferedReader</span> <span class="n">in</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BufferedReader</span><span class="o">(</span><span class="k">new</span> <span class="n">InputStreamReader</span><span class="o">(</span>
+</span><span class='line'>                  <span class="n">request</span><span class="o">.</span><span class="na">getInputStream</span><span class="o">()));</span>
+</span><span class='line'>          <span class="n">String</span> <span class="n">org_req_content</span><span class="o">;</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">StringBuilder</span> <span class="n">content</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">();</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="k">while</span> <span class="o">((</span><span class="n">org_req_content</span> <span class="o">=</span> <span class="n">in</span><span class="o">.</span><span class="na">readLine</span><span class="o">())</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">content</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">URLDecoder</span><span class="o">.</span><span class="na">decode</span><span class="o">(</span><span class="n">org_req_content</span><span class="o">,</span> <span class="s">&quot;UTF-8&quot;</span><span class="o">));</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">[]&gt;</span> <span class="n">map</span> <span class="o">=</span> <span class="n">parseRequestParameter</span><span class="o">(</span><span class="n">content</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+</span><span class='line'>          <span class="n">request</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="n">PutRequestWrapper</span><span class="o">.</span><span class="na">CUSTOMER_ATTR_KEY</span><span class="o">,</span> <span class="n">map</span><span class="o">);</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="c1">//包装成自定义的请求</span>
+</span><span class='line'>          <span class="n">request</span> <span class="o">=</span> <span class="k">new</span> <span class="n">PutRequestWrapper</span><span class="o">(</span><span class="n">req</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">chain</span><span class="o">.</span><span class="na">doFilter</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 自定义参数解析</span>
+</span><span class='line'><span class="cm">  * 注：此方法暂时没有考虑具有相同名称的一组提交值的情况，如需要，请自己更改下面的代码</span>
+</span><span class='line'><span class="cm">  * @param content</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">[]&gt;</span> <span class="n">parseRequestParameter</span><span class="o">(</span><span class="n">String</span> <span class="n">content</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">[]&gt;</span> <span class="n">params</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">[]&gt;();</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">content</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">||</span> <span class="s">&quot;&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">content</span><span class="o">.</span><span class="na">trim</span><span class="o">()))</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="n">params</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">String</span><span class="o">[]</span> <span class="n">tmp</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&quot;&amp;&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">tmp</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">String</span><span class="o">[]</span> <span class="n">keyValue</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">[</span><span class="n">i</span><span class="o">].</span><span class="na">split</span><span class="o">(</span><span class="s">&quot;=&quot;</span><span class="o">);</span>
+</span><span class='line'>              <span class="n">params</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">keyValue</span><span class="o">[</span><span class="mi">0</span><span class="o">],</span> <span class="k">new</span> <span class="n">String</span><span class="o">[]{</span><span class="n">keyValue</span><span class="o">[</span><span class="mi">1</span><span class="o">]});</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">return</span> <span class="n">params</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * @see Filter#init(FilterConfig)</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">init</span><span class="o">(</span><span class="n">FilterConfig</span> <span class="n">fConfig</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">ServletException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * put请求包装类</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">class</span> <span class="nc">PutRequestWrapper</span> <span class="kd">extends</span> <span class="n">HttpServletRequestWrapper</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//自定义解析完成后的参数，放入request中的key</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">final</span> <span class="kd">static</span> <span class="n">String</span> <span class="n">CUSTOMER_ATTR_KEY</span> <span class="o">=</span>  <span class="s">&quot;customer.attribute.parameter&quot;</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">[]&gt;</span> <span class="n">reqParams</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">PutRequestWrapper</span><span class="o">(</span><span class="n">HttpServletRequest</span> <span class="n">request</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kd">super</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">reqParams</span> <span class="o">=</span> <span class="o">(</span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">[]&gt;)</span><span class="n">request</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="n">CUSTOMER_ATTR_KEY</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">Map</span> <span class="nf">getParameterMap</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span>  <span class="n">reqParams</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">Enumeration</span> <span class="nf">getParameterNames</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">Collections</span><span class="o">.</span><span class="na">enumeration</span><span class="o">(</span><span class="n">reqParams</span><span class="o">.</span><span class="na">keySet</span><span class="o">());</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span><span class="o">[]</span> <span class="nf">getParameterValues</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">reqParams</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后，配置过滤器：</p>
+
+<figure class='code'><figcaption><span>web.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'> <span class="nt">&lt;filter&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>putMethodFilter<span class="nt">&lt;/filter-name&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;filter-class&gt;</span>com.my.jxc.commons.PutMethodFilter<span class="nt">&lt;/filter-class&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;/filter&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;filter-mapping&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>putMethodFilter<span class="nt">&lt;/filter-name&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;url-pattern&gt;</span>/*<span class="nt">&lt;/url-pattern&gt;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nt">&lt;/filter-mapping&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;经测试，一切正常，后端action中的代码不需要做任何改动。</p>
+
+<p>&emsp;&emsp;网上还有一种做法，是自义spring mvc注解，在注解中去实现请求参数的解析，这种方式配置过于复杂，而且要改变项目中的标准注解，不建议使用。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1655,145 +1968,6 @@ Write operations are not allowed in read-only mode ( &hellip;">
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/03/14/hibernate-query/">Hibernate集合条件的查询</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-03-14T15:18:00+08:00" pubdate data-updated="true">2013年03月14日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;查数据：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">String</span> <span class="n">hql2</span> <span class="o">=</span> <span class="s">&quot;from Customer c &quot;</span> <span class="o">+</span>
-</span><span class='line'>                <span class="s">&quot;left join fetch c.orders o &quot;</span> <span class="o">+</span>
-</span><span class='line'>                <span class="s">&quot;where o.orderName like &#39;%iphone%&#39;&quot;</span><span class="o">;</span>
-</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">hql2</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;统计总记录条数：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">String</span> <span class="n">hql</span> <span class="o">=</span> <span class="s">&quot;select count(*) from Customer c &quot;</span> <span class="o">+</span>
-</span><span class='line'>            <span class="s">&quot;left outer join c.orders o &quot;</span> <span class="o">+</span>
-</span><span class='line'>            <span class="s">&quot;where o.orderName like &#39;%iphone%&#39;&quot;</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">hql</span><span class="o">).</span><span class="na">uniqueResult</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;请注意，统计记录条数时使用的是left outer join 。在分页中，需进行replace。</p>
-
-<p>&emsp;&emsp;一段代码示例：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">Page</span> <span class="nf">getAllIncomeStorage</span><span class="o">(</span><span class="kd">final</span> <span class="kt">int</span> <span class="n">begin</span><span class="o">,</span><span class="kd">final</span> <span class="kt">int</span> <span class="n">quantity</span><span class="o">,</span><span class="kd">final</span> <span class="n">Map</span> <span class="n">map</span><span class="o">)</span>
-</span><span class='line'>            <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="o">(</span><span class="n">Page</span><span class="o">)</span><span class="n">dao</span><span class="o">.</span><span class="na">getHibernateTemplate</span><span class="o">().</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">HibernateCallback</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>            <span class="kd">public</span> <span class="n">Object</span> <span class="nf">doInHibernate</span><span class="o">(</span><span class="n">Session</span> <span class="n">session</span><span class="o">)</span>
-</span><span class='line'>                    <span class="kd">throws</span> <span class="n">HibernateException</span><span class="o">,</span> <span class="n">SQLException</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">String</span> <span class="n">hql</span> <span class="o">=</span> <span class="s">&quot;from StorageIncomeStorage s left join fetch s.cargo c where 1 = 1&quot;</span><span class="o">;</span>
-</span><span class='line'>                <span class="k">if</span><span class="o">(</span><span class="n">map</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;begin&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">){</span>
-</span><span class='line'>                    <span class="n">hql</span> <span class="o">+=</span><span class="s">&quot; and s.incomeTime &gt; :begin&quot;</span><span class="o">;</span>
-</span><span class='line'>                <span class="o">}</span>
-</span><span class='line'>                <span class="k">if</span><span class="o">(</span><span class="n">map</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;end&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">){</span>
-</span><span class='line'>                    <span class="n">hql</span> <span class="o">+=</span><span class="s">&quot; and s.incomeTime &lt; :end&quot;</span><span class="o">;</span>
-</span><span class='line'>                <span class="o">}</span>
-</span><span class='line'>                <span class="k">if</span><span class="o">(</span><span class="n">map</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;pact&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">){</span>
-</span><span class='line'>                    <span class="n">hql</span> <span class="o">+=</span> <span class="s">&quot; and c.pact.id = :pact&quot;</span><span class="o">;</span>
-</span><span class='line'>                <span class="o">}</span>
-</span><span class='line'>                <span class="k">if</span><span class="o">(</span><span class="n">map</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;company&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">){</span>
-</span><span class='line'>                    <span class="n">hql</span> <span class="o">+=</span> <span class="s">&quot; and c.company.id = :company&quot;</span><span class="o">;</span>
-</span><span class='line'>                <span class="o">}</span>
-</span><span class='line'>                <span class="n">hql</span> <span class="o">+=</span> <span class="s">&quot; and c.color like :color&quot;</span><span class="o">;</span>
-</span><span class='line'>                <span class="n">Page</span> <span class="n">page</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Page</span><span class="o">(</span><span class="n">begin</span><span class="o">,</span><span class="n">quantity</span><span class="o">);</span>
-</span><span class='line'>                <span class="n">page</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">hql</span><span class="o">)</span>
-</span><span class='line'>                        <span class="o">.</span><span class="na">setProperties</span><span class="o">(</span><span class="n">map</span><span class="o">)</span>
-</span><span class='line'>                        <span class="o">.</span><span class="na">setFirstResult</span><span class="o">((</span><span class="n">begin</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">*</span> <span class="n">quantity</span><span class="o">)</span>
-</span><span class='line'>                        <span class="o">.</span><span class="na">setMaxResults</span><span class="o">(</span><span class="n">quantity</span><span class="o">)</span>
-</span><span class='line'>                        <span class="o">.</span><span class="na">list</span><span class="o">()</span>
-</span><span class='line'>                        <span class="o">);</span>
-</span><span class='line'>                <span class="n">String</span> <span class="n">countHql</span> <span class="o">=</span> <span class="s">&quot;select count(*)&quot;</span> <span class="o">+</span> <span class="n">hql</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="s">&quot;left join fetch&quot;</span><span class="o">,</span> <span class="s">&quot;left outer join &quot;</span><span class="o">);</span>
-</span><span class='line'>                <span class="n">page</span><span class="o">.</span><span class="na">setPageSize</span><span class="o">(((</span><span class="n">Number</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">countHql</span><span class="o">)</span>
-</span><span class='line'>                        <span class="o">.</span><span class="na">setProperties</span><span class="o">(</span><span class="n">map</span><span class="o">)</span>
-</span><span class='line'>                        <span class="o">.</span><span class="na">uniqueResult</span><span class="o">()).</span><span class="na">intValue</span><span class="o">());</span>
-</span><span class='line'>                <span class="n">page</span><span class="o">.</span><span class="na">setTotalRows</span><span class="o">(</span><span class="n">page</span><span class="o">.</span><span class="na">getData</span><span class="o">().</span><span class="na">size</span><span class="o">());</span>
-</span><span class='line'>                <span class="k">return</span> <span class="n">page</span><span class="o">;</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>        <span class="o">});</span>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/8/">&larr; 更多早期老文章</a>
@@ -1811,6 +1985,10 @@ Write operations are not allowed in read-only mode ( &hellip;">
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
       </li>
     
@@ -1824,10 +2002,6 @@ Write operations are not allowed in read-only mode ( &hellip;">
     
       <li class="post">
         <a href="/blog/2014/05/29/code-share-poi/">分享几段数据导入导出参考代码</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/05/23/security6/">Java安全那些事之六（客户端安全）</a>
       </li>
     
   </ul>

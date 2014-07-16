@@ -9,16 +9,10 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;枚举类型可以增强代码的可读性和健壮性，在项目中有广泛的使用，比如，我们有一个代码数据库类型的枚举： 1
+  <meta name="description" content="&emsp;&emsp;查数据： 1
 2
 3
-4
-5
-6
-7
-8
-9
-public enum DatabaseType{ oracle, mysql, sqlServer } &emsp;&emsp; &hellip;">
+4 String hql2 = &quot;from Customer c &quot; + &quot;left join fetch c.orders o &quot; + &quot;where o.orderName like &#39;% &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -67,6 +61,145 @@ public enum DatabaseType{ oracle, mysql, sqlServer } &emsp;&emsp; &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/14/hibernate-query/">Hibernate集合条件的查询</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-14T15:18:00+08:00" pubdate data-updated="true">2013年03月14日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;查数据：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">String</span> <span class="n">hql2</span> <span class="o">=</span> <span class="s">&quot;from Customer c &quot;</span> <span class="o">+</span>
+</span><span class='line'>                <span class="s">&quot;left join fetch c.orders o &quot;</span> <span class="o">+</span>
+</span><span class='line'>                <span class="s">&quot;where o.orderName like &#39;%iphone%&#39;&quot;</span><span class="o">;</span>
+</span><span class='line'>        <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">hql2</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;统计总记录条数：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">String</span> <span class="n">hql</span> <span class="o">=</span> <span class="s">&quot;select count(*) from Customer c &quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;left outer join c.orders o &quot;</span> <span class="o">+</span>
+</span><span class='line'>            <span class="s">&quot;where o.orderName like &#39;%iphone%&#39;&quot;</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">hql</span><span class="o">).</span><span class="na">uniqueResult</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;请注意，统计记录条数时使用的是left outer join 。在分页中，需进行replace。</p>
+
+<p>&emsp;&emsp;一段代码示例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">Page</span> <span class="nf">getAllIncomeStorage</span><span class="o">(</span><span class="kd">final</span> <span class="kt">int</span> <span class="n">begin</span><span class="o">,</span><span class="kd">final</span> <span class="kt">int</span> <span class="n">quantity</span><span class="o">,</span><span class="kd">final</span> <span class="n">Map</span> <span class="n">map</span><span class="o">)</span>
+</span><span class='line'>            <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="o">(</span><span class="n">Page</span><span class="o">)</span><span class="n">dao</span><span class="o">.</span><span class="na">getHibernateTemplate</span><span class="o">().</span><span class="na">execute</span><span class="o">(</span><span class="k">new</span> <span class="n">HibernateCallback</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>            <span class="kd">public</span> <span class="n">Object</span> <span class="nf">doInHibernate</span><span class="o">(</span><span class="n">Session</span> <span class="n">session</span><span class="o">)</span>
+</span><span class='line'>                    <span class="kd">throws</span> <span class="n">HibernateException</span><span class="o">,</span> <span class="n">SQLException</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">String</span> <span class="n">hql</span> <span class="o">=</span> <span class="s">&quot;from StorageIncomeStorage s left join fetch s.cargo c where 1 = 1&quot;</span><span class="o">;</span>
+</span><span class='line'>                <span class="k">if</span><span class="o">(</span><span class="n">map</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;begin&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">){</span>
+</span><span class='line'>                    <span class="n">hql</span> <span class="o">+=</span><span class="s">&quot; and s.incomeTime &gt; :begin&quot;</span><span class="o">;</span>
+</span><span class='line'>                <span class="o">}</span>
+</span><span class='line'>                <span class="k">if</span><span class="o">(</span><span class="n">map</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;end&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">){</span>
+</span><span class='line'>                    <span class="n">hql</span> <span class="o">+=</span><span class="s">&quot; and s.incomeTime &lt; :end&quot;</span><span class="o">;</span>
+</span><span class='line'>                <span class="o">}</span>
+</span><span class='line'>                <span class="k">if</span><span class="o">(</span><span class="n">map</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;pact&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">){</span>
+</span><span class='line'>                    <span class="n">hql</span> <span class="o">+=</span> <span class="s">&quot; and c.pact.id = :pact&quot;</span><span class="o">;</span>
+</span><span class='line'>                <span class="o">}</span>
+</span><span class='line'>                <span class="k">if</span><span class="o">(</span><span class="n">map</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;company&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">){</span>
+</span><span class='line'>                    <span class="n">hql</span> <span class="o">+=</span> <span class="s">&quot; and c.company.id = :company&quot;</span><span class="o">;</span>
+</span><span class='line'>                <span class="o">}</span>
+</span><span class='line'>                <span class="n">hql</span> <span class="o">+=</span> <span class="s">&quot; and c.color like :color&quot;</span><span class="o">;</span>
+</span><span class='line'>                <span class="n">Page</span> <span class="n">page</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Page</span><span class="o">(</span><span class="n">begin</span><span class="o">,</span><span class="n">quantity</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">page</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">hql</span><span class="o">)</span>
+</span><span class='line'>                        <span class="o">.</span><span class="na">setProperties</span><span class="o">(</span><span class="n">map</span><span class="o">)</span>
+</span><span class='line'>                        <span class="o">.</span><span class="na">setFirstResult</span><span class="o">((</span><span class="n">begin</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">*</span> <span class="n">quantity</span><span class="o">)</span>
+</span><span class='line'>                        <span class="o">.</span><span class="na">setMaxResults</span><span class="o">(</span><span class="n">quantity</span><span class="o">)</span>
+</span><span class='line'>                        <span class="o">.</span><span class="na">list</span><span class="o">()</span>
+</span><span class='line'>                        <span class="o">);</span>
+</span><span class='line'>                <span class="n">String</span> <span class="n">countHql</span> <span class="o">=</span> <span class="s">&quot;select count(*)&quot;</span> <span class="o">+</span> <span class="n">hql</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="s">&quot;left join fetch&quot;</span><span class="o">,</span> <span class="s">&quot;left outer join &quot;</span><span class="o">);</span>
+</span><span class='line'>                <span class="n">page</span><span class="o">.</span><span class="na">setPageSize</span><span class="o">(((</span><span class="n">Number</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="n">countHql</span><span class="o">)</span>
+</span><span class='line'>                        <span class="o">.</span><span class="na">setProperties</span><span class="o">(</span><span class="n">map</span><span class="o">)</span>
+</span><span class='line'>                        <span class="o">.</span><span class="na">uniqueResult</span><span class="o">()).</span><span class="na">intValue</span><span class="o">());</span>
+</span><span class='line'>                <span class="n">page</span><span class="o">.</span><span class="na">setTotalRows</span><span class="o">(</span><span class="n">page</span><span class="o">.</span><span class="na">getData</span><span class="o">().</span><span class="na">size</span><span class="o">());</span>
+</span><span class='line'>                <span class="k">return</span> <span class="n">page</span><span class="o">;</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">});</span>
+</span><span class='line'>    <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2492,48 +2625,6 @@ public enum DatabaseType{ oracle, mysql, sqlServer } &emsp;&emsp; &hellip;">
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/01/08/art/">油画- 公园</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-01-08T15:18:00+08:00" pubdate data-updated="true">2013年01月08日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;布面油画（60X80CM），为一张临摹作品，有人定制了该画。因为我本人并不喜欢唯美、富丽的画面，孤独、寂寞、荒芜更适合我的意境。</p>
-
-<p>&emsp;&emsp;公园中有两个小朋友在玩小船，落叶及水生植物漂浮于水面，在阳光的照射下，非常的好看。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/01/5.jpg' width='' height='' title='布面油画-公园'><span class='caption-text'>布面油画-公园</span></span></p>
-
-<p>&emsp;&emsp;两天完成本作品的绘制，其实，临摹作品也是很好的一种学习方式，可以用心去体会作者当时的情感。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/9/">&larr; 更多早期老文章</a>
@@ -2551,6 +2642,10 @@ public enum DatabaseType{ oracle, mysql, sqlServer } &emsp;&emsp; &hellip;">
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
       </li>
     
@@ -2564,10 +2659,6 @@ public enum DatabaseType{ oracle, mysql, sqlServer } &emsp;&emsp; &hellip;">
     
       <li class="post">
         <a href="/blog/2014/05/29/code-share-poi/">分享几段数据导入导出参考代码</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/05/23/security6/">Java安全那些事之六（客户端安全）</a>
       </li>
     
   </ul>

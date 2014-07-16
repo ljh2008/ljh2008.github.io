@@ -9,9 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;抽时间封装了一下jackson转换类以便于大家使用，主要添加了排除属性、指定属性等简化api，并考虑到了多线程下的问题，你可以把这个类直接配置成spring之容器上的一个单态bean &emsp;&emsp;如： 1
-2
-﻿&lt;bean id=&quot; &hellip;">
+  <meta name="description" content="&emsp;&emsp;restful的介绍很多，同学们可以去网上找相应的概念描述。 &emsp;&emsp;我对restful的理解： &emsp;&emsp;1、服务器端不再负责界面的生成，所有的界面显示均由调用者自己去处理。 &emsp;&emsp;2、服务器端提供标准的api接口， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -60,6 +58,103 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/12/28/restful1/">教你一步步做 Restful程序（1）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-28T15:18:00+08:00" pubdate data-updated="true">2012年12月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;restful的介绍很多，同学们可以去网上找相应的概念描述。</p>
+
+<p>&emsp;&emsp;我对restful的理解：</p>
+
+<p>&emsp;&emsp;1、服务器端不再负责界面的生成，所有的界面显示均由调用者自己去处理。</p>
+
+<p>&emsp;&emsp;2、服务器端提供标准的api接口，按约定格式（json,xml或其它）返回数据。</p>
+
+<p>&emsp;&emsp;3、充分利用http协调，以简洁的url地址表达更丰富的含义。</p>
+
+<p>&emsp;&emsp;从上面列出的来看，restful架构将更有利于服务器端和客户端各自己的演进，对于多客户端应用优势明显，但是，开发一个restful程序也不一定完全按照restful标准去做。比如：状态信息一定完全由客户端维护？get、post、put、delete一定按标准含义去做？其实未必。</p>
+
+<p>&emsp;&emsp;下面通过一个用户登录及crud操作的实例，引导大家完成一个简单的restful程序。</p>
+
+<p>&emsp;&emsp;先说框架的选择，现在有很多java开源restful框架供大家选择，比如restlet，地址：<a href="http://www.restlet.org/">http://www.restlet.org/</a>，这东西做得不错，但我更倾向于在现有的mvc框架上提供restful的实现，因为按照传统的表现层、业务层、持久层分层架架构来看，restful架构对业务层和持久层是没有影响的，任何一个系统都有这两块，因此，变化的部分还是表现层，只是传统的mvc框架是服务器端自己负责生成页面内容，而restful则是服务器端提供统一格式的数据，而不做界面相关工作，从这一点上看，完全可以利用传统的mvc框架返回数据，也就是说，消弱传统mvc框架的页面渲染生成能力，而仅仅用其向调用者发回数据即可。这么做还有一个好处，一个应用系统也许并不是所有功能都需要移动终端去操作，还有很多功能可以按照传统的mvc模式去做，这样的架构也更加的灵活。</p>
+
+<p>&emsp;&emsp;struts2和spring mvc都对restful提供了支持，特别是spring mvc的支持非常完美，我们这个 demo将用spring mvc来实现。</p>
+
+<p>&emsp;&emsp;我们要做的第一步工作，是对整个系统的rul进行规划设计，请看我们的设计：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>  post          /loginSystem                            登录系统
+</span><span class='line'>  
+</span><span class='line'>  get            /userManager/getState             得到登录用户信息
+</span><span class='line'>  
+</span><span class='line'>  post          /userManager/upload_img        上传头像
+</span><span class='line'>  
+</span><span class='line'>  delete       /userManager/deleteUsers         批量删除用户
+</span><span class='line'>  
+</span><span class='line'>  post         /userManager/user                     添加新用户
+</span><span class='line'>  
+</span><span class='line'>  get           /userManager/users/1                查看第一页用户
+</span><span class='line'>  
+</span><span class='line'>  get           /userManager/user/1                 查看id号为1用户
+</span><span class='line'>  
+</span><span class='line'>  delete       /userManager/user/1                 删除id号为1用户
+</span><span class='line'>  
+</span><span class='line'>  put          /userManager/user/1                  修改id号为1的用户
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然了，提交方式可以根据情况更改，比如：要传中文数据到服务器，get方式可以换成post方式，再比如修改，提交数据很不方便，可以将put换成post，这些变化，会使你的服务器端程序变得更简单。</p>
+
+<p>&emsp;&emsp;开发中会用到fiddler，以对请求响应进行跟踪。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1448,201 +1543,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/10/31/struts2-fileupload-muti/">Strut2文件下载及多文件上传示例</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-10-31T15:18:00+08:00" pubdate data-updated="true">2012年10月31日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;入门级技术文章，为了避免每回都要重写演示，以后就请童鞋门自己来看吧。</p>
-
-<p>&emsp;&emsp;先看表单：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&quot;&lt;%=path%&gt;/user!addUser.do&quot;</span> <span class="na">method=</span><span class="s">&quot;post&quot;</span> <span class="na">enctype=</span><span class="s">&quot;multipart/form-data&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>用户昵称:<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;regUser.nickName&quot;</span><span class="nt">/&gt;&lt;br/&gt;</span>
-</span><span class='line'><span class="nt">&lt;div&gt;</span>选择用户照片：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;file&quot;</span> <span class="na">name=</span><span class="s">&quot;myphoto&quot;</span><span class="nt">/&gt;&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">class=</span><span class="s">&quot;addNewPhoto&quot;</span><span class="nt">&gt;</span>再加一张照片<span class="nt">&lt;/a&gt;</span><span class="ni">&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;</span><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">class=</span><span class="s">&quot;deletePhoto&quot;</span><span class="nt">&gt;</span>删除<span class="nt">&lt;/a&gt;&lt;/div&gt;</span>
-</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;新增&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;/form&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;页面效果如下图：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2012/10/1.jpg' width='' height='' title='struts2多文件上传界面'><span class='caption-text'>struts2多文件上传界面</span></span></p>
-
-<p>&emsp;&emsp;加一个新的上传及删除一个上传选框js代码如下，请加到ready事件中：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.addNewPhoto&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">parent</span><span class="p">().</span><span class="nx">clone</span><span class="p">(</span><span class="kc">true</span><span class="p">).</span><span class="nx">insertAfter</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">parent</span><span class="p">());</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.deletePhoto&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">parent</span><span class="p">().</span><span class="nx">remove</span><span class="p">();</span>
-</span><span class='line'>    <span class="p">});</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;服务器端处理代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserAction</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 用于接收注册用户的属性</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">RegUser</span> <span class="n">regUser</span><span class="o">;</span>
-</span><span class='line'>    <span class="c1">// 用于接收用户的照片</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">File</span><span class="o">[]</span> <span class="n">myphoto</span><span class="o">;</span>
-</span><span class='line'>    <span class="c1">// 用于接收原始文件名</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span><span class="o">[]</span> <span class="n">myphotoFileName</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">addUser</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="n">File</span> <span class="nl">f:</span> <span class="n">myphoto</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">f</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">for</span><span class="o">(</span><span class="n">String</span> <span class="n">n</span> <span class="o">:</span> <span class="n">myphotoFileName</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">n</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">......</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果你要处理一个上传上来的文件，核心代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>        <span class="c1">// 假如我们要存放在项目中的soft_upload目录下，那么，我们要先取得这个目录在实际服务器上的位置</span>
-</span><span class='line'>        <span class="n">String</span> <span class="n">upload_dir</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getRequest</span><span class="o">().</span><span class="na">getSession</span><span class="o">()</span>
-</span><span class='line'>                <span class="o">.</span><span class="na">getServletContext</span><span class="o">().</span><span class="na">getRealPath</span><span class="o">(</span><span class="s">&quot;soft_upload&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">// 取文件扩展名</span>
-</span><span class='line'>        <span class="n">String</span> <span class="n">extName</span> <span class="o">=</span> <span class="n">myphotoFileName</span><span class="o">.</span><span class="na">substring</span><span class="o">(</span><span class="n">myphotoFileName</span>
-</span><span class='line'>                <span class="o">.</span><span class="na">lastIndexOf</span><span class="o">(</span><span class="s">&quot;.&quot;</span><span class="o">));</span>
-</span><span class='line'>        <span class="c1">// 随机生成新的文件名</span>
-</span><span class='line'>        <span class="n">String</span> <span class="n">newFileName</span> <span class="o">=</span> <span class="n">UUID</span><span class="o">.</span><span class="na">randomUUID</span><span class="o">().</span><span class="na">toString</span><span class="o">()</span> <span class="o">+</span> <span class="n">extName</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">FileUtils</span><span class="o">.</span><span class="na">copyFile</span><span class="o">(</span><span class="n">myphoto</span><span class="o">,</span> <span class="k">new</span> <span class="n">File</span><span class="o">(</span><span class="n">upload_dir</span> <span class="o">+</span> <span class="n">File</span><span class="o">.</span><span class="na">separator</span>
-</span><span class='line'>                <span class="o">+</span> <span class="n">newFileName</span><span class="o">));</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">// 最后数据库中保存的路径是一个互联网站路径</span>
-</span><span class='line'>        <span class="n">regUser</span><span class="o">.</span><span class="na">setPhotoPath</span><span class="o">(</span><span class="s">&quot;soft_upload/&quot;</span> <span class="o">+</span> <span class="n">newFileName</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>         <span class="c1">//调用业务方法进行后续操作</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;文件下载部分核心代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>        <span class="c1">// 假如我们要存放在项目中的soft_upload目录下，那么，我们要先取得这个目录在实际服务器上的位置</span>
-</span><span class='line'>        <span class="n">String</span> <span class="n">upload_dir</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getRequest</span><span class="o">().</span><span class="na">getSession</span><span class="o">()</span>
-</span><span class='line'>                <span class="o">.</span><span class="na">getServletContext</span><span class="o">().</span><span class="na">getRealPath</span><span class="o">(</span><span class="s">&quot;&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">String</span> <span class="n">imageInDb</span> <span class="o">=</span> <span class="s">&quot;soft_upload/b801a563-f307-4804-a7e3-4e34665af7b3.jpg&quot;</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">String</span> <span class="n">fullFileName</span> <span class="o">=</span> <span class="n">upload_dir</span> <span class="o">+</span> <span class="n">File</span><span class="o">.</span><span class="na">separator</span> <span class="o">+</span> <span class="n">imageInDb</span><span class="o">.</span><span class="na">replace</span><span class="o">(</span><span class="s">&quot;/&quot;</span><span class="o">,</span> <span class="n">File</span><span class="o">.</span><span class="na">separator</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">//把文件给用户发回去</span>
-</span><span class='line'>        <span class="n">HttpServletResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="n">ServletActionContext</span><span class="o">.</span><span class="na">getResponse</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">resp</span><span class="o">.</span><span class="na">addHeader</span><span class="o">(</span><span class="s">&quot;Content-Disposition&quot;</span><span class="o">,</span><span class="s">&quot;attachment;filename=&quot;</span> <span class="o">+</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="s">&quot;陈冠希.jpg&quot;</span><span class="o">.</span><span class="na">getBytes</span><span class="o">(</span><span class="s">&quot;gb2312&quot;</span><span class="o">),</span><span class="s">&quot;iso8859-1&quot;</span><span class="o">));</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">resp</span><span class="o">.</span><span class="na">getOutputStream</span><span class="o">().</span><span class="na">write</span><span class="o">(</span><span class="n">FileUtils</span><span class="o">.</span><span class="na">readFileToByteArray</span><span class="o">(</span><span class="k">new</span> <span class="n">File</span><span class="o">(</span><span class="n">fullFileName</span><span class="o">)));</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/11/">&larr; 更多早期老文章</a>
@@ -1660,6 +1560,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
       </li>
     
@@ -1673,10 +1577,6 @@
     
       <li class="post">
         <a href="/blog/2014/05/29/code-share-poi/">分享几段数据导入导出参考代码</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/05/23/security6/">Java安全那些事之六（客户端安全）</a>
       </li>
     
   </ul>

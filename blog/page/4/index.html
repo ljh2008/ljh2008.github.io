@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;搭建项目结构，这个可以在gitHub上找到很多的seed来参考，我就是这么做的。结构如下，需要注意的是： &emsp;&emsp;1、所有的js都放到了js目录中 &emsp;&emsp;2、框架包放在js/lib下，主文件包是app.js， &emsp;&emsp;3、 &hellip;">
+  <meta name="description" content="&emsp;&emsp;控制器中的代码： &emsp;&emsp;我一共写了两个控制器，一个是和用户相关的，另一个是登录控制器。 &emsp;&emsp;其中，在页面切换时，需要保存的变量，放到了userService中，因为service是单例的。 ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,51 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/09/28/angular-js4/">一步步教你用angular.js实现一个基本应用&#8212;第四部分</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-09-28T15:18:00+08:00" pubdate data-updated="true">2013年09月28日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;控制器中的代码：</p>
+
+<p>&emsp;&emsp;我一共写了两个控制器，一个是和用户相关的，另一个是登录控制器。</p>
+
+<p>&emsp;&emsp;其中，在页面切换时，需要保存的变量，放到了userService中，因为service是单例的。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/09/28/angular-js4/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -779,98 +824,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/08/09/nodejs-express-mysql-crud1/">node.js中基本于expresss、mysql的CRUD之一（技术选择及需求）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;要在项目中使用一种新的技术，必须要用这种新东西写出一个演示demo，也就是技术原型或架构原型，以验证这种技术方案的可行性。node.js这种使用日益广泛的技术比较适合互联网项目需求变化快的敏捷开发，node.js非常的小巧，相关插件众多（有些插件甚至可以在浏览器客户端和node.js服务器端都可运行），对于开发人员来说，只需要掌握javascript一门语言，就可以进行项目开发了，这种简化，对于前端开发人员来说是梦寐以求的。</p>
-
-<p>&emsp;&emsp;先来说说技术的选型吧。</p>
-
-<p>&emsp;&emsp;用node.js开发一个web应用，虽然我们可以从头开始自己去实现一个http服务器，但这有点重复发明轮子的嫌疑，因为已经能很多非常优秀的web服务器框架，比如：express就是其中的佼佼者。</p>
-
-<p>&emsp;&emsp;<strong>持久层</strong></p>
-
-<p>&emsp;&emsp;对于持久层，我的这个demo中使用mysql，从J2EE开发转型到node.js开发过程中，最自然的想法就是找一个node.js中的orm插件，这个我选择了非常流行了一个，orm2。但基于互联网项目更偏重于性能而业务相对并不复杂的情况，我建议在持久层不要用什么orm之类的插件，而采用直接手工书写sql的方式更为实用，因为orm2也有一些问题，后面我会说到。另外，在大数据量的应用中，一般还会使用nosql型数据库，比如mongodb，这个我会另外在给出demo。</p>
-
-<p>&emsp;&emsp;<strong>业务层</strong></p>
-
-<p>&emsp;&emsp;在标准的分层界构中，会有业务层的存在，在node.js中，如果仅仅是基于对数据的CRUD操作，我认为不需要加入业务层，因为这样只会增加代码的复杂性。如果你真的有一些并不仅仅是简单的CRUD核心的业务逻辑，倒是可以创建这样的一个目录，对这些纯业务逻辑进行封装。</p>
-
-<p>&emsp;&emsp;<strong>表现层</strong></p>
-
-<p>&emsp;&emsp;表现层可以使用restful风格的url，express对restful支持非常的简单而强大。而根据表现层的构建方式，又可分成两种方式：</p>
-
-<p>&emsp;&emsp;一种是服务器端生成页面，比如jade，ejs等，这种模板引擎技术相当于j2ee中的jsp,velocity,freemarker等。jade可以写出极简洁的页面，而又具有很好的标签元素封闭性，我这个demo中就使用jade。</p>
-
-<p>&emsp;&emsp;另一种是由客户端生成，即胖客户端的方式，比如：angular.js，有这种方式中，服务器仅仅需要提供api即可，向客户端返回的数据格式可以是json，xml等。</p>
-
-<p>&emsp;&emsp;我更偏向于第二种方式，虽然从传统的j2EE服务器生成页面的第一种方式转变为客户端负责界面的展示非常的不习惯，但这需要一个转变过程。</p>
-
-<p>&emsp;&emsp;言归正传，下面来看看demo的功能及界面截图：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/1.jpg' width='' height='' title='登录界面原型参考图'><span class='caption-text'>登录界面原型参考图</span></span></p>
-
-<p>&emsp;&emsp;登录系统，登录失败给予提示，成功后，进入主页面。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/2.jpg' width='' height='' title='登录后的主界面原型参考图'><span class='caption-text'>登录后的主界面原型参考图</span></span></p>
-
-<p>主界面中，主要有以下功能：</p>
-
-<ul>
-<li><p>展示登录成功的用户信息。</p></li>
-<li><p>分页展示系统中的所有用户，可以按条件查询。</p></li>
-<li><p>可新增用户，批量删除用户。</p></li>
-<li><p>可查看，修改，删除用户。</p></li>
-<li><p>可退出系统。</p></li>
-<li><p>可对未登录用户，对url的访问权限控制。</p></li>
-</ul>
-
-
-<p>&emsp;&emsp;一些界面截图如下：</p>
-
-<p>&emsp;&emsp;查看用户</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/3.jpg' width='' height='' title='查看原型参考图'><span class='caption-text'>查看原型参考图</span></span></p>
-
-<p>&emsp;&emsp;修改用户</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/4.jpg' width='' height='' title='修改主界面原型参考图'><span class='caption-text'>修改主界面原型参考图</span></span></p>
-
-<p>&emsp;&emsp;新增用户</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/08/5.jpg' width='' height='' title='新增主界面原型参考图'><span class='caption-text'>新增主界面原型参考图</span></span></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/5/">&larr; 更多早期老文章</a>
@@ -888,6 +841,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析之二(配置)</a>
       </li>
     
@@ -901,10 +858,6 @@
     
       <li class="post">
         <a href="/blog/2014/05/23/security6/">Java安全那些事之六（客户端安全）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
       </li>
     
   </ul>

@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;我计划在两台服务器上安装fdfs，ip分别是:192.168.68.133（1号服务器）, 192.168.68.136（2号服务器），fdfs在两台服务器上的安装部署图如下。 fastdfs部署示意图 &emsp;&emsp;1号服务器上安装tracker实例一个， &hellip;">
+  <meta name="description" content="&emsp;&emsp;表现层、业务层、持久层是一个经典的分层架构，在构建软件系统时，一般会从持久层开始，逐渐向上层编码、构建，每一层完成编码后必须保证正确后，再写上一层，这就像修房子一样，打牢地基再砌墙。 &emsp;&emsp;另外需提一下，一般公司的项目中对持久层都有通用的封装（ &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,51 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-15T15:18:00+08:00" pubdate data-updated="true">2014年07月15日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;表现层、业务层、持久层是一个经典的分层架构，在构建软件系统时，一般会从持久层开始，逐渐向上层编码、构建，每一层完成编码后必须保证正确后，再写上一层，这就像修房子一样，打牢地基再砌墙。</p>
+
+<p>&emsp;&emsp;另外需提一下，一般公司的项目中对持久层都有通用的封装（比如baseDao），因此，持久层的代码在这种情况下就表现为ORM注解或sql语句块，如果是hibernate注解，在项目启动时就可以发现大部分配置上的错误，如果是mybatis或ibatis依旧可以放到业务层中去测试。因此，我认为持久层不用专门去写测试代码了，我们针对业务层的测试即可发现持久层的问题。</p>
+
+<p>&emsp;&emsp;还有，表现层在采用了restful及json数据返回格式后，前端的交互编码其实可以很早就进行，即和后台编码同步进行，我计划有时间去实现一个这样的模拟系统服务器，在设计人员完成rest api设计后，就可以将api输入这个模拟服务器系统，前端程序员依照rest api就可以和模拟服务器交互了，这样前后台就可以分工同步开发了，效率一定会提升哦。</p>
+
+<p>&emsp;&emsp;言归正传，下面我主要来讲讲服务器端的action测试，因为在这个时候，我们还没有任何界面交互，而仅仅只有一个restful api。如何对action进行测试，在早期的spring版本中还比较困难，网上很多同学都是自己封装，但依然不方便不强大。好消息是从spring 3.2开始，提供了对spring mvc完善的支持，请看下面的这个登录action代码及测试。</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/07/15/spring-mvc-test/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -912,164 +957,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/04/09/async_message_architect2/">监控系统中的异步消息使用实例（二）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-04-09T12:18:00+08:00" pubdate data-updated="true">2014年04月09日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;接上节，再次贴出架构图，我们接下来要讲的是图中黄色部分的配置。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构'><span class='caption-text'>业务方法监控架构</span></span></p>
-
-<p>&emsp;&emsp;先将spy程序导成一个jar包，加入到需要监控的目标服务器lib目录，monitor_spy.jar结构如下所示：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/jarinfo.jpg' width='' height='' title='monitor_spy.jar结构'><span class='caption-text'>monitor_spy.jar结构</span></span></p>
-
-<p>&emsp;&emsp;为了能够实现对目标系统业务方法执行情况进行监控，需要将我们已经写好的拦截器配置到目标系统中去，下面是我的一个配置示例：</p>
-
-<figure class='code'><figcaption><span>spring-spy.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'>  <span class="c">&lt;!-- jms连接工厂 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;jmsFactory&quot;</span> <span class="na">class=</span><span class="s">&quot;org.apache.activemq.pool.PooledConnectionFactoryBean&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;connectionFactory&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.apache.activemq.ActiveMQConnectionFactory&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>              <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;brokerURL&quot;</span> <span class="na">value=</span><span class="s">&quot;tcp://localhost:61616&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>      <span class="c">&lt;!-- 配置池中最大连接数据以及最大活动连接数 --&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;maxConnections&quot;</span> <span class="na">value=</span><span class="s">&quot;100&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;maximumActive&quot;</span> <span class="na">value=</span><span class="s">&quot;100&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c">&lt;!-- jms模板方法 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;jmsTemplate&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.jms.core.JmsTemplate&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;constructor-arg</span> <span class="na">ref=</span><span class="s">&quot;jmsFactory&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;/constructor-arg&gt;</span>
-</span><span class='line'>      <span class="c">&lt;!-- 默认会创建queue类型的目标</span>
-</span><span class='line'><span class="c">      &lt;property name=&quot;defaultDestinationName&quot; value=&quot;queue/methodSpyLogger&quot;&gt;&lt;/property&gt; --&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;defaultDestination&quot;</span> <span class="na">ref=</span><span class="s">&quot;destinationQueue1&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c">&lt;!-- 发送消息的目的地 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;destinationQueue1&quot;</span> <span class="na">class=</span><span class="s">&quot;org.apache.activemq.command.ActiveMQQueue&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="c">&lt;!-- 设置消息队列的名字 --&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;constructor-arg</span>  <span class="na">value=</span><span class="s">&quot;queue/methodSpyLogger&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="c">&lt;!-- 配置Spring和方法相关的监控 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;method-pointcut&quot;</span> <span class="na">class=</span><span class="s">&quot;org.springframework.aop.support.JdkRegexpMethodPointcut&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;patterns&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;list&gt;</span>
-</span><span class='line'>                <span class="nt">&lt;value&gt;</span>com.lovo.mis.xjgl.service.impl.*<span class="nt">&lt;/value&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;/list&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="c">&lt;!-- 方法AOP拦截器 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;spy-method-interceptor&quot;</span>
-</span><span class='line'>          <span class="na">class=</span><span class="s">&quot;com.monitor.client.spy.SpyMethodIntercepter&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;messageDao&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>              <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;com.monitor.client.dao.JMSMessageDaoImpl&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>                  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;jmsTemplate&quot;</span> <span class="na">ref=</span><span class="s">&quot;jmsTemplate&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>              <span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;userNameSessionKey&quot;</span> <span class="na">value=</span><span class="s">&quot;loginUserName&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="c">&lt;!-- 将切面应用到通知上 --&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;aop:config</span> <span class="na">proxy-target-class=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;aop:advisor</span> <span class="na">advice-ref=</span><span class="s">&quot;spy-method-interceptor&quot;</span>
-</span><span class='line'>                     <span class="na">pointcut-ref=</span><span class="s">&quot;method-pointcut&quot;</span> <span class="nt">/&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/aop:config&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;配置文件中有几个地方需要进行说明：</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014/04/09/async_message_architect2/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; 更多早期老文章</a>
@@ -1085,6 +972,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析之二(配置)</a>
       </li>
     
@@ -1098,10 +989,6 @@
     
       <li class="post">
         <a href="/blog/2014/05/23/security6/">Java安全那些事之六（客户端安全）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
       </li>
     
   </ul>

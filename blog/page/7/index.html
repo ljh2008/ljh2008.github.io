@@ -9,7 +9,12 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;断桥借伞，白蛇痴情，危桥抱柱，尾生殉情！最使古代伉俪动情者，鹊桥，最使当代恋人钟情者，当属廊桥！。 油画-合江亭.安顺廊桥50×60CM &emsp;&emsp;每次经过廊桥，都会被它的古朴、秀美气质感染而驻足许久，也为桥头沧桑的兽形石雕而感到岁月无情。 &emsp;& &hellip;">
+  <meta name="description" content="&emsp;&emsp;错误信息如下： 1
+2
+3
+4
+5 org.springframework.dao.InvalidDataAccessApiUsageException:
+Write operations are not allowed in read-only mode ( &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +63,124 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/04/24/opensession-in-veiw/">openSession in View在spring Mvc注解初始化时的出错解决办法</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-04-24T15:18:00+08:00" pubdate data-updated="true">2013年04月24日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;错误信息如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>org.springframework.dao.InvalidDataAccessApiUsageException:
+</span><span class='line'>Write operations are not allowed in read-only mode 
+</span><span class='line'>(FlushMode.MANUAL): 
+</span><span class='line'>Turnyour Session into FlushMode.COMMIT/AUTO or remove 'readOnly' marker fromtransaction definition
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;系统框架为spring mvc, hibernate, 采用全注解配置方式。此错误是系统对象创建顺序不正确引起注解事务失效造成，解决办法：</p>
+
+<p>&emsp;&emsp;Spring mvc配置文件中，扫描包部应如下配置：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="c">&lt;!-- 提供对spring mvc注解、验证支持--&gt;</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="nt">&lt;mvc:annotation-driven/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>       <span class="c">&lt;!--注解控制器所在包，框架将解析该包下所有类中的mvc注解--&gt;</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="nt">&lt;context:component-scanbase-package</span><span class="err">=&quot;*.*&quot;</span> <span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>              <span class="nt">&lt;context:include-filter</span> <span class="na">type=</span><span class="s">&quot;annotation&quot;</span><span class="na">expression=</span><span class="s">&quot;org.springframework.stereotype.Controller&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nt">&lt;context:exclude-filtertype</span><span class="err">=&quot;annotation&quot;</span><span class="na">expression=</span><span class="s">&quot;org.springframework.stereotype.Service&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="nt">&lt;/context:component-scan&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;注意红色部分的配置代码。</p>
+
+<p>&emsp;&emsp;另一个，在主配置文件中，也需要做加上相应的配置部分代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="c">&lt;!-- 注解驱动--&gt;</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="nt">&lt;context:component-scanbase-package</span><span class="err">=&quot;*.*&quot;</span> <span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>               <span class="nt">&lt;context:exclude-filtertype</span><span class="err">=&quot;annotation&quot;</span><span class="na">expression=</span><span class="s">&quot;org.springframework.stereotype.Controller&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>       <span class="nt">&lt;/context:component-scan&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，如果你在spring mvc中的base-package部分，精确地指定了action所在的包，多个包之间用逗号分隔（例如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;context:component-scanbase-package</span><span class="err">=&quot;com.my.aa.action,com.my.bb.action&quot;</span> <span class="nt">&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>）即可，则不会出现上面的问题。</p>
+
+<p>&emsp;&emsp;更多，请大家参考：<a href="http://sind.iteye.com/blog/737741">http://sind.iteye.com/blog/737741</a></p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1671,195 +1794,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/03/06/enum-spring-mvc/">Enum枚举类型在spring Mvc中的转换</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-03-06T15:18:00+08:00" pubdate data-updated="true">2013年03月06日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;枚举类型可以增强代码的可读性和健壮性，在项目中有广泛的使用，比如，我们有一个代码数据库类型的枚举：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">enum</span> <span class="n">DatabaseType</span><span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">oracle</span><span class="o">,</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">mysql</span><span class="o">,</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">sqlServer</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在另一个数据源对象中，引用了这个枚举类型，如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">DataSource</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="kd">private</span> <span class="n">DatabaseType</span>  <span class="n">databaseType</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;DataSource对象中的databaseType属性，可以通过hibernate中的@Enumerated注解实现很好的映射，保存到数据库中的值，是枚举类型的下标，从0开始。有些同学使用的是spring mvc，而spring mvc没有提供对枚举类型的自动转换功能，我们要如何处理呢？当然，是要定义自己的属性转换器了，代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">class</span> <span class="nc">DatabaseTypeEnumEditor</span> <span class="kd">extends</span> <span class="n">PropertyEditorSupport</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'> <span class="nd">@Override</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">setAsText</span><span class="o">(</span><span class="n">String</span> <span class="n">text</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IllegalArgumentException</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>          <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">text</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>         <span class="kt">boolean</span> <span class="n">found</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>         <span class="k">for</span> <span class="o">(</span><span class="n">DatabaseType</span> <span class="n">d</span> <span class="o">:</span> <span class="n">DatabaseType</span><span class="o">.</span><span class="na">values</span><span class="o">())</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">val</span> <span class="o">==</span> <span class="n">d</span><span class="o">.</span><span class="na">ordinal</span><span class="o">())</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>                 <span class="k">this</span><span class="o">.</span><span class="na">setValue</span><span class="o">(</span><span class="n">d</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>                 <span class="n">found</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>                 <span class="k">break</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>             <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">found</span> <span class="o">==</span> <span class="kc">false</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="c1">//错误的取值，我们默认为oracle类型，当然你也可以throws exception</span>
-</span><span class='line'>
-</span><span class='line'>             <span class="k">this</span><span class="o">.</span><span class="na">setValue</span><span class="o">(</span><span class="n">DatabaseType</span><span class="o">.</span><span class="na">oracle</span><span class="o">);</span>         <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;最后将这个属性转换器注册到spring mvc的这个action上：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@InitBinder</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">initBinder</span><span class="o">(</span><span class="n">HttpServletRequest</span> <span class="n">request</span><span class="o">,</span>
-</span><span class='line'>
-</span><span class='line'>                <span class="n">ServletRequestDataBinder</span> <span class="n">binder</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>             <span class="n">binder</span><span class="o">.</span><span class="na">registerCustomEditor</span><span class="o">(</span><span class="n">Date</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="n">dateEditor</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>             <span class="n">binder</span><span class="o">.</span><span class="na">registerCustomEditor</span><span class="o">(</span><span class="n">DatabaseType</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="k">new</span> <span class="n">DatabaseTypeEnumEditor</span><span class="o">());</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;至此已经全部完成。</p>
-
-<p>&emsp;&emsp;最后说一下jackson在对enum进行转换时，默认情况下得到的是枚举字符串，如果想得到其底层的真实值（即和hibernate持久化的值保持一致），需要打开这个开关：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'><span class="n">om</span><span class="o">.</span><span class="na">configure</span><span class="o">(</span><span class="n">Feature</span><span class="o">.</span><span class="na">WRITE_ENUMS_USING_INDEX</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/8/">&larr; 更多早期老文章</a>
@@ -1877,6 +1811,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析之二(配置)</a>
       </li>
     
@@ -1890,10 +1828,6 @@
     
       <li class="post">
         <a href="/blog/2014/05/23/security6/">Java安全那些事之六（客户端安全）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
       </li>
     
   </ul>

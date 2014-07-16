@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：架构 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/jia-gou/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-06-04T14:25:35+08:00</updated>
+  <updated>2014-07-16T14:54:07+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,194 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[spring mvc 表现层测试]]></title>
+    <link href="http://yanyaner.com/blog/2014/07/15/spring-mvc-test/"/>
+    <updated>2014-07-15T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/07/15/spring-mvc-test</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;表现层、业务层、持久层是一个经典的分层架构，在构建软件系统时，一般会从持久层开始，逐渐向上层编码、构建，每一层完成编码后必须保证正确后，再写上一层，这就像修房子一样，打牢地基再砌墙。</p>
+
+<p>&emsp;&emsp;另外需提一下，一般公司的项目中对持久层都有通用的封装（比如baseDao），因此，持久层的代码在这种情况下就表现为ORM注解或sql语句块，如果是hibernate注解，在项目启动时就可以发现大部分配置上的错误，如果是mybatis或ibatis依旧可以放到业务层中去测试。因此，我认为持久层不用专门去写测试代码了，我们针对业务层的测试即可发现持久层的问题。</p>
+
+<p>&emsp;&emsp;还有，表现层在采用了restful及json数据返回格式后，前端的交互编码其实可以很早就进行，即和后台编码同步进行，我计划有时间去实现一个这样的模拟系统服务器，在设计人员完成rest api设计后，就可以将api输入这个模拟服务器系统，前端程序员依照rest api就可以和模拟服务器交互了，这样前后台就可以分工同步开发了，效率一定会提升哦。</p>
+
+<p>&emsp;&emsp;言归正传，下面我主要来讲讲服务器端的action测试，因为在这个时候，我们还没有任何界面交互，而仅仅只有一个restful api。如何对action进行测试，在早期的spring版本中还比较困难，网上很多同学都是自己封装，但依然不方便不强大。好消息是从spring 3.2开始，提供了对spring mvc完善的支持，请看下面的这个登录action代码及测试。<!-- more--></p>
+
+<p>``` java LoginAction.java
+/<em>*
+ * 登录系统
+ * @author ljh
+ *
+ </em>/
+@Controller
+public class LoginAction {</p>
+
+<pre><code>@Resource
+private IUserService userService;
+
+@Resource
+private JsonMapper jm;
+
+
+@RequestMapping(value="/login", method=RequestMethod.GET)
+public void loginSystem(
+        @Valid User user,
+        BindingResult result,
+        HttpSession session,
+        HttpServletResponse resp
+        ) throws Exception {
+
+    resp.setCharacterEncoding("utf-8");
+
+    RespMessage respMsg = new RespMessage();
+
+    if (respMsg.sendValidationFaildResponse(result, jm, resp)) {
+        return ;
+    }
+
+    try {
+        User u = userService.login(user.getCode(), user.getPassword());
+        session.setAttribute(IConst.LOGIN_USER_SESSION_KEY, u);
+        respMsg.setData(u);
+
+    } catch (Exception ex) {
+        respMsg.setCode(RespMessage.FAIL);
+        respMsg.setMsg(ex.getMessage());
+    }
+
+    jm.writeValue(new FilterProvider()
+    .addIncludeProperties("video_user", "id", "name", "classes") 
+    .addIncludeProperties("video_classes", "id" ,"name")
+    ,resp.getOutputStream(), respMsg);
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;对上面这个rest方法如何进行测试呢？非常简单，代码如下：</p>
+
+<p>``` java LoginActionTest.java</p>
+
+<p>import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;</p>
+
+<p>import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.<em>;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.</em>;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;</p>
+
+<p>@RunWith(SpringJUnit4ClassRunner.class)
+@Transactional
+@WebAppConfiguration
+@ContextConfiguration(value={&ldquo;classpath:config/spring/spring*.xml&rdquo;})
+public class LoginActionTest {</p>
+
+<pre><code>@Resource
+private WebApplicationContext wac;
+
+private MockMvc mvc;
+
+
+
+@Before
+public void setup() {
+    mvc = MockMvcBuilders.webAppContextSetup(wac).build();
+}
+
+
+
+@Test
+public void testLogin() throws Exception {
+
+    mvc
+    .perform(get("/login").param("name", "ljh").param("password", "123"))
+    .andExpect(status().isOk()) //状态码200
+    .andExpect(content().string("{msg:10}"))
+    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+    .andExpect(jsonPath("$.msg").value(10))
+    .andDo(print());
+
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;上面的代码，有几个地方需要给大家解释：</p>
+
+<p>&emsp;&emsp;<strong>MockMvc</strong>:这个类是一个核心类，测试必须通过这个类来实现。MockMvc如何实例化呢？这行代码：<strong>MockMvcBuilders</strong>.webAppContextSetup(wac).build()即可实例化，其中的wac需要由容器注入，类型是WebApplicationContext。</p>
+
+<p>&emsp;&emsp;有同学在这个地方或许有点疑问，在没有启动tomcat之类容器的情况下，如何能注入<strong>WebApplicationContext</strong>啊？答案就是类顶上书写的<strong>@WebAppConfiguration</strong>注解，细心的同学会发现，本测试类和service中的测试类上面写的注解基本相同，惟独多了@WebAppConfiguration注解，正因为这个注解所起的作用，使用WebApplicationContext可以注入。</p>
+
+<p>&emsp;&emsp;接下来，我们来看真正的测试方法，在测试过程中，我们主要会做三个事情：</p>
+
+<p>&emsp;&emsp;<strong>1、构建请求，然后执行</strong>。</p>
+
+<p>&emsp;&emsp;请求的构建，需要用到MockMvcRequestBuilders类，这个类可以产生get、post、put、delete等各种请求以及填充参数，构建好请求后，通过perform方法提交这个请求。</p>
+
+<p>&emsp;&emsp;<strong>2、验证请求结果和预期是否一切。</strong></p>
+
+<p>&emsp;&emsp;请求的验证通过MockMvcResultMatchers这个类来做，我们可以从很多方面来验证结果和你预期是否一致，比如：状态码，响应内容，响应视图名称，响应类型码等，上例中我们就使用了status、content、contentType等，更详细的东东请大家去翻阅spring api文档吧。</p>
+
+<p>&emsp;&emsp;<strong>3、打印输出请求与响应的结果（这一步可选，不是必须的哦）。</strong></p>
+
+<p>&emsp;&emsp;MockMvcResultHandlers这个类用来对结果进行处理，比如通过print方法打印，spring mvc对测试结果处理的封装目前仅仅提供了打印这个处理，其它的可由我们自己去实现哦。当然，你也可以将输入的json结果copy出来，放入图形化工具中，人工检查是否正确，可使用的gui工具有JsonView.exe，自己可从网上下载到哦。</p>
+
+<p>&emsp;&emsp;当然，上面都是针对的是json restful结果的断言，如果是传统的mvc方式，又该是如何验证呢？请看示例代码，包含了对跳转页面资源的验证以及对作用域中值的验证等功能：</p>
+
+<p>``` java</p>
+
+<pre><code>            .andExpect(status().isOk())
+            .andExpect(view().name("main"))
+            .andExpect(MockMvcResultMatchers.forwardedUrl("main"))
+            .andExpect(forwardedUrl("main"))
+            .andExpect(model().attributeExists("user_key"))
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;如果你的需求中需要上传文件，又怎么测试呢？不要着急，spring mvc已经为我们考虑到了这些，代码如下：</p>
+
+<p>``` java</p>
+
+<p>mvc.perform(</p>
+
+<pre><code>            fileUpload("/login")
+            .file(
+                    new MockMultipartFile("photo", "database.properties", MediaType.IMAGE_JPEG_VALUE, FileUtils.readFileToByteArray(
+                            new ClassPathResource("database.properties").getFile())))
+                .param("code", "001")
+                .param("password", "123")
+
+            )
+            .andExpect(status().isOk())
+            .andDo(print());
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;我们自己实例化了一个MockMultipartFile，并指定了一些参数，比如文件字段名，原始文件名，内容类型，文件内容等。有一点要提醒大家的是，在你的Action中，一定要用MultipartFile类型来接收文件参数，而不是用CommonsMultipartFile哦，切记（其实这也是您对依赖倒转原则理解的体现哦）。</p>
+
+<p>&emsp;&emsp;各位，时间关系，先写到这，以后再补充。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[分布式文件系统fastdfs解析之二(配置)]]></title>
@@ -443,7 +631,7 @@ exit 1
 
 <p>&emsp;&emsp;至此，1号服务器上的所有配置及服务启动工作已经完成。2号服务器的配置及服务实例启动与1号服务器基本相同，惟一需要大家要注意的是group的名称，port端口号等，要和1号服务器相“呼应”，同时，我们在2号服务器上也配置了一个tracker实例以保证高可用性。</p>
 
-<p>&emsp;&emsp;好了，fastDFS的配置先告一段落，下一篇我们来聊聊客户端对fastDFS的调用，除了java客户端外，还包括tengine-2.0.1服务器上访问插件的配置。</p>
+<p>&emsp;&emsp;好了，fastDFS的配置先告一段落，下一篇我们来聊聊客户端对fastDFS的调用，除了java客户端外，还包括tengine-2.0.1服务器上访问插件的配置(2014-7-15:不写了，以后有空再说，大家在使用时，最后在网上找带连接池功能的fastDFS驱动)。</p>
 ]]></content>
   </entry>
   
@@ -1098,114 +1286,6 @@ public void setUserNameSessionKey(String userNameSessionKey) {
 <p>&emsp;&emsp;至此，spy程序这边基本开发完成了。目标服务器上，该如何配置呢？监控平台的消息处理者又该如何实现呢？</p>
 
 <p>&emsp;&emsp;且听下回分解。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[读写分离架构之mysql实例]]></title>
-    <link href="http://yanyaner.com/blog/2014/03/10/db-read-write-split/"/>
-    <updated>2014-03-10T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/03/10/db-read-write-split</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;读写分离架构对提升系统性能非常重要，特别是在互联网项目中，查询操作可能达到90%以上，而且有较高的并发性。</p>
-
-<p>&emsp;&emsp;对于数据库的读写分离，即是把所有的增、删、改操作发送到主数据库，所有查询操作发送到从数据库，通过增加从数据库实例个数以提升查询性能。当然也可以使用noSql数据库(如mongodb,hbase等)、搜索引擎（如lucene）等技术来做查询，关系数据库做核心数据保存，这种方式也是基于读写分离架构。</p>
-
-<p>&emsp;&emsp;更多性能优化文章，大家可以参考我的文章：
-<a href="/blog/2010/11/05/prof-web/">系统性能优化总结之表现层</a>，<a href="/blog/2010/11/08/prof-service/">系统性能优化总结之业务层</a>，<a href="/blog/2010/11/09/prof-dao/">系统性能优化总结之持久层篇</a>，技术在不断发展，这三篇文章是几年前写的，目前看来少了很多东西，我后续将把一些近年来新的内容添加上去以符合一些新的场景。</p>
-
-<p>&emsp;&emsp;目前很多数据库都支持主从复制，读写分离，如：Oracle， SqlServer， Mysql等，主数据库在写入数据时同时同步到从数据库。此文以mysql为例给大家加以介绍。网上也有很多这样的文章，大家可以去搜索阅读，但这些文章基本上都是基于*inux平台的，我将以windows平台的配置为例（其实原理都是一样的，只是配置上的一些差异而已）。</p>
-
-<p>&emsp;&emsp;简单起见，机器用我的笔记本。localhost:3307为主服务器master，localhost:3308为从属服务器slave（可以增加多个slave），mysql版本为5.6。先配置主服务器，编辑my.ini，内容如下：<!-- more--></p>
-
-<p>``` ini</p>
-
-<p>[mysqld]
- basedir =D:/server/db/MySQL Server5.6
- datadir =D:/server/db/mysql_db1/dbfile
- port = 3307
- server_id = 1
- log-bin=mysql-bin</p>
-
-<p> skip-character-set-client-handshake
- init-connect = &lsquo;SET NAMES utf8&rsquo;
- character_set_server=utf8
- sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;从属数据库配置是(和主服务器的差别在于port、server_id与datadir不同)：</p>
-
-<p><code>ini
-[mysqld]
- basedir =D:/server/db/MySQL Server5.6
- datadir =D:/server/db/mysql_db2/dbfile
- port = 3308
- server_id = 10
- log-bin=mysql-bin
- skip-character-set-client-handshake
- init-connect = 'SET NAMES utf8'
- character_set_server=utf8
- sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
-</code></p>
-
-<p>&emsp;&emsp;为了方便启动，把这两个数据库都注册为win服务，命令如下：</p>
-
-<p>```
- D:\server\db\MySQL Server5.6\bin>mysqld
- &mdash;install mysql5.6.master
- &mdash;defaults-file=D:\server\db\mysql_db1\my.ini</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;从属服务器的注册与之类似不在写出，我们接下来在系统服务中分别启动这两个服务器实例。</p>
-
-<p>&emsp;&emsp;再接下来要做的事情是配置主从复制功能，主服务器的增、删、改数据操作都将同步到多台从属服务器上，先在主服务器上给从属服务器分配登录账号，这个账号将是从属服务器进行数据同步操作的授权，命令如下（账号是backup，密码是123）：</p>
-
-<p>```
-GRANT REPLICATION SLAVE ON
-<em>.</em> to &lsquo;backup&rsquo;@&lsquo;localhost&rsquo;
-identified by &lsquo;123’;</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;继续命令行中运行：show master status; 记录下File及Position两个输出内容，这两个参数在配置slave时需要用到。</p>
-
-<p>&emsp;&emsp;登录从服务器，执行下面的命令：</p>
-
-<p><code>
-change master to
-master_host=’localhost’,
-master_port=3307,
-master_user=’backup’,
-master_password=’123’,
-master_log_file=’mysql-bin.000006’,
-master_log_pos=120;
-</code></p>
-
-<p>&emsp;&emsp;上面命令中的master_host及master_port是主服务器的地址和端口号，master_user及master_password是授权命令输入的账号、密码，master_log_file及master_log_pos是show master status输出的东西。</p>
-
-<p>&emsp;&emsp;接下来，从属服务器上运行start slave就可以启动从属服务，运行show slave status\G查看状态，如果输出的Slave_IO_Running和Slave_SQL_Running都是yes，则表示配置成功（如果配置有误，可stop slave服务，再次运行change master命令）。</p>
-
-<p>&emsp;&emsp;至此，mysql的主从复制功能就配置完成了。也许你会说，我们的所有增、删、改通过对localhost:3307这个数据库操作，查询通过localhost:3308这个数据库操作不就完成了么？确实如你所说，这种方案是可行的，我们可以在spring中配置两个Datasource，并在技术架构上进行处理，把查询接口单独封装出来以使用不同的数据源。大家可以到我的博客文章<a href="/blog/2010/11/01/p4/">四种持久层设计方案比较</a>中，查看其中的方案三设计。</p>
-
-<p>&emsp;&emsp;当然，上面的访问方式也是有缺陷的，主要体现在，读写分离操作对应用程序并不透明，比如有多台读服务器，你的读操作数据源该如何去配置呢？读写分离会影响到应用代码？因此，我们还得寻找另一种对应用透明的访问方式，这就是用代理模式，屏蔽底层访问细节，这个代理类来负责低层的读写分离，缓存连接（相当于连接池），还包括读操作的负载均衡。</p>
-
-<p>&emsp;&emsp;mysql-proxy就是这样一个程序，我下载的是mysql-proxy-0.8.4-win32-x86.zip，解压后运行bin中的mysql-proxy.exe即可。如果mysql-proxy.exe无法运行，可能是缺少vc2008支持包，大家到微软官网下载vcredist_x86.exe并安装。</p>
-
-<p>&emsp;&emsp;为了后期运行方便，可以配置一个bat批处理文件，启动代理程序：</p>
-
-<p><code>
-D:\server\db\mysql-proxy\bin\mysql-proxy.exe
- --proxy-backend-addresses=localhost:3307
- --proxy-read-only-backend-addresses=localhost:3308
- --proxy-lua-script=D:\server\db\mysql-proxy\share\doc\mysql-proxy\rw-splitting.lua
-</code></p>
-
-<p>&emsp;&emsp;上面的配置中大家要注意：proxy-read-only-backend-addresses可以写多台服务器，用逗号分割开；rw-splitting.lua是读写分离lua脚本文件，您可以进行编辑以符合你的要求（比如有人修改min_idle_connections及max_idle_connections来观察到读写分离的效果），但一般情况下并不需要；你可以通过&mdash;proxy-address=host:port指定代理服务器端口号，如果不指定默认为4040(另，管理端口默认是4041，可以看到一些状态参数)。</p>
-
-<p>&emsp;&emsp;应用程序中通过连接localhost:4040即可操作mysql数据库了，后台的一切都是通过mysql-proxy去处理的，数据库连接对应用程序变得透明了，我们的任务也就完成了。</p>
-
-<p>&emsp;&emsp;下篇给出读写分离的性能测试数据。</p>
 ]]></content>
   </entry>
   

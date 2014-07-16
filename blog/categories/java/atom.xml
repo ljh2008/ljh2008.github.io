@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：java | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-06-04T14:25:35+08:00</updated>
+  <updated>2014-07-16T14:54:07+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,194 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[spring mvc 表现层测试]]></title>
+    <link href="http://yanyaner.com/blog/2014/07/15/spring-mvc-test/"/>
+    <updated>2014-07-15T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/07/15/spring-mvc-test</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;表现层、业务层、持久层是一个经典的分层架构，在构建软件系统时，一般会从持久层开始，逐渐向上层编码、构建，每一层完成编码后必须保证正确后，再写上一层，这就像修房子一样，打牢地基再砌墙。</p>
+
+<p>&emsp;&emsp;另外需提一下，一般公司的项目中对持久层都有通用的封装（比如baseDao），因此，持久层的代码在这种情况下就表现为ORM注解或sql语句块，如果是hibernate注解，在项目启动时就可以发现大部分配置上的错误，如果是mybatis或ibatis依旧可以放到业务层中去测试。因此，我认为持久层不用专门去写测试代码了，我们针对业务层的测试即可发现持久层的问题。</p>
+
+<p>&emsp;&emsp;还有，表现层在采用了restful及json数据返回格式后，前端的交互编码其实可以很早就进行，即和后台编码同步进行，我计划有时间去实现一个这样的模拟系统服务器，在设计人员完成rest api设计后，就可以将api输入这个模拟服务器系统，前端程序员依照rest api就可以和模拟服务器交互了，这样前后台就可以分工同步开发了，效率一定会提升哦。</p>
+
+<p>&emsp;&emsp;言归正传，下面我主要来讲讲服务器端的action测试，因为在这个时候，我们还没有任何界面交互，而仅仅只有一个restful api。如何对action进行测试，在早期的spring版本中还比较困难，网上很多同学都是自己封装，但依然不方便不强大。好消息是从spring 3.2开始，提供了对spring mvc完善的支持，请看下面的这个登录action代码及测试。<!-- more--></p>
+
+<p>``` java LoginAction.java
+/<em>*
+ * 登录系统
+ * @author ljh
+ *
+ </em>/
+@Controller
+public class LoginAction {</p>
+
+<pre><code>@Resource
+private IUserService userService;
+
+@Resource
+private JsonMapper jm;
+
+
+@RequestMapping(value="/login", method=RequestMethod.GET)
+public void loginSystem(
+        @Valid User user,
+        BindingResult result,
+        HttpSession session,
+        HttpServletResponse resp
+        ) throws Exception {
+
+    resp.setCharacterEncoding("utf-8");
+
+    RespMessage respMsg = new RespMessage();
+
+    if (respMsg.sendValidationFaildResponse(result, jm, resp)) {
+        return ;
+    }
+
+    try {
+        User u = userService.login(user.getCode(), user.getPassword());
+        session.setAttribute(IConst.LOGIN_USER_SESSION_KEY, u);
+        respMsg.setData(u);
+
+    } catch (Exception ex) {
+        respMsg.setCode(RespMessage.FAIL);
+        respMsg.setMsg(ex.getMessage());
+    }
+
+    jm.writeValue(new FilterProvider()
+    .addIncludeProperties("video_user", "id", "name", "classes") 
+    .addIncludeProperties("video_classes", "id" ,"name")
+    ,resp.getOutputStream(), respMsg);
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;对上面这个rest方法如何进行测试呢？非常简单，代码如下：</p>
+
+<p>``` java LoginActionTest.java</p>
+
+<p>import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;</p>
+
+<p>import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.<em>;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.</em>;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;</p>
+
+<p>@RunWith(SpringJUnit4ClassRunner.class)
+@Transactional
+@WebAppConfiguration
+@ContextConfiguration(value={&ldquo;classpath:config/spring/spring*.xml&rdquo;})
+public class LoginActionTest {</p>
+
+<pre><code>@Resource
+private WebApplicationContext wac;
+
+private MockMvc mvc;
+
+
+
+@Before
+public void setup() {
+    mvc = MockMvcBuilders.webAppContextSetup(wac).build();
+}
+
+
+
+@Test
+public void testLogin() throws Exception {
+
+    mvc
+    .perform(get("/login").param("name", "ljh").param("password", "123"))
+    .andExpect(status().isOk()) //状态码200
+    .andExpect(content().string("{msg:10}"))
+    .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+    .andExpect(jsonPath("$.msg").value(10))
+    .andDo(print());
+
+
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;上面的代码，有几个地方需要给大家解释：</p>
+
+<p>&emsp;&emsp;<strong>MockMvc</strong>:这个类是一个核心类，测试必须通过这个类来实现。MockMvc如何实例化呢？这行代码：<strong>MockMvcBuilders</strong>.webAppContextSetup(wac).build()即可实例化，其中的wac需要由容器注入，类型是WebApplicationContext。</p>
+
+<p>&emsp;&emsp;有同学在这个地方或许有点疑问，在没有启动tomcat之类容器的情况下，如何能注入<strong>WebApplicationContext</strong>啊？答案就是类顶上书写的<strong>@WebAppConfiguration</strong>注解，细心的同学会发现，本测试类和service中的测试类上面写的注解基本相同，惟独多了@WebAppConfiguration注解，正因为这个注解所起的作用，使用WebApplicationContext可以注入。</p>
+
+<p>&emsp;&emsp;接下来，我们来看真正的测试方法，在测试过程中，我们主要会做三个事情：</p>
+
+<p>&emsp;&emsp;<strong>1、构建请求，然后执行</strong>。</p>
+
+<p>&emsp;&emsp;请求的构建，需要用到MockMvcRequestBuilders类，这个类可以产生get、post、put、delete等各种请求以及填充参数，构建好请求后，通过perform方法提交这个请求。</p>
+
+<p>&emsp;&emsp;<strong>2、验证请求结果和预期是否一切。</strong></p>
+
+<p>&emsp;&emsp;请求的验证通过MockMvcResultMatchers这个类来做，我们可以从很多方面来验证结果和你预期是否一致，比如：状态码，响应内容，响应视图名称，响应类型码等，上例中我们就使用了status、content、contentType等，更详细的东东请大家去翻阅spring api文档吧。</p>
+
+<p>&emsp;&emsp;<strong>3、打印输出请求与响应的结果（这一步可选，不是必须的哦）。</strong></p>
+
+<p>&emsp;&emsp;MockMvcResultHandlers这个类用来对结果进行处理，比如通过print方法打印，spring mvc对测试结果处理的封装目前仅仅提供了打印这个处理，其它的可由我们自己去实现哦。当然，你也可以将输入的json结果copy出来，放入图形化工具中，人工检查是否正确，可使用的gui工具有JsonView.exe，自己可从网上下载到哦。</p>
+
+<p>&emsp;&emsp;当然，上面都是针对的是json restful结果的断言，如果是传统的mvc方式，又该是如何验证呢？请看示例代码，包含了对跳转页面资源的验证以及对作用域中值的验证等功能：</p>
+
+<p>``` java</p>
+
+<pre><code>            .andExpect(status().isOk())
+            .andExpect(view().name("main"))
+            .andExpect(MockMvcResultMatchers.forwardedUrl("main"))
+            .andExpect(forwardedUrl("main"))
+            .andExpect(model().attributeExists("user_key"))
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;如果你的需求中需要上传文件，又怎么测试呢？不要着急，spring mvc已经为我们考虑到了这些，代码如下：</p>
+
+<p>``` java</p>
+
+<p>mvc.perform(</p>
+
+<pre><code>            fileUpload("/login")
+            .file(
+                    new MockMultipartFile("photo", "database.properties", MediaType.IMAGE_JPEG_VALUE, FileUtils.readFileToByteArray(
+                            new ClassPathResource("database.properties").getFile())))
+                .param("code", "001")
+                .param("password", "123")
+
+            )
+            .andExpect(status().isOk())
+            .andDo(print());
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;我们自己实例化了一个MockMultipartFile，并指定了一些参数，比如文件字段名，原始文件名，内容类型，文件内容等。有一点要提醒大家的是，在你的Action中，一定要用MultipartFile类型来接收文件参数，而不是用CommonsMultipartFile哦，切记（其实这也是您对依赖倒转原则理解的体现哦）。</p>
+
+<p>&emsp;&emsp;各位，时间关系，先写到这，以后再补充。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[分布式文件系统fastdfs解析之二(配置)]]></title>
@@ -443,7 +631,7 @@ exit 1
 
 <p>&emsp;&emsp;至此，1号服务器上的所有配置及服务启动工作已经完成。2号服务器的配置及服务实例启动与1号服务器基本相同，惟一需要大家要注意的是group的名称，port端口号等，要和1号服务器相“呼应”，同时，我们在2号服务器上也配置了一个tracker实例以保证高可用性。</p>
 
-<p>&emsp;&emsp;好了，fastDFS的配置先告一段落，下一篇我们来聊聊客户端对fastDFS的调用，除了java客户端外，还包括tengine-2.0.1服务器上访问插件的配置。</p>
+<p>&emsp;&emsp;好了，fastDFS的配置先告一段落，下一篇我们来聊聊客户端对fastDFS的调用，除了java客户端外，还包括tengine-2.0.1服务器上访问插件的配置(2014-7-15:不写了，以后有空再说，大家在使用时，最后在网上找带连接池功能的fastDFS驱动)。</p>
 ]]></content>
   </entry>
   
@@ -1234,111 +1422,6 @@ public static RSAPrivateKey generatePrivateKey(String modulus,
 ```</p>
 
 <p>&emsp;&emsp;上面的代码写得比较乱且粗糙，仅供大家了解我描述的处理步骤哦。如果你要把上面的代码用于生产环境则必须进行重构，可考虑把所有的逻辑都放入login这个业务方法中。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[java安全那些事之五（客户端安全）]]></title>
-    <link href="http://yanyaner.com/blog/2014/04/21/security5/"/>
-    <updated>2014-04-21T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/04/21/security5</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;安全问题的水很深，“乌云”平台上曝光的一些漏洞不凡BAT(百度、阿里、腾讯)等一些大的公司，这些公司一般都有专业的安全团队都会出问题，更何况一些小的公司。本文简单讲解前端的一些安全知识，以引起大家注意。</p>
-
-<p>&emsp;&emsp;前端常见的安全问题有：sql注入，xss以及csrf这几大类，而解决的核心思路就是：不要信任用户提交的任何东西。</p>
-
-<p>&emsp;&emsp;sql注入问题虽然是一个古老的问题，但目前仍然还是有很多系统存在这个漏洞，避免sql注入漏洞说来也是比较简单的，程序开发人员要特别注意的是：不要把用户的输入直接拼装成sql然后执行。java中的主流orm框架如hibernate、ibatis等都考虑到这个问题，如果你用原生jdbc编程则需要预编译你的sql得到PreparedStatement，另外，alibaba的druid数据源中如果开启了wall filter也具备jdbc底层的sql注入防护功能。</p>
-
-<p>&emsp;&emsp;再来看xss，xss是跨站脚本攻击，比如你的一个界面字段中用户输入了有具有执行能力的js代码，如果服务器端不做任何处理就将用户输入保存到数据库中，前端展示又直接将数据库中取出的内容拼在页面中，就会存在xss漏洞。当有其它用户在查看到这段信息时，就有可能把用户的cookie等信息发送到对方指定的服务器上，这真的是太危险了。</p>
-
-<p>&emsp;&emsp;xss的解决办法主要是对客户输入的内容进行过淲处理，也有人叫“消毒”。</p>
-
-<p>&emsp;&emsp;比如下面的一段代码，就实现了简单粗暴式的用户输入消毒。<!--more--></p>
-
-<p>``` java</p>
-
-<pre><code>private static Logger log = LoggerFactory.getLogger("[HtmlCodeUtil]");
-private static final String regEx_script = "&lt;[\\s]*?script[^&gt;]*?&gt;[\\s\\S]*?&lt;[\\s]*?\\/[\\s]*?script[\\s]*?&gt;";//定义script的正则表达式{或&lt;script[^&gt;]*?&gt;[\\s\\S]*?&lt;\\/script&gt; }
-private static final String regEx_style = "&lt;[\\s]*?style[^&gt;]*?&gt;[\\s\\S]*?&lt;[\\s]*?\\/[\\s]*?style[\\s]*?&gt;";  // 定义style的正则表达式{或&lt;style&gt;]*?&gt;[\s\S]*?&lt;\/style&gt; }
-private static final String regEx_html = "&lt;[^&gt;]+&gt;";  // 定义HTML标签的正则表达式
-private static Pattern p_script;
-private static Pattern p_style;
-private static Pattern p_html;
-
-/**
- * 将字符串中的html内容替换成 “”
- * @param inputString
- * @return
- */
-public static String html2Text(String inputHtmlString) {
-
-    Matcher m_script;
-    Matcher m_style;
-    Matcher m_html;
-
-    if (inputHtmlString == null) {
-        return "";
-    }
-    ;
-
-    try {
-        m_script = p_script.matcher(inputHtmlString);
-        inputHtmlString = m_script.replaceAll("");  // 过滤script标签
-
-        m_style = p_style.matcher(inputHtmlString);
-        inputHtmlString = m_style.replaceAll("");  // 过滤style标签
-
-        m_html = p_html.matcher(inputHtmlString);
-        inputHtmlString = m_html.replaceAll("");  // 过滤html标签
-    } catch (Exception e) {
-        log.error("filter html code error, content is:{}", inputHtmlString);
-        //清空
-        inputHtmlString = "您提交的内容有系统不允许的标签！";
-    }
-
-    return inputHtmlString; // 返回文本字符串
-}
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;使用如下测试代码：</p>
-
-<p>```java</p>
-
-<pre><code>public static void main(String[] args) {
-    System.out.println(HtmlUtils.htmlEscape("&lt;script&gt;while (true) {alert('aa');};&lt;/script&gt;&lt;p&gt;Hello&lt;/p&gt;"));
-}
-</code></pre>
-
-<p>```
-&emsp;&emsp;但是，上面的消毒代码过于简单粗暴，在一般在项目中我们可以使用开源的工具来帮助我们做过滤消毒的事。<a href="http://code.google.com/p/xssprotect/">xssprotect</a>、<a href="http://josephoconnell.com/java/xss-html-filter/">HTML filtering utility for Java</a>都实现了过滤消毒的功能。</p>
-
-<p>&emsp;&emsp;请大家看看HTML filtering使用的演示代码如下：</p>
-
-<p>```java</p>
-
-<pre><code>    String html = "&lt;script&gt;while (true) {alert('aa');};&lt;/script&gt;&lt;p&gt;Hello&lt;/p&gt;";
-
-    String result  = new HTMLFilter().filter(html);
-    System.out.println(result);
-
-
-    //输出的结果是：while (true) {alert('aa');};Hello
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;最后一个，也是比较棘手的个是CSRF漏洞攻击，CSRF和XSS不相同，CSRF以用户的身份进行合法的操作的一种攻击方式，也叫做跨站请求伪造。比如：伪造用户的一个合法请求<a href="">http://www.domain.com/addNews.do?title=发布重大新闻啦</a>,将这个地址放入一个超链接的href中，然后再发布到系统中。这个时候，如果一个合法用户登录成功后，无意中点击了这个链接，那么系统就会以他的身份发布一条新闻，而用户可能对自己发布新闻这个行为浑然不知。如果这个链接是一个转账或删除某些数据的操作，那么危险性就显而易见了。</p>
-
-<p>&emsp;&emsp;解决CSRF不能简单地用过滤消毒、不允许发布本站地址的url等方式解决（因为url可以通过另的方式发送给用户），我们需要另想办法。</p>
-
-<p>&emsp;&emsp;一种方案是使用restful风格设计系统api，get请求仅仅做等幂的数据查询，而post、delete、put会对数据进行修改，这样一来就可以防止链接中的CSRF修改数据带来的风险，但这并不能完全保证数据的安全，因为通过js、iframe、表单等方式还是可让伪造的地址以合法的身份运行，但是restful风格的设计确实可以提高CSRF攻击门槛，也是我们在今后所有项目中都必须采用的一种系统对外接口。</p>
-
-<p>&emsp;&emsp;也有人采用检测http referer的方式，如果referer不是本站域名中的，则不予功能的执行，就像很多网站图片防盗链接的做法相同，这种检测referer的方式也可以阻止很大一部分通过QQ、邮件发来的CSRF攻击链接。</p>
-
-<p>&emsp;&emsp;还有一种做法比较好，就是对每个url都带一个服务器端生成的token令牌，一个token用过一次后就失效（记得在struts1中就曾经有防止表单重复提交的功能，原理和我这讲的是相同的），这样可以有效防止CSRF，但同时也增加了系统的复杂性，因为服务器要在会话状态中记住每一个页面每一个操作链接的token，实际项目中可采用专门提取出来一个抽象层来做这事会更好些。</p>
-
-<p>&emsp;&emsp;还是那句话，“道高一尺魔高一丈”，今天看似安全的东西也许明天就出现漏洞，没有绝对的安全，做为企业必须要有安全意识，并随时关注安全方面的资讯及内容。更多xss与csrf的内容请大家参阅<a href="https://blog.tonyseek.com/post/introduce-to-xss-and-csrf/">《总结 XSS 与 CSRF 两种跨站攻击》</a>一文。</p>
 ]]></content>
   </entry>
   

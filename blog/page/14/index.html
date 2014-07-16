@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;ejb3发布来迟了些，否则j2ee开发也许不是现在的spring将一统天下的局面（现在的spring似乎要提供j2ee开发的一站式解决方案了，配置越来越简单，功能越来越强大，涉足范围越来越广）。 &emsp;&emsp;如果项目中用ejb3实体bean实现对象的持久化， &hellip;">
+  <meta name="description" content="&emsp;&emsp;每一个项目中，都会有很多的状态变量，比如资料状态，资料类型，贷款业务状态，审批状态等等，我们可以从下面几种情况来考虑代码实现： &emsp;&emsp;一、如果业务状态变量取值可由客户动态添加，可考虑将状态变量持久化到数据库中（其实这种方式已经不太像是业务状态变量了， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,161 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/06/03/enum/">用枚举类型增强代码的可维护性</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-03T15:18:00+08:00" pubdate data-updated="true">2011年06月03日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;每一个项目中，都会有很多的状态变量，比如资料状态，资料类型，贷款业务状态，审批状态等等，我们可以从下面几种情况来考虑代码实现：</p>
+
+<p>&emsp;&emsp;一、如果业务状态变量取值可由客户动态添加，可考虑将状态变量持久化到数据库中（其实这种方式已经不太像是业务状态变量了，用户添加了自定义类型，业务代码可能要修改，呵呵）。</p>
+
+<p>&emsp;&emsp;二、将业务状态变量定义到常量接口中，比如，我们的学生状态对象，有在读与已毕业状态，这两种状态在业务实现过程中会有不同的处理逻辑，先看看接口的定义：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 学生状态接口</span>
+</span><span class='line'><span class="cm"> * @author yanwawa</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">IStudentState</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//在读</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">STUDING</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
+</span><span class='line'>  <span class="c1">//已毕业</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">GRADUATE</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;我们将状态数据变量类型声明为int，也就是说，在所有的业务方法参数及实现代码中都要声明为int，比如：public List getAllHiStudentByState(int state)，业务实现中也会出现如下代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">state</span> <span class="o">==</span> <span class="n">IStudentState</span><span class="o">.</span> <span class="n">GRADUATE</span><span class="o">)</span> <span class="o">{</span><span class="c1">// do some operate}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;很显然，将业务状态数据定义到常量接口中可以增强代码的表达能力，但是，我们没有办法对代码的进行更好的规范，如果有程序员写出 if (state == 5 ) {// do some operate 5是非法数据}的代码，将难以理解、维护和错误排查。</p>
+
+<p>&emsp;&emsp;三、 用枚举类型来定义业务状态类型，上例中的学生状态在枚举中的定义如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 学生状态</span>
+</span><span class='line'><span class="cm"> * @author yanwawa</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">enum</span> <span class="n">StudentState</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//在读</span>
+</span><span class='line'>  <span class="n">STUDING</span><span class="o">(</span><span class="mi">0</span><span class="o">),</span>
+</span><span class='line'>  <span class="c1">//毕业</span>
+</span><span class='line'>  <span class="n">GRADUATE</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">StudentState</span><span class="o">(</span><span class="kt">int</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">value</span><span class="o">;</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getValue</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">value</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;在业务代码中，方法定义为public List getAllHiStudentByState(StudentState state)，业务实现中if (state == StudentState.STUDING) {// do some operate}，这样改过后，代码的可读性、可维护性都非常不错，而且避免了程序员的随意赋值、乱添状态的情况的发生，这也是我建议大家所使用的方式的原因。</p>
+
+<p>&emsp;&emsp;最后，给出一段hibernate中对枚举类型的配置示例代码，当然，数据库中f_state字段可设计为int类型：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">&quot;com.my.domain.HightSchoolStudent&quot;</span>
+</span><span class='line'>      <span class="na">table=</span><span class="s">&quot;t_hi_student&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">unsaved-value=</span><span class="s">&quot;0&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">&quot;identity&quot;</span><span class="nt">&gt;&lt;/generator&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/id&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span> <span class="na">type=</span><span class="s">&quot;string&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;state&quot;</span> <span class="na">column=</span><span class="s">&quot;f_state&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;type</span> <span class="na">name=</span><span class="s">&quot;org.hibernate.type.EnumType&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>          <span class="nt">&lt;param</span> <span class="na">name=</span><span class="s">&quot;enumClass&quot;</span><span class="nt">&gt;</span>com.my.domain.enumeType.StudentState<span class="nt">&lt;/param&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;/type&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'> <span class="cp">&lt;!—其它属性配置略去  -&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;HQL中的查询与普通类型属性没有区别，比如：我们要查询所有在校学生，可以写出下面的查询代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Query</span> <span class="n">query</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="s">&quot;from HightSchoolStudent hs where hs.state = ?&quot;</span><span class="o">);</span>
+</span><span class='line'><span class="n">List</span> <span class="n">HightSchoolStudent</span><span class="o">&gt;</span> <span class="n">sts</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">StudentState</span><span class="o">.</span><span class="na">STUDING</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1533,62 +1688,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/03/13/flower/">植物园春暖花开</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-03-13T15:18:00+08:00" pubdate data-updated="true">2011年03月13日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;06年和老婆去过一次植物园，时隔5年后的2011，我们又去了植物园，其实主要是去看一个老朋友，下午顺便去的植物园。朋友虽都在成都，但我们平日里也疏于来往，偶尔会有电话、QQ联系，也许城市大了就是这样，只适合于工作。</p>
-
-<p>&emsp;&emsp;朋友家就在植物园对面的小区，中间仅隔一条马路，在楼上就可以看到403路公交车摆放在植物园门口。这次去，梨花已经开过了，但海棠花开得正艳。</p>
-
-<p>&emsp;&emsp;5年前时候，还只有我和老婆（那个时候是GF）两个人，现在可是多了个言言娃了，变化真的很大，朋友家的女儿也出生了，比我们家的这个小1个月。。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/21.jpg' width='' height='' title='朋友女儿'><span class='caption-text'>朋友女儿</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/10.jpg' width='' height='' title='言言'><span class='caption-text'>言言</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/35.jpg' width='' height='' title='海棠1'><span class='caption-text'>海棠1</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/36.jpg' width='' height='' title='海棠2'><span class='caption-text'>海棠2</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/37.jpg' width='' height='' title='海棠3'><span class='caption-text'>海棠3</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/11.jpg' width='' height='' title='言娃娃想睡觉了'><span class='caption-text'>言娃娃想睡觉了</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/30.jpg' width='' height='' title='粉色花'><span class='caption-text'>粉色花</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/34.jpg' width='' height='' title='路边小黄花'><span class='caption-text'>路边小黄花</span></span></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/15/">&larr; 更多早期老文章</a>
@@ -1606,6 +1705,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析之二(配置)</a>
       </li>
     
@@ -1619,10 +1722,6 @@
     
       <li class="post">
         <a href="/blog/2014/05/23/security6/">Java安全那些事之六（客户端安全）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
       </li>
     
   </ul>

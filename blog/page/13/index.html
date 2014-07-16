@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;经过两个半月的努力，省质监局一期项目告一段落，在这段不长的时间内，我们开发团队成员已变得成熟、稳重，能够从容应对开发中遇到的棘手问题，这点我感到非常欣慰。 &emsp;&emsp;省质监局项目是老大借助些关系拿过来的，这个项目开始是由另一个公司开发的， &hellip;">
+  <meta name="description" content="&emsp;&emsp;有人说，所有的程序本质上都是“输入->处理->输出”，仔细想来确实如此。话又说回来，你输入的是垃圾，输出的肯定也是垃圾，你输入的是“炸 弹”，面临的将是系统崩溃、瘫痪，也就无法得到预期的结果。因此，数据的验证，在任何一个项目中，都是不可回避、不可忽视的问题。 &emsp;& &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +58,99 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/06/16/validation/">如何处理项目中的数据验证</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-06-16T15:18:00+08:00" pubdate data-updated="true">2011年06月16日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;有人说，所有的程序本质上都是“输入->处理->输出”，仔细想来确实如此。话又说回来，你输入的是垃圾，输出的肯定也是垃圾，你输入的是“炸 弹”，面临的将是系统崩溃、瘫痪，也就无法得到预期的结果。因此，数据的验证，在任何一个项目中，都是不可回避、不可忽视的问题。</p>
+
+<p>&emsp;&emsp;下面，我还是按web应用程序的分层结构和大家探讨一下数据的验证实现的一些问题。</p>
+
+<p>&emsp;&emsp;<strong>一、表现层：</strong>
+表现层是接受客户数据输入的来源，第一道数据检验“关卡”应该也在这里。</p>
+
+<p>&emsp;&emsp;<strong>A、 客户端的验证</strong>
+web系统客户端采用的方法是：用js对客户在浏览器中输入的数据进行验证，这些验证通常不包括业务方面的内容，比如：字段是否已经填写，字段是否为数字，字段是否为email，字段长度是否满足要求，是否是一个合法的身份证号码，是否是合法的日期等，如果结合正则表达式，则可以实现一些更为复杂的数据验证功能。</p>
+
+<p>&emsp;&emsp;客户端有时还得借助ajax实现一些业务验证，比哪：用户注册功能中，就可以利用ajax及时检测用户输入的登录名是否已经重复等，这类型的验证已经具有了业务逻辑的影子，类似这种情况的简单业务验证是允许在客户端验证中出现的。</p>
+
+<p>&emsp;&emsp;客户端验证通常采用一些验证框架提高开发效率，比如jQuery中就有一些很不错的验证插件，不仅验证条件的书写很简单，而且验证没有通过的提示信息更加的友好。我推荐jQuery validate，这个插件的使用我会在另一文件中写出。</p>
+
+<p>&emsp;&emsp;当然，客户端的js验证可以被某些不怀好意的人轻易绕过（比如禁用js或用特殊工具提交），因此，真正的验证还得在服务器上做，客户端的验证，就全当做为提高系统人机交互效率而存在。
+如果你将flex，java swing这类技术应于于表现层，原理同上，我不再复述。</p>
+
+<p>&emsp;&emsp;<strong>B、服务器端的验证</strong>
+提到表现层，MVC模式肯定要说说。我们知道，几乎所有的MVC框架，都提供了数据验证实现，这种数据验证功能是在服务器端实现的（其实就是服务器端的验证了），因些它不会被恶意绕过。
+validate验证框架的原理是把通用的验证逻辑代码提取出来，将应用程序界面输入字段元素的验证规则写到配置文件（xml）中去，并由框架根据配置的验证规则调用验证逻辑完成验证，如果验证不通过，将跳转到指定的出错显示页面，控制器（controller，即action）中的业务调用代码将不会被执行。</p>
+
+<p>&emsp;&emsp;使用验证框架的优点是统一、规范，程序员手工验证代码移走后（变成了通用的验证代码），控制器中的代码将变得非常的简洁，这有利于系统维护。当然，缺点是引入了新的框架，系统和验证框架产生了耦合（不过，这点对于大型项目来说并不存在问题）。</p>
+
+<p>&emsp;&emsp;我认为，小系统或者表单验证字段不多的情况下，没有必要引入验证框架，程序员直接在 controller中加入验证代码即可，即手工书写if else，或者你也可以把你的验证代码重构一下，提出一个工具类来。</p>
+
+<p>&emsp;&emsp;如果一个表单中验证段过多，这种方法就不是太好。自己写验证代码还有一个缺点是数据回填问题（就是将不合法信息提示给用户的同时，用户以前在页面上输入的数据都要回填显示，以避免用户从新来过）比较麻烦，需要程序员专门来处理这种情况（其实，不同的MVC框架也是借助于自定义页面标记来实现的）。如果有了客户端的验证，数据回填显示似乎并不存在问题，呵呵。</p>
+
+<p>&emsp;&emsp;<strong>二、业务层：</strong></p>
+
+<p>业务层的数据验证，主要是针对输入数据在业务逻辑中是否存在问题，也就是说，表现层和业务层的数据验证，应该各自有各自的职责，表现层偏向于数据是否为空等简单的判断，几乎不会和数据库发生交互，而业务层主要是针对业务逻辑的数据合法合理性判断。</p>
+
+<p>&emsp;&emsp;说起来简单，做起来并不容易。在实际的项目中，我们很有可能将一些业务数据合理性检测放到controller中去做了。</p>
+
+<p>&emsp;&emsp;举个例子：新用户注册功能中，需要检测用户名是否重复，而检测用户名是否重复要和数据库交互，我看见很多人都是在controller中去调用service中一个叫checkUniqueRegUserName的方法，如果重复将直接跳转出错页面。这种做法个人认为不是太好，检测用户名是否重复属于业务范畴。</p>
+
+<p>&emsp;&emsp;如果你把这个检测过程封装到保存注册用户方法中，通过异常机制来检测注册过程中发生的故障，也许更合理些。你可以定义这么一个方法 public void register(User user) thorws RegException。</p>
+
+<p>&emsp;&emsp;有了这个方法，我们的程序代码结构将更加的清晰。页面表单输入的User数据合法性检测由验证框架或手写if else来向用户报告，User的名称是否重复由register方法向调用者报告，职责更加明确了，也更符合“职责单一原则”。</p>
+
+<p>&emsp;&emsp;当然，哪些是普通合法性验证？哪些是业务逻辑验证？对这两者的划分不同，你的验证代码在服务器端写的代码将不一样，我认为只要和数据库交互或和其它领域对象协作才能得到的结果都是属业务逻辑验证。</p>
+
+<p>&emsp;&emsp;<strong>三、持久层</strong></p>
+
+<p>&emsp;&emsp;持久层也可以对数据进行验证，有两个验证地点，一个是在ORM框架中，二是用数据库自身的约束机制。</p>
+
+<p>&emsp;&emsp;ORM映射框架，比如说hiberante，就可以配置column的字段类型，是否可以为空，长度是多少等，如果在保存或修改的过程中，数据不符合hbm配置要求，hibernate框架会发现这个错误。
+数据库中可以通过设计字段类型，是否可以为空、外键、主键等，通过数据库自身的约束机制来拒绝非法的数据。</p>
+
+<p>&emsp;&emsp;持久层的数据验证已经属于最终的数据验证了，我们的数据验证策略应该是：尽量提前验证。如果你可以确保前阶段数据已经经过了严格的验证，持久层这边可以安全放行，不做检测。
+经常有人问我项目中数据库这边的外键约束，非空约束是否要加上，我一般采用的策略是项目开发阶段不加（给程序员开发带来方便），项目上线后根据情况来看，加上是最好的了（可访止DBA误操作引入非法数据）。</p>
+
+<p>&emsp;&emsp;<strong>总结：</strong></p>
+
+<p>&emsp;&emsp;1、 客户端用js框架帮助我们实现验证；</p>
+
+<p>&emsp;&emsp;2、 服务器端通过MVC验证框架帮助我们实现（请看我的《都spring mvc了（二）》，spring mvc 是如何实现的验证的）；</p>
+
+<p>&emsp;&emsp;3、 分清哪些由业务方法去做的验证，哪些是由普通的验证；如果前面做好了，持久层验证可以省去。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1960,161 +2053,6 @@ spring mvc提供了基本的一些数据类型的自动转换功能，这通常�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/06/03/enum/">用枚举类型增强代码的可维护性</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-06-03T15:18:00+08:00" pubdate data-updated="true">2011年06月03日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;每一个项目中，都会有很多的状态变量，比如资料状态，资料类型，贷款业务状态，审批状态等等，我们可以从下面几种情况来考虑代码实现：</p>
-
-<p>&emsp;&emsp;一、如果业务状态变量取值可由客户动态添加，可考虑将状态变量持久化到数据库中（其实这种方式已经不太像是业务状态变量了，用户添加了自定义类型，业务代码可能要修改，呵呵）。</p>
-
-<p>&emsp;&emsp;二、将业务状态变量定义到常量接口中，比如，我们的学生状态对象，有在读与已毕业状态，这两种状态在业务实现过程中会有不同的处理逻辑，先看看接口的定义：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> * 学生状态接口</span>
-</span><span class='line'><span class="cm"> * @author yanwawa</span>
-</span><span class='line'><span class="cm"> *</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">IStudentState</span> <span class="o">{</span>
-</span><span class='line'>  <span class="c1">//在读</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">STUDING</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>
-</span><span class='line'>  <span class="c1">//已毕业</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">int</span> <span class="n">GRADUATE</span> <span class="o">=</span> <span class="mi">1</span><span class="o">;</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;我们将状态数据变量类型声明为int，也就是说，在所有的业务方法参数及实现代码中都要声明为int，比如：public List getAllHiStudentByState(int state)，业务实现中也会出现如下代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="k">if</span> <span class="o">(</span><span class="n">state</span> <span class="o">==</span> <span class="n">IStudentState</span><span class="o">.</span> <span class="n">GRADUATE</span><span class="o">)</span> <span class="o">{</span><span class="c1">// do some operate}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;很显然，将业务状态数据定义到常量接口中可以增强代码的表达能力，但是，我们没有办法对代码的进行更好的规范，如果有程序员写出 if (state == 5 ) {// do some operate 5是非法数据}的代码，将难以理解、维护和错误排查。</p>
-
-<p>&emsp;&emsp;三、 用枚举类型来定义业务状态类型，上例中的学生状态在枚举中的定义如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> * 学生状态</span>
-</span><span class='line'><span class="cm"> * @author yanwawa</span>
-</span><span class='line'><span class="cm"> *</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">enum</span> <span class="n">StudentState</span> <span class="o">{</span>
-</span><span class='line'>  <span class="c1">//在读</span>
-</span><span class='line'>  <span class="n">STUDING</span><span class="o">(</span><span class="mi">0</span><span class="o">),</span>
-</span><span class='line'>  <span class="c1">//毕业</span>
-</span><span class='line'>  <span class="n">GRADUATE</span><span class="o">(</span><span class="mi">1</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">StudentState</span><span class="o">(</span><span class="kt">int</span> <span class="n">value</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">value</span><span class="o">;</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getValue</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">return</span> <span class="k">this</span><span class="o">.</span><span class="na">value</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在业务代码中，方法定义为public List getAllHiStudentByState(StudentState state)，业务实现中if (state == StudentState.STUDING) {// do some operate}，这样改过后，代码的可读性、可维护性都非常不错，而且避免了程序员的随意赋值、乱添状态的情况的发生，这也是我建议大家所使用的方式的原因。</p>
-
-<p>&emsp;&emsp;最后，给出一段hibernate中对枚举类型的配置示例代码，当然，数据库中f_state字段可设计为int类型：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;class</span> <span class="na">name=</span><span class="s">&quot;com.my.domain.HightSchoolStudent&quot;</span>
-</span><span class='line'>      <span class="na">table=</span><span class="s">&quot;t_hi_student&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;id</span> <span class="na">name=</span><span class="s">&quot;id&quot;</span> <span class="na">column=</span><span class="s">&quot;pk_id&quot;</span> <span class="na">unsaved-value=</span><span class="s">&quot;0&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;generator</span> <span class="na">class=</span><span class="s">&quot;identity&quot;</span><span class="nt">&gt;&lt;/generator&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/id&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span> <span class="na">column=</span><span class="s">&quot;f_name&quot;</span> <span class="na">type=</span><span class="s">&quot;string&quot;</span><span class="nt">&gt;&lt;/property&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;state&quot;</span> <span class="na">column=</span><span class="s">&quot;f_state&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;type</span> <span class="na">name=</span><span class="s">&quot;org.hibernate.type.EnumType&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;param</span> <span class="na">name=</span><span class="s">&quot;enumClass&quot;</span><span class="nt">&gt;</span>com.my.domain.enumeType.StudentState<span class="nt">&lt;/param&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;/type&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/property&gt;</span>
-</span><span class='line'> <span class="cp">&lt;!—其它属性配置略去  -&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;HQL中的查询与普通类型属性没有区别，比如：我们要查询所有在校学生，可以写出下面的查询代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Query</span> <span class="n">query</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="na">createQuery</span><span class="o">(</span><span class="s">&quot;from HightSchoolStudent hs where hs.state = ?&quot;</span><span class="o">);</span>
-</span><span class='line'><span class="n">List</span> <span class="n">HightSchoolStudent</span><span class="o">&gt;</span> <span class="n">sts</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="na">setParameter</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">StudentState</span><span class="o">.</span><span class="na">STUDING</span><span class="o">).</span><span class="na">list</span><span class="o">();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/14/">&larr; 更多早期老文章</a>
@@ -2132,6 +2070,10 @@ spring mvc提供了基本的一些数据类型的自动转换功能，这通常�
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析之二(配置)</a>
       </li>
     
@@ -2145,10 +2087,6 @@ spring mvc提供了基本的一些数据类型的自动转换功能，这通常�
     
       <li class="post">
         <a href="/blog/2014/05/23/security6/">Java安全那些事之六（客户端安全）</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a>
       </li>
     
   </ul>

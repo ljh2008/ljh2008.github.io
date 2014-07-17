@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：java | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-07-16T16:56:05+08:00</updated>
+  <updated>2014-07-17T16:52:53+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -18,13 +18,13 @@
     <link href="http://yanyaner.com/blog/2014/07/16/spring-restful-validator/"/>
     <updated>2014-07-16T15:18:00+08:00</updated>
     <id>http://yanyaner.com/blog/2014/07/16/spring-restful-validator</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;服务器端的数据合法性验证非常有必要而且是必须的，特别是restful api中，就存在多种类型的客户端，你不可保证每种客户端都已经做好了本地化的数据合法性验证。</p>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;服务器端的数据合法性验证非常有必要而且是必须的，特别是restful api中场景中存在多种类型的客户端，你不能保证每种客户端都已经做好了本地化的数据合法性验证。</p>
 
-<p>&emsp;&emsp;对于业务逻辑来说，我们一般会对新增业务操作以及修改业务操作进行数据的验证，而一般的mvc框架都有对验证功能的集成，spring mvc也不利外，但这些集成的验证都和特定的视图标签有密切的联系，比如jsp的验证标签，而在我所说的restful场景中，我们的服务器上往往不做页面的生成，自然用到到这些标签了。怎么办呢？只有自己做一些封装和改造了，简单的说，就是我们自己去解析BindingResult中的信息。</p>
+<p>&emsp;&emsp;对于业务逻辑来说，我们一般会对新增业务操作以及修改业务操提交上来的数据进行验证，而一般的mvc框架都有对验证功能的封装集成，spring mvc也不利外，但这些集成的验证都和特定的视图标签有密切的联系，比如jsp标签库，而在我所说的restful场景中，服务器上往往不做页面的生成工作，那自然是用到到这些标签了。怎么办呢？只有自己做一些封装和改造了，简单的说，就是我们自己去解析BindingResult中的信息。</p>
 
 <p>&emsp;&emsp;请看我下面封装的通用数据返回类代码，其中sendValidationFaildResponse方法会将验证出来的错误信息返回给客户端：</p>
 
-<p>``` java
+<p>``` java RespMessage.java
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -116,7 +116,7 @@ public boolean sendValidationFaildResponse(
 <p>}</p>
 
 <p>```
-&emsp;&emsp;接下来再来看看添加的action代码，这段代码中首先进行了数据合法性的验证：<!-- more--></p>
+&emsp;&emsp;接下来再来看看添加数据的action代码，这段代码中首先进行了数据合法性的验证：<!-- more--></p>
 
 <p>``` java UserAction.java</p>
 
@@ -143,7 +143,7 @@ public boolean sendValidationFaildResponse(
 
 <p>```</p>
 
-<p>&emsp;&emsp;实体对象中，直接加入字段验证注解，如下：</p>
+<p>&emsp;&emsp;实体对象中，添加字段验证注解，如下（这里暂时没有使用国际化）：</p>
 
 <p>``` java User.java</p>
 
@@ -173,7 +173,7 @@ private String password;
 
 <p>```</p>
 
-<p>&emsp;&emsp;最后，将验证相关的bean对象加入到配置文件中。</p>
+<p>&emsp;&emsp;最后，将验证相关的bean对象加入到apirng的配置文件中。</p>
 
 <p>``` xml spring-action.xml</p>
 
@@ -193,9 +193,9 @@ private String password;
 
 <p>```</p>
 
-<p>&emsp;&emsp;国际化的部分仅仅是为了以后扩展方便，你需要在src下建立res目录，并写一个空的appResources.properties文件。</p>
+<p>&emsp;&emsp;国际化的部分仅仅是为了以后扩展方便，同时需要你在src下建立res目录，并写一个空的appResources.properties文件。</p>
 
-<p>&emsp;&emsp;针对上面的action，如果我们不输入必须要填写的字段，我们会得到如下的输出结果：</p>
+<p>&emsp;&emsp;针对上面的action访问，如果我们不输入必须要填写的字段，我们会得到如下的输出结果：</p>
 
 <p>``` json
 {
@@ -213,7 +213,7 @@ private String password;
 
 <p>```</p>
 
-<p>&emsp;&emsp;这个json信息，在jquery中可以通过下面的代码解析出来错误详细信息：</p>
+<p>&emsp;&emsp;这个json信息，在jquery中可以通过下面的代码解析出错误详细信息，并进行显示：</p>
 
 <p>``` js
 success:function(data){</p>

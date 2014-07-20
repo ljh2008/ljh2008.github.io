@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：架构 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/jia-gou/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-07-17T16:52:53+08:00</updated>
+  <updated>2014-07-20T17:06:22+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,190 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[服务器端无状态参数验证实现]]></title>
+    <link href="http://yanyaner.com/blog/2014/07/20/security-filter-sign/"/>
+    <updated>2014-07-20T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/07/20/security-filter-sign</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;我在<a href="/blog/2014/04/16/security4/">《Java安全那些事之四（无状态安全认证）》</a>中提到了在无状态安全认证中，对数据签名的验证可以考虑通过AOP或filter的方式专门提取到了一个层中去处理，很多人在问我有没有源代码，现在贴出请大家参考。</p>
+
+<p>&emsp;&emsp;当我们有了这个独立的层次，我们在应用控制器中就不再需求做这方面的检测了，着实方便了许多。<!-- more--></p>
+
+<p>``` java ApiSeccurityCheckFilter.java</p>
+
+<p>/<em>*
+ * 无状态签名、超时检测过滤器实现
+ *
+ * @author ljh
+ *
+ </em>/</p>
+
+<p>@Component
+public class ApiSeccurityCheckFilter extends OncePerRequestFilter {</p>
+
+<pre><code>//默认调用超时（单位 ms）
+public static final int API_CALL_TIME_OUT = 500;
+
+public static final Logger LOG = LoggerFactory.getLogger(ApiSeccurityCheckFilter.class);
+
+
+//调用超时（单位 ms）
+private int api_call_timeout = API_CALL_TIME_OUT;
+
+@Resource
+private IAppManagementService ams;
+
+@Resource
+private JsonMapper jm;
+
+@Override
+protected void doFilterInternal(HttpServletRequest req,
+        HttpServletResponse resp, FilterChain fc)
+        throws ServletException, IOException {
+
+    // 取到的形如： /myplatform/api/crm324123123126/login
+    String uri = req.getRequestURI();
+
+    int start = uri.lastIndexOf("/api/") + 5;
+
+    String appKey = uri.substring(start, start + 15);
+
+
+    //（1）检测appKey是否授权
+    App app = ams.findAppByKey(appKey);
+    if (app == null) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("appKey {} error, app is null!", appKey);
+        }
+        RespMessage message = new RespMessage();
+        message.setCode(RespMessage.API_PARAM_ERROR);
+        message.setMsg("app调用未经授权！");
+        jm.writeValue(resp.getOutputStream(), message);
+        return;
+    }
+
+    //（2）进行必要参数的验证
+    String client_sign = req.getParameter("sign");
+    String client_ts  = req.getParameter("ts");
+
+    if (client_sign == null || "".equals(client_sign.trim()) ||
+        client_ts == null || "" .equals(client_ts.trim())
+            ) {
+        RespMessage message = new RespMessage();
+        message.setCode(RespMessage.API_PARAM_ERROR);
+        message.setMsg("必须提供sign, ts参数项！");
+        jm.writeValue(resp.getOutputStream(), message);
+        return;
+    }
+
+    //（3）进行数据签字验证
+    StringBuilder sb = new StringBuilder();
+
+    List&lt;String&gt; keys = new ArrayList&lt;String&gt;();
+    for (Enumeration&lt;String&gt; params = req.getParameterNames(); params.hasMoreElements();) {
+        String paramKey = params.nextElement();
+        if (paramKey.equalsIgnoreCase("sign")) {
+            continue;       }
+        keys.add(paramKey);
+    }
+    Collections.sort(keys);
+
+
+    for (int i = 0; i &lt; keys.size(); i++) {
+        String key = keys.get(i);
+        String value = req.getParameter(key);
+
+        if (i == keys.size() - 1) {//拼接时，不包括最后一个&amp;字符
+            sb.append(key).append("=").append(value);
+        } else {
+            sb.append(key).append("=").append(value).append("&amp;");
+        }
+    }
+
+
+    String sign = DigestUtils.md5Hex(sb.toString() + app.getAppCode());
+
+    if (! sign.equals(client_sign)) {
+        LOG.debug("sign error, uri is {}.", uri);
+        RespMessage message = new RespMessage();
+        message.setCode(RespMessage.API_PARAM_ERROR);
+        message.setMsg("数字签名错误！");
+        jm.writeValue(resp.getOutputStream(), message);
+        return;
+    }
+
+    //（4）方法调用超时检测
+    long times = System.currentTimeMillis() - Long.parseLong(client_ts);
+    if (times &gt; api_call_timeout) {
+        RespMessage message = new RespMessage();
+        message.setCode(RespMessage.API_PARAM_ERROR);
+        message.setMsg("调用超时！");
+        jm.writeValue(resp.getOutputStream(), message);
+        LOG.debug("api call timer out, uri is {}, used time {} ms.", uri, times);
+        return;
+    }
+
+    // （5）继续向后执行
+    fc.doFilter(req, resp);
+
+
+}
+
+public void setApi_call_timeout(int api_call_timeout) {
+    this.api_call_timeout = api_call_timeout;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;在spring配置文件中，加入这个过滤器的配置，代码如下：</p>
+
+<p>``` xml spring-aciton.xml</p>
+
+<pre><code>&lt;!-- 第三方应用程序调用api时的检测权限及安全过滤器,名称要和web.xml中的DelegatingFilterProxy指定的targetBeanName名称一致 --&gt;
+&lt;bean name="apiSeccurityCheckFilter" class="com.lovo.platform.monitor.filter.ApiSeccurityCheckFilter"&gt;
+    &lt;property name="api_call_timeout" value="1000"&gt;&lt;/property&gt;
+&lt;/bean&gt;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;最后，在web.xml中配置DelegatingFilterProxy，通过配置url-pattern指定，所有还aip路径的，都经过这个过滤器，也就是说本系统对外界暴露的restapi调用，有了一个统一的安全认证层次。具体代码如下：</p>
+
+<p>``` xml  web.xml
+  <filter></p>
+
+<pre><code>&lt;filter-name&gt;apiSeccurityCheckFilter&lt;/filter-name&gt;
+&lt;filter-class&gt;org.springframework.web.filter.DelegatingFilterProxy&lt;/filter-class&gt;
+&lt;init-param&gt;
+    &lt;param-name&gt;targetBeanName&lt;/param-name&gt;
+    &lt;param-value&gt;apiSeccurityCheckFilter&lt;/param-value&gt;
+&lt;/init-param&gt;
+&lt;init-param&gt;
+    &lt;param-name&gt;API_CALL_TIME_OUT&lt;/param-name&gt;
+    &lt;param-value&gt;500&lt;/param-value&gt;
+&lt;/init-param&gt;
+</code></pre>
+
+<p>  </filter>
+  &lt;filter-mapping></p>
+
+<pre><code>&lt;filter-name&gt;apiSeccurityCheckFilter&lt;/filter-name&gt;
+&lt;url-pattern&gt;/api/*&lt;/url-pattern&gt;
+</code></pre>
+
+<p>  &lt;/filter-mapping></p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;大家要注意的是，targetBeanName中的名称，一定要和spring-aciton.xml中配置的bean的名称一致哦。</p>
+
+<p>&emsp;&emsp;最后解释一下，用到OncePerRequestFilter的原因是，过滤器中要进行业务层方法的调用，使用了OncePerRequestFilter后会非常自然地得到业务对象哈。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[spring mvc restful服务器端数据验证实现]]></title>
@@ -970,260 +1154,6 @@ sudo make clean;
 &emsp;&emsp;不同的linux发行版本可能存在依赖包没有安装而报错，具体情况需要根据出错信息具体解决，我试过redhead,freebsd,openSuse,centos几个系统，都是要进行一些环境的配置才可以安装成功。</p>
 
 <p>&emsp;&emsp;下一篇文章我将按照文章开头的服务器规划进行具体的配置，请大家关注。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[监控系统中的异步消息使用实例（二）]]></title>
-    <link href="http://yanyaner.com/blog/2014/04/09/async_message_architect2/"/>
-    <updated>2014-04-09T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/04/09/async_message_architect2</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;接上节，再次贴出架构图，我们接下来要讲的是图中黄色部分的配置。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/monitor_jms1.jpg' width='' height='' title='业务方法监控架构'><span class='caption-text'>业务方法监控架构</span></span></p>
-
-<p>&emsp;&emsp;先将spy程序导成一个jar包，加入到需要监控的目标服务器lib目录，monitor_spy.jar结构如下所示：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/jarinfo.jpg' width='' height='' title='monitor_spy.jar结构'><span class='caption-text'>monitor_spy.jar结构</span></span></p>
-
-<p>&emsp;&emsp;为了能够实现对目标系统业务方法执行情况进行监控，需要将我们已经写好的拦截器配置到目标系统中去，下面是我的一个配置示例：</p>
-
-<p>``` xml spring-spy.xml</p>
-
-<pre><code>&lt;!-- jms连接工厂 --&gt;         
-&lt;bean id="jmsFactory" class="org.apache.activemq.pool.PooledConnectionFactoryBean"&gt;
-    &lt;property name="connectionFactory"&gt;
-        &lt;bean class="org.apache.activemq.ActiveMQConnectionFactory"&gt;
-            &lt;property name="brokerURL" value="tcp://localhost:61616"&gt;&lt;/property&gt;
-        &lt;/bean&gt;
-    &lt;/property&gt;
-    &lt;!-- 配置池中最大连接数据以及最大活动连接数 --&gt;
-    &lt;property name="maxConnections" value="100"&gt;&lt;/property&gt;
-    &lt;property name="maximumActive" value="100"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- jms模板方法 --&gt;    
-&lt;bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate"&gt;
-    &lt;constructor-arg ref="jmsFactory"&gt;
-    &lt;/constructor-arg&gt;
-    &lt;!-- 默认会创建queue类型的目标
-    &lt;property name="defaultDestinationName" value="queue/methodSpyLogger"&gt;&lt;/property&gt; --&gt;
-    &lt;property name="defaultDestination" ref="destinationQueue1"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- 发送消息的目的地 --&gt;
-&lt;bean id="destinationQueue1" class="org.apache.activemq.command.ActiveMQQueue"&gt;
-    &lt;!-- 设置消息队列的名字 --&gt;
-    &lt;constructor-arg  value="queue/methodSpyLogger" /&gt;
-&lt;/bean&gt;
-
-
-&lt;!-- 配置Spring和方法相关的监控 --&gt;
-&lt;bean id="method-pointcut" class="org.springframework.aop.support.JdkRegexpMethodPointcut"&gt;
-    &lt;property name="patterns"&gt;
-        &lt;list&gt;
-            &lt;value&gt;com.lovo.mis.xjgl.service.impl.*&lt;/value&gt;
-        &lt;/list&gt;
-    &lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- 方法AOP拦截器 --&gt;
-&lt;bean id="spy-method-interceptor"
-      class="com.monitor.client.spy.SpyMethodIntercepter"&gt;
-      &lt;property name="messageDao"&gt;
-        &lt;bean class="com.monitor.client.dao.JMSMessageDaoImpl"&gt;
-            &lt;property name="jmsTemplate" ref="jmsTemplate"&gt;&lt;/property&gt;
-        &lt;/bean&gt;
-      &lt;/property&gt;
-      &lt;property name="userNameSessionKey" value="loginUserName"&gt;&lt;/property&gt;
-&lt;/bean&gt;
-
-&lt;!-- 将切面应用到通知上 --&gt;
-&lt;aop:config proxy-target-class="true"&gt;
-    &lt;aop:advisor advice-ref="spy-method-interceptor"
-                 pointcut-ref="method-pointcut" /&gt;
-&lt;/aop:config&gt;
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;配置文件中有几个地方需要进行说明：<!-- more --></p>
-
-<p>&emsp;&emsp;1、目标机器要修改的部分是JdkRegexpMethodPointcut中的patterns，由patterns指定需要监控的业务类所在的位置。</p>
-
-<p>&emsp;&emsp;2、jmsFactory部分配置你的异步消息服务器连接信息，比如brokerURL等。</p>
-
-<p>&emsp;&emsp;3、jmsTemplate中，通过defaultDestination指定一个Destination，因为一个消息服务器上存在多个Destination。也可以通过defaultDestinationName直接指定消息Destination的名称，系统默认创建的是queue，也就是说，如果你要使用topic类型的消息，就必须通过defaultDestination指定一个Destination。</p>
-
-<p>&emsp;&emsp;4、messageDao可自由替换为其它实现类，比如你可以写一个mongoDB版本的实现以提供更好的性性，支持更大数据量。</p>
-
-<p>&emsp;&emsp;最后来看看消费者代码，是直接使用ActiveMQ驱动实现的。</p>
-
-<p>``` java</p>
-
-<pre><code>    ActiveMQConnectionFactory factory = new ActiveMQConnectionFactory("tcp://localhost:61616");
-
-    Connection connection = factory.createConnection();
-
-    //尝试真正建立连接，这里可以catch Exception
-    connection.start();
-
-    //得到一个会话，只有得到会话后，才可进行后续的操作
-    Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-    //创建一个目标队列
-    Destination queue = session.createQueue("queue/methodSpyLogger"); 
-
-    MessageConsumer consumer = session.createConsumer(queue);
-
-    //可通过其它一些机制，来改变flag为false，以退出处理
-    boolean flag = true;
-
-    while (flag) {
-        ObjectMessage msg = (ObjectMessage)consumer.receive();
-        MethodLoggerMessage myMsg = (MethodLoggerMessage)msg.getObject();
-
-        System.out.println(myMsg);
-        //这里，可调用dao或service，向关系数据库(或nosql)中保存msg中的内容");
-
-    }
-
-    session.close();
-
-    connection.close();
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;注意，如果队列中已经没有消息了，代码中的consumer.receive()会阻塞，直到有新的消息后再处理。我们也可以采用监听器的方式来处理消息服务器中的消息，比如下面的代码：</p>
-
-<p>``` java</p>
-
-<pre><code>    //处理消息者
-    MessageConsumer consumer = session.createConsumer(queue);
-
-    //处理多条消息
-    consumer.setMessageListener(new MessageListener() {
-        public void onMessage(Message msg) {
-           //转换，这可以对类型进行检测，使用instance of
-            TextMessage txtMsg = (TextMessage)msg;
-            try {
-                System.out.println("得到消息内容："+txtMsg.getText());
-                System.out.println("处理完一条消息！！");
-                //如果开启了事务，请session.commit();
-            } catch (JMSException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-    });
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;当目标程序运行时，我们可以打开ActiveMQ的管理界面，即可发现这个queue及上面的消费者。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/active_mq_admin.jpg' width='' height='' title='ActiveMQ的管理界面'><span class='caption-text'>ActiveMQ的管理界面</span></span></p>
-
-<p>&emsp;&emsp;大家还要注意的是，我们的AOP通知中，还获取了调用者的ip，访问者姓名等信息，这些和web环境相关的信息是通过类似于下面的代码实现的：</p>
-
-<p>``` java</p>
-
-<p>ServletRequestAttributes sas = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
-HttpServletRequest req = sas.getRequest();</p>
-
-<p>logger.setIp(req.getLocalAddr());
-logger.setSessionId(sas.getSessionId());</p>
-
-<p>if (req.getSession() != null) {</p>
-
-<pre><code>logger.setOperater((String)req.getSession().getAttribute(userNameSessionKey));
-</code></pre>
-
-<p>}</p>
-
-<p>```
- &emsp;&emsp;其中的RequestContextHolder是由spring封装，具体做法是将用户web相关的信息通过filter或listener放入ThreadLocal对象中，在需要的地方通过RequestContextHolder从ThreadLocal中取得，因此，你想让上面的代码正常工作，要记得在web.xml中添加一个spring已经写好的RequestContextListener监听器哦。</p>
-
-<p>``` xml  web.xml</p>
-
-<pre><code>&lt;listener&gt;
-    &lt;listener-class&gt;
-        org.springframework.web.context.request.RequestContextListener
-    &lt;/listener-class&gt;
-&lt;/listener&gt;
-</code></pre>
-
-<p>```</p>
-
-<p> &emsp;&emsp;当然，本例中所使用的消息服务器是ActiveMQ，这个服务器实现了JMS规范，在企业级应用场景中不会存在问题。如果在互联网行业中，由于会面临高并发、大流量等情况，ActiveMQ不能保证高可用性、稳定性及性能要求，这个时候我们可以考虑其它的第三方消息服务器，比如淘宝的taobao-metaq，alibaba-rocketmq等，这些服务器是经过实际考验的开源产品，值得在互联网场景中使用。当然，这些MQ服务器和JMS规范没有任何关系，JMS企业级要求中并没有考虑过多的并发、大数据量的需求。</p>
-
-<p> &emsp;&emsp;另外，kafka，rabbitmq等消息服务器也具有不错的性能，都可以进入架构的技术方案选型范围。比如，下面是一段rabbitmq的调用示例代码(注：rabbitmq需要er_lang并发程序包支持哦)，和JMS的调用相当类似。</p>
-
-<p>``` java
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;</p>
-
-<p>&hellip;&hellip;.//略去代码</p>
-
-<pre><code>@Test
-public void testSendMessage() throws Exception {
-    SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-
-    ConnectionFactory factory = new ConnectionFactory();
-    factory.setHost("localhost");
-
-    Connection connection = factory.newConnection();
-    Channel channel = connection.createChannel();
-
-    String message = sf.format(new Date()) + ":Hello!!!";
-    channel.basicPublish("", "queue/sendEmail", null, message.getBytes());
-
-
-    channel.close();
-    connection.close();
-
-    System.out.println("send message ok!");
-
-
-
-}
-
-
-@Test
-public void testReciveMessage() throws Exception {
-
-    System.out.println("recever starting.....");
-
-    String QUEUE_NAME = "queue/sendEmail";
-
-    SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
-
-    ConnectionFactory factory = new ConnectionFactory();
-    factory.setHost("localhost");
-
-    Connection connection = factory.newConnection();
-    Channel channel = connection.createChannel();
-
-    channel.queueDeclare(QUEUE_NAME, false, false, false, null);
-
-    QueueingConsumer consumer = new QueueingConsumer(channel);
-    channel.basicConsume(QUEUE_NAME, false, consumer);
-
-    QueueingConsumer.Delivery delivery = consumer.nextDelivery();
-
-    String msg = new String(delivery.getBody());
-
-    System.out.println(msg);
-
-    System.out.println("rec end!!!");
-}
-</code></pre>
-
-<p>```</p>
-
-<p> &emsp;&emsp;先说到这吧。</p>
 ]]></content>
   </entry>
   

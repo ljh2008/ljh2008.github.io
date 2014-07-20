@@ -9,7 +9,18 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;2014年了，在此发表新年的第一篇文章，自然是和绘画有关的。 60X80CM布面油画-雨.听雨之最终版 &emsp;&emsp;这张作品算是跨越2013至2014的作品，由于业余的绘画时间很有限，这张《听雨》几个月前就开始了，直到今天，终于完工，同时， &hellip;">
+  <meta name="description" content="&emsp;&emsp;本文属于入门类型文章，给大家简单介绍一下javax.servlet中用到的几个设计模式。 先看职责链模式 &emsp;&emsp;这个模式的应用就是大家所熟悉的filter过滤器,演示代码如下： Filter.java1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +69,220 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/01/22/servlet-container-pattern/">关于servlet规范中的几个设计模式解析</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-01-22T12:18:00+08:00" pubdate data-updated="true">2014年01月22日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;本文属于入门类型文章，给大家简单介绍一下javax.servlet中用到的几个设计模式。</p>
+
+<h3>先看职责链模式</h3>
+
+<p>&emsp;&emsp;这个模式的应用就是大家所熟悉的filter过滤器,演示代码如下：</p>
+
+<figure class='code'><figcaption><span>Filter.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">filter</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 定义每一个处理者的通用行为，即对传入的参数进行处理</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">Filter</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">String</span> <span class="n">param</span><span class="o">,</span> <span class="n">FilterChain</span> <span class="n">fc</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;接下来定义一个职责链接口，以规范形为（当然，这个接口也可以不定义，直接给出实现类即可）。</p>
+
+<figure class='code'><figcaption><span>FilterChain.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">filter</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 过滤器链接口定义</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">interface</span> <span class="nc">FilterChain</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 将请求传给下一个处理者</span>
+</span><span class='line'><span class="cm">  * @param param</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">String</span> <span class="n">param</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;一个具体的责任链实现（注：这个通常是由服务器去实现的，比如tomcat），里面包含了所有的要承担处理责任的处理者（也就是过滤器）。</p>
+
+<figure class='code'><figcaption><span>ConcreteFilterChain.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">server</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.ArrayList</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.biz.Processor</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.filter.Filter</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.filter.FilterChain</span><span class="o">;</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 一个职责链具体实现</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ConcreteFilterChain</span> <span class="kd">implements</span> <span class="n">FilterChain</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//链集合</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Filter</span><span class="o">&gt;</span> <span class="n">filters</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">Filter</span><span class="o">&gt;();</span>
+</span><span class='line'>  <span class="c1">//初始已处理过滤器下标</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">int</span> <span class="n">processIndex</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">ConcreteFilterChain</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Filter</span><span class="o">&gt;</span> <span class="n">filters</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">filters</span> <span class="o">=</span> <span class="n">filters</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">String</span> <span class="n">param</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//处理的过滤器下标</span>
+</span><span class='line'>      <span class="n">processIndex</span> <span class="o">=</span> <span class="n">processIndex</span> <span class="o">+</span> <span class="mi">1</span><span class="o">;</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">processIndex</span> <span class="o">&gt;=</span> <span class="n">filters</span><span class="o">.</span><span class="na">size</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">Processor</span> <span class="n">p</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Processor</span><span class="o">();</span>
+</span><span class='line'>          <span class="n">p</span><span class="o">.</span><span class="na">working</span><span class="o">(</span><span class="n">param</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">filters</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">processIndex</span><span class="o">).</span><span class="na">doFilter</span><span class="o">(</span><span class="n">param</span><span class="o">,</span> <span class="k">this</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 返回一个新的FilterChain（这个方法保留待用）</span>
+</span><span class='line'><span class="cm">  * 因为在多线程环境下，每一个请求会有自己的processIndex</span>
+</span><span class='line'><span class="cm">  * 这个新建的processIndex将设置为初始值-1，表示还没有进入任何一个过滤器</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">FilterChain</span> <span class="nf">cloneFilterChain</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">new</span> <span class="nf">ConcreteFilterChain</span><span class="o">(</span><span class="n">filters</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好了，到这里，服务器上该做的事都已经做完，来看看程序员要做的事吧。</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/01/22/servlet-container-pattern/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -717,56 +942,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/10/09/art/">色彩稿- 程序猿</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-10-09T15:18:00+08:00" pubdate data-updated="true">2013年10月09日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;这是一张色彩稿，用水粉绘制，描绘程序员职业的一种精神状态。</p>
-
-<p>&emsp;&emsp;低沉、压抑而没有出口的空间内，一群程序员面向观众。</p>
-
-<p>&emsp;&emsp;红色警报灯与绿色灯光辉映，天天面对的项目进度曲线图表，杂乱的桌面上摆放着垃圾食品，永远充血的眼睛，这一切是大多数程序从业人员的常态。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/10/1.jpg' width='' height='' title='色彩稿- 程序猿'><span class='caption-text'>色彩稿- 程序猿</span></span></p>
-
-<p>&emsp;&emsp;狭隘、自我封闭、自大、自悲，表情呆滞、动作僵硬古板、穿着古怪&hellip;&hellip;.</p>
-
-<p>&emsp;&emsp;当然，我只是对程序员的某些部分进行了夸张放大，以此打动观众。</p>
-
-<p>&emsp;&emsp;有人看过此画，说不想再当程序员，我想，她应该是理解了其中的某些东西。</p>
-
-<p>&emsp;&emsp;在正式油画中，我将对色彩进行进一步简化，并对程序猿表情再度夸张，希望，最终的作品，有更多的人和我感同身受。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/4/">&larr; 更多早期老文章</a>
@@ -784,6 +959,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/20/security-filter-sign/">服务器端无状态参数验证实现</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
       </li>
     
@@ -797,10 +976,6 @@
     
       <li class="post">
         <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/05/29/code-share-poi/">分享几段数据导入导出参考代码</a>
       </li>
     
   </ul>

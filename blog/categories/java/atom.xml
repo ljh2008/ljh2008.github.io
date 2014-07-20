@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：java | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/java/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-07-17T16:52:53+08:00</updated>
+  <updated>2014-07-20T17:06:22+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,190 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[服务器端无状态参数验证实现]]></title>
+    <link href="http://yanyaner.com/blog/2014/07/20/security-filter-sign/"/>
+    <updated>2014-07-20T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/07/20/security-filter-sign</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;我在<a href="/blog/2014/04/16/security4/">《Java安全那些事之四（无状态安全认证）》</a>中提到了在无状态安全认证中，对数据签名的验证可以考虑通过AOP或filter的方式专门提取到了一个层中去处理，很多人在问我有没有源代码，现在贴出请大家参考。</p>
+
+<p>&emsp;&emsp;当我们有了这个独立的层次，我们在应用控制器中就不再需求做这方面的检测了，着实方便了许多。<!-- more--></p>
+
+<p>``` java ApiSeccurityCheckFilter.java</p>
+
+<p>/<em>*
+ * 无状态签名、超时检测过滤器实现
+ *
+ * @author ljh
+ *
+ </em>/</p>
+
+<p>@Component
+public class ApiSeccurityCheckFilter extends OncePerRequestFilter {</p>
+
+<pre><code>//默认调用超时（单位 ms）
+public static final int API_CALL_TIME_OUT = 500;
+
+public static final Logger LOG = LoggerFactory.getLogger(ApiSeccurityCheckFilter.class);
+
+
+//调用超时（单位 ms）
+private int api_call_timeout = API_CALL_TIME_OUT;
+
+@Resource
+private IAppManagementService ams;
+
+@Resource
+private JsonMapper jm;
+
+@Override
+protected void doFilterInternal(HttpServletRequest req,
+        HttpServletResponse resp, FilterChain fc)
+        throws ServletException, IOException {
+
+    // 取到的形如： /myplatform/api/crm324123123126/login
+    String uri = req.getRequestURI();
+
+    int start = uri.lastIndexOf("/api/") + 5;
+
+    String appKey = uri.substring(start, start + 15);
+
+
+    //（1）检测appKey是否授权
+    App app = ams.findAppByKey(appKey);
+    if (app == null) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("appKey {} error, app is null!", appKey);
+        }
+        RespMessage message = new RespMessage();
+        message.setCode(RespMessage.API_PARAM_ERROR);
+        message.setMsg("app调用未经授权！");
+        jm.writeValue(resp.getOutputStream(), message);
+        return;
+    }
+
+    //（2）进行必要参数的验证
+    String client_sign = req.getParameter("sign");
+    String client_ts  = req.getParameter("ts");
+
+    if (client_sign == null || "".equals(client_sign.trim()) ||
+        client_ts == null || "" .equals(client_ts.trim())
+            ) {
+        RespMessage message = new RespMessage();
+        message.setCode(RespMessage.API_PARAM_ERROR);
+        message.setMsg("必须提供sign, ts参数项！");
+        jm.writeValue(resp.getOutputStream(), message);
+        return;
+    }
+
+    //（3）进行数据签字验证
+    StringBuilder sb = new StringBuilder();
+
+    List&lt;String&gt; keys = new ArrayList&lt;String&gt;();
+    for (Enumeration&lt;String&gt; params = req.getParameterNames(); params.hasMoreElements();) {
+        String paramKey = params.nextElement();
+        if (paramKey.equalsIgnoreCase("sign")) {
+            continue;       }
+        keys.add(paramKey);
+    }
+    Collections.sort(keys);
+
+
+    for (int i = 0; i &lt; keys.size(); i++) {
+        String key = keys.get(i);
+        String value = req.getParameter(key);
+
+        if (i == keys.size() - 1) {//拼接时，不包括最后一个&amp;字符
+            sb.append(key).append("=").append(value);
+        } else {
+            sb.append(key).append("=").append(value).append("&amp;");
+        }
+    }
+
+
+    String sign = DigestUtils.md5Hex(sb.toString() + app.getAppCode());
+
+    if (! sign.equals(client_sign)) {
+        LOG.debug("sign error, uri is {}.", uri);
+        RespMessage message = new RespMessage();
+        message.setCode(RespMessage.API_PARAM_ERROR);
+        message.setMsg("数字签名错误！");
+        jm.writeValue(resp.getOutputStream(), message);
+        return;
+    }
+
+    //（4）方法调用超时检测
+    long times = System.currentTimeMillis() - Long.parseLong(client_ts);
+    if (times &gt; api_call_timeout) {
+        RespMessage message = new RespMessage();
+        message.setCode(RespMessage.API_PARAM_ERROR);
+        message.setMsg("调用超时！");
+        jm.writeValue(resp.getOutputStream(), message);
+        LOG.debug("api call timer out, uri is {}, used time {} ms.", uri, times);
+        return;
+    }
+
+    // （5）继续向后执行
+    fc.doFilter(req, resp);
+
+
+}
+
+public void setApi_call_timeout(int api_call_timeout) {
+    this.api_call_timeout = api_call_timeout;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;在spring配置文件中，加入这个过滤器的配置，代码如下：</p>
+
+<p>``` xml spring-aciton.xml</p>
+
+<pre><code>&lt;!-- 第三方应用程序调用api时的检测权限及安全过滤器,名称要和web.xml中的DelegatingFilterProxy指定的targetBeanName名称一致 --&gt;
+&lt;bean name="apiSeccurityCheckFilter" class="com.lovo.platform.monitor.filter.ApiSeccurityCheckFilter"&gt;
+    &lt;property name="api_call_timeout" value="1000"&gt;&lt;/property&gt;
+&lt;/bean&gt;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;最后，在web.xml中配置DelegatingFilterProxy，通过配置url-pattern指定，所有还aip路径的，都经过这个过滤器，也就是说本系统对外界暴露的restapi调用，有了一个统一的安全认证层次。具体代码如下：</p>
+
+<p>``` xml  web.xml
+  <filter></p>
+
+<pre><code>&lt;filter-name&gt;apiSeccurityCheckFilter&lt;/filter-name&gt;
+&lt;filter-class&gt;org.springframework.web.filter.DelegatingFilterProxy&lt;/filter-class&gt;
+&lt;init-param&gt;
+    &lt;param-name&gt;targetBeanName&lt;/param-name&gt;
+    &lt;param-value&gt;apiSeccurityCheckFilter&lt;/param-value&gt;
+&lt;/init-param&gt;
+&lt;init-param&gt;
+    &lt;param-name&gt;API_CALL_TIME_OUT&lt;/param-name&gt;
+    &lt;param-value&gt;500&lt;/param-value&gt;
+&lt;/init-param&gt;
+</code></pre>
+
+<p>  </filter>
+  &lt;filter-mapping></p>
+
+<pre><code>&lt;filter-name&gt;apiSeccurityCheckFilter&lt;/filter-name&gt;
+&lt;url-pattern&gt;/api/*&lt;/url-pattern&gt;
+</code></pre>
+
+<p>  &lt;/filter-mapping></p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;大家要注意的是，targetBeanName中的名称，一定要和spring-aciton.xml中配置的bean的名称一致哦。</p>
+
+<p>&emsp;&emsp;最后解释一下，用到OncePerRequestFilter的原因是，过滤器中要进行业务层方法的调用，使用了OncePerRequestFilter后会非常自然地得到业务对象哈。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[spring mvc restful服务器端数据验证实现]]></title>
@@ -970,294 +1154,6 @@ sudo make clean;
 &emsp;&emsp;不同的linux发行版本可能存在依赖包没有安装而报错，具体情况需要根据出错信息具体解决，我试过redhead,freebsd,openSuse,centos几个系统，都是要进行一些环境的配置才可以安装成功。</p>
 
 <p>&emsp;&emsp;下一篇文章我将按照文章开头的服务器规划进行具体的配置，请大家关注。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[分享几段数据导入导出参考代码]]></title>
-    <link href="http://yanyaner.com/blog/2014/05/29/code-share-poi/"/>
-    <updated>2014-05-29T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/05/29/code-share-poi</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;给童鞋写的几段参考demo代码，有需要的可以参考一下哦：</p>
-
-<ol>
-<li><p>poi excel数据导入（导入数据是考虑该数据已经存在的情况，如果存在则进行更新操作）</p></li>
-<li><p>zip照片包导入（照片的导入会更新已经存在的照片并且会按业务规则建立照片目录分类存放）</p></li>
-<li><p>按模板导格式导出数据至excel中（excel导出需要提供一个excel文件模板，将数据直接写到模板中，这样才能更好地符合用户的实际业务场景）</p></li>
-</ol>
-
-
-<p>&emsp;&emsp;下面这demo写得非常简单，并没有考虑导入出错时给予调用者出错的细节信息，这些代码大家都可以继续完善。另外你也可以将表和excel的字段对应关系保存在数据库中，让用户通过界面自由定义指定映射关系（当然这需要更深层次的封装，这个代码我以后贴出来）。</p>
-
-<p>&emsp;&emsp;业务接口核心方法共3个，大家可以参考这种设计以简化调用者的复杂性：</p>
-
-<p>``` java ISystemService.java
-/<em>*
- * demo系统业务接口
- * @author ljh
- *
- </em>/
-public interface ISystemService {</p>
-
-<pre><code>public void importStudents(InputStream excelIs, int classesId);
-
-public void importStudentPhotos(byte[] zipFileByte, String uploadDir, int classesId);
-
-public void exportStudents(String title , InputStream templateFile, OutputStream outputFile);
-</code></pre>
-
-<p>}</p>
-
-<p>```
-&emsp;&emsp;业务实现类代码如下：<!-- more --></p>
-
-<p>``` java SystemServiceImpl.java
-/<em>*
- * demo系统业务类实现
- *
- * @author ljh
- *
- </em>/
-@Service(&ldquo;systemService&rdquo;)
-@Transactional(readOnly = true)
-public class SystemServiceImpl implements ISystemService {</p>
-
-<pre><code>// 通用dao
-@Resource
-private IBaseDao dao;
-// 用来输出日志
-private static final Logger LOG = LoggerFactory
-        .getLogger(SystemServiceImpl.class);
-
-public void exportStudents(String title ,InputStream templateFile, OutputStream outputFile) {
-
-    try {
-        HSSFWorkbook wb = new HSSFWorkbook(templateFile);
-        HSSFSheet sheet = wb.getSheetAt(0);
-
-        //设置标题
-        sheet.getRow(0).getCell(0).setCellValue(title);
-
-        //取得模板行数据
-        HSSFRow templateRow = sheet.getRow(2);
-
-        //查询要导出的数据 
-        List&lt;Student&gt; students = dao.queryEntitys("from Student s", new Object[]{});
-
-        int startRow = 2;
-
-        for (Student s : students) {
-
-            HSSFRow row = sheet.createRow(startRow);
-
-            HSSFCell cell_id = row.createCell(0);
-            cell_id.setCellStyle(templateRow.getCell(0).getCellStyle());
-            cell_id.setCellValue(s.getId());
-
-            HSSFCell cell_name = row.createCell(1);
-            cell_name.setCellStyle(templateRow.getCell(1).getCellStyle());
-            cell_name.setCellValue(s.getName());
-
-            HSSFCell cell_sex = row.createCell(2);
-            cell_sex.setCellStyle(templateRow.getCell(2).getCellStyle());
-            cell_sex.setCellValue(s.getSex());
-
-            HSSFCell cell_bm_code = row.createCell(3);
-            cell_bm_code.setCellStyle(templateRow.getCell(3).getCellStyle());
-            cell_bm_code.setCellValue(s.getClasses().getCode() + s.getId());
-
-
-            HSSFCell cell_classes_code = row.createCell(4);
-            cell_classes_code.setCellStyle(templateRow.getCell(4).getCellStyle());
-            cell_classes_code.setCellValue(s.getClasses().getCode());
-
-            startRow = startRow + 1;
-        }
-
-        wb.write(outputFile);
-
-
-    } catch (Exception e) {
-        LOG.error("export excel error!", e);
-        throw new RuntimeException("导出excel文件出错！");
-    }
-
-}
-
-@Transactional(readOnly = false)
-public void importStudentPhotos(byte[] zipFileByte, String uploadDir, int classId) {
-
-            //班级编码
-            String classesCode = this.getClassesById(classId).getCode();
-
-            //解压缩zip文件
-            try {
-
-                String tempFileName = System.getProperty("java.io.tmpdir") +  UUID.randomUUID().toString();
-                File tempFile = new File(tempFileName);
-                FileUtils.writeByteArrayToFile(tempFile, zipFileByte);
-
-                //本班的所有学生
-                List&lt;Student&gt; students = new ArrayList&lt;Student&gt;(getClassesById(classId).getStudents());
-
-                ZipFile zipfile = new ZipFile(tempFile, "gb2312");
-                Enumeration&lt;ZipArchiveEntry&gt; entries = zipfile.getEntries();
-                while (entries.hasMoreElements()) { 
-
-                    ZipArchiveEntry entry = entries.nextElement();
-
-                    if (! entry.isDirectory()) {
-                        String name = entry.getName();
-                        String studentName = name.substring(name.lastIndexOf("/") + 1, name.lastIndexOf("."));
-
-                        for (Student stu : students) {
-                            if (studentName.equals(stu.getName())) {
-                                String newPhotoName = UUID.randomUUID().toString() + name.substring(name.lastIndexOf("."));
-                                if (! "upload/default.jpg".equals(stu.getPhoto())) {
-                                    newPhotoName = stu.getPhoto().substring(stu.getPhoto().lastIndexOf("/") + 1);
-                                }
-
-                                FileUtils.copyInputStreamToFile(zipfile.getInputStream(entry), 
-                                        new File(uploadDir + File.separator + classesCode + File.separator + newPhotoName));
-                                stu.setPhoto("upload/" + classesCode + "/" + newPhotoName);
-                                dao.updateEntity(stu);
-                                break;
-                            }
-                        }
-
-                    }
-                }
-
-            } catch (Exception e) {
-                LOG.error("import zip photo error.", e);
-                throw new IllegalArgumentException("导入学生照片信息失败，详细错误：" + e.getMessage());
-            }
-
-}
-
-@Override
-@Transactional(readOnly = false)
-public void importStudents(InputStream excelIs, int classesId) {
-
-    //查询出要导入的学生信息所在的班级
-    Classes classes = this.getClassesById(classesId);
-
-    try {
-
-        HSSFWorkbook excel = new HSSFWorkbook(excelIs);
-        HSSFSheet sheet = excel.getSheetAt(0);
-
-        int rows = sheet.getPhysicalNumberOfRows();
-
-        //有效行起始位置，因为原excel文件中，有两行标题
-        int startRow = 2;
-
-        for (int i = startRow; i &lt; rows; i++) {
-
-            HSSFRow row = sheet.getRow(i);
-            HSSFCell cell = row.getCell(1);
-
-            Student student = new Student();
-
-            //excel文件列顺序：序号，姓名，性别，年龄
-            student.setName(row.getCell(1).getStringCellValue());
-            student.setSex(row.getCell(2).getStringCellValue());
-            student.setAge((int) row.getCell(3).getNumericCellValue());
-            student.setClasses(classes);
-            student.setPassword("123");
-            student.setState(Student.STATE_STUDING);
-            student.setEmployment(false);
-            student.setCode(classesId + ""
-                    + (int) row.getCell(0).getNumericCellValue());
-
-            this.addStudent(student);
-
-        }
-
-    } catch (Exception e) {
-        // TODO Auto-generated catch block
-        //e.printStackTrace();
-        LOG.info("导入excel文件失败！", e);
-    }
-
-}
-</code></pre>
-
-<p>}</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;前端控制器代码如下：</p>
-
-<p>``` java StudentAction.java
-@Controller
-public class StudentAction {</p>
-
-<pre><code>@Resource
-private ISystemService systemService;
-
-@Resource
-private WebApplicationContext appContext;
-
-
-private ObjectMapper om = new ObjectMapper();
-
-/**
- * 导出学生信息到excel
- * @param sid
- * @param resp
- * @throws Exception
- */
-@RequestMapping(value = "/student/export_excel", method = RequestMethod.GET)
-public void exportStudents(HttpServletResponse resp) throws Exception {
-
-    String templateFile = appContext.getServletContext().getRealPath("template/student_template.xls");
-
-    String title = "xxxxxx缴费情况表（2014）";
-    String fileName = title + ".xls";
-
-    //设置客户端默认文件名
-    resp.addHeader("Content-Disposition", "attachment;filename=" + new String(fileName.getBytes(),"ISO8859-1"));
-
-    systemService.exportStudents(title, new FileInputStream(templateFile), resp.getOutputStream());
-
-}
-
-
-/**
- * 导入学生照片信息
- * @param sid
- * @param resp
- * @throws Exception
- */
-@RequestMapping(value = "/student/importPhoto", method = RequestMethod.POST)
-public void inportStudentPhoto(@RequestParam("file")CommonsMultipartFile file,
-        @RequestParam("classId")int classId,
-        HttpServletResponse resp) throws Exception {
-
-
-    boolean successFlag = false;
-
-    String dir = appContext.getServletContext().getRealPath("upload");
-
-    try {
-        systemService.importStudentPhotos(file.getBytes(), dir , classId);
-        successFlag = true;
-    } catch (Exception ex) {
-
-    }
-
-    resp.getWriter().println("&lt;script&gt;parent.callBack("+successFlag+");&lt;/script&gt;");
-
-
-}
-
-//导入excle的action代码非常简单，我就不再写了
-</code></pre>
-
-<p>```</p>
-
-<p>&emsp;&emsp;以前还写过一篇简单的excel导出代码，大家可以看看<a href="/blog/2012/10/30/poi-excel/">《Excel文件导出代码》</a>一文。</p>
 ]]></content>
   </entry>
   

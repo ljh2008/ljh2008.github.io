@@ -9,7 +9,17 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;开发工具，可以选择免费的eclipse，并在上面安装express插件（或vjet插件）， &emsp;&emsp;插件地址：http://www.nodeclipse.org/updates/，最后使用Kepler Release版本，低版本可能安装不成功。 &emsp &hellip;">
+  <meta name="description" content="&emsp;&emsp;app.js，程序入口所在。 &emsp;&emsp;先引入依赖的文件： 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+var express = require(&#39;express&#39;) , user = require(&#39;./routes/ &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -58,6 +68,103 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/08/09/nodejs-express-mysql-crud3/">node.js中基本于expresss、mysql的CRUD之三（代码实现）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-08-09T15:18:00+08:00" pubdate data-updated="true">2013年08月09日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;app.js，程序入口所在。</p>
+
+<p>&emsp;&emsp;<strong>先引入依赖的文件</strong>：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">express</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;express&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">,</span> <span class="nx">user</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./routes/userAction&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">,</span> <span class="nx">fileUpload</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./routes/uploadFileAction&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">,</span> <span class="nx">filter</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./commons/filter&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">,</span> <span class="nx">http</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;http&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">,</span> <span class="nx">path</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">,</span><span class="nx">orm</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;orm&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">var</span> <span class="nx">app</span> <span class="o">=</span> <span class="nx">express</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>定义数据库连接信息</strong>：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="kd">var</span> <span class="nx">opts</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nx">database</span> <span class="o">:</span> <span class="s2">&quot;t88&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">protocol</span> <span class="o">:</span> <span class="s2">&quot;mysql&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">host</span>     <span class="o">:</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">port</span>     <span class="o">:</span> <span class="mi">3306</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">user</span>     <span class="o">:</span> <span class="s2">&quot;root&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">password</span> <span class="o">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="nx">query</span>    <span class="o">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nx">pool</span>     <span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
+</span><span class='line'>        <span class="nx">debug</span>    <span class="o">:</span> <span class="kc">true</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;<strong>定义实体对象</strong>：</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/08/09/nodejs-express-mysql-crud3/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -1592,380 +1699,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/06/06/mongodb-java/">使用mongodb做为持久层技术实现</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-06-06T15:18:00+08:00" pubdate data-updated="true">2013年06月06日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;mongodb是一种基于文档类型的高性能nosql数据库，在高并发下具有优秀的表现，因此，在互联网行业中，mongodb的使用场景将非常广泛。</p>
-
-<p>&emsp;&emsp;当然，mongodb主要对性能关注很多，因而没有提供类似于关系数据库的事务的功能，对于复杂的业务及严格数据一致性要求很高有企业级应用，不建议使用mongodb（网上也有自己去实现事务提交的方案，但实现起来比较繁琐，类似于我们早期dbase,access文件型数据库的事务解决方案）。</p>
-
-<p>&emsp;&emsp;其实，也不排除在企业级应用上把某些访问压力大的，对事务要求不严格的数据保存到nosql数据库中。</p>
-
-<p>&emsp;&emsp;spring data框架，提供了对mongodb的支持，大家可以到<a href="http://mongojack.org/">http://mongojack.org/</a>，及<a href="http://www.springsource.org/spring-data/mongodb">http://www.springsource.org/spring-data/mongodb</a></p>
-
-<p>&emsp;&emsp;上了解更多信息mongodb及sprig data for mongodb相关信息。</p>
-
-<p>&emsp;&emsp;下面，我用一个简单的实例，给大家讲解mongodb的使用，在这之前，你需要下载mongodb java驱动包，spring data commons, spring data for mongodb这些组件包。</p>
-
-<p>&emsp;&emsp;共两个对象，客户，客户订单，一对多关系，单向关联。</p>
-
-<p>&emsp;&emsp;客户：</p>
-
-<figure class='code'><figcaption><span>Customer.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Document</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Customer</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Id</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">loginCode</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">pwd</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nd">@Version</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">long</span> <span class="n">varsion</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Date</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Set</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;</span> <span class="n">orders</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashSet</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;订单：</p>
-
-<figure class='code'><figcaption><span>Order.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Document</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Order</span> <span class="o">{</span>
-</span><span class='line'>    <span class="nd">@Id</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">code</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">orderName</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;spring data的配置：</p>
-
-<figure class='code'><figcaption><span>MongoConfiguration.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Configuration</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MongoConfiguration</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="nd">@Bean</span> <span class="n">MongoDbFactory</span> <span class="n">mongoDbFactory</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>        <span class="c1">//需要用户名、密码验证</span>
-</span><span class='line'>        <span class="n">UserCredentials</span> <span class="n">userCredentials</span> <span class="o">=</span> <span class="k">new</span> <span class="n">UserCredentials</span><span class="o">(</span><span class="s">&quot;yq&quot;</span><span class="o">,</span> <span class="s">&quot;123&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">return</span> <span class="k">new</span> <span class="nf">SimpleMongoDbFactory</span><span class="o">(</span><span class="k">new</span> <span class="n">Mongo</span><span class="o">(),</span> <span class="s">&quot;exam&quot;</span><span class="o">,</span> <span class="n">userCredentials</span><span class="o">);</span>
-</span><span class='line'>        <span class="c1">//return new SimpleMongoDbFactory(new Mongo(), &quot;exam&quot;);</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="kd">public</span> <span class="nd">@Bean</span> <span class="n">MongoTemplate</span> <span class="n">mongoTemplate</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="k">new</span> <span class="nf">MongoTemplate</span><span class="o">(</span><span class="n">mongoDbFactory</span><span class="o">());</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;当然，上面这段信息可以配置在xml中，也可以像我上面一样用写在java代码中。</p>
-
-<p>&emsp;&emsp;这里要建立exam库，可以在mongodb命令行下，使用 use 命令建立，比如：use exam，然后随便添点东西在里面，库就建好了。另外，如果要启用认证功能，需要大家通过命令向某个库中添加用户（具体如db.addUser(“用户名”,”密码”)），启动mongodb时使用-auth参数。</p>
-
-<p>&emsp;&emsp;在整合过程中，如果报：</p>
-
-<figure class='code'><figcaption><span>MongoConfiguration.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">tried</span> <span class="n">to</span> <span class="n">access</span> <span class="n">methodorg</span><span class="o">.</span><span class="na">springframework</span><span class="o">.</span><span class="na">core</span><span class="o">.</span><span class="na">GenericTypeResolver</span><span class="o">.</span><span class="na">getTypeVariableMap</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;错误，是由于包版本冲突所至，请下载新的spring核心包。</p>
-
-<p>&emsp;&emsp;下面给大家举例说明api的使用：</p>
-
-<p>&emsp;&emsp;我们的所有操作只需要一个MongoTemplate</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Resource</span>
-</span><span class='line'><span class="kd">private</span> <span class="n">MongoTemplate</span> <span class="n">mt</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（1）检测一个空间是否存在</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">collectionExists</span><span class="o">(</span><span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（2）建立新空间</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">createCollection</span><span class="o">(</span><span class="s">&quot;myCollection&quot;</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（3）统计总记录条数，其中query可以为null，或一个建好的带条件查数据的query，如需分页，请先count，再查分页数据</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">count</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（4）删除空间，其中的数据会一并清除</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">dropCollection</span><span class="o">(</span><span class="s">&quot;myCollection&quot;</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（5）按id号查询</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">Customer</span> <span class="n">c</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（6）删除id号为1的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">mt</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="mi">1</span><span class="o">,</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（7）删除id号小于5的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mt</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">).</span><span class="na">lt</span><span class="o">(</span><span class="mi">5</span><span class="o">)),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（8）查询姓名是：张三5，并且密码是：111的用户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cc</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;张三5&quot;</span><span class="o">).</span><span class="na">and</span><span class="o">(</span><span class="s">&quot;pwd&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;111&quot;</span><span class="o">)),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'><span class="err">或</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;张三5&quot;</span><span class="o">).</span><span class="na">andOperator</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;pwd&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;111&quot;</span><span class="o">))),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;要注意，一个criteria中只能有一个andOperator，如果要写并列条件，直接用and就可以了。</p>
-
-<p>&emsp;&emsp;（9）查询姓名是：张三5，或者 密码是：111的用户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>   <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="k">new</span> <span class="n">Criteria</span><span class="o">().</span><span class="na">orOperator</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;张三5&quot;</span><span class="o">),</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;pwd&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="s">&quot;111&quot;</span><span class="o">))),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（10）查询出生日期小于2013年6月6日的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;birthday&quot;</span><span class="o">).</span><span class="na">lt</span><span class="o">(</span><span class="k">new</span> <span class="n">Date</span><span class="o">())),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>    <br/>
-&emsp;&emsp;（11）查询出生日期等于2013年6月6日的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">SimpleDateFormat</span> <span class="n">sf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd-hh:mm:ss&quot;</span><span class="o">);</span>
-</span><span class='line'>    <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span>
-</span><span class='line'>            <span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;birthday&quot;</span><span class="o">).</span><span class="na">gte</span><span class="o">(</span><span class="n">sf</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="s">&quot;2013-06-06-00:00:00&quot;</span><span class="o">))</span>
-</span><span class='line'>           <span class="o">.</span><span class="na">andOperator</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;birthday&quot;</span><span class="o">).</span><span class="na">lte</span><span class="o">(</span><span class="n">sf</span><span class="o">.</span><span class="na">parse</span><span class="o">(</span><span class="s">&quot;2013-06-09-23:59:59&quot;</span><span class="o">)))</span>
-</span><span class='line'>           <span class="o">),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（12）查询定单编号是0015或者0018的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="k">new</span> <span class="n">Criteria</span><span class="o">()</span>
-</span><span class='line'>          <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;orders.code&quot;</span><span class="o">).</span><span class="na">in</span><span class="o">(</span><span class="s">&quot;0015&quot;</span><span class="o">,</span><span class="s">&quot;0018&quot;</span><span class="o">)</span>
-</span><span class='line'>            <span class="o">),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;请注意，mongodb可以直接针对集合查询，比如，上面的orders就是一个set集合。</p>
-
-<p>&emsp;&emsp;（13）查询包含四的，并以0结尾的客户</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="c1">//(正则表 达式，以XX开头，请用^,以XX结束，请用$,不写这两个，表示任意)</span>
-</span><span class='line'>   <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">find</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="k">new</span> <span class="n">Criteria</span><span class="o">()</span>
-</span><span class='line'>    <span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">).</span><span class="na">regex</span><span class="o">(</span><span class="s">&quot;四.*0$&quot;</span><span class="o">)</span>
-</span><span class='line'>   <span class="o">),</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;请注意，mongodb不支持在id上的正则查询。</p>
-
-<p>&emsp;&emsp;（14）修改对象属性名，修改后，要同步修改对象中的属性名，否则，此属性值为null</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">mt</span><span class="o">.</span><span class="na">updateMulti</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(),</span> <span class="k">new</span> <span class="n">Update</span><span class="o">().</span><span class="na">rename</span><span class="o">(</span><span class="s">&quot;password&quot;</span><span class="o">,</span> <span class="s">&quot;pwd&quot;</span><span class="o">),</span> <span class="s">&quot;customer&quot;</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p></p>
-
-<p>&emsp;&emsp;（15）批量修改，把id为100的客户姓名改为tomcat999,密码改为222</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">mt</span><span class="o">.</span><span class="na">findAndModify</span><span class="o">(</span><span class="k">new</span> <span class="n">Query</span><span class="o">(</span><span class="n">Criteria</span><span class="o">.</span><span class="na">where</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">).</span><span class="na">is</span><span class="o">(</span><span class="mi">100</span><span class="o">)),</span>
-</span><span class='line'>            <span class="k">new</span> <span class="nf">Update</span><span class="o">().</span><span class="na">set</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">,</span> <span class="s">&quot;tomcat999&quot;</span><span class="o">).</span><span class="na">set</span><span class="o">(</span><span class="s">&quot;pwd&quot;</span><span class="o">,</span> <span class="s">&quot;222&quot;</span><span class="o">),</span>
-</span><span class='line'>            <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（16）修改单个对象</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>    <span class="n">Customer</span> <span class="n">cc</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">findById</span><span class="o">(</span><span class="mi">100</span><span class="o">,</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'>    <span class="n">cc</span><span class="o">.</span><span class="na">setPwd</span><span class="o">(</span><span class="s">&quot;333&quot;</span><span class="o">);</span>
-</span><span class='line'>    <span class="n">mt</span><span class="o">.</span><span class="na">save</span><span class="o">(</span><span class="n">cc</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;（17）排序及分页实现</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">Page</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="nf">getCustomerByPage</span><span class="o">(</span><span class="kt">int</span> <span class="n">pageNo</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pageSize</span><span class="o">,</span> <span class="n">Map</span> <span class="n">params</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">Page</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span> <span class="n">page</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Page</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;(</span><span class="n">pageNo</span><span class="o">,</span> <span class="n">pageSize</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//查询数据</span>
-</span><span class='line'>    <span class="n">List</span><span class="o">&lt;</span><span class="n">Customer</span><span class="o">&gt;</span><span class="n">data</span> <span class="o">=</span> <span class="n">mt</span>
-</span><span class='line'>    <span class="o">.</span><span class="na">find</span><span class="o">(</span>
-</span><span class='line'>            <span class="k">new</span> <span class="nf">Query</span><span class="o">().</span><span class="na">skip</span><span class="o">(</span><span class="n">page</span><span class="o">.</span><span class="na">getRowStartIndex</span><span class="o">())</span>
-</span><span class='line'>            <span class="o">.</span><span class="na">limit</span><span class="o">(</span><span class="n">pageSize</span><span class="o">)</span>
-</span><span class='line'>            <span class="o">.</span><span class="na">with</span><span class="o">(</span><span class="k">new</span> <span class="n">Sort</span><span class="o">(</span><span class="n">Sort</span><span class="o">.</span><span class="na">Direction</span><span class="o">.</span><span class="na">DESC</span><span class="o">,</span> <span class="s">&quot;_id&quot;</span><span class="o">))</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="o">,</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">page</span><span class="o">.</span><span class="na">setData</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">//统计总记录数</span>
-</span><span class='line'>    <span class="kt">long</span> <span class="n">count</span> <span class="o">=</span> <span class="n">mt</span><span class="o">.</span><span class="na">count</span><span class="o">(</span><span class="kc">null</span><span class="o">,</span> <span class="n">Customer</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'>    <span class="n">page</span><span class="o">.</span><span class="na">setRowcounts</span><span class="o">(</span><span class="n">count</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">page</span><span class="o">;</span>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;最后，给出几个使用mongodb，在对象设计实践：</p>
-
-<ul>
-<li><p>对象id最好设计成String类型，在新增时，如果用户没有赋值，mongodb会自动生成的，当然你也可以使用UUID自己赋值。</p></li>
-<li><p>Spring对mongodb的封装在对象间存在循环关联的情况，在新增及查询时都会出现堆栈溢出情况，目前的解决办法是：</p></li>
-</ul>
-
-
-<p>&emsp;&emsp;A、切断双向关联。比如：一对多双向关联，你可以删除一方的集合属性，多方对一方的引用采用dbref注解标注。一对多、多对多也如此，尽可能地简化对象间的关系。</p>
-
-<p>&emsp;&emsp;B、对象间关系，最好直接建立成关系数据库中的外键形式字段，即：以非面向对象的方式去建立，这就是“鱼和熊掌，不可兼得”，在追求性能效率的同时，放弃更好理解的对象模型。</p>
-
-<ul>
-<li><p>有严格事务要求的业务系统，不要用mongodb。</p></li>
-<li><p>如有极端的高并发大数据量查询，请用mongodb，也可以把项目中的部分数据保存在mongodb中。</p></li>
-<li><p>一般的并发修改，可以使用乐观锁解决，spring mongodb支持@Version注解。</p></li>
-</ul>
-
-
-<p>&emsp;&emsp;还有，开发中最好准备一个图型化的mongodb管理工具，比如：MongoCola，随时查看保存的数据实况，方便调试。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/6/">&larr; 更多早期老文章</a>
@@ -1983,6 +1716,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/20/security-filter-sign/">服务器端无状态参数验证实现</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
       </li>
     
@@ -1996,10 +1733,6 @@
     
       <li class="post">
         <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/05/29/code-share-poi/">分享几段数据导入导出参考代码</a>
       </li>
     
   </ul>

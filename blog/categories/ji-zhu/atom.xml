@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-07-20T17:06:22+08:00</updated>
+  <updated>2014-07-22T10:58:51+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,230 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[客户端无状态参数调用实现]]></title>
+    <link href="http://yanyaner.com/blog/2014/07/22/security-filter-client-call/"/>
+    <updated>2014-07-22T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/07/22/security-filter-client-call</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;我在<a href="/blog/2014/07/20/security-filter-sign/">《服务器端无状态参数验证实现）》</a>中给大家贴出了无状态调用中对数据的验证机制服务器端实现代码，那么，客户端如何去进行调用呢？我同样给大家给出一个客户端调用的登录示例。</p>
+
+<p>&emsp;&emsp;首先将客户端的调用信息放入一个app.properties配置文件中以方便管理维护，内容如下。</p>
+
+<p>```
+appKey = crm324123123126
+appCode = 54dde0994ef4d86cfdf583e6d1384353
+callHost = <a href="http://www.mywebsite.com/monitorplatform">http://www.mywebsite.com/monitorplatform</a></p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;客户端登录代码用到了httpClient，实现如下：<!-- more--></p>
+
+<p>``` java
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;</p>
+
+<p>import javax.annotation.Resource;</p>
+
+<p>import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;</p>
+
+<p>import com.lovo.platform.monitor.model.User;
+import com.lovo.videoplatform.back.service.IUserLoginService;
+import com.lovo.videoplatform.commons.AppConfiger;
+import com.lovo.videoplatform.exception.CallApiErrorException;
+import com.lovo.videoplatform.exception.LoginFailExceptions;
+import com.my.ms.framework.persistence.hibernate.IBaseDao;</p>
+
+<p>/<em>*
+ * 用户登录相关业务操作实现
+ *
+ * @author ljh
+ *
+ </em>/
+@Service
+@Transactional(readOnly = false)
+public class UserLoginServiceImpl implements IUserLoginService {</p>
+
+<pre><code>public static final Logger LOG = LoggerFactory.getLogger(UserLoginServiceImpl.class);
+
+// 调用监控系统api核心对象
+private HttpClient httpclient = new DefaultHttpClient();
+
+@Resource
+private IBaseDao hibernateDao;
+
+@Resource
+private AppConfiger config;
+
+@Override
+@Transactional(readOnly = true)
+public User login(String userName, String password) {
+
+    long ts = System.currentTimeMillis();
+
+    Map signParams = new HashMap();
+    signParams.put("logincode", userName);
+    signParams.put("password", password);
+    signParams.put("ts", ""+ts);
+
+    try {
+
+        String url = config.getCallHost() + "/api/" + config.getAppKey() + "/login";
+
+        LOG.info("begin call api url:{}" , url);
+
+        HttpPost request = new HttpPost(url);
+
+        List&lt;NameValuePair&gt; params = new ArrayList&lt;NameValuePair&gt;();
+        params.add(new BasicNameValuePair("sign", config.generateSign(signParams)));
+        params.add(new BasicNameValuePair("ts", "" + ts));
+        params.add(new BasicNameValuePair("logincode", userName));
+        params.add(new BasicNameValuePair("password", password));
+
+        HttpEntity reqEntity = new UrlEncodedFormEntity(params, "utf-8");
+        request.setEntity(reqEntity);
+
+        HttpResponse resp = httpclient.execute(request);
+
+        if (resp.getStatusLine().getStatusCode() != 200) {
+            LOG.error("call login api error, http statusCode is:{}" , resp.getStatusLine().getStatusCode());
+            throw new CallApiErrorException("调用监控系统登录api错误，http状态码是：" + resp.getStatusLine().getStatusCode());
+        }
+
+        //解析内容
+        String content = EntityUtils.toString(resp.getEntity(), "utf-8");
+        ObjectMapper om = new ObjectMapper();
+        Map result = om.readValue(content, HashMap.class);
+
+        int code = (Integer)result.get("code");
+        if (code == 1) {
+            Map data = (Map)result.get("data");
+            User user = hibernateDao.queryEntityById(User.class, (Integer)data.get("id"));
+            return user;
+        } 
+
+    } catch (Exception ex) {
+        LOG.warn("call login api error, exception is:{}", ex);
+        throw new LoginFailExceptions("调用第三方登录api出错！");
+    }
+
+    throw new LoginFailExceptions("用户名或密码错，用户登录失败！");
+}
+
+//...........其它代码略去
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;上面代码中的AppConfiger，将会从properties中读取配置文件中的信息，同时这个类中也封装了生成数据签名sign的方法，以方便客户端的调用，具体代码如下。：</p>
+
+<p>```
+/<em>*
+ * 应用程序的一些配置信息
+ *
+ * @author ljh
+ *
+ </em>/
+@Component
+public class AppConfiger {</p>
+
+<pre><code>// 调用目标服务器地址
+@Value("#{configProperties['callHost']}")
+private String callHost;
+
+// 本应用的code
+@Value("#{configProperties['appKey']}")
+private String appKey;
+
+// 本应用的编码(生成数字签名时的私有编码串)
+@Value("#{configProperties['appCode']}")
+private String appCode;
+
+public String getCallHost() {
+    return callHost;
+}
+
+public String getAppKey() {
+    return appKey;
+}
+
+public String getAppCode() {
+    return appCode;
+}
+
+/**
+ * 生成签名加密字符串
+ * 
+ * @param params 调用服务器要传递的参数，不包含sign
+ * @return
+ */
+public String generateSign(Map&lt;String, String&gt; params) {
+
+    StringBuilder sb = new StringBuilder();
+
+    List&lt;String&gt; keys = new ArrayList&lt;String&gt;(params.keySet());
+    Collections.sort(keys);
+
+    for (int i = 0; i &lt; keys.size(); i++) {
+        String key = keys.get(i);
+        String value = params.get(key);
+
+        if (i == keys.size() - 1) {// 拼接时，不包括最后一个&amp;字符
+            sb.append(key).append("=").append(value);
+        } else {
+            sb.append(key).append("=").append(value).append("&amp;");
+        }
+    }
+
+    return DigestUtils.md5Hex(sb.toString() + this.getAppCode());
+}
+</code></pre>
+
+<p>}
+```</p>
+
+<p>&emsp;&emsp;@Value将读取容器环境中properties读取的信息，在spring的配置文件中，要有类似下面的bean配置，注意其中加载了app.properties文件，这个bean的id要和@Value注解中的名称相匹配哦。</p>
+
+<p>```</p>
+
+<pre><code>&lt;!-- 配置文件信息 --&gt;
+&lt;bean id="configProperties"
+    class="org.springframework.beans.factory.config.PropertiesFactoryBean"
+    lazy-init="false"&gt;
+    &lt;property name="locations"&gt;
+        &lt;list&gt;
+            &lt;value&gt;classpath:database.properties&lt;/value&gt;
+            &lt;value&gt;classpath:hibernate-config.properties&lt;/value&gt;
+            &lt;value&gt;classpath:app.properties&lt;/value&gt;
+        &lt;/list&gt;
+    &lt;/property&gt;
+&lt;/bean&gt;
+</code></pre>
+
+<p>```</p>
+
+<p>&emsp;&emsp;好了，先介绍到此，希望我的这两篇文章能够给你带来帮助。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[服务器端无状态参数验证实现]]></title>
@@ -194,6 +418,8 @@ public void setApi_call_timeout(int api_call_timeout) {
 <p>&emsp;&emsp;大家要注意的是，targetBeanName中的名称，一定要和spring-aciton.xml中配置的bean的名称一致哦。</p>
 
 <p>&emsp;&emsp;最后解释一下，用到OncePerRequestFilter的原因是，过滤器中要进行业务层方法的调用，使用了OncePerRequestFilter后会非常自然地得到业务对象哈。</p>
+
+<p>&emsp;&emsp;下一篇给出客户端调用示例代码，请大家关注。</p>
 ]]></content>
   </entry>
   
@@ -1035,125 +1261,6 @@ exit 1
 <p>&emsp;&emsp;至此，1号服务器上的所有配置及服务启动工作已经完成。2号服务器的配置及服务实例启动与1号服务器基本相同，惟一需要大家要注意的是group的名称，port端口号等，要和1号服务器相“呼应”，同时，我们在2号服务器上也配置了一个tracker实例以保证高可用性。</p>
 
 <p>&emsp;&emsp;好了，fastDFS的配置先告一段落，下一篇我们来聊聊客户端对fastDFS的调用，除了java客户端外，还包括tengine-2.0.1服务器上访问插件的配置(2014-7-15:不写了，以后有空再说，大家在使用时，最后在网上找带连接池功能的fastDFS驱动)。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[分布式文件系统fastdfs解析之一(安装)]]></title>
-    <link href="http://yanyaner.com/blog/2014/05/30/fastDFS-setup/"/>
-    <updated>2014-05-30T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/05/30/fastDFS-setup</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;fastdfs是一个轻量级的分布式文件系统服务，它在互联网项目中有比较广泛的用途，类似的还有tfs等，但fastdfs和hadoop这些又不相同，hadoop是分布式存储计算框架，比较重量级，而fastdfs针对的是海量的小文件。</p>
-
-<p>&emsp;&emsp;项目中经常会有这样一些应用场景，比如：文件服务器需要存储海量的用户文件并且对外提供用户的访问操作；文件服务器需要高可用性和高性能；文件服务器需要实现负载均衡；文件服务器可实时扩容等等，这些需求在Fastdfs中有实现，因此它可以满足大部的项目需求。</p>
-
-<p>&emsp;&emsp;先给大家简单介绍一下fastdfs的原理，下面这张图有助于大家了解分布式文件系统的原理（hadoop之类的分布式体系与之有相似之处）。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/seq_fastdfs.jpg' width='' height='' title='fastdfs调用时序图'><span class='caption-text'>fastdfs调用时序图</span></span></p>
-
-<p>&emsp;&emsp;上面这张图中客户端针对文件服务系统的调用，首先得通过tracker服务器，这个服务器充当了调度者的作用。客户端可以是任何的程序客户端，比如java客户端、php客户端、nginx插件客户端等。</p>
-
-<p>&emsp;&emsp;在客户端调用之前先得启动tracker server，然后再分别启动各个storage server，每个storage server启动后会注册自己的信息到指定的tracker server中（其实，tracker server服务器也可以有多个，从高可用性方面考虑我们一般会启动多个tracker server实例）。</p>
-
-<p>&emsp;&emsp;storage server负责具体文件的存储。storage server按照分组的方式来保存文件的，比如group1,group2等。一个组中可以有多台服务器，同一个组里的所有服务器中保存的文件内容都是相同的，因为同一个组中的服务器之间会相互自动同步文件，这样就实现了冗余备份及负载均衡的功能（负载均衡由tracker server调试的哦）。</p>
-
-<p>&emsp;&emsp;不同组中的storage server之间是独立的，当系统存储容量不够时，通过添加新服务器并分配到新的组中，tracker server发现新的服务器后会自动调度以实现后续客户文件的写入位置。</p>
-
-<p>&emsp;&emsp;上图中，客户通过询问tracker server得到可用的storage server（tracker server会通过负载均衡及各个storage的存储可用容量大小算法决定，当然这个也可以在配置文件中指定），客户端得到storage server后进行相应的文件操作，同组服务器间会根据操作的结果进行文件同步（时序9，10是同步操作）。</p>
-
-<p>&emsp;&emsp;好了，原理先说到这。下面，我将给大家简单介绍FastDfs的安装及使用，以及一些注意事项。</p>
-
-<p>&emsp;&emsp;我的服务器是ubuntu server，我计划安装在两台服务器上，ip分别是:192.168.68.133, 192.168.68.136，暂时简称为1号服务器，2号服务器。</p>
-
-<p>&emsp;&emsp;一号服务器上，将安装一个tracker server实例，一个位于group1中的storage server实例，一个位于group2中storage server实例。</p>
-
-<p>&emsp;&emsp;二号服务器上，也将安装一个tracker server实例，一个位于group1中的storage server实例。需要大家注意的是，fastdfs中一台服务器上可以安装多个组，但一个组中的多个storade server必须安装在不同的服务器上，并且同组中的storage server的服务端口必须一致，否则无法实现文件同步。</p>
-
-<p>&emsp;&emsp;我先在一号服务器192.168.68.133上安装fastdfs。首先要准备安装环境，不同的linux发行版本可能会有所不同，我用的服务器版本是ubuntu 12.04 server，以下的操作均以这个版本的ubuntu服务器为例。<!--more--></p>
-
-<p><code>
-vim /etc/profile
-export LANGUAGE="en_US.UTF-8"
-export LANG=en_US:zh_CN.UTF-8
-export LC_ALL=C
-</code>
-&emsp;&emsp;接下来让语言环境配置参数立即生效：</p>
-
-<p><code>
-source /etc/profile
-</code>
-&emsp;&emsp;再接着，安装fastdfs编译依赖包，大家要注意的是少一个依赖都不行，我先前安装时缺少了libevent-dev，致使安装不成功但安装过程又不报错，花费了大量的时间。</p>
-
-<p>```
-aptitude install libevent
-apt-get install libevent-dev</p>
-
-<p>sudo apt-get update
-sudo aptitude install build-essential m4</p>
-
-<p>sudo ln -s /lib/lsb/init-functions  /etc/init.d/functions</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;好了，环境准备好了后就到<a href="https://code.google.com/p/fastdfs">fastdfs官网</a>上去下载安装包吧，地址<a href="https://code.google.com/p/fastdfs/downloads/list">https://code.google.com/p/fastdfs/downloads/list</a>，我下载的是
-FastDFS_v4.06.tar.gz ，如果你想要安装最新版本，请用svn去下载最新的5.x版本。</p>
-
-<p><code>
-tar -zxvf FastDFS_v4.06.tar.gz
-cd FastDFS
-</code>
-&emsp;&emsp;这样就进入了源代码目录，我们先要对安装的目录做一个规划(4.06版本默认的安装目录似乎不太合理)，我将fastdfs的所有文件都安装到/usr/local/fastdfs中，配置文件存放在/usr/local/fastdfs/conf下，这就需要我们修改源代码目录下的make.sh，下面是一些要修改的地方：</p>
-
-<p><code>
-vim make.sh
-</code></p>
-
-<p>&emsp;&emsp;需要对：</p>
-
-<ol>
-<li><p> TARGET_PREFIX，TARGET_CONF_PATH进行修改;</p></li>
-<li><p> 需要对libpthread.so、libpthread.a的路径进行修改，这和ubuntu有关，其它linux发行版本并不需要改这个(你可以用find / -name &lsquo;libpthread.so&rsquo;  ，以及ind / -name &lsquo;libpthread.a&rsquo;  找到这两文件在系统中的位置)；</p></li>
-<li><p> 另外要对mkdir,cp操作的几个路径进行修改为我们配置文件所在的路径。</p></li>
-</ol>
-
-
-<p>&emsp;&emsp;我贴出make.sh修改过的地方，请大家自行对照：</p>
-
-<p>```
-TARGET_PREFIX=/usr/local/fastdfs
-TARGET_CONF_PATH=/usr/local/fastdfs/conf</p>
-
-<p>if [ -f /usr/lib/i386-linux-gnu/libpthread.so ] || [ -f /usr/local/lib/libpthread.so ] || [ -f /lib64/libpthread.so ] || [ -f /usr/lib64/libpthread.so ] || [ -f /usr/lib/i386-linux-gnu/libpthread.a ] || [ -f /usr/local/lib/libpthread.a ] || [ -f /lib64/libpthread.a ] || [ -f /usr/lib64/libpthread.a ]; then
-&hellip;&hellip;&hellip;&hellip;
-&hellip;&hellip;&hellip;&hellip;</p>
-
-<p>if [ &ldquo;$uname&rdquo; = &ldquo;Linux&rdquo; ]; then</p>
-
-<pre><code>if [ "$WITH_LINUX_SERVICE" = "1" ]; then
-  if [ ! -d /usr/local/fastdfs/conf ]; then
-    mkdir -p /usr/local/fastdfs/conf
-    cp -f conf/tracker.conf /usr/local/fastdfs/conf/
-    cp -f conf/storage.conf /usr/local/fastdfs/conf/
-    cp -f conf/client.conf /usr/local/fastdfs/conf/
-    cp -f conf/http.conf /usr/local/fastdfs/conf/
-    cp -f conf/mime.types /usr/local/fastdfs/conf/
-  fi
-</code></pre>
-
-<p>&hellip;&hellip;&hellip;&hellip;</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;下面开始安装吧，如下命令：</p>
-
-<p><code>
-sudo make;
-sudo make install;
-sudo make clean;
-</code>
-&emsp;&emsp;不同的linux发行版本可能存在依赖包没有安装而报错，具体情况需要根据出错信息具体解决，我试过redhead,freebsd,openSuse,centos几个系统，都是要进行一些环境的配置才可以安装成功。</p>
-
-<p>&emsp;&emsp;下一篇文章我将按照文章开头的服务器规划进行具体的配置，请大家关注。</p>
 ]]></content>
   </entry>
   

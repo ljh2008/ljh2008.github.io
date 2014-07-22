@@ -4,7 +4,7 @@
   <title><![CDATA[刘江华的博客]]></title>
   <link href="http://yanyaner.com/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-07-20T17:06:22+08:00</updated>
+  <updated>2014-07-22T10:58:51+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,411 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[客户端无状态参数调用实现]]></title>
+    <link href="http://yanyaner.com/blog/2014/07/22/security-filter-client-call/"/>
+    <updated>2014-07-22T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/07/22/security-filter-client-call</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;我在<a href="http://yanyaner.com/blog/2014/07/20/security-filter-sign/">《服务器端无状态参数验证实现）》</a>中给大家贴出了无状态调用中对数据的验证机制服务器端实现代码，那么，客户端如何去进行调用呢？我同样给大家给出一个客户端调用的登录示例。</p>
+
+<p>&emsp;&emsp;首先将客户端的调用信息放入一个app.properties配置文件中以方便管理维护，内容如下。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>appKey = crm324123123126
+</span><span class='line'>appCode = 54dde0994ef4d86cfdf583e6d1384353
+</span><span class='line'>callHost = http://www.mywebsite.com/monitorplatform
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;客户端登录代码用到了httpClient，实现如下：<!-- more--></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">java.util.ArrayList</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.HashMap</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.Map</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">javax.annotation.Resource</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.commons.codec.digest.DigestUtils</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.HttpEntity</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.HttpResponse</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.NameValuePair</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.client.HttpClient</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.client.entity.UrlEncodedFormEntity</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.client.methods.HttpPost</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.impl.client.DefaultHttpClient</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.message.BasicNameValuePair</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.util.EntityUtils</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.ObjectMapper</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.slf4j.Logger</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.slf4j.LoggerFactory</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.springframework.beans.factory.annotation.Value</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.springframework.stereotype.Service</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.springframework.transaction.annotation.Transactional</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.lovo.platform.monitor.model.User</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.lovo.videoplatform.back.service.IUserLoginService</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.lovo.videoplatform.commons.AppConfiger</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.lovo.videoplatform.exception.CallApiErrorException</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.lovo.videoplatform.exception.LoginFailExceptions</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.ms.framework.persistence.hibernate.IBaseDao</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 用户登录相关业务操作实现</span>
+</span><span class='line'><span class="cm"> * </span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> * </span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="nd">@Service</span>
+</span><span class='line'><span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserLoginServiceImpl</span> <span class="kd">implements</span> <span class="n">IUserLoginService</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">LOG</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">UserLoginServiceImpl</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 调用监控系统api核心对象</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">HttpClient</span> <span class="n">httpclient</span> <span class="o">=</span> <span class="k">new</span> <span class="n">DefaultHttpClient</span><span class="o">();</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@Resource</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">IBaseDao</span> <span class="n">hibernateDao</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@Resource</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">AppConfiger</span> <span class="n">config</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span> <span class="o">=</span> <span class="kc">true</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">User</span> <span class="nf">login</span><span class="o">(</span><span class="n">String</span> <span class="n">userName</span><span class="o">,</span> <span class="n">String</span> <span class="n">password</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="kt">long</span> <span class="n">ts</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">Map</span> <span class="n">signParams</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">signParams</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;logincode&quot;</span><span class="o">,</span> <span class="n">userName</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">signParams</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;password&quot;</span><span class="o">,</span> <span class="n">password</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">signParams</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;ts&quot;</span><span class="o">,</span> <span class="s">&quot;&quot;</span><span class="o">+</span><span class="n">ts</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">String</span> <span class="n">url</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="na">getCallHost</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;/api/&quot;</span> <span class="o">+</span> <span class="n">config</span><span class="o">.</span><span class="na">getAppKey</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;/login&quot;</span><span class="o">;</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">LOG</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;begin call api url:{}&quot;</span> <span class="o">,</span> <span class="n">url</span><span class="o">);</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">HttpPost</span> <span class="n">request</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HttpPost</span><span class="o">(</span><span class="n">url</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="n">List</span><span class="o">&lt;</span><span class="n">NameValuePair</span><span class="o">&gt;</span> <span class="n">params</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">NameValuePair</span><span class="o">&gt;();</span>
+</span><span class='line'>          <span class="n">params</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">BasicNameValuePair</span><span class="o">(</span><span class="s">&quot;sign&quot;</span><span class="o">,</span> <span class="n">config</span><span class="o">.</span><span class="na">generateSign</span><span class="o">(</span><span class="n">signParams</span><span class="o">)));</span>
+</span><span class='line'>          <span class="n">params</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">BasicNameValuePair</span><span class="o">(</span><span class="s">&quot;ts&quot;</span><span class="o">,</span> <span class="s">&quot;&quot;</span> <span class="o">+</span> <span class="n">ts</span><span class="o">));</span>
+</span><span class='line'>          <span class="n">params</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">BasicNameValuePair</span><span class="o">(</span><span class="s">&quot;logincode&quot;</span><span class="o">,</span> <span class="n">userName</span><span class="o">));</span>
+</span><span class='line'>          <span class="n">params</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">BasicNameValuePair</span><span class="o">(</span><span class="s">&quot;password&quot;</span><span class="o">,</span> <span class="n">password</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="n">HttpEntity</span> <span class="n">reqEntity</span> <span class="o">=</span> <span class="k">new</span> <span class="n">UrlEncodedFormEntity</span><span class="o">(</span><span class="n">params</span><span class="o">,</span> <span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">request</span><span class="o">.</span><span class="na">setEntity</span><span class="o">(</span><span class="n">reqEntity</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="n">HttpResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="n">httpclient</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">resp</span><span class="o">.</span><span class="na">getStatusLine</span><span class="o">().</span><span class="na">getStatusCode</span><span class="o">()</span> <span class="o">!=</span> <span class="mi">200</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">LOG</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&quot;call login api error, http statusCode is:{}&quot;</span> <span class="o">,</span> <span class="n">resp</span><span class="o">.</span><span class="na">getStatusLine</span><span class="o">().</span><span class="na">getStatusCode</span><span class="o">());</span>
+</span><span class='line'>              <span class="k">throw</span> <span class="k">new</span> <span class="nf">CallApiErrorException</span><span class="o">(</span><span class="s">&quot;调用监控系统登录api错误，http状态码是：&quot;</span> <span class="o">+</span> <span class="n">resp</span><span class="o">.</span><span class="na">getStatusLine</span><span class="o">().</span><span class="na">getStatusCode</span><span class="o">());</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="c1">//解析内容</span>
+</span><span class='line'>          <span class="n">String</span> <span class="n">content</span> <span class="o">=</span> <span class="n">EntityUtils</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">resp</span><span class="o">.</span><span class="na">getEntity</span><span class="o">(),</span> <span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>          <span class="n">Map</span> <span class="n">result</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">content</span><span class="o">,</span> <span class="n">HashMap</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="kt">int</span> <span class="n">code</span> <span class="o">=</span> <span class="o">(</span><span class="n">Integer</span><span class="o">)</span><span class="n">result</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;code&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">code</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">Map</span> <span class="n">data</span> <span class="o">=</span> <span class="o">(</span><span class="n">Map</span><span class="o">)</span><span class="n">result</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;data&quot;</span><span class="o">);</span>
+</span><span class='line'>              <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="n">hibernateDao</span><span class="o">.</span><span class="na">queryEntityById</span><span class="o">(</span><span class="n">User</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="o">(</span><span class="n">Integer</span><span class="o">)</span><span class="n">data</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">));</span>
+</span><span class='line'>              <span class="k">return</span> <span class="n">user</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">LOG</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">&quot;call login api error, exception is:{}&quot;</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+</span><span class='line'>          <span class="k">throw</span> <span class="k">new</span> <span class="nf">LoginFailExceptions</span><span class="o">(</span><span class="s">&quot;调用第三方登录api出错！&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">throw</span> <span class="k">new</span> <span class="nf">LoginFailExceptions</span><span class="o">(</span><span class="s">&quot;用户名或密码错，用户登录失败！&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//...........其它代码略去</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面代码中的AppConfiger，将会从properties中读取配置文件中的信息，同时这个类中也封装了生成数据签名sign的方法，以方便客户端的调用，具体代码如下。：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 应用程序的一些配置信息</span>
+</span><span class='line'><span class="cm"> * </span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> * </span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="nd">@Component</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">AppConfiger</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 调用目标服务器地址</span>
+</span><span class='line'>  <span class="nd">@Value</span><span class="o">(</span><span class="s">&quot;#{configProperties[&#39;callHost&#39;]}&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">callHost</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 本应用的code</span>
+</span><span class='line'>  <span class="nd">@Value</span><span class="o">(</span><span class="s">&quot;#{configProperties[&#39;appKey&#39;]}&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">appKey</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 本应用的编码(生成数字签名时的私有编码串)</span>
+</span><span class='line'>  <span class="nd">@Value</span><span class="o">(</span><span class="s">&quot;#{configProperties[&#39;appCode&#39;]}&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">appCode</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getCallHost</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">callHost</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getAppKey</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">appKey</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getAppCode</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">appCode</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 生成签名加密字符串</span>
+</span><span class='line'><span class="cm">  * </span>
+</span><span class='line'><span class="cm">  * @param params 调用服务器要传递的参数，不包含sign</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">generateSign</span><span class="o">(</span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">params</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">StringBuilder</span> <span class="n">sb</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">keys</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;(</span><span class="n">params</span><span class="o">.</span><span class="na">keySet</span><span class="o">());</span>
+</span><span class='line'>      <span class="n">Collections</span><span class="o">.</span><span class="na">sort</span><span class="o">(</span><span class="n">keys</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">keys</span><span class="o">.</span><span class="na">size</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">String</span> <span class="n">key</span> <span class="o">=</span> <span class="n">keys</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">String</span> <span class="n">value</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">==</span> <span class="n">keys</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span><span class="c1">// 拼接时，不包括最后一个&amp;字符</span>
+</span><span class='line'>              <span class="n">sb</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">key</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="s">&quot;=&quot;</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">sb</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">key</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="s">&quot;=&quot;</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">value</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="s">&quot;&amp;&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">return</span> <span class="n">DigestUtils</span><span class="o">.</span><span class="na">md5Hex</span><span class="o">(</span><span class="n">sb</span><span class="o">.</span><span class="na">toString</span><span class="o">()</span> <span class="o">+</span> <span class="k">this</span><span class="o">.</span><span class="na">getAppCode</span><span class="o">());</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;@Value将读取容器环境中properties读取的信息，在spring的配置文件中，要有类似下面的bean配置，注意其中加载了app.properties文件，这个bean的id要和@Value注解中的名称相匹配哦。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">&lt;!--</span> <span class="err">配置文件信息</span> <span class="o">--&gt;</span>
+</span><span class='line'><span class="o">&lt;</span><span class="n">bean</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;configProperties&quot;</span>
+</span><span class='line'>  <span class="n">class</span><span class="o">=</span><span class="s">&quot;org.springframework.beans.factory.config.PropertiesFactoryBean&quot;</span>
+</span><span class='line'>  <span class="n">lazy</span><span class="o">-</span><span class="n">init</span><span class="o">=</span><span class="s">&quot;false&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>  <span class="o">&lt;</span><span class="n">property</span> <span class="n">name</span><span class="o">=</span><span class="s">&quot;locations&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>      <span class="o">&lt;</span><span class="n">list</span><span class="o">&gt;</span>
+</span><span class='line'>          <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="nl">classpath:</span><span class="n">database</span><span class="o">.</span><span class="na">properties</span><span class="o">&lt;/</span><span class="n">value</span><span class="o">&gt;</span>
+</span><span class='line'>          <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="nl">classpath:</span><span class="n">hibernate</span><span class="o">-</span><span class="n">config</span><span class="o">.</span><span class="na">properties</span><span class="o">&lt;/</span><span class="n">value</span><span class="o">&gt;</span>
+</span><span class='line'>          <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="nl">classpath:</span><span class="n">app</span><span class="o">.</span><span class="na">properties</span><span class="o">&lt;/</span><span class="n">value</span><span class="o">&gt;</span>
+</span><span class='line'>      <span class="o">&lt;/</span><span class="n">list</span><span class="o">&gt;</span>
+</span><span class='line'>  <span class="o">&lt;/</span><span class="n">property</span><span class="o">&gt;</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">bean</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好了，先介绍到此，希望我的这两篇文章能够给你带来帮助。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[服务器端无状态参数验证实现]]></title>
@@ -332,6 +737,8 @@
 <p>&emsp;&emsp;大家要注意的是，targetBeanName中的名称，一定要和spring-aciton.xml中配置的bean的名称一致哦。</p>
 
 <p>&emsp;&emsp;最后解释一下，用到OncePerRequestFilter的原因是，过滤器中要进行业务层方法的调用，使用了OncePerRequestFilter后会非常自然地得到业务对象哈。</p>
+
+<p>&emsp;&emsp;下一篇给出客户端调用示例代码，请大家关注。</p>
 ]]></content>
   </entry>
   
@@ -6849,870 +7256,6 @@ FastDFS_v4.06.tar.gz ，如果你想要安装最新版本，请用svn去下载�
 <p>&emsp;&emsp;这段测试代码的输出是：执行所花时间：547ms.同样的功能，不同的实现代码，时间差距非常巨大，所以，大家在实际编码须注意到这个问题。</p>
 
 <p>&emsp;&emsp;大家可以对ObjectMapper进行简单封装，具体请参阅我的另一篇文章<a href="http://yanyaner.com/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[http长连接在java中的应用示例]]></title>
-    <link href="http://yanyaner.com/blog/2014/02/17/comet-java/"/>
-    <updated>2014-02-17T12:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/02/17/comet-java</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;在WEB应用中，我们可能会遇到实时性要求很高的交互场景，浏览器需要及时地显示服务器上的数据变化，服务器也需要知道客户端的一些状况，比如：下面的示例中，我给出了一个简易的在线聊天系统。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2014/02/chat_login.jpg' width='' height='' title='聊天室登录界面'><span class='caption-text'>聊天室登录界面</span></span></p>
-
-<p><span class='caption-wrapper'><img class='caption' src='http://yanyaner.com/uploads/2014/02/chating.jpg' width='' height='' title='正在聊天的界面'><span class='caption-text'>正在聊天的界面</span></span></p>
-
-<p>&emsp;&emsp;上面的在线聊天演示程序中，先通过用户名登录，登录成功后即可即可发送自己的聊天消息，界面中的在线用户列表中可以看到每一个用户的状态，比如：在线，离开，掉线等。</p>
-
-<p>&emsp;&emsp;好，请大家先思考一下如何去实现这样的一个系统？</p>
-
-<p>&emsp;&emsp;其实，实现的办法很多，下面我给出一些参考：</p>
-
-<p>&emsp;&emsp;一、服务器端用java写一个socket服务器，flash或flex实现聊天客户端(当然也可以用applet之类的技术)，通过socket连接服务器实现实时通讯。这种实现方式我曾经在一个项目中用过，效果还不错。目前的html5中的web socket也可以实现这个功能（具体请参考<a href="http://www.ibm.com/developerworks/cn/web/1112_huangxa_websocket/">http://www.ibm.com/developerworks/cn/web/1112_huangxa_websocket/</a>）。</p>
-
-<p>&emsp;&emsp;二、浏览器中写一定时器，不断发送ajax请求向服务器请求数据，服务器用一个servlet处理请求。在服务器上保存聊天室的内容，每一个用户发言后都将消息内容保存在一个集合中。</p>
-
-<p>&emsp;&emsp;方式二，由客户端按固定的时间发起请求，这种方式虽然可以实现我们的功能，但有一些缺陷，主要表现在：1、在用户并发量大、频率高的时候，网络会拥堵，性能存在问题；2、实时性不高，比如：用户离开，掉线等状态都是要等到下一次请求才能知道，并且服务器上要有某种机制检测到某个用户已经断线；3、如果服务器端数据没有发生变更，那么这个请求只会消耗更多系统资源。</p>
-
-<p>&emsp;&emsp;三、基于http长连接技术。这种方式中可以实现较高的实时性，当有数据发生变化时，服务器主动将数据推送到客户端。</p>
-
-<p>&emsp;&emsp;comet长连接大致有两种实现，第一种是采用长轮询机制实现，大致过程是：由客户端发起http请求，服务器收到这个请求后，进入一个 while(ture)的循环，当有数据需要告知客户端时，将数据响应给客户端，并断开连接。客户端收到信息后进行处理，处理完成后再次发起新的请求，这就是长轮询的长连接实现。当然，客户端一般都采用ajax方式发起请求。</p>
-
-<p>&emsp;&emsp;comet另一种采用基于流的方式实现，利用ajax的readystate为3时表示数据正在传输而保持连接不中断，服务器端可以使用基于NIO的方式提高处理效率，而不是while(true)的多线程方式。 更多关于comet的实现细节，大家可以参阅<a href="http://software.intel.com/zh-cn/articles/comet-java-realtime-system-essay/">http://software.intel.com/zh-cn/articles/comet-java-realtime-system-essay/</a>。</p>
-
-<p>&emsp;&emsp;我这里采用comt4j框架实现http长连接（不要去重复发明轮子哦，直接用现成的）。首先要准备相应的jar包comet4j-tomcat6.jar，将其添加到你的classpath中，大家要根据不同的服务器版本添加不同的实现，因为comet4j使用的是服务器的comet之nio实现。comt4j目前仅提供了tomcat6,tomcat7的支持。<!-- More --></p>
-
-<p>&emsp;&emsp;接下来要修改服务器的server.xml中Connector部分，以启用nio的socket方式，代码如下：</p>
-
-<figure class='code'><figcaption><span>server.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;Connector</span> <span class="na">connectionTimeout=</span><span class="s">&quot;20000&quot;</span>
-</span><span class='line'><span class="na">port=</span><span class="s">&quot;8080&quot;</span>
-</span><span class='line'><span class="na">protocol=</span><span class="s">&quot;org.apache.coyote.http11.Http11NioProtocol&quot;</span>
-</span><span class='line'><span class="na">redirectPort=</span><span class="s">&quot;8443&quot;</span><span class="nt">/&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;在web.xml中加入comet的支持：</p>
-
-<figure class='code'><figcaption><span>web.xml </span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="c">&lt;!-- Comet4J长连接请求处理servlet --&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;servlet&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;servlet-name&gt;</span>comet4Memory<span class="nt">&lt;/servlet-name&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;servlet-class&gt;</span>org.comet4j.core.CometServlet<span class="nt">&lt;/servlet-class&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/servlet&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;servlet-mapping&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;servlet-name&gt;</span>comet4Memory<span class="nt">&lt;/servlet-name&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;url-pattern&gt;</span>/state<span class="nt">&lt;/url-pattern&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/servlet-mapping&gt;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="c">&lt;!--Comet4J容器侦听 --&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;listener&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;listener-class&gt;</span>org.comet4j.core.CometAppListener<span class="nt">&lt;/listener-class&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/listener&gt;</span>
-</span><span class='line'>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;接下来是服务器端的代码，下面的这段代码用来进行初始化，使用Component将对象放入spring容器，并在构造中进行comet初始化：</p>
-
-<figure class='code'><figcaption><span>CometInit.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-<span class='line-number'>75</span>
-<span class='line-number'>76</span>
-<span class='line-number'>77</span>
-<span class='line-number'>78</span>
-<span class='line-number'>79</span>
-<span class='line-number'>80</span>
-<span class='line-number'>81</span>
-<span class='line-number'>82</span>
-<span class='line-number'>83</span>
-<span class='line-number'>84</span>
-<span class='line-number'>85</span>
-<span class='line-number'>86</span>
-<span class='line-number'>87</span>
-<span class='line-number'>88</span>
-<span class='line-number'>89</span>
-<span class='line-number'>90</span>
-<span class='line-number'>91</span>
-<span class='line-number'>92</span>
-<span class='line-number'>93</span>
-<span class='line-number'>94</span>
-<span class='line-number'>95</span>
-<span class='line-number'>96</span>
-<span class='line-number'>97</span>
-<span class='line-number'>98</span>
-<span class='line-number'>99</span>
-<span class='line-number'>100</span>
-<span class='line-number'>101</span>
-<span class='line-number'>102</span>
-<span class='line-number'>103</span>
-<span class='line-number'>104</span>
-<span class='line-number'>105</span>
-<span class='line-number'>106</span>
-<span class='line-number'>107</span>
-<span class='line-number'>108</span>
-<span class='line-number'>109</span>
-<span class='line-number'>110</span>
-<span class='line-number'>111</span>
-<span class='line-number'>112</span>
-<span class='line-number'>113</span>
-<span class='line-number'>114</span>
-<span class='line-number'>115</span>
-<span class='line-number'>116</span>
-<span class='line-number'>117</span>
-<span class='line-number'>118</span>
-<span class='line-number'>119</span>
-<span class='line-number'>120</span>
-<span class='line-number'>121</span>
-<span class='line-number'>122</span>
-<span class='line-number'>123</span>
-<span class='line-number'>124</span>
-<span class='line-number'>125</span>
-<span class='line-number'>126</span>
-<span class='line-number'>127</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Component</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">CometInit</span> <span class="o">{</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="nd">@Resource</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="n">IMyService</span> <span class="n">ms</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">CHANNEL_USER_INFO</span> <span class="o">=</span> <span class="s">&quot;onlineUsers&quot;</span><span class="o">;</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">CHANNEL_USER_CHATING_CONTENT</span> <span class="o">=</span> <span class="s">&quot;user_chating_content&quot;</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="kd">public</span> <span class="nf">CometInit</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">CometContext</span> <span class="n">context</span> <span class="o">=</span> <span class="n">CometContext</span><span class="o">.</span><span class="na">getInstance</span><span class="o">();</span>
-</span><span class='line'>      <span class="n">CometEngine</span> <span class="n">engine</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="na">getEngine</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="c1">//添加连接监听</span>
-</span><span class='line'>      <span class="n">engine</span><span class="o">.</span><span class="na">addConnectListener</span><span class="o">(</span><span class="k">new</span> <span class="n">ConnectListener</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>          <span class="nd">@Override</span>
-</span><span class='line'>          <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">handleEvent</span><span class="o">(</span><span class="n">ConnectEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>              <span class="n">CometConnection</span> <span class="n">connection</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="na">getConn</span><span class="o">();</span>
-</span><span class='line'>              <span class="n">String</span> <span class="n">ip</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getClientIp</span><span class="o">();</span>
-</span><span class='line'>              <span class="n">String</span> <span class="n">id</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getId</span><span class="o">();</span>
-</span><span class='line'>              
-</span><span class='line'>              <span class="n">HttpServletRequest</span> <span class="n">request</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getRequest</span><span class="o">();</span>
-</span><span class='line'>              
-</span><span class='line'>              <span class="n">String</span> <span class="n">userName</span> <span class="o">=</span> <span class="n">getCookieValue</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getCookies</span><span class="o">(),</span> <span class="s">&quot;userName-chating-client&quot;</span><span class="o">,</span> <span class="s">&quot;&quot;</span><span class="o">);</span>
-</span><span class='line'>              
-</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">userName</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>                          
-</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="n">userName</span> <span class="o">=</span> <span class="n">URLDecoder</span><span class="o">.</span><span class="na">decode</span><span class="o">(</span><span class="n">userName</span><span class="o">,</span> <span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
-</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">UnsupportedEncodingException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="c1">// TODO Auto-generated catch block</span>
-</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>              
-</span><span class='line'>              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;id是：&quot;</span> <span class="o">+</span> <span class="n">id</span> <span class="o">+</span> <span class="s">&quot;的用户连接服务器，ip是：&quot;</span> <span class="o">+</span> <span class="n">ip</span> <span class="o">+</span> <span class="s">&quot;,用户名是：&quot;</span> <span class="o">+</span> <span class="n">userName</span><span class="o">);</span>
-</span><span class='line'>              <span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="n">UserAction</span><span class="o">.</span><span class="na">onlineUsers</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">userName</span><span class="o">);</span>
-</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">u</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>              <span class="n">u</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="n">UserAction</span><span class="o">.</span><span class="na">STATE_ONLINE</span><span class="o">);</span>
-</span><span class='line'>              <span class="n">u</span><span class="o">.</span><span class="na">setClientId</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
-</span><span class='line'>              
-</span><span class='line'>              <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="n">event</span><span class="o">.</span><span class="na">getTarget</span><span class="o">().</span><span class="na">sendToAll</span><span class="o">(</span><span class="n">CometInit</span><span class="o">.</span><span class="na">CHANNEL_USER_INFO</span><span class="o">,</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">UserAction</span><span class="o">.</span><span class="na">onlineUsers</span><span class="o">.</span><span class="na">values</span><span class="o">()));</span>
-</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="c1">// TODO Auto-generated catch block</span>
-</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>              
-</span><span class='line'>              <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>      <span class="o">});</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="c1">//添加离线、断线监听</span>
-</span><span class='line'>      <span class="n">engine</span><span class="o">.</span><span class="na">addDropListener</span><span class="o">(</span><span class="k">new</span> <span class="n">DropListener</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>          
-</span><span class='line'>          <span class="nd">@Override</span>
-</span><span class='line'>          <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">handleEvent</span><span class="o">(</span><span class="n">DropEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>              <span class="n">CometConnection</span> <span class="n">connection</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="na">getConn</span><span class="o">();</span>
-</span><span class='line'>              <span class="n">String</span> <span class="n">ip</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getClientIp</span><span class="o">();</span>
-</span><span class='line'>              <span class="n">String</span> <span class="n">id</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getId</span><span class="o">();</span>
-</span><span class='line'>              <span class="n">HttpServletRequest</span> <span class="n">request</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="na">getRequest</span><span class="o">();</span>
-</span><span class='line'>              <span class="n">String</span> <span class="n">userName</span> <span class="o">=</span> <span class="n">getCookieValue</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getCookies</span><span class="o">(),</span> <span class="s">&quot;userName-chating-client&quot;</span><span class="o">,</span> <span class="s">&quot;&quot;</span><span class="o">);</span>
-</span><span class='line'>              
-</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">userName</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>              
-</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="n">userName</span> <span class="o">=</span> <span class="n">URLDecoder</span><span class="o">.</span><span class="na">decode</span><span class="o">(</span><span class="n">userName</span><span class="o">,</span> <span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
-</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">UnsupportedEncodingException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="c1">// TODO Auto-generated catch block</span>
-</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;id是：&quot;</span> <span class="o">+</span> <span class="n">id</span> <span class="o">+</span> <span class="s">&quot;的用户断开与服务器的连接，ip是：&quot;</span><span class="o">+</span> <span class="n">ip</span> <span class="o">+</span> <span class="s">&quot;,用户名是：&quot;</span> <span class="o">+</span> <span class="n">userName</span><span class="o">);</span>
-</span><span class='line'>              <span class="n">User</span> <span class="n">u</span> <span class="o">=</span> <span class="n">UserAction</span><span class="o">.</span><span class="na">onlineUsers</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">userName</span><span class="o">);</span>
-</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">u</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>              <span class="n">u</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="n">UserAction</span><span class="o">.</span><span class="na">STATE_MISSING</span><span class="o">);</span>
-</span><span class='line'>              
-</span><span class='line'>              <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>              <span class="k">try</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="n">event</span><span class="o">.</span><span class="na">getTarget</span><span class="o">().</span><span class="na">sendToAll</span><span class="o">(</span><span class="n">CometInit</span><span class="o">.</span><span class="na">CHANNEL_USER_INFO</span><span class="o">,</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">UserAction</span><span class="o">.</span><span class="na">onlineUsers</span><span class="o">.</span><span class="na">values</span><span class="o">()));</span>
-</span><span class='line'>              <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="c1">// TODO Auto-generated catch block</span>
-</span><span class='line'>                  <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>              <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>      <span class="o">});</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="c1">//注册信道 </span>
-</span><span class='line'>      <span class="n">context</span><span class="o">.</span><span class="na">registChannel</span><span class="o">(</span><span class="n">CHANNEL_USER_INFO</span><span class="o">);</span>
-</span><span class='line'>      <span class="n">context</span><span class="o">.</span><span class="na">registChannel</span><span class="o">(</span><span class="n">CHANNEL_USER_CHATING_CONTENT</span><span class="o">);</span>
-</span><span class='line'>      
-</span><span class='line'>      
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="cm">/**</span>
-</span><span class='line'><span class="cm">  * 从cookiek中得到某个 key的取值</span>
-</span><span class='line'><span class="cm">  * @param cookies</span>
-</span><span class='line'><span class="cm">  * @param cookieName</span>
-</span><span class='line'><span class="cm">  * @param defaultValue</span>
-</span><span class='line'><span class="cm">  * @return</span>
-</span><span class='line'><span class="cm">  */</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getCookieValue</span><span class="o">(</span><span class="n">Cookie</span><span class="o">[]</span> <span class="n">cookies</span><span class="o">,</span> <span class="n">String</span> <span class="n">cookieName</span><span class="o">,</span> <span class="n">String</span> <span class="n">defaultValue</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="n">String</span> <span class="n">result</span> <span class="o">=</span> <span class="n">defaultValue</span><span class="o">;</span>
-</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">cookies</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">cookies</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>              <span class="n">Cookie</span> <span class="n">cookie</span> <span class="o">=</span> <span class="n">cookies</span><span class="o">[</span><span class="n">i</span><span class="o">];</span>
-</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">cookieName</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">cookie</span><span class="o">.</span><span class="na">getName</span><span class="o">()))</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="k">return</span> <span class="n">cookie</span><span class="o">.</span><span class="na">getValue</span><span class="o">();</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;服务器端处理用户聊天请求的Action代码如下：</p>
-
-<figure class='code'><figcaption><span>ChatingAction.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-<span class='line-number'>75</span>
-<span class='line-number'>76</span>
-<span class='line-number'>77</span>
-<span class='line-number'>78</span>
-<span class='line-number'>79</span>
-<span class='line-number'>80</span>
-<span class='line-number'>81</span>
-<span class='line-number'>82</span>
-<span class='line-number'>83</span>
-<span class='line-number'>84</span>
-<span class='line-number'>85</span>
-<span class='line-number'>86</span>
-<span class='line-number'>87</span>
-<span class='line-number'>88</span>
-<span class='line-number'>89</span>
-<span class='line-number'>90</span>
-<span class='line-number'>91</span>
-<span class='line-number'>92</span>
-<span class='line-number'>93</span>
-<span class='line-number'>94</span>
-<span class='line-number'>95</span>
-<span class='line-number'>96</span>
-<span class='line-number'>97</span>
-<span class='line-number'>98</span>
-<span class='line-number'>99</span>
-<span class='line-number'>100</span>
-<span class='line-number'>101</span>
-<span class='line-number'>102</span>
-<span class='line-number'>103</span>
-<span class='line-number'>104</span>
-<span class='line-number'>105</span>
-<span class='line-number'>106</span>
-<span class='line-number'>107</span>
-<span class='line-number'>108</span>
-<span class='line-number'>109</span>
-<span class='line-number'>110</span>
-<span class='line-number'>111</span>
-<span class='line-number'>112</span>
-<span class='line-number'>113</span>
-<span class='line-number'>114</span>
-<span class='line-number'>115</span>
-<span class='line-number'>116</span>
-<span class='line-number'>117</span>
-<span class='line-number'>118</span>
-<span class='line-number'>119</span>
-<span class='line-number'>120</span>
-<span class='line-number'>121</span>
-<span class='line-number'>122</span>
-<span class='line-number'>123</span>
-<span class='line-number'>124</span>
-<span class='line-number'>125</span>
-<span class='line-number'>126</span>
-<span class='line-number'>127</span>
-<span class='line-number'>128</span>
-<span class='line-number'>129</span>
-<span class='line-number'>130</span>
-<span class='line-number'>131</span>
-<span class='line-number'>132</span>
-<span class='line-number'>133</span>
-<span class='line-number'>134</span>
-<span class='line-number'>135</span>
-<span class='line-number'>136</span>
-<span class='line-number'>137</span>
-<span class='line-number'>138</span>
-<span class='line-number'>139</span>
-<span class='line-number'>140</span>
-<span class='line-number'>141</span>
-<span class='line-number'>142</span>
-<span class='line-number'>143</span>
-<span class='line-number'>144</span>
-<span class='line-number'>145</span>
-<span class='line-number'>146</span>
-<span class='line-number'>147</span>
-<span class='line-number'>148</span>
-<span class='line-number'>149</span>
-<span class='line-number'>150</span>
-<span class='line-number'>151</span>
-<span class='line-number'>152</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Controller</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ChatingAction</span> <span class="o">{</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">STATE_LOGINING</span> <span class="o">=</span> <span class="s">&quot;登录中&quot;</span><span class="o">;</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">STATE_ONLINE</span> <span class="o">=</span> <span class="s">&quot;在线&quot;</span><span class="o">;</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">STATE_MISSING</span> <span class="o">=</span> <span class="s">&quot;掉线&quot;</span><span class="o">;</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">String</span> <span class="n">STATE_LEAVE</span> <span class="o">=</span> <span class="s">&quot;离开&quot;</span><span class="o">;</span>
-</span><span class='line'>  
-</span><span class='line'>  
-</span><span class='line'>  <span class="kd">private</span> <span class="n">CometEngine</span> <span class="n">engine</span><span class="o">;</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="kd">public</span> <span class="nf">UserAction</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>      <span class="n">engine</span> <span class="o">=</span> <span class="n">CometContext</span><span class="o">.</span><span class="na">getInstance</span><span class="o">().</span><span class="na">getEngine</span><span class="o">();</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>  
-</span><span class='line'>  <span class="c1">//保存在线用户集合，在些比做持久化的用户数据</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">User</span><span class="o">&gt;</span> <span class="n">onlineUsers</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">User</span><span class="o">&gt;();</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">&quot;loginChat&quot;</span><span class="o">)</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">login</span><span class="o">(</span>
-</span><span class='line'>          <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;name&quot;</span><span class="o">)</span> <span class="n">String</span> <span class="n">name</span><span class="o">,</span>
-</span><span class='line'>          <span class="n">HttpSession</span> <span class="n">session</span><span class="o">,</span>
-</span><span class='line'>          <span class="n">HttpServletResponse</span> <span class="n">response</span>
-</span><span class='line'>          <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="n">onlineUsers</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
-</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">user</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="c1">//更新状态信息</span>
-</span><span class='line'>          <span class="n">user</span> <span class="o">=</span> <span class="k">new</span> <span class="n">User</span><span class="o">();</span>
-</span><span class='line'>          <span class="n">user</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">name</span><span class="o">);</span>
-</span><span class='line'>          <span class="n">onlineUsers</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">name</span><span class="o">,</span> <span class="n">user</span><span class="o">);</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="c1">//设置为正在登录状态</span>
-</span><span class='line'>      <span class="n">user</span><span class="o">.</span><span class="na">setState</span><span class="o">(</span><span class="n">STATE_LOGINING</span><span class="o">);</span>
-</span><span class='line'>      <span class="n">session</span><span class="o">.</span><span class="na">setAttribute</span><span class="o">(</span><span class="s">&quot;user_key&quot;</span><span class="o">,</span> <span class="n">user</span><span class="o">);</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="c1">//如果是json方式返回，也可由客户端通过js添加cookie</span>
-</span><span class='line'>      <span class="n">Cookie</span> <span class="n">cookie</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Cookie</span><span class="o">(</span><span class="s">&quot;userName-chating-client&quot;</span><span class="o">,</span><span class="n">URLEncoder</span><span class="o">.</span><span class="na">encode</span><span class="o">(</span><span class="n">name</span><span class="o">,</span><span class="s">&quot;utf-8&quot;</span><span class="o">));</span>
-</span><span class='line'>      <span class="n">cookie</span><span class="o">.</span><span class="na">setMaxAge</span><span class="o">(</span><span class="mi">60</span><span class="o">*</span><span class="mi">60</span><span class="o">*</span><span class="mi">24</span><span class="o">*</span><span class="mi">7</span><span class="o">);</span><span class="c1">//保留7天  </span>
-</span><span class='line'>      <span class="n">response</span><span class="o">.</span><span class="na">addCookie</span><span class="o">(</span><span class="n">cookie</span><span class="o">);</span>
-</span><span class='line'>  
-</span><span class='line'>      <span class="c1">//更新在线用户列表</span>
-</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>      <span class="n">engine</span><span class="o">.</span><span class="na">sendToAll</span><span class="o">(</span><span class="n">CometInit</span><span class="o">.</span><span class="na">CHANNEL_USER_INFO</span><span class="o">,</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">onlineUsers</span><span class="o">.</span><span class="na">values</span><span class="o">()));</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="c1">//进入主页面</span>
-</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;chating&quot;</span><span class="o">;</span>
-</span><span class='line'>      
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>      
-</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">&quot;getState&quot;</span><span class="o">)</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getState</span><span class="o">(</span>
-</span><span class='line'>          <span class="n">HttpSession</span> <span class="n">session</span><span class="o">,</span>
-</span><span class='line'>          <span class="n">HttpServletResponse</span> <span class="n">response</span>
-</span><span class='line'>          <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="o">(</span><span class="n">User</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;user_key&quot;</span><span class="o">);</span>
-</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">user</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="c1">//返回所有的在线用户</span>
-</span><span class='line'>          <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">(),</span> <span class="n">user</span><span class="o">);</span>
-</span><span class='line'>      <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">(),</span> <span class="s">&quot;{code:0}&quot;</span><span class="o">);</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">&quot;onlineUser&quot;</span><span class="o">)</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">allUsers</span><span class="o">(</span>
-</span><span class='line'>          <span class="n">HttpServletResponse</span> <span class="n">response</span>
-</span><span class='line'>          <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>  
-</span><span class='line'>      <span class="c1">//返回所有的在线用户</span>
-</span><span class='line'>      <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>      <span class="n">om</span><span class="o">.</span><span class="na">writeValue</span><span class="o">(</span><span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">(),</span> <span class="n">onlineUsers</span><span class="o">);</span>
-</span><span class='line'>      
-</span><span class='line'>      
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>      
-</span><span class='line'>  
-</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">&quot;logout&quot;</span><span class="o">)</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">logout</span><span class="o">(</span>
-</span><span class='line'>          <span class="n">HttpSession</span> <span class="n">session</span><span class="o">,</span>
-</span><span class='line'>          <span class="n">HttpServletResponse</span> <span class="n">response</span>
-</span><span class='line'>          <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="o">(</span><span class="n">User</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;user_key&quot;</span><span class="o">);</span>
-</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">user</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>          <span class="n">onlineUsers</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">user</span><span class="o">.</span><span class="na">getName</span><span class="o">()).</span><span class="na">setState</span><span class="o">(</span><span class="n">STATE_LEAVE</span><span class="o">);</span>
-</span><span class='line'>          <span class="n">engine</span><span class="o">.</span><span class="na">sendToAll</span><span class="o">(</span><span class="n">CometInit</span><span class="o">.</span><span class="na">CHANNEL_USER_INFO</span><span class="o">,</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">onlineUsers</span><span class="o">.</span><span class="na">values</span><span class="o">()));</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="k">return</span> <span class="s">&quot;chat_login&quot;</span><span class="o">;</span>
-</span><span class='line'>      
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="nd">@RequestMapping</span><span class="o">(</span><span class="s">&quot;sendMsg&quot;</span><span class="o">)</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">sendMsg</span><span class="o">(</span>
-</span><span class='line'>          <span class="n">HttpSession</span> <span class="n">session</span><span class="o">,</span>
-</span><span class='line'>          <span class="nd">@RequestParam</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;msg&quot;</span><span class="o">)</span> <span class="n">String</span> <span class="n">msg</span><span class="o">,</span>
-</span><span class='line'>          <span class="n">HttpServletResponse</span> <span class="n">response</span>
-</span><span class='line'>          <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">SimpleDateFormat</span> <span class="n">sf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd hh:mm:ss&quot;</span><span class="o">);</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="o">(</span><span class="n">User</span><span class="o">)</span><span class="n">session</span><span class="o">.</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;user_key&quot;</span><span class="o">);</span>
-</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">user</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>          <span class="n">Map</span> <span class="n">respBody</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
-</span><span class='line'>          <span class="n">respBody</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;date&quot;</span><span class="o">,</span> <span class="n">sf</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="k">new</span> <span class="n">Date</span><span class="o">()));</span>
-</span><span class='line'>          <span class="n">respBody</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;user&quot;</span><span class="o">,</span> <span class="n">user</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
-</span><span class='line'>          <span class="n">respBody</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;msg&quot;</span><span class="o">,</span> <span class="n">msg</span><span class="o">);</span>
-</span><span class='line'>          <span class="n">engine</span><span class="o">.</span><span class="na">sendToAll</span><span class="o">(</span><span class="n">CometInit</span><span class="o">.</span><span class="na">CHANNEL_USER_CHATING_CONTENT</span><span class="o">,</span> <span class="n">om</span><span class="o">.</span><span class="na">writeValueAsString</span><span class="o">(</span><span class="n">respBody</span><span class="o">));</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">print</span><span class="o">(</span><span class="s">&quot;over&quot;</span><span class="o">);</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  
-</span><span class='line'><span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//用户</span>
-</span><span class='line'><span class="kd">class</span> <span class="nc">User</span> <span class="o">{</span>
-</span><span class='line'>  <span class="c1">//昵称</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>  <span class="c1">//状态(登录中，在线，掉线，已录出)</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">state</span><span class="o">;</span>
-</span><span class='line'>  <span class="c1">//长连接id,由comet4j自行分配</span>
-</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">clientId</span><span class="o">;</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getName</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setName</span><span class="o">(</span><span class="n">String</span> <span class="n">name</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getState</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">state</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setState</span><span class="o">(</span><span class="n">String</span> <span class="n">state</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">state</span> <span class="o">=</span> <span class="n">state</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getClientId</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">clientId</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">setClientId</span><span class="o">(</span><span class="n">String</span> <span class="n">clientId</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">clientId</span> <span class="o">=</span> <span class="n">clientId</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>  
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;comet4j客户端已经封装了相应的js，以简化我们的编码，我们需要做的是引入comet4j.js到需要的页面中。</p>
-
-<figure class='code'><figcaption><span>chat_login.jsp</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='jsp'><span class='line'><span class="k">&lt;%@</span> <span class="n">page</span> <span class="n">language</span><span class="o">=</span><span class="s">&quot;java&quot;</span> <span class="n">contentType</span><span class="o">=</span><span class="s">&quot;text/html; charset=UTF-8&quot;</span>
-</span><span class='line'>    <span class="n">pageEncoding</span><span class="o">=</span><span class="s">&quot;UTF-8&quot;</span><span class="k">%&gt;</span>
-</span><span class='line'><span class="cp">&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD HTML 4.01 Transitional//EN&quot; &quot;http://www.w3.org/TR/html4/loose.dtd&quot;&gt;</span>
-</span><span class='line'><span class="nt">&lt;html&gt;</span>
-</span><span class='line'><span class="nt">&lt;head&gt;</span>
-</span><span class='line'><span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">&quot;Content-Type&quot;</span> <span class="na">content=</span><span class="s">&quot;text/html; charset=UTF-8&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;title&gt;</span>Insert title here<span class="nt">&lt;/title&gt;</span>
-</span><span class='line'><span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href=</span><span class="s">&quot;lib/bootstrap/css/bootstrap.min.css&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'><span class="nt">&lt;/head&gt;</span>
-</span><span class='line'><span class="nt">&lt;body&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;p</span> <span class="na">class=</span><span class="s">&quot;text-warning&quot;</span><span class="nt">&gt;</span>假设本系统以用户名作为用户的业务主键。<span class="nt">&lt;/p&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&quot;loginChat&quot;</span> <span class="na">method=</span><span class="s">&quot;post&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      用户名：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">name=</span><span class="s">&quot;name&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;进入聊天室&quot;</span> <span class="na">class=</span><span class="s">&quot;btn btn-success&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/form&gt;</span>
-</span><span class='line'><span class="nt">&lt;/body&gt;</span>
-</span><span class='line'><span class="nt">&lt;/html&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span>chating.jsp</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-<span class='line-number'>75</span>
-<span class='line-number'>76</span>
-<span class='line-number'>77</span>
-<span class='line-number'>78</span>
-<span class='line-number'>79</span>
-<span class='line-number'>80</span>
-</pre></td><td class='code'><pre><code class='jsp'><span class='line'><span class="k">&lt;%@</span> <span class="n">page</span> <span class="n">language</span><span class="o">=</span><span class="s">&quot;java&quot;</span> <span class="n">contentType</span><span class="o">=</span><span class="s">&quot;text/html; charset=UTF-8&quot;</span>
-</span><span class='line'>    <span class="n">pageEncoding</span><span class="o">=</span><span class="s">&quot;UTF-8&quot;</span><span class="k">%&gt;</span>
-</span><span class='line'><span class="cp">&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD HTML 4.01 Transitional//EN&quot; &quot;http://www.w3.org/TR/html4/loose.dtd&quot;&gt;</span>
-</span><span class='line'><span class="nt">&lt;html&gt;</span>
-</span><span class='line'><span class="nt">&lt;head&gt;</span>
-</span><span class='line'><span class="nt">&lt;meta</span> <span class="na">http-equiv=</span><span class="s">&quot;Content-Type&quot;</span> <span class="na">content=</span><span class="s">&quot;text/html; charset=UTF-8&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;title&gt;</span>在线聊天<span class="nt">&lt;/title&gt;</span>
-</span><span class='line'><span class="nt">&lt;script</span> <span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;lib/jquery/jquery-1.7.2.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">href=</span><span class="s">&quot;lib/bootstrap/css/bootstrap.min.css&quot;</span><span class="nt">/&gt;</span>
-</span><span class='line'><span class="nt">&lt;script</span> <span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;lib/jquery-timer/jquery.timer.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script</span> <span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;lib/comet4j/comet4j.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="nt">&lt;script</span> <span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>  $(function(){
-</span><span class='line'>      
-</span><span class='line'>      $(&quot;#btn_send&quot;).click(function() {
-</span><span class='line'>          $.ajax({
-</span><span class='line'>              url:&quot;sendMsg&quot;,
-</span><span class='line'>              type:&quot;post&quot;,
-</span><span class='line'>              data:{msg:$(&quot;#msg&quot;).val()},
-</span><span class='line'>              success:function(){
-</span><span class='line'>                  $(&quot;#msg&quot;).val(&quot;&quot;);
-</span><span class='line'>              }
-</span><span class='line'>          });
-</span><span class='line'>      });
-</span><span class='line'>      
-</span><span class='line'>      JS.Engine.on({
-</span><span class='line'>          user_chating_content:function(data){//侦听聊天内容
-</span><span class='line'>              var result = $.parseJSON(data);
-</span><span class='line'>              $(&quot;<span class="nt">&lt;p&gt;&lt;b&gt;</span>&quot;+result.date+&quot;<span class="nt">&lt;/b&gt;&lt;/p&gt;</span>&quot;).appendTo(&quot;#msgs&quot;);
-</span><span class='line'>              $(&quot;<span class="nt">&lt;p</span> <span class="nt">&gt;&lt;b</span> <span class="na">style=</span><span class="s">&#39;color:red;&#39;</span><span class="nt">&gt;</span>&quot;+result.user+&quot;<span class="nt">&lt;/b&gt;</span>: &quot;+result.msg+&quot;<span class="nt">&lt;/p&gt;</span>&quot;).appendTo(&quot;#msgs&quot;);
-</span><span class='line'>          },
-</span><span class='line'>          onlineUsers: function(data){//侦听在线用户
-</span><span class='line'>                  var result = $.parseJSON(data);
-</span><span class='line'>                  $(&quot;#onlineUsers option&quot;).remove();
-</span><span class='line'>                  $(result).each(function(){
-</span><span class='line'>                      $(&quot;<span class="nt">&lt;option&gt;</span>&quot; + this.name + &quot;:&quot; + this.state + &quot;<span class="nt">&lt;/option&gt;</span>&quot;).appendTo(&quot;#onlineUsers&quot;);
-</span><span class='line'>                  });
-</span><span class='line'>
-</span><span class='line'>            }
-</span><span class='line'>      });
-</span><span class='line'>      JS.Engine.start(&#39;state&#39;);
-</span><span class='line'>  
-</span><span class='line'>  
-</span><span class='line'>     var timer = $.timer(
-</span><span class='line'>          function() {
-</span><span class='line'>              $.ajax({
-</span><span class='line'>              url:&quot;getState&quot;,
-</span><span class='line'>              type:&quot;get&quot;,
-</span><span class='line'>              dataType:&quot;json&quot;,
-</span><span class='line'>              success:function(user) {
-</span><span class='line'>                  $(&quot;#uid&quot;).html(user.clientId);
-</span><span class='line'>                  $(&quot;#nickName&quot;).html(user.name);
-</span><span class='line'>              }
-</span><span class='line'>          });
-</span><span class='line'>          }
-</span><span class='line'>      );  
-</span><span class='line'>     timer.once(5000);
-</span><span class='line'>          
-</span><span class='line'>  });
-</span><span class='line'><span class="nt">&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;/head&gt;</span>
-</span><span class='line'><span class="nt">&lt;body&gt;</span>
-</span><span class='line'><span class="nt">&lt;div</span> <span class="na">style=</span><span class="s">&quot;background-color: silver;width:650px;&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>  当前用户长连接id:<span class="nt">&lt;span</span> <span class="na">id=</span><span class="s">&quot;uid&quot;</span><span class="nt">&gt;&lt;/span&gt;</span><span class="ni">&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;</span>
-</span><span class='line'>  当前用户昵称  :<span class="nt">&lt;span</span> <span class="na">id=</span><span class="s">&quot;nickName&quot;</span><span class="nt">&gt;&lt;/span&gt;</span>
-</span><span class='line'><span class="nt">&lt;/div&gt;</span>
-</span><span class='line'><span class="nt">&lt;div</span> <span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;msgs&quot;</span> <span class="na">style=</span><span class="s">&quot;height: 200px; width:650px; overflow: scroll;&quot;</span><span class="nt">&gt;&lt;/div&gt;</span>
-</span><span class='line'><span class="nt">&lt;select</span> <span class="na">multiple=</span><span class="s">&quot;multiple&quot;</span> <span class="na">id=</span><span class="s">&quot;onlineUsers&quot;</span> <span class="na">style=</span><span class="s">&quot;width: 650px;&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;/select&gt;</span>
-</span><span class='line'><span class="nt">&lt;br&gt;</span>
-</span><span class='line'><span class="nt">&lt;form</span> <span class="na">action=</span><span class="s">&quot;logout&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>请输入要发送的消息：<span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">id=</span><span class="s">&quot;msg&quot;</span> <span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;    发        送    &quot;</span> <span class="na">id=</span><span class="s">&quot;btn_send&quot;</span> <span class="na">class=</span><span class="s">&quot;btn btn-success btn-large&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;submit&quot;</span> <span class="na">value=</span><span class="s">&quot;离开聊天室&quot;</span> <span class="na">class=</span><span class="s">&quot;btn btn-warning btn-large&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;/form&gt;</span>
-</span><span class='line'><span class="nt">&lt;/div&gt;</span>
-</span><span class='line'><span class="nt">&lt;/body&gt;</span>
-</span><span class='line'><span class="nt">&lt;/html&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;运行上面的代码，即可进行实时聊天了。我们近期的一个实时监控功能就是基于comet做的。</p>
-
-<p>&emsp;&emsp;最后给大家强调几点：</p>
-
-<ol>
-<li>在没有深入研究的情况下，引入任何一项新的技术，都会给项目带来风险，comet也如此。</li>
-<li>服务器能够接受的comet长连接并发数有待测试，如果并发过高，将考虑使用其它的解决方案。</li>
-<li>comet4j上线、下线等监听器中如果注入了service，在service中查询出的hibernate实体bean,必须要主动加载后面需要用到的lazy对象（原因：和openSessionInView失效有关哦）。</li>
-</ol>
-
 ]]></content>
   </entry>
   

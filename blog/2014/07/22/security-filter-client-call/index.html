@@ -1,0 +1,674 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>客户端无状态参数调用实现 - 刘江华的博客</title>
+  <meta name="author" content="冰雨">
+
+  
+  <meta name="description" content="&emsp;&emsp;我在《服务器端无状态参数验证实现）》中给大家贴出了无状态调用中对数据的验证机制服务器端实现代码，那么，客户端如何去进行调用呢？我同样给大家给出一个客户端调用的登录示例。 &emsp;&emsp;首先将客户端的调用信息放入一个app. &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://yanyaner.com/blog/2014/07/22/security-filter-client-call">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/libs/jquery.min.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">刘江华的博客</a></h1>
+  
+    <h2>众里寻她千百度，蓦然回首，那人却在，灯火阑珊处......</h2>
+  
+</hgroup>
+
+</header>
+  <article class="my_clear"><img src="/images/commons/banner.jpg" class="my_clear"></img></article>
+  <nav role="navigation">
+  
+<ul class="main-navigation">
+  <li><a href="/">博客文章</a></li>
+  <li><a href="/blog/archives">全部文章</a></li>
+  <li><a href="/blog/categories/hui-hua-zuo-pin">我的作品</a></li>
+  <li><a href="/about">关于老刘</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">客户端无状态参数调用实现</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-22T15:18:00+08:00" pubdate data-updated="true">2014年07月22日</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>&emsp;&emsp;我在<a href="/blog/2014/07/20/security-filter-sign/">《服务器端无状态参数验证实现）》</a>中给大家贴出了无状态调用中对数据的验证机制服务器端实现代码，那么，客户端如何去进行调用呢？我同样给大家给出一个客户端调用的登录示例。</p>
+
+<p>&emsp;&emsp;首先将客户端的调用信息放入一个app.properties配置文件中以方便管理维护，内容如下。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>appKey = crm324123123126
+</span><span class='line'>appCode = 54dde0994ef4d86cfdf583e6d1384353
+</span><span class='line'>callHost = http://www.mywebsite.com/monitorplatform
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;客户端登录代码用到了httpClient，实现如下：<!-- more--></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">java.util.ArrayList</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.HashMap</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.List</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">java.util.Map</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">javax.annotation.Resource</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.commons.codec.digest.DigestUtils</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.HttpEntity</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.HttpResponse</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.NameValuePair</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.client.HttpClient</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.client.entity.UrlEncodedFormEntity</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.client.methods.HttpPost</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.impl.client.DefaultHttpClient</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.message.BasicNameValuePair</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.apache.http.util.EntityUtils</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.ObjectMapper</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.slf4j.Logger</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.slf4j.LoggerFactory</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.springframework.beans.factory.annotation.Value</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.springframework.stereotype.Service</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.springframework.transaction.annotation.Transactional</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.lovo.platform.monitor.model.User</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.lovo.videoplatform.back.service.IUserLoginService</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.lovo.videoplatform.commons.AppConfiger</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.lovo.videoplatform.exception.CallApiErrorException</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.lovo.videoplatform.exception.LoginFailExceptions</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">com.my.ms.framework.persistence.hibernate.IBaseDao</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 用户登录相关业务操作实现</span>
+</span><span class='line'><span class="cm"> * </span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> * </span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="nd">@Service</span>
+</span><span class='line'><span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span> <span class="o">=</span> <span class="kc">false</span><span class="o">)</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserLoginServiceImpl</span> <span class="kd">implements</span> <span class="n">IUserLoginService</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">LOG</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">UserLoginServiceImpl</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 调用监控系统api核心对象</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">HttpClient</span> <span class="n">httpclient</span> <span class="o">=</span> <span class="k">new</span> <span class="n">DefaultHttpClient</span><span class="o">();</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@Resource</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">IBaseDao</span> <span class="n">hibernateDao</span><span class="o">;</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="nd">@Resource</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">AppConfiger</span> <span class="n">config</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="nd">@Transactional</span><span class="o">(</span><span class="n">readOnly</span> <span class="o">=</span> <span class="kc">true</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">User</span> <span class="nf">login</span><span class="o">(</span><span class="n">String</span> <span class="n">userName</span><span class="o">,</span> <span class="n">String</span> <span class="n">password</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="kt">long</span> <span class="n">ts</span> <span class="o">=</span> <span class="n">System</span><span class="o">.</span><span class="na">currentTimeMillis</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">Map</span> <span class="n">signParams</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">signParams</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;logincode&quot;</span><span class="o">,</span> <span class="n">userName</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">signParams</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;password&quot;</span><span class="o">,</span> <span class="n">password</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">signParams</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;ts&quot;</span><span class="o">,</span> <span class="s">&quot;&quot;</span><span class="o">+</span><span class="n">ts</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">String</span> <span class="n">url</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="na">getCallHost</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;/api/&quot;</span> <span class="o">+</span> <span class="n">config</span><span class="o">.</span><span class="na">getAppKey</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;/login&quot;</span><span class="o">;</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">LOG</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;begin call api url:{}&quot;</span> <span class="o">,</span> <span class="n">url</span><span class="o">);</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="n">HttpPost</span> <span class="n">request</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HttpPost</span><span class="o">(</span><span class="n">url</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="n">List</span><span class="o">&lt;</span><span class="n">NameValuePair</span><span class="o">&gt;</span> <span class="n">params</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">NameValuePair</span><span class="o">&gt;();</span>
+</span><span class='line'>          <span class="n">params</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">BasicNameValuePair</span><span class="o">(</span><span class="s">&quot;sign&quot;</span><span class="o">,</span> <span class="n">config</span><span class="o">.</span><span class="na">generateSign</span><span class="o">(</span><span class="n">signParams</span><span class="o">)));</span>
+</span><span class='line'>          <span class="n">params</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">BasicNameValuePair</span><span class="o">(</span><span class="s">&quot;ts&quot;</span><span class="o">,</span> <span class="s">&quot;&quot;</span> <span class="o">+</span> <span class="n">ts</span><span class="o">));</span>
+</span><span class='line'>          <span class="n">params</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">BasicNameValuePair</span><span class="o">(</span><span class="s">&quot;logincode&quot;</span><span class="o">,</span> <span class="n">userName</span><span class="o">));</span>
+</span><span class='line'>          <span class="n">params</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="k">new</span> <span class="n">BasicNameValuePair</span><span class="o">(</span><span class="s">&quot;password&quot;</span><span class="o">,</span> <span class="n">password</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="n">HttpEntity</span> <span class="n">reqEntity</span> <span class="o">=</span> <span class="k">new</span> <span class="n">UrlEncodedFormEntity</span><span class="o">(</span><span class="n">params</span><span class="o">,</span> <span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">request</span><span class="o">.</span><span class="na">setEntity</span><span class="o">(</span><span class="n">reqEntity</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="n">HttpResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="n">httpclient</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="n">request</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">resp</span><span class="o">.</span><span class="na">getStatusLine</span><span class="o">().</span><span class="na">getStatusCode</span><span class="o">()</span> <span class="o">!=</span> <span class="mi">200</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">LOG</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&quot;call login api error, http statusCode is:{}&quot;</span> <span class="o">,</span> <span class="n">resp</span><span class="o">.</span><span class="na">getStatusLine</span><span class="o">().</span><span class="na">getStatusCode</span><span class="o">());</span>
+</span><span class='line'>              <span class="k">throw</span> <span class="k">new</span> <span class="nf">CallApiErrorException</span><span class="o">(</span><span class="s">&quot;调用监控系统登录api错误，http状态码是：&quot;</span> <span class="o">+</span> <span class="n">resp</span><span class="o">.</span><span class="na">getStatusLine</span><span class="o">().</span><span class="na">getStatusCode</span><span class="o">());</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="c1">//解析内容</span>
+</span><span class='line'>          <span class="n">String</span> <span class="n">content</span> <span class="o">=</span> <span class="n">EntityUtils</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">resp</span><span class="o">.</span><span class="na">getEntity</span><span class="o">(),</span> <span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
+</span><span class='line'>          <span class="n">Map</span> <span class="n">result</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">content</span><span class="o">,</span> <span class="n">HashMap</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
+</span><span class='line'>          
+</span><span class='line'>          <span class="kt">int</span> <span class="n">code</span> <span class="o">=</span> <span class="o">(</span><span class="n">Integer</span><span class="o">)</span><span class="n">result</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;code&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">code</span> <span class="o">==</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">Map</span> <span class="n">data</span> <span class="o">=</span> <span class="o">(</span><span class="n">Map</span><span class="o">)</span><span class="n">result</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;data&quot;</span><span class="o">);</span>
+</span><span class='line'>              <span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="n">hibernateDao</span><span class="o">.</span><span class="na">queryEntityById</span><span class="o">(</span><span class="n">User</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="o">(</span><span class="n">Integer</span><span class="o">)</span><span class="n">data</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;id&quot;</span><span class="o">));</span>
+</span><span class='line'>              <span class="k">return</span> <span class="n">user</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">ex</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">LOG</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">&quot;call login api error, exception is:{}&quot;</span><span class="o">,</span> <span class="n">ex</span><span class="o">);</span>
+</span><span class='line'>          <span class="k">throw</span> <span class="k">new</span> <span class="nf">LoginFailExceptions</span><span class="o">(</span><span class="s">&quot;调用第三方登录api出错！&quot;</span><span class="o">);</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">throw</span> <span class="k">new</span> <span class="nf">LoginFailExceptions</span><span class="o">(</span><span class="s">&quot;用户名或密码错，用户登录失败！&quot;</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//...........其它代码略去</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上面代码中的AppConfiger，将会从properties中读取配置文件中的信息，同时这个类中也封装了生成数据签名sign的方法，以方便客户端的调用，具体代码如下。：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 应用程序的一些配置信息</span>
+</span><span class='line'><span class="cm"> * </span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> * </span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="nd">@Component</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">AppConfiger</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 调用目标服务器地址</span>
+</span><span class='line'>  <span class="nd">@Value</span><span class="o">(</span><span class="s">&quot;#{configProperties[&#39;callHost&#39;]}&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">callHost</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 本应用的code</span>
+</span><span class='line'>  <span class="nd">@Value</span><span class="o">(</span><span class="s">&quot;#{configProperties[&#39;appKey&#39;]}&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">appKey</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 本应用的编码(生成数字签名时的私有编码串)</span>
+</span><span class='line'>  <span class="nd">@Value</span><span class="o">(</span><span class="s">&quot;#{configProperties[&#39;appCode&#39;]}&quot;</span><span class="o">)</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="n">String</span> <span class="n">appCode</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getCallHost</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">callHost</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getAppKey</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">appKey</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">getAppCode</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">appCode</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 生成签名加密字符串</span>
+</span><span class='line'><span class="cm">  * </span>
+</span><span class='line'><span class="cm">  * @param params 调用服务器要传递的参数，不包含sign</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">generateSign</span><span class="o">(</span><span class="n">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">String</span><span class="o">&gt;</span> <span class="n">params</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">StringBuilder</span> <span class="n">sb</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">keys</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;(</span><span class="n">params</span><span class="o">.</span><span class="na">keySet</span><span class="o">());</span>
+</span><span class='line'>      <span class="n">Collections</span><span class="o">.</span><span class="na">sort</span><span class="o">(</span><span class="n">keys</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">keys</span><span class="o">.</span><span class="na">size</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">String</span> <span class="n">key</span> <span class="o">=</span> <span class="n">keys</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>
+</span><span class='line'>          <span class="n">String</span> <span class="n">value</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">key</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">i</span> <span class="o">==</span> <span class="n">keys</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">-</span> <span class="mi">1</span><span class="o">)</span> <span class="o">{</span><span class="c1">// 拼接时，不包括最后一个&amp;字符</span>
+</span><span class='line'>              <span class="n">sb</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">key</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="s">&quot;=&quot;</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">value</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">sb</span><span class="o">.</span><span class="na">append</span><span class="o">(</span><span class="n">key</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="s">&quot;=&quot;</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="n">value</span><span class="o">).</span><span class="na">append</span><span class="o">(</span><span class="s">&quot;&amp;&quot;</span><span class="o">);</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">return</span> <span class="n">DigestUtils</span><span class="o">.</span><span class="na">md5Hex</span><span class="o">(</span><span class="n">sb</span><span class="o">.</span><span class="na">toString</span><span class="o">()</span> <span class="o">+</span> <span class="k">this</span><span class="o">.</span><span class="na">getAppCode</span><span class="o">());</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;@Value将读取容器环境中properties读取的信息，在spring的配置文件中，要有类似下面的bean配置，注意其中加载了app.properties文件，这个bean的id要和@Value注解中的名称相匹配哦。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">&lt;!--</span> <span class="err">配置文件信息</span> <span class="o">--&gt;</span>
+</span><span class='line'><span class="o">&lt;</span><span class="n">bean</span> <span class="n">id</span><span class="o">=</span><span class="s">&quot;configProperties&quot;</span>
+</span><span class='line'>  <span class="n">class</span><span class="o">=</span><span class="s">&quot;org.springframework.beans.factory.config.PropertiesFactoryBean&quot;</span>
+</span><span class='line'>  <span class="n">lazy</span><span class="o">-</span><span class="n">init</span><span class="o">=</span><span class="s">&quot;false&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>  <span class="o">&lt;</span><span class="n">property</span> <span class="n">name</span><span class="o">=</span><span class="s">&quot;locations&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>      <span class="o">&lt;</span><span class="n">list</span><span class="o">&gt;</span>
+</span><span class='line'>          <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="nl">classpath:</span><span class="n">database</span><span class="o">.</span><span class="na">properties</span><span class="o">&lt;/</span><span class="n">value</span><span class="o">&gt;</span>
+</span><span class='line'>          <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="nl">classpath:</span><span class="n">hibernate</span><span class="o">-</span><span class="n">config</span><span class="o">.</span><span class="na">properties</span><span class="o">&lt;/</span><span class="n">value</span><span class="o">&gt;</span>
+</span><span class='line'>          <span class="o">&lt;</span><span class="n">value</span><span class="o">&gt;</span><span class="nl">classpath:</span><span class="n">app</span><span class="o">.</span><span class="na">properties</span><span class="o">&lt;/</span><span class="n">value</span><span class="o">&gt;</span>
+</span><span class='line'>      <span class="o">&lt;/</span><span class="n">list</span><span class="o">&gt;</span>
+</span><span class='line'>  <span class="o">&lt;/</span><span class="n">property</span><span class="o">&gt;</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">bean</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;好了，先介绍到此，希望我的这两篇文章能够给你带来帮助。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard"> <span class="fn">冰雨</span> 发表于 </span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-22T15:18:00+08:00" pubdate data-updated="true">2014年07月22日</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/java/'>java</a>, <a class='category' href='/blog/categories/ji-zhu/'>技术</a>, <a class='category' href='/blog/categories/jia-gou/'>架构</a>
+  
+</span>
+
+
+    </p>
+    
+      <!-- JiaThis Button BEGIN -->
+<script type="text/javascript" src="http://v3.jiathis.com/code/jiathis_r.js?move=0&amp;btn=r5.gif" charset="utf-8"></script>
+<!-- JiaThis Button END 
+<div class="sharing">
+  
+  
+  
+</div>-->
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/07/20/security-filter-sign/" title="上一篇文章: 服务器端无状态参数验证实现">&laquo;上一篇:&nbsp;&nbsp;服务器端无状态参数验证实现</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+
+  <section>
+    <h3>评论信息</h3>
+    <div id="comments" aria-live="polite"><no<!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = 'http://static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		|| document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>最近文章</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/07/22/security-filter-client-call/">客户端无状态参数调用实现</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/07/20/security-filter-sign/">服务器端无状态参数验证实现</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析之二(配置)</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+   <h1>文章分类</h1>
+   <ul id="categories">
+     
+		<li><a href="/blog/categories/sheng-huo">生活</a><a href="/blog/categories/yi-zhu">艺术</a></li>
+		<li><a href="/blog/categories/ji-zhu">技术</a><a href="/blog/categories/jia-gou">架构</a></li>
+		<li><a href="/blog/categories/java">java</a><a href="/blog/categories/javaee">javaEE</a></li>
+		<li><a href="/blog/categories/qian-duan-ji-zhu">前端技术</a><a href="/blog/categories/nodejs">Node.js</a></li>
+	    <li><a href="/blog/categories/bu-zou-jie-xi">步骤解析</a></li>
+	 
+   </ul>
+</section>
+
+<section>
+  <h3></h3>
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-6635992117744268"
+     data-ad-slot="8027050961"
+     data-ad-format="auto"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</section>
+
+<section>
+<h1>最近评论</h1>
+<ul class="ds-recent-comments" data-num-items="10">
+</ul>
+<!--多说js加载开始，一个页面只需要加载一次 -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+var ds = document.createElement('script');
+ds.type = 'text/javascript';
+ds.async = true;ds.src = 'http://static.duoshuo.com/embed.js';
+ds.charset = 'UTF-8';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!--多说js加载结束，一个页面只需要加载一次 -->
+</section><section>
+<h1>最近来访</h1>
+<ul class="ds-recent-visitors" data-num-items="60">
+</ul>
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"ljh2008"};
+(function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+</section>
+
+
+
+
+  
+</aside>
+
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  版权所有 &copy; 2014 - 冰雨 -
+  <span class="credit">Powered by <a href="http://yanyaner.com">刘江华的博客</a></span>
+  <script type="text/javascript">var cnzz_protocol = (("https:" == document.location.protocol) ? " https://" : " http://");document.write(unescape("%3Cspan id='cnzz_stat_icon_5742334'%3E%3C/span%3E%3Cscript src='" + cnzz_protocol + "s17.cnzz.com/stat.php%3Fid%3D5742334%26show%3Dpic1' type='text/javascript'%3E%3C/script%3E"));</script>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

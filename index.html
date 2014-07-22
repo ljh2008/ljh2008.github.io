@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;我在《Java安全那些事之四（无状态安全认证）》中提到了在无状态安全认证中，对数据签名的验证可以考虑通过AOP或filter的方式专门提取到了一个层中去处理，很多人在问我有没有源代码，现在贴出请大家参考。 &emsp;&emsp;当我们有了这个独立的层次， &hellip;">
+  <meta name="description" content="&emsp;&emsp;我在《服务器端无状态参数验证实现）》中给大家贴出了无状态调用中对数据的验证机制服务器端实现代码，那么，客户端如何去进行调用呢？我同样给大家给出一个客户端调用的登录示例。 &emsp;&emsp;首先将客户端的调用信息放入一个app. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -23,12 +23,11 @@
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
   <script src="/javascripts/modernizr-2.0.js"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/libs/jquery.min.js"></script>
   <script src="/javascripts/octopress.js" type="text/javascript"></script>
   <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
-<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
   
 
@@ -58,6 +57,58 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/07/22/security-filter-client-call/">客户端无状态参数调用实现</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-07-22T15:18:00+08:00" pubdate data-updated="true">2014年07月22日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;我在<a href="/blog/2014/07/20/security-filter-sign/">《服务器端无状态参数验证实现）》</a>中给大家贴出了无状态调用中对数据的验证机制服务器端实现代码，那么，客户端如何去进行调用呢？我同样给大家给出一个客户端调用的登录示例。</p>
+
+<p>&emsp;&emsp;首先将客户端的调用信息放入一个app.properties配置文件中以方便管理维护，内容如下。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>appKey = crm324123123126
+</span><span class='line'>appCode = 54dde0994ef4d86cfdf583e6d1384353
+</span><span class='line'>callHost = http://www.mywebsite.com/monitorplatform
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;客户端登录代码用到了httpClient，实现如下：</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/07/22/security-filter-client-call/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -891,189 +942,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/04/15/security3/">java安全那些事之三（RSA及https）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-04-15T15:18:00+08:00" pubdate data-updated="true">2014年04月15日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;大家也许看到过有些网站的登录功能都使用的是hppts协议开头的网址，这个https就使用了RSA加密算法，可以有效保护敏感信息在传输过程中的安全性（即使被截获也无法破解）。</p>
-
-<p>&emsp;&emsp;RSA算法属于不对称加密算法，信息发送方和接收方使用不同的密钥（即公钥私钥对）进行通讯，其中的公钥是可以对外公开的，私钥必须保密。信息发送方用公钥对信息进行加密，而信息接收方对信息的解密必须使用私钥，除此别无它法。反之，用私钥加密的信息也只能用公钥才能解密，因此，RSA算法不仅可以用作加密解决方案，也可以做为双方通讯过程中不可抵赖的凭证。示意图见下：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/04/rsa.jpg' width='' height='' title='RSA加密解密示意图'><span class='caption-text'>RSA加密解密示意图</span></span></p>
-
-<p>&emsp;&emsp;在进行RSA加密解密之前，首先要生成公钥和私钥对。</p>
-
-<p>&emsp;&emsp;我先给大家介绍一种基于JKS（也就是java keystore）的公钥私钥保存方式，我们用下面的命令是生成一个别名是mykey.mm的test.keystore文件，打开keystore文件的密码我输入的是123456。</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>C:\key&gt;keytool -genkey -alias mykey.mm -keyalg RSA -keystore test.keystore
-</span><span class='line'>输入keystore密码：
-</span><span class='line'>Keystore 密码太短 -至少必须为6个字符
-</span><span class='line'>输入keystore密码：
-</span><span class='line'>再次输入新密码:
-</span><span class='line'>您的名字与姓氏是什么？
-</span><span class='line'>  [Unknown]：  liu
-</span><span class='line'>您的组织单位名称是什么？
-</span><span class='line'>  [Unknown]：  maxsoft
-</span><span class='line'>您的组织名称是什么？
-</span><span class='line'>  [Unknown]：  maxsoft.com
-</span><span class='line'>您所在的城市或区域名称是什么？
-</span><span class='line'>  [Unknown]：  cd
-</span><span class='line'>您所在的州或省份名称是什么？
-</span><span class='line'>  [Unknown]：  sc
-</span><span class='line'>该单位的两字母国家代码是什么
-</span><span class='line'>  [Unknown]：  cn
-</span><span class='line'>CN=liu, OU=maxsoft, O=maxsoft.com, L=cd, ST=sc, C=cn 正确吗？
-</span><span class='line'>  [否]：  y
-</span><span class='line'>
-</span><span class='line'>输入&lt;my.yy&gt;的主密码
-</span><span class='line'>        （如果和 keystore 密码相同，按回车）：
-</span><span class='line'>
-</span><span class='line'>C:\key&gt;</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的命令会在c:\key下生成一个test.keystore文件，这个文件中包含了公钥和私钥，java中使用test.keystore文件并进行加密解密的调用代码写法如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">String</span> <span class="n">alias</span> <span class="o">=</span> <span class="s">&quot;mykey.mm&quot;</span><span class="o">;</span>
-</span><span class='line'>      <span class="n">String</span> <span class="n">password</span> <span class="o">=</span> <span class="s">&quot;123456&quot;</span><span class="o">;</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">KeyStore</span> <span class="n">store</span> <span class="o">=</span> <span class="n">KeyStore</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;JKS&quot;</span><span class="o">);</span>
-</span><span class='line'>      <span class="n">store</span><span class="o">.</span><span class="na">load</span><span class="o">(</span><span class="k">new</span> <span class="n">FileInputStream</span><span class="o">(</span><span class="s">&quot;c://key//test.keystore&quot;</span><span class="o">),</span> <span class="n">password</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">());</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="c1">//得到公钥</span>
-</span><span class='line'>      <span class="n">PublicKey</span> <span class="n">publickey</span> <span class="o">=</span>  <span class="n">store</span><span class="o">.</span><span class="na">getCertificate</span><span class="o">(</span><span class="n">alias</span><span class="o">).</span><span class="na">getPublicKey</span><span class="o">();</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="c1">//得到私钥</span>
-</span><span class='line'>      <span class="n">PrivateKey</span> <span class="n">privateKey</span> <span class="o">=</span> <span class="o">(</span><span class="n">PrivateKey</span><span class="o">)</span><span class="n">store</span><span class="o">.</span><span class="na">getKey</span><span class="o">(</span><span class="n">alias</span><span class="o">,</span> <span class="n">password</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">());</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="n">String</span> <span class="n">orgStr</span> <span class="o">=</span> <span class="s">&quot;言娃娃yanyaner.com&quot;</span><span class="o">;</span>
-</span><span class='line'>      
-</span><span class='line'>      <span class="c1">//加密处理</span>
-</span><span class='line'>      <span class="n">Cipher</span> <span class="n">cipherEncoder</span> <span class="o">=</span> <span class="n">Cipher</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;RSA&quot;</span><span class="o">);</span>
-</span><span class='line'>      <span class="n">cipherEncoder</span><span class="o">.</span><span class="na">init</span><span class="o">(</span><span class="n">Cipher</span><span class="o">.</span><span class="na">ENCRYPT_MODE</span><span class="o">,</span> <span class="n">publickey</span><span class="o">);</span>
-</span><span class='line'>      <span class="c1">//加密字串结果</span>
-</span><span class='line'>      <span class="kt">byte</span><span class="o">[]</span> <span class="n">strEnc</span> <span class="o">=</span> <span class="n">cipherEncoder</span><span class="o">.</span><span class="na">doFinal</span><span class="o">(</span><span class="n">orgStr</span><span class="o">.</span><span class="na">getBytes</span><span class="o">());</span>
-</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;RSA加密后的内容是：\r\n&quot;</span> <span class="o">+</span> <span class="n">Base64</span><span class="o">.</span><span class="na">encode</span><span class="o">(</span><span class="n">strEnc</span><span class="o">));</span>
-</span><span class='line'>      
-</span><span class='line'>      
-</span><span class='line'>      <span class="c1">//解密处理</span>
-</span><span class='line'>      <span class="n">Cipher</span> <span class="n">cipherDecoder</span> <span class="o">=</span> <span class="n">Cipher</span><span class="o">.</span><span class="na">getInstance</span><span class="o">(</span><span class="s">&quot;RSA&quot;</span><span class="o">);</span>
-</span><span class='line'>      <span class="n">cipherDecoder</span><span class="o">.</span><span class="na">init</span><span class="o">(</span><span class="n">Cipher</span><span class="o">.</span><span class="na">DECRYPT_MODE</span><span class="o">,</span> <span class="n">privateKey</span><span class="o">);</span>
-</span><span class='line'>      <span class="kt">byte</span><span class="o">[]</span> <span class="n">orgDec</span> <span class="o">=</span> <span class="n">cipherDecoder</span><span class="o">.</span><span class="na">doFinal</span><span class="o">(</span><span class="n">strEnc</span><span class="o">);</span>
-</span><span class='line'>      <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;RSA解密后的内容是：\r\n&quot;</span> <span class="o">+</span> <span class="k">new</span> <span class="n">String</span><span class="o">(</span><span class="n">orgDec</span><span class="o">));</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;加密过程用到了公钥，而解密用到了私钥。反之亦然，即加密用私钥，解密用公钥。代码输出的结果是：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">RSA</span><span class="err">加密后的内容是：</span>
-</span><span class='line'><span class="n">Mow</span><span class="o">+</span><span class="n">hRU2V8rt6lRjT1ydb7Lmdwmb1QeelDRxVh0O8kb6FZXWfs6fVuNMMDn8G7w5gA4mnheM</span><span class="o">+</span><span class="n">A</span><span class="o">/</span><span class="n">z</span>
-</span><span class='line'><span class="n">OUaU83q1bsXWFni3p</span><span class="o">+</span><span class="n">ER9oOy</span><span class="o">/</span><span class="n">Wx0rwHGKIYxvqTyrYJgOVnpNrwwa5b2GljWVKdlai3BPgxzY</span><span class="o">+</span><span class="n">kk</span>
-</span><span class='line'><span class="n">Oj2IsLcU9OyXmr5cqYdLlC47Vtb</span><span class="o">++</span><span class="n">CUGg</span><span class="o">+</span><span class="mi">6</span><span class="n">X071cArTw90KYZk2TYSdawvS3BbgzFcA</span><span class="o">/</span><span class="n">BHz36vsK</span>
-</span><span class='line'><span class="mi">4</span><span class="n">Q7sjsHY2SG4ITiq8pAM3pXYHLbTvUH4SLBdJTMry1kEGqvgJA3dy63Ut</span><span class="o">+</span><span class="n">Rl43hZ</span><span class="o">+</span><span class="n">XJZICPPAvSo</span>
-</span><span class='line'><span class="n">xD3Euo</span><span class="o">/</span><span class="mi">5</span><span class="n">bhyO1Y8Jbdrj7C4eHADMZ</span><span class="o">+</span><span class="n">Zpn7RfGA</span><span class="o">==</span>
-</span><span class='line'><span class="n">RSA</span><span class="err">解密后的内容是：</span>
-</span><span class='line'><span class="err">言娃娃</span><span class="n">yanyaner</span><span class="o">.</span><span class="na">com</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;接下来，我们使用另外一种公钥私钥保存的方式，我们通过openssl这种使用更为广泛的基于RSA的工具生成加密公钥私钥对。</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014/04/15/security3/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/2/">&larr; 更多早期老文章</a>
@@ -1089,6 +957,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/22/security-filter-client-call/">客户端无状态参数调用实现</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/07/20/security-filter-sign/">服务器端无状态参数验证实现</a>
       </li>
     
@@ -1102,10 +974,6 @@
     
       <li class="post">
         <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析之二(配置)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
       </li>
     
   </ul>

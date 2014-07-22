@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;中国的互联网已经进行几大巨头独霸的局面，中小创业者在夹缝中艰难地生存着，创新很容易被模仿，即时有创新，凭自己的力量实现并推广也是比较困难的。总体来说，中国互联网缺少法律保护，抄袭、同质化问题比较严重。下面说说我身边发生的一些事情，有些是几年前的。从这些事情中， &hellip;">
+  <meta name="description" content="&emsp;&emsp;近些天，网站流量消耗巨大，通过查看nginx访问日志发现，有众多的ip频繁下载网站上的一些固定资源文件，而且每次访问的时间间隔非常近，很显示是非正确访问，进一步观察发现，这些ip并不是固定的，每天都不相同（估计是“肉机”），有些下载ip访问达到100次以上，有的20次， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -23,12 +23,11 @@
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
   <script src="/javascripts/modernizr-2.0.js"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/libs/jquery.min.js"></script>
   <script src="/javascripts/octopress.js" type="text/javascript"></script>
   <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
-<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
   
 
@@ -58,6 +57,59 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/04/05/block/">屏蔽站点非法流量下载</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-04-05T15:18:00+08:00" pubdate data-updated="true">2011年04月05日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;近些天，网站流量消耗巨大，通过查看nginx访问日志发现，有众多的ip频繁下载网站上的一些固定资源文件，而且每次访问的时间间隔非常近，很显示是非正确访问，进一步观察发现，这些ip并不是固定的，每天都不相同（估计是“肉机”），有些下载ip访问达到100次以上，有的20次，10次的都有，甚是烦人。</p>
+
+<p>&emsp;&emsp;解决方法是，写一定时脚本，对nginx日志进行统计，对这些访问有异常的ip，用iptables进行屏蔽，具体做法如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>grep  <span class="s1">&#39;资源条件&#39;</span> /var/log/nginx/youwebsite.access.log|sort | awk <span class="s1">&#39;{print $1}&#39;</span>|uniq -c|sort |awk <span class="s1">&#39;{if ($1 &gt; 5)print $2}&#39;</span>&gt;/root/temp/block_ip.txt
+</span><span class='line'><span class="k">while </span><span class="nb">read </span>line
+</span><span class='line'><span class="k">do</span>
+</span><span class='line'>iptables -I INPUT -p tcp --dport 80 -s  <span class="nv">$line</span>  -j DROP
+</span><span class='line'><span class="k">done</span>&lt; /root/temp/block_ip.txt
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;上述shell脚本对某一资源访问达到5次以上的ip，将被加入屏蔽列表中。最后将脚本加入crontab，问题得到解决。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1455,96 +1507,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/12/29/pf-aduj/">一个大数据量应用的痛苦经历</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-12-29T15:18:00+08:00" pubdate data-updated="true">2010年12月29日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;做架构设计必须要根据系统非功能性需求来开展，以使系统的架构可以在一定程度上满足将来系统发展、变化。但是将来的事情认谁也无法预测，因此，我们的架构在运行维护期随着用户需求的变化而调整的情况也比较常见，下面我结合以前的一次项目经历，谈谈大数据量应用中的一些设计经验。</p>
-
-<p>&emsp;&emsp;先描述一下需求（几年前的项目了）：这是一个 CAI票预测网站，根据预先录入的母公式及前600~700期开奖号码生成最终的下期奖预测结果。核心部分的领域对象图如下（凭记忆画出）：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/31.png' width='' height='' title='彩票网站设计领域模型'><span class='caption-text'>彩票网站设计领域模型</span></span></p>
-
-<p>&emsp;&emsp;彩票号有很多种，当时客户就提出了4种（全部为3D类型CAI票），每种类型需要至少录入600期历史开奖号码数据，输入历史数据后，要根据已经输入的母公式生成子公式，客户录入了约300个母公式，一个母公式在一期中奖号码上会生成近200个子公式，最后对生成的子公式进行处理，计算出这些子公式在历史开奖号上的准确率，然后进行后续的预测流程。</p>
-
-<p>&emsp;&emsp;根据需求画出了上面的领域模型，我们又很快设计了ER模型，并生成物理模型，物理模型是这样的（我只描述关键表中的关键字段）：</p>
-
-<p>&emsp;&emsp;彩票号码表：用一个标识字段来区别不同的彩票类型（领域中采用继承映射）；</p>
-
-<p>&emsp;&emsp;子公式表：用一外键指向母公式id，再用一外键指向彩票号码id。</p>
-
-<p>&emsp;&emsp;根据我们的经验，这样的设计合情合理，没有任何问题，在实际的开发过程中也证明确实如此，我们很快完成了开发，并交给了用户使用，大家都认为可以轻松一下了，呵呵。</p>
-
-<p>&emsp;&emsp;很快，客户的电话很快就来了，程序运行效率有问题，有一项计算子公式准确率的功能，竟然跑了近1个小时才完成，这对于一些实时性要求较高的CAI票种类（有的CAI票每5分钟开一期）根本无法使用。效率怎么会相差这么大呢？我们开始排查原因。</p>
-
-<p>&emsp;&emsp;一、首先想到的是程序算法问题，特别在在公式解析及计算这一块，算法十分的复杂，我们就先对它进行了优化（变量声明范围、数据替代List等），完成后再跑程序，问题依旧，看来不是这的原因。</p>
-
-<p>&emsp;&emsp;二、那就看看日志文件中记录了些什么吧，也许会发现些问题。当我们从服务器上down日志文件时，才发现这个日志文件竟然达到3G大小，完全无法取下来。一查原因才发现，我们将hibernate的show_sql设置为ture了，因为该项业务操作会对表进行大量的insert操作，日志文件又没有分卷保存，因此会记录很多的sql日志。而当日志文件非常大的时候，log4j在写日志时将会非常的缓慢，最终的性能就出在这里。我们关闭hibernate的 sql日志输出，日志文件是弯小了，但运行还是很耗时，非常的郁闷，看来问题的根本不在这。</p>
-
-<p>&emsp;&emsp;三、想到这项业务操作的算法中，会分批从子公式表中读出数据，再分批进行处理，最后再将处理结果存入其它表中，也许这就是性能问题所在。为了验证，我们在分批操作的一次循环开始和结束处加上日志输出（要取系统时间的，算出执行时间差），发现这里果然有问题，一次循环要执行近2分钟，问题找到就赶紧解决吧。</p>
-
-<p>&emsp;&emsp;我们想到了多线程，修改程序，同时启动了10个线程，每个线程处理一定范围内的批次（当然线程还需要同步，比较麻烦），等10个线程全部完成后再进行后续操作。程序写完了，满以为可以大功告成，但上服务器一跑，结果同样令人沮丧，效率完全没有任何改进。</p>
-
-<p>&emsp;&emsp;四、估计问题还是在数据批量处理处这个地方，我们这个时候才想到可能问题出在数据库上。马上将日志输入定位在数据库批量查询处，真相终于被发现了，一次查询要近2分钟，也就是一条查询sql的执行要2分钟，太恐怖了。</p>
-
-<p>&emsp;&emsp;我们来对数据量进行一个计算：一个母公式一个号码生成200个子公式，总计300个母公式、600期号码就是：200 * 300 * 600=36000000，即3千600万条记录，这还是一种彩票类型，如果4种彩票类型同时上线运行，子公式表中就得存放：3千600万条 * 4 = 144000000条记录，原因清楚了，就开始解决。</p>
-
-<p>&emsp;&emsp;我们首先是根据查询条件，对查询字段建立起复合索引，测试后无效，也就是说，在非常大的数据量下对表建立索引对性能提升无明显作用。</p>
-
-<p>&emsp;&emsp;突然想到可以对表进行分区（Oracle下有，MySql下也有），在查询条件中是按业务中的一个叫col的字段分批查询处理的，我们一定可以按这个字段来建立RANGE类型的分区，于是规划了一个分区方案：对子公式表，按col范围进行分区，划分单独的物理文件存放，经过这样的操作，性能提升非常可观，大约10分钟可以跑完准确率计算业务。</p>
-
-<p>&emsp;&emsp;五、分表，然后再分区。这个是后面进一步考虑到的，就是把子公式按不同CAI票类型分不同的表存放，客户有4种类型的CAI票类型，我们就建立了4个子公式表，与之一一对应，这样一来，每张表中最多就3千600万条记，现在再对一张表来按业务col字段分区，保证每个物理分区文件中的记录在100万条以下，性能提升非常明显，1分钟完成了该项业务操作。</p>
-
-<p>&emsp;&emsp;当然，分表后，hibernate的映射文件要进行相应的修改。</p>
-
-<p>&emsp;&emsp;六、进一步优化。在表中加冗余字段，比如：子公式表中直接加入中奖号码，其它的表也加入一些冗余，使很多以前要关联两张或三张表的查询，现在只需对一张表操作就搞定（这种情况下就不要过多的去考虑OO了哦）。</p>
-
-<p>&emsp;&emsp;七、更换proxool连接池为dbcp。以前据我的经验，proxool的稳定性和性能优于dbcp，但是在这个项目中，proxool无法处理这种大数据量的一次性事务提交处理，dbcp反而不错（proxool要报错的哈）。</p>
-
-<p>&emsp;&emsp;八、根据客户的实际使用情况，我们最后将数据库中的一些表改成非事务方式，即由mysql的innodb改为myisam模式，性能又有所提升。</p>
-
-<p>&emsp;&emsp;最后，这项最耗时的操作完全可以在1分钟内跑完，满足了客户的要求，项目后期，我们又对后台正在执行的任务用状态对象持久化保存，使客户可以知道后台的正在进行某项耗时工作任务，让操作更加人性化。</p>
-
-<p>&emsp;&emsp;从1个小时到1分钟，一步一步走来十分不易，当你也有了这些经验后，在面对下一个系统的设计时，就能做到心中有数，设计出更好的方案来。我们可以从这个项目中总结出来一些结论来：</p>
-
-<p>&emsp;&emsp;<strong>一、应用90%以上的性能瓶颈在数据库，此话不假。</strong></p>
-
-<p>&emsp;&emsp;<strong>二、设计系统时，应该对表的数据量有一个估算，根据数据量决定是否分表、分区、加冗余。</strong></p>
-
-<p>&emsp;&emsp;<strong>三、大数据量应用中，可采用面向过程的领域对象设计，毕竟这种情形是以性能为中心的，面向过程、面向对象、面向需求，其实最终是面向需求的，特别是非功能性需求。</strong></p>
-
-<p>&emsp;&emsp;mysql性能也不错哦，不要一想到大数据量就想到oracle、db2这些哈(mysql分区资料，请访问这个地址：<a href="http://dev.mysql.com/doc/refman/5.1/zh/partitioning.html">http://dev.mysql.com/doc/refman/5.1/zh/partitioning.html</a>)。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/16/">&larr; 更多早期老文章</a>
@@ -1562,6 +1524,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/22/security-filter-client-call/">客户端无状态参数调用实现</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/07/20/security-filter-sign/">服务器端无状态参数验证实现</a>
       </li>
     
@@ -1575,10 +1541,6 @@
     
       <li class="post">
         <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析之二(配置)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
       </li>
     
   </ul>

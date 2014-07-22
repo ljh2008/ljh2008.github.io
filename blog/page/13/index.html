@@ -9,8 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;《wap精准招生系统》前端部分用古老的wap展示，后端管理功能用j2ee技术完成，我们在项目开发中遇到了一些问题，现总结一下。 &emsp;&emsp;一、客户端如何访问wap系统
-很显然是通过wap浏览器，如果用手机来访问，一种是手机客户端直接访问wap网站， &hellip;">
+  <meta name="description" content="&emsp;&emsp;“高耦合、低内聚”是评判一个系统优劣的标准之一，作为一名合格的程序员，如何在实际的开发过程中让系统向这个标准靠拢，是我们要思考的问题。在系统的设计中“开闭原则”非常的重要，它是OOD的第一原则，在这个原则的实现中，我们一般会将系统中变化的部分进行抽象， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -24,12 +23,11 @@
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="刘江华的博客" type="application/atom+xml">
   <script src="/javascripts/modernizr-2.0.js"></script>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/libs/jquery.min.js"></script>
   <script src="/javascripts/octopress.js" type="text/javascript"></script>
   <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
-<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
-<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
 
   
 
@@ -59,6 +57,72 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/07/04/config/">谈解耦合在项目中的配置方式</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-07-04T15:18:00+08:00" pubdate data-updated="true">2011年07月04日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;“高耦合、低内聚”是评判一个系统优劣的标准之一，作为一名合格的程序员，如何在实际的开发过程中让系统向这个标准靠拢，是我们要思考的问题。在系统的设计中“开闭原则”非常的重要，它是OOD的第一原则，在这个原则的实现中，我们一般会将系统中变化的部分进行抽象，将不变的东西与可能变化的东西分离开，这样，在不久的将来，系统发生变化，这个变化将不会对系统中设计为不变部分产生影响，系统相对来说是稳定的。</p>
+
+<p>&emsp;&emsp;话又说回来，“变化”与“不变”只是相对的，不能“刻舟求剑”，也不能“杞人忧天”，“变化”与“不变”的把握，在需求分析和设计上都要依据项目经验来找到一个“平衡点”。</p>
+
+<h2>一、设计上的考虑</h2>
+
+<p>&emsp;&emsp;在设计上，我们将变化的部分会抽取出来放到接口（或抽象类）中，由具体的实现类负责实现，这样做最直接的好处是：软件系统中各个模块、层次之间不再依赖于具体而是依赖抽象，而抽象是稳定的。另一个原因是：代码实现会从AOP中获益（想想代理模式中必须要抽象接口哦），我曾经见过有些设计人员认为DAO（或 Service）的实现在某个特定项目中不再改变而将DAO（或 Service）的接口全部省去，让层次间直接依赖于实现类，这种方式不值得推荐，因为他忽略了AOP在项目中的作用。</p>
+
+<h2>二、代码实现上的考虑</h2>
+
+<p>&emsp;&emsp;在设计上做到了模块、层次间的解耦合，但是代码实现上往往会和具体实现产生依赖。比如代码：IUserService userService = new UserServiceImpl()将在代码级别产生和具体实现的依赖，而且是编译期依赖，如果我们更换实现类就得重新编译代码，当然，这种依赖对eclipse这种保存时即时编译的工具来说产生的影响可能不大，但对于c、c++这些语言来说可能非常的“恼火”（我还记得当年Delphi的“闪电编译”是如何捍卫Borland在编程领域的地位）。因此，我们希望在代码级别，最好不要产生对具体实现类的依赖。做法倒是很简单，我们把这种依赖关系放到外部的元数类型文件中描述，在程序运行时由第三方（一般是容器）读取配置信息并依据这些信息来维护、生成正确的对象依赖关系，这就是IOC/DI，有效果地解除了编译期依赖（耦合）问题。</p>
+
+<h2>三、配置方式</h2>
+
+<p><strong>1、xml文件</strong></p>
+
+<p>&emsp;&emsp;将依赖信息写到第三方的配置文件中，xml文件肯定是首选。j2ee开源框架通常都是把配置文件写到 xml文件中，当依赖关系发生改变时，我们要做的仅仅是修改配置文件，这种方式已经被广大开发人员接受。</p>
+
+<p>&emsp;&emsp;但经过众多的项目实践我们发现，当某项需求变更发生时，我们要修改代码，但往往要修改多处代码，比如在SSH项目中：一个需求更，带来领域对象的改变，紧接着是hbm文件的修改，再下来是业务代码修改，可能又会对spring配置文件中bean配置的修改，再接着对action代码修改，对struts的映射文件修改，又会引发action在spring中配置信息的修改。从这个修改“链式反应”中可以看出，项目在开发和维护期，程序员会反复对实现代码、配置文件进行修改，维护二者一致性以满足项目业务需求。“解耦合”是做到了，但程序员工作量没有减少，生产率并没有得到提高。</p>
+
+<p><strong>2、注解</strong></p>
+
+<p>&emsp;&emsp;以xml（properties）配置方式已遭到程序员的“反感”，相反，Anotation注解方式逐渐变得流行起来。Anotation方式是将配置信息直接写入源代码中，在编译时由编译器将这些信息写入class字节码文件（当然也可以选择不编译到class中），系统在运行时，框架通过反射机制获得配置信息，进行相应的行为控制。</p>
+
+<p>&emsp;&emsp;我们可以看到，无论是xml配置方式还是Anotation配置方式，对于框架系统而言，只是配置信息存放的位置不一样而已，只要读到这些配置信息，框架的后续操作都是相同的。但对于程序员来说就很不一样了：首先是项目开发与维护时，只需要在一个地方进行修改（即源代码中），其次，配置的信息量至少减少了一半（这点你可以思考一下：注解在源代码中的位置是不是已经代表了注解所作用的对象）。</p>
+
+<p>&emsp;&emsp;可能有人要提出反对意见了：“需求更改了，要改配置，还得修改源代码中的注解，还得重新编译，我们似乎又回到了以前的老路上”。确实如此，不过我们再想想，难道把配置信息写到xml文件中，需求改变了，你的项目不重新编译，系统不重新启动？你真的见过能够提供7*24小时不间断服务的系统？恐怕中国最赚钱的网游都还要在固定时段停机维护！</p>
+
+<p>&emsp;&emsp;当然，注解用得过头了会“适得其反”，带来降低源代码可读性的弊端，我们可以看到mybatis中加入了注解功能，在dao源代码中通过注解嵌入大量的sql语句，看起来让人心里“发毛”（注：mybatis是ibatis的升级版本，核心类名和api都改了，但功能并没见得增强，最新版本spring都不支持mybatis，看来这种升级会流失用户的。另，想了解ibtaits的，可以查看我的《<a href="/blog/2011/06/30/ibatis/">ibatis使用荟萃</a>》一文）。</p>
+
+<p>&emsp;&emsp;也许，生活就像走钢丝，我们不停的在寻找一个平衡点，重心时而偏左时而偏右，但我们都在会回归平衡，又走向下一个不平衡。前几年网页游戏逐渐受到网民的欢迎，这就是人们厌恶了庞大的客户端游戏的安装、更新之苦，网页游戏流行过为，大家又发现网页游戏的效果又大打折扣，现在，大家似乎又要回归到大客户端游戏中去了。项目开发也是如此，“开发效率”是不断追求的平衡点，项目配置方式的变化如此，架构、技术的选择也如此。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1833,386 +1897,6 @@ spring通过aop机制为项目的事务管理带来了极大的方便，有了�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2011/06/07/json/">B/S系统中json操作必读</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2011-06-07T15:18:00+08:00" pubdate data-updated="true">2011年06月07日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;json做为服务器端与浏览器端通讯常用的一种格式，得到了广泛的应用。很早以前我就想把json的操作总结一下，今天终于写完了，算是一篇json操作必读的博文吧。json操作要考虑下面的一些问题：</p>
-
-<ul>
-<li>如何将普通对象打包成json字符串问题。</li>
-<li>如何解决特殊对象打包成字符中格式问题，比如：Date类型。</li>
-<li>如何解决对象循环引用（死循环会导致转换失败）问题。</li>
-<li>如何忽略不需要的属性问题。</li>
-<li>如何解决客户端json格式解析问题。</li>
-<li>如何解决跨域调用问题（这个做网站的时候会遇到）。</li>
-<li>如何解决由json字符串反序列化生成对象问题（这个不常用）。</li>
-</ul>
-
-
-<p>&emsp;&emsp;首先要明确的是，json这符串不要手工去拼接，因为已经有很开源工具类可以帮助我们做这个事情（我见过有人手工去拼的哦，有些吃力不讨好哈）。</p>
-
-<p>&emsp;&emsp;<strong>一、在几种开源框架中处理json对象</strong></p>
-
-<p>&emsp;&emsp;<strong>A、json lib中对json操作的实现</strong></p>
-
-<p>&emsp;&emsp;把json-lib-2.2.1-jdk15.jar（还依赖ezmorph-1.0.4.jar）添加到项目路径中，运行下面的代码实例：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">List</span> <span class="n">students</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">();</span>
-</span><span class='line'>  <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
-</span><span class='line'>  <span class="n">student</span><span class="o">.</span><span class="na">setBirthday</span><span class="o">(</span><span class="k">new</span> <span class="n">Date</span><span class="o">());</span>
-</span><span class='line'>  <span class="n">student</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;yanwawa&quot;</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">student</span><span class="o">.</span><span class="na">setPassword</span><span class="o">(</span><span class="s">&quot;111&quot;</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">students</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">students</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">JsonConfig</span> <span class="n">jc</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JsonConfig</span><span class="o">();</span>
-</span><span class='line'>  <span class="n">jc</span><span class="o">.</span><span class="na">registerJsonValueProcessor</span><span class="o">(</span><span class="n">Date</span><span class="o">.</span><span class="na">class</span><span class="o">,</span> <span class="k">new</span> <span class="n">JsonValueProcessor</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>      <span class="nd">@Override</span>
-</span><span class='line'>      <span class="kd">public</span> <span class="n">Object</span> <span class="nf">processObjectValue</span><span class="o">(</span><span class="n">String</span> <span class="n">str</span><span class="o">,</span> <span class="n">Object</span> <span class="n">obj</span><span class="o">,</span>
-</span><span class='line'>              <span class="n">JsonConfig</span> <span class="n">jcf</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="n">SimpleDateFormat</span> <span class="n">sf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">);</span>
-</span><span class='line'>          <span class="k">return</span> <span class="n">sf</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="n">obj</span><span class="o">);</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>      <span class="nd">@Override</span>
-</span><span class='line'>      <span class="kd">public</span> <span class="n">Object</span> <span class="nf">processArrayValue</span><span class="o">(</span><span class="n">Object</span> <span class="n">obj</span><span class="o">,</span> <span class="n">JsonConfig</span> <span class="n">jcf</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>          <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
-</span><span class='line'>      <span class="o">}</span>
-</span><span class='line'>  <span class="o">});</span>
-</span><span class='line'>  <span class="n">jc</span><span class="o">.</span><span class="na">setExcludes</span><span class="o">(</span><span class="k">new</span> <span class="n">String</span><span class="o">[]</span> <span class="o">{</span> <span class="s">&quot;id&quot;</span> <span class="o">});</span>
-</span><span class='line'>  <span class="n">JSONObject</span> <span class="n">jo</span> <span class="o">=</span> <span class="n">JSONObject</span><span class="o">.</span><span class="na">fromObject</span><span class="o">(</span><span class="n">student</span><span class="o">,</span> <span class="n">jc</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">jo</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-</span><span class='line'>  <span class="n">JSONArray</span> <span class="n">ja</span> <span class="o">=</span> <span class="n">JSONArray</span><span class="o">.</span><span class="na">fromObject</span><span class="o">(</span><span class="n">students</span><span class="o">,</span> <span class="n">jc</span><span class="o">);</span>
-</span><span class='line'>  <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">ja</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的代码中，JsonConfig是关键，我们通过registerJsonValueProcessor方法可以定义复杂对象的转换格式（比如日期类型格式），而通过setExcludes可以排不需要的属性，这样就可以打破循环引用的问题。通过JSONObject和JSONArray的fromObject静态方法可以完成对普通对象以及集合对象的转换。最后通过JSONObject和JSONArray的toString方法即可看到需要的结果了。</p>
-
-<p>&emsp;&emsp;<strong>B、 gson中的操作实现。</strong></p>
-
-<p>&emsp;&emsp;google的一个开源json解析包，具有更高的效率，并且反序列化这块做得很不错。项目需要将gson-1.4.jar包导入项目中，下面的是转换方法中核心代码节选。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> * gson操作示例</span>
-</span><span class='line'><span class="cm"> * @author yanwawa</span>
-</span><span class='line'><span class="cm"> * datePattern 、exclusionAttr[]变量由方法传入</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="n">GsonBuilder</span> <span class="n">gsonBuilder</span> <span class="o">=</span> <span class="k">new</span> <span class="n">GsonBuilder</span><span class="o">().</span><span class="na">setDateFormat</span><span class="o">(</span><span class="n">datePattern</span><span class="o">);</span>
-</span><span class='line'><span class="n">gsonBuilder</span><span class="o">.</span><span class="na">setExclusionStrategies</span><span class="o">(</span><span class="k">new</span> <span class="n">ExclusionStrategy</span><span class="o">(){</span>
-</span><span class='line'>          <span class="c1">//所有类均json解析</span>
-</span><span class='line'>          <span class="nd">@Override</span>
-</span><span class='line'>          <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">shouldSkipClass</span><span class="o">(</span><span class="n">Class</span><span class="o">&lt;?&gt;</span> <span class="n">clazz</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>              <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>          <span class="c1">//对属性进行排除</span>
-</span><span class='line'>          <span class="nd">@Override</span>
-</span><span class='line'>          <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">shouldSkipField</span><span class="o">(</span><span class="n">FieldAttributes</span> <span class="n">fa</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>              <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">exclusionAttr</span><span class="o">.</span><span class="na">length</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-</span><span class='line'>                  <span class="k">if</span> <span class="o">(</span><span class="n">fa</span><span class="o">.</span><span class="na">getName</span><span class="o">().</span><span class="na">equals</span><span class="o">(</span><span class="n">exclusionAttr</span><span class="o">[</span><span class="n">i</span><span class="o">])){</span>
-</span><span class='line'>                      <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>                  <span class="o">}</span>
-</span><span class='line'>              <span class="o">}</span>
-</span><span class='line'>              <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
-</span><span class='line'>          <span class="o">}</span>
-</span><span class='line'>      <span class="o">});</span>
-</span><span class='line'>      <span class="k">return</span> <span class="n">gsonBuilder</span><span class="o">.</span><span class="na">create</span><span class="o">().</span><span class="na">toJson</span><span class="o">(</span><span class="n">obj</span><span class="o">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的代码中通过GsonBuilder的setDateFormat方法设计日期类型的格式。通过setExclusionStrategies排除某些类类型或属性的json解析。最后通过toJson方法返回json对象，toString方法得到了就是json字符串了。</p>
-
-<p>&emsp;&emsp;<strong>C、 struts2中的json操作实现</strong></p>
-
-<p>&emsp;&emsp;在struts2中的操作将特别的简单，首先要用到org.apache.struts2.json.annotations.JSON注解，在需要返回的对象属性get方法前添加注解，即可指定最终序列化的结果，比如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@JSON</span><span class="o">(</span><span class="n">serialize</span><span class="o">=</span><span class="kc">false</span><span class="o">)</span> <span class="c1">//此字段将排除</span>
-</span><span class='line'><span class="nd">@JSON</span><span class="o">(</span><span class="n">format</span><span class="o">=</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">)</span> <span class="c1">//此日期类型的json字符串格式</span>
-</span><span class='line'><span class="nd">@JSON</span><span class="o">(</span><span class="n">name</span><span class="o">=</span><span class="s">&quot;myNewPropertyName&quot;</span><span class="o">)</span> <span class="c1">//想改变生成的json字符串的的属性名</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;有了上面的注解，已经可以满足我们的需要了（最近越来越钟情于注解了，哪天要专门写一篇博文来比较注解和xml元数据类型配置的优劣比较）。</p>
-
-<p>&emsp;&emsp;<strong>二、如何向客户端返回json响应</strong></p>
-
-<p>&emsp;&emsp;下面我们来看看客户端如何得到json响应。</p>
-
-<p>&emsp;&emsp;在struts1或普通的servlet中，可以取得response对象，从该对象中得到输出流，然后将json字符串打印出去，参考代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="err">“</span><span class="n">UTF</span><span class="o">-</span><span class="mi">8</span><span class="err">″</span><span class="o">);</span>
-</span><span class='line'><span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">print</span><span class="o">(</span><span class="n">ja</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;如果需要返回跳转视图结果对象，我们一般返回null。</p>
-
-<p>&emsp;&emsp;在struts2中的json响应返回，相对来说就简单得多了，演示代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">JsonAction</span> <span class="kd">extends</span> <span class="n">ActionSupport</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="n">List</span><span class="o">&lt;</span><span class="n">Student</span><span class="o">&gt;</span> <span class="n">students</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">Student</span><span class="o">&gt;();</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="kd">public</span> <span class="n">String</span> <span class="nf">execute</span><span class="o">()</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="n">Student</span> <span class="n">student</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
-</span><span class='line'>      <span class="c1">//student的属性设置代码略去</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="n">Student</span> <span class="n">student2</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Student</span><span class="o">();</span>
-</span><span class='line'>      <span class="c1">//student2的属性设置代码略去</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="n">students</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">student</span><span class="o">);</span>
-</span><span class='line'>      <span class="n">students</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">student2</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>      <span class="k">return</span> <span class="n">SUCCESS</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;这里面似乎没有特别的，直接返回String的跳转，来看看stuts2文件是如何配置的：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'> <span class="nt">&lt;package</span> <span class="na">name=</span><span class="s">&quot;myjson&quot;</span> <span class="na">extends=</span><span class="s">&quot;json-default&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;action</span> <span class="na">name=</span><span class="s">&quot;jsonAction&quot;</span> <span class="na">class=</span><span class="s">&quot;jsonActionRefInSpringContext&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;result</span> <span class="na">type=</span><span class="s">&quot;json&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>          <span class="nt">&lt;param</span> <span class="na">name=</span><span class="s">&quot;root&quot;</span><span class="nt">&gt;</span>students<span class="nt">&lt;/param&gt;</span>
-</span><span class='line'>      <span class="nt">&lt;/result&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/action&gt;</span>
-</span><span class='line'><span class="nt">&lt;/package&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;上面的配置中，要注意的是，包要继承息json-default。root指定以action中的students为json字符串根节点输入（默认情况下是以当前action为根节点的）。</p>
-
-<p>&emsp;&emsp;<strong>三、客户端对json的解析</strong></p>
-
-<p>&emsp;&emsp;A、在纯js环境中，要用到eval函数对json字符串进行一次处理，之后就可以像操作对象一样操作json返回结果了，示例代码如下：
-var students = eval(jsonResopnseStr);
-alert(student[0].name);</p>
-
-<p>&emsp;&emsp;B、在jQuery中，操作将更为简单，你可以通过指定dataType属性来告诉jQuery服务器上预期返回的数据格式，也可以通过jQuery封闭的几个便捷方法来处理，比如：getJSON(url,callback)，下面给出一段解析示例代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#showDataHref&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span>
-</span><span class='line'>      <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>          <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">(</span> <span class="p">{</span>
-</span><span class='line'>              <span class="nx">url</span> <span class="o">:</span> <span class="s2">&quot;json.action&quot;</span><span class="p">,</span>
-</span><span class='line'>              <span class="nx">dataType</span> <span class="o">:</span> <span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span class='line'>              <span class="nx">success</span> <span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                  <span class="kd">var</span> <span class="nx">options</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
-</span><span class='line'>                  <span class="nx">$</span><span class="p">(</span><span class="nx">data</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span>
-</span><span class='line'>                          <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>                              <span class="nx">options</span> <span class="o">=</span> <span class="nx">options</span>
-</span><span class='line'>                                      <span class="o">+</span> <span class="s2">&quot;&lt;option&gt;_&quot;</span>
-</span><span class='line'>                                      <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">name</span>
-</span><span class='line'>                                      <span class="o">+</span> <span class="s2">&quot;&lt;/option&gt;&quot;</span><span class="p">;</span>
-</span><span class='line'>                          <span class="p">});</span>
-</span><span class='line'>                  <span class="nx">$</span><span class="p">(</span><span class="nx">options</span><span class="p">).</span><span class="nx">appendTo</span><span class="p">(</span><span class="s2">&quot;#myselect&quot;</span><span class="p">);</span>
-</span><span class='line'>              <span class="p">}</span>
-</span><span class='line'>          <span class="p">});</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;<strong>四、关于json跨域调用问题</strong></p>
-
-<p>&emsp;&emsp;最后来看看跨域调用。跨域调用不仅仅存在于js中，也存在于flsh、flex项目中，简单地说，主要指的是一个网站上取下来的js，swf等文件在本地执行时，不可以访问本域名之外的域名地址上的资源。</p>
-
-<p>&emsp;&emsp;比如domainB网址上有下面一段代码，它要调用domainA上的登录验证代码，请看下面这段在jquery中的跨域调用代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='js'><span class='line'><span class="nx">$</span><span class="p">.</span><span class="nx">getJSON</span><span class="p">(</span><span class="s2">&quot;http://domainA.com/login.do?callback=?&quot;</span><span class="p">,</span>
-</span><span class='line'>                  <span class="p">{</span><span class="nx">email</span><span class="o">:</span><span class="nx">email</span><span class="p">,</span><span class="nx">password</span><span class="o">:</span><span class="nx">pw</span><span class="p">,</span><span class="nx">m</span><span class="o">:</span><span class="s1">&#39;ajaxLogin&#39;</span><span class="p">,</span><span class="nx">crossDomain</span><span class="o">:</span><span class="kc">true</span><span class="p">},</span>
-</span><span class='line'>                  <span class="kd">function</span><span class="p">(</span><span class="nx">json</span><span class="p">){</span>
-</span><span class='line'>                  <span class="k">if</span> <span class="p">(</span><span class="nx">json</span><span class="p">.</span><span class="nx">flag</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                         <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#dialog&#39;</span><span class="p">).</span><span class="nx">dialog</span><span class="p">(</span><span class="s1">&#39;close&#39;</span><span class="p">);</span>
-</span><span class='line'>                         <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="s2">&quot;http://domainB.com/index.htm&quot;</span>
-</span><span class='line'>                     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                       <span class="c1">//进行错误信息的提示，代码略去</span>
-</span><span class='line'>                     <span class="p">}</span>
-</span><span class='line'>                  <span class="p">}</span>
-</span><span class='line'>          <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;服务器端action中的主要代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'>  <span class="c1">//是否跨域调用</span>
-</span><span class='line'>        <span class="kt">boolean</span> <span class="n">isCrossDomain</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
-</span><span class='line'>        <span class="n">String</span> <span class="n">crossDomain</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">&quot;crossDomain&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="s">&quot;true&quot;</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">crossDomain</span><span class="o">))</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">isCrossDomain</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
-</span><span class='line'>            <span class="n">callBackFun</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameter</span><span class="o">(</span><span class="s">&quot;callback&quot;</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>        <span class="n">JSONObject</span> <span class="n">joResp</span> <span class="o">=</span> <span class="k">new</span> <span class="n">JSONObject</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">joResp</span><span class="o">.</span><span class="na">element</span><span class="o">(</span><span class="s">&quot;flag&quot;</span><span class="o">,</span> <span class="n">loginSuccessFlag</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">joResp</span><span class="o">.</span><span class="na">element</span><span class="o">(</span><span class="s">&quot;msg&quot;</span><span class="o">,</span> <span class="n">loginMsg</span><span class="o">);</span>
-</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setCharacterEncoding</span><span class="o">(</span><span class="s">&quot;utf-8&quot;</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">isCrossDomain</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="c1">//跨域调用（注意这里的返回格式）</span>
-</span><span class='line'>            <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">println</span><span class="o">(</span><span class="n">callBackFun</span><span class="o">+</span><span class="s">&quot;(&quot;</span><span class="o">+</span> <span class="n">joResp</span><span class="o">.</span><span class="na">toString</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span><span class="o">);</span>
-</span><span class='line'>         <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>             <span class="n">response</span><span class="o">.</span><span class="na">getWriter</span><span class="o">().</span><span class="na">println</span><span class="o">(</span><span class="n">joResp</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-</span><span class='line'>         <span class="o">}</span>
-</span><span class='line'>         <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;其中callBackFun由jQuery自动生成（请注意<a href="#">http:/domainA.com/login.do?callback=?</a>路径），每次可能都不一样，这就是jQuery中的jsonp的跨域调用，在调用其它第三方网站的api接口将非常有用。当然，在flex(flsh)中，需要在第三方网站上加入crossdomain.xml跨域文件方可实现，你可以了解一下flex中的安全沙箱原理。</p>
-
-<p>&emsp;&emsp;spring mvc中的json操作随后补上。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/14/">&larr; 更多早期老文章</a>
@@ -2230,6 +1914,10 @@ alert(student[0].name);</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/22/security-filter-client-call/">客户端无状态参数调用实现</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/07/20/security-filter-sign/">服务器端无状态参数验证实现</a>
       </li>
     
@@ -2243,10 +1931,6 @@ alert(student[0].name);</p>
     
       <li class="post">
         <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析之二(配置)</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/05/30/fastDFS-setup/">分布式文件系统fastdfs解析之一(安装)</a>
       </li>
     
   </ul>

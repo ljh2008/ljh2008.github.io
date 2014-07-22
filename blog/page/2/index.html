@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;本文简单讲述web系统间安全调用设计方面的一些知识。目前异构系统间常用的调用方式有webservice、基于restful的json等方式，当客户端调用服务器端的服务接口时，服务器一定要对客户端的这次调用进行安全验证，以确保调用者具备相应的资格。 &emsp;&emsp; &hellip;">
+  <meta name="description" content="&emsp;&emsp;安全问题的水很深，“乌云”平台上曝光的一些漏洞不凡BAT(百度、阿里、腾讯)等一些大的公司，这些公司一般都有专业的安全团队都会出问题，更何况一些小的公司。本文简单讲解前端的一些安全知识，以引起大家注意。 &emsp;&emsp;前端常见的安全问题有：sql注入， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -57,6 +57,55 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/04/21/security5/">Java安全那些事之五（客户端安全）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-21T15:18:00+08:00" pubdate data-updated="true">2014年04月21日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;安全问题的水很深，“乌云”平台上曝光的一些漏洞不凡BAT(百度、阿里、腾讯)等一些大的公司，这些公司一般都有专业的安全团队都会出问题，更何况一些小的公司。本文简单讲解前端的一些安全知识，以引起大家注意。</p>
+
+<p>&emsp;&emsp;前端常见的安全问题有：sql注入，xss以及csrf这几大类，而解决的核心思路就是：不要信任用户提交的任何东西。</p>
+
+<p>&emsp;&emsp;sql注入问题虽然是一个古老的问题，但目前仍然还是有很多系统存在这个漏洞，避免sql注入漏洞说来也是比较简单的，程序开发人员要特别注意的是：不要把用户的输入直接拼装成sql然后执行。java中的主流orm框架如hibernate、ibatis等都考虑到这个问题，如果你用原生jdbc编程则需要预编译你的sql得到PreparedStatement，另外，alibaba的druid数据源中如果开启了wall filter也具备jdbc底层的sql注入防护功能。</p>
+
+<p>&emsp;&emsp;再来看xss，xss是跨站脚本攻击，比如你的一个界面字段中用户输入了有具有执行能力的js代码，如果服务器端不做任何处理就将用户输入保存到数据库中，前端展示又直接将数据库中取出的内容拼在页面中，就会存在xss漏洞。当有其它用户在查看到这段信息时，就有可能把用户的cookie等信息发送到对方指定的服务器上，这真的是太危险了。</p>
+
+<p>&emsp;&emsp;xss的解决办法主要是对客户输入的内容进行过淲处理，也有人叫“消毒”。</p>
+
+<p>&emsp;&emsp;比如下面的一段代码，就实现了简单粗暴式的用户输入消毒。</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/04/21/security5/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -1035,102 +1084,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2014-03-04T12:18:00+08:00" pubdate data-updated="true">2014年03月04日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;接上一篇<a href="/blog/2014/03/03/objectmapper-json">Json类库jackson使用之误区</a>，我对json的常用操作再次进行了简单的封装，上一版的封装大家可参阅<a href="/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
-
-<p>&emsp;&emsp;总计两个文件，只考虑到了一些简单常用的操作：</p>
-
-<figure class='code'><figcaption><span>FilterProvider.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">ms</span><span class="o">.</span><span class="na">framework</span><span class="o">.</span><span class="na">commons</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.ser.impl.SimpleBeanPropertyFilter</span><span class="o">;</span>
-</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.ser.impl.SimpleFilterProvider</span><span class="o">;</span>
-</span><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> * 属性过滤器</span>
-</span><span class='line'><span class="cm"> * @author ljh</span>
-</span><span class='line'><span class="cm"> *</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">FilterProvider</span> <span class="kd">extends</span> <span class="n">SimpleFilterProvider</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="cm">/**</span>
-</span><span class='line'><span class="cm">  * 将新的需要的属性添加到一个现有的FilterProvider中</span>
-</span><span class='line'><span class="cm">  * @param id</span>
-</span><span class='line'><span class="cm">  * @param includeProperties</span>
-</span><span class='line'><span class="cm">  * @return</span>
-</span><span class='line'><span class="cm">  */</span>
-</span><span class='line'>  <span class="kd">public</span> <span class="n">FilterProvider</span> <span class="nf">addIncludeProperties</span><span class="o">(</span><span class="n">String</span> <span class="n">id</span><span class="o">,</span>
-</span><span class='line'>          <span class="n">String</span><span class="o">...</span> <span class="n">includeProperties</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="n">id</span><span class="o">,</span>
-</span><span class='line'>              <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="n">includeProperties</span><span class="o">));</span>
-</span><span class='line'>      <span class="k">return</span> <span class="k">this</span><span class="o">;</span>
-</span><span class='line'>  <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;FilterProvider.java中主要增加了一个输出时添加包含属性的方法，并返回自身以支持方法链编程。</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2014/03/04/objectmapper-json/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/3/">&larr; 更多早期老文章</a>
@@ -1160,11 +1113,11 @@
       </li>
     
       <li class="post">
-        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
+        <a href="/blog/2014/07/18/art-love/">油画-且末.考古现场之一号墓</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
+        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
       </li>
     
   </ul>

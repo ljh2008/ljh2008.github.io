@@ -9,16 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;java中的表示日期时间的类型很多，主要有下面一些： 1
-2
-3
-4
-5
-6
-7
-8
-9
-java.util.Calendar（和区域有关，可表示年，月，日，时，分，秒） java.util.Date（可表示年，月，日，时，分，秒） java.sql.Date（可表示年，月 &hellip;">
+  <meta name="description" content="&emsp;&emsp;Velocity是一种基于JAVA的模板引擎，开发人员使用简单的模板语言就可以快速开发显示层，它使得显示层与程序代码分离，struts2自身提供了对velocity的支持，下面讲一下使用上的一些注意事项。 &emsp;&emsp;一、支持包 &emsp;&emsp; &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +57,69 @@ java.util.Calendar（和区域有关，可表示年，月，日，时，分，�
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/02/20/struts2-velocity/">在struts2中使用velocity展示数据</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-02-20T15:18:00+08:00" pubdate data-updated="true">2013年02月20日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;Velocity是一种基于JAVA的模板引擎，开发人员使用简单的模板语言就可以快速开发显示层，它使得显示层与程序代码分离，struts2自身提供了对velocity的支持，下面讲一下使用上的一些注意事项。</p>
+
+<p>&emsp;&emsp;<strong>一、支持包</strong></p>
+
+<p>&emsp;&emsp;velocity-1.6.3.jar，velocity-tools-1.3.jar，commons-collections-3.1.jar，avalon-logkit-2.1.jar，版本号视具体情况，可能不同。</p>
+
+<p>&emsp;&emsp;二、你可以改变<strong>velocity的一些默认参数值</strong>，但需要你在struts.xml中加入配置</p>
+
+<p><constant name="struts.velocity.configfile" value="myvelocity.properties"></constant></p>
+
+<p>myvelocity.properties要放在工程的src下</p>
+
+<p>&emsp;&emsp;<strong>三、对session,request中的变量访问</strong></p>
+
+<p>&emsp;&emsp;a、直接显示，示例：#sproperty(&ldquo;value=#request.user&rdquo;)</p>
+
+<p>&emsp;&emsp;b、做为变量使用，示例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='jsp'><span class='line'>#foreach( $info in $session.getAttribute(&#39;mylist&#39;))
+</span><span class='line'>变量值是：$info
+</span><span class='line'>#end
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，对action中的属性值的访问，直接按照velocity语法书写即可，示例：${userName}或$userName</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -971,124 +1025,6 @@ java.util.Calendar（和区域有关，可表示年，月，日，时，分，�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012/12/28/restful5/">教你一步步做 Restful程序（5）</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2012-12-28T15:21:00+08:00" pubdate data-updated="true">2012年12月28日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;加入简单的安全控制：</p>
-
-<p>&emsp;&emsp;写一个过滤器，对非法用户进行过滤</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * @see Filter#doFilter(ServletRequest, ServletResponse, FilterChain)</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">doFilter</span><span class="o">(</span><span class="n">ServletRequest</span> <span class="n">request</span><span class="o">,</span> <span class="n">ServletResponse</span> <span class="n">response</span><span class="o">,</span> <span class="n">FilterChain</span> <span class="n">chain</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span><span class="o">,</span> <span class="n">ServletException</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">HttpServletRequest</span> <span class="n">req</span> <span class="o">=</span> <span class="o">(</span><span class="n">HttpServletRequest</span><span class="o">)</span><span class="n">request</span><span class="o">;</span>
-</span><span class='line'>        <span class="n">String</span> <span class="n">path</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="na">getRequestURI</span><span class="o">();</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;你访问的资源路径是：&quot;</span> <span class="o">+</span> <span class="n">req</span><span class="o">.</span><span class="na">getRequestURI</span><span class="o">());</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getSession</span><span class="o">().</span><span class="na">getAttribute</span><span class="o">(</span><span class="s">&quot;session_key&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>            <span class="n">chain</span><span class="o">.</span><span class="na">doFilter</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
-</span><span class='line'>            <span class="k">return</span><span class="o">;</span>
-</span><span class='line'>        <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">path</span><span class="o">.</span><span class="na">indexOf</span><span class="o">(</span><span class="s">&quot;/userManager/&quot;</span><span class="o">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="o">)</span> <span class="o">{</span>
-</span><span class='line'>                <span class="n">HttpServletResponse</span> <span class="n">resp</span> <span class="o">=</span> <span class="o">(</span><span class="n">HttpServletResponse</span><span class="o">)</span><span class="n">response</span><span class="o">;</span>
-</span><span class='line'>                <span class="n">resp</span><span class="o">.</span><span class="na">sendRedirect</span><span class="o">(</span><span class="n">req</span><span class="o">.</span><span class="na">getContextPath</span><span class="o">()</span> <span class="o">+</span> <span class="s">&quot;/error.html&quot;</span><span class="o">);</span>
-</span><span class='line'>                <span class="k">return</span><span class="o">;</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">chain</span><span class="o">.</span><span class="na">doFilter</span><span class="o">(</span><span class="n">request</span><span class="o">,</span> <span class="n">response</span><span class="o">);</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="o">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;并在web.xml中添加：</p>
-
-<figure class='code'><figcaption><span>web.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='xml'><span class='line'> <span class="nt">&lt;filter&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;display-name&gt;</span>AuthFilter<span class="nt">&lt;/display-name&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>AuthFilter<span class="nt">&lt;/filter-name&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;filter-class&gt;</span>com.my.jxc.filter.AuthFilter<span class="nt">&lt;/filter-class&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/filter&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;filter-mapping&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>AuthFilter<span class="nt">&lt;/filter-name&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;url-pattern&gt;</span>/*<span class="nt">&lt;/url-pattern&gt;</span>
-</span><span class='line'>  <span class="nt">&lt;/filter-mapping&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/10/">&larr; 更多早期老文章</a>
@@ -1118,11 +1054,11 @@ java.util.Calendar（和区域有关，可表示年，月，日，时，分，�
       </li>
     
       <li class="post">
-        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
+        <a href="/blog/2014/07/18/art-love/">油画-且末.考古现场之一号墓</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
+        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
       </li>
     
   </ul>

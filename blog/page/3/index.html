@@ -9,7 +9,10 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;json数据类型在系统通讯中得到了非常广泛的应用，jsonlib, Gson, fastJson, jackson等开源的json操作类库层出不穷，根据对这些json的测试，我们发现jsckson的效率比其它的都要高。但在实际中， &hellip;">
+  <meta name="description" content="&emsp;&emsp;接上一篇Json类库jackson使用之误区，我对json的常用操作再次进行了简单的封装，上一版的封装大家可参阅Jackson之json类二次封装。 &emsp;&emsp;总计两个文件，只考虑到了一些简单常用的操作： FilterProvider.java1
+2
+3
+4 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -57,6 +60,102 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/03/04/objectmapper-json/">再次简单封装的jackson</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-04T12:18:00+08:00" pubdate data-updated="true">2014年03月04日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;接上一篇<a href="/blog/2014/03/03/objectmapper-json">Json类库jackson使用之误区</a>，我对json的常用操作再次进行了简单的封装，上一版的封装大家可参阅<a href="/blog/2012/12/14/jackson">Jackson之json类二次封装</a>。</p>
+
+<p>&emsp;&emsp;总计两个文件，只考虑到了一些简单常用的操作：</p>
+
+<figure class='code'><figcaption><span>FilterProvider.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">my</span><span class="o">.</span><span class="na">ms</span><span class="o">.</span><span class="na">framework</span><span class="o">.</span><span class="na">commons</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.ser.impl.SimpleBeanPropertyFilter</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.codehaus.jackson.map.ser.impl.SimpleFilterProvider</span><span class="o">;</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 属性过滤器</span>
+</span><span class='line'><span class="cm"> * @author ljh</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">FilterProvider</span> <span class="kd">extends</span> <span class="n">SimpleFilterProvider</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="cm">/**</span>
+</span><span class='line'><span class="cm">  * 将新的需要的属性添加到一个现有的FilterProvider中</span>
+</span><span class='line'><span class="cm">  * @param id</span>
+</span><span class='line'><span class="cm">  * @param includeProperties</span>
+</span><span class='line'><span class="cm">  * @return</span>
+</span><span class='line'><span class="cm">  */</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="n">FilterProvider</span> <span class="nf">addIncludeProperties</span><span class="o">(</span><span class="n">String</span> <span class="n">id</span><span class="o">,</span>
+</span><span class='line'>          <span class="n">String</span><span class="o">...</span> <span class="n">includeProperties</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">addFilter</span><span class="o">(</span><span class="n">id</span><span class="o">,</span>
+</span><span class='line'>              <span class="n">SimpleBeanPropertyFilter</span><span class="o">.</span><span class="na">filterOutAllExcept</span><span class="o">(</span><span class="n">includeProperties</span><span class="o">));</span>
+</span><span class='line'>      <span class="k">return</span> <span class="k">this</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;FilterProvider.java中主要增加了一个输出时添加包含属性的方法，并返回自身以支持方法链编程。</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/03/04/objectmapper-json/">阅读全文☺→♥</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -775,51 +874,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/12/17/talk-about-art-vangogh/">推荐一个和绘画相关的博客</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-12-17T15:18:00+08:00" pubdate data-updated="true">2013年12月17日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;小顾聊绘画，这是近期比较流行的一个关于艺术史及画家介绍的博客，地址是：<a href="http://www.guokr.com/basket/7459">http://www.guokr.com/basket/7459</a>。我也是听邻居朋友们说起才发现的，呵呵。</p>
-
-<p>&emsp;&emsp;博客中的所有文章都具有语言诙谐幽默，通俗易懂的特点。作者把深奥冗长的艺术史著作精华，用很少的文字表现得淋漓尽致。更重要的一点是，文章中的作品截图色彩非常准确，比在网上下载的其它作品更为接近原作。</p>
-
-<p>&emsp;&emsp;同时，博文作者也是一个非科班出生的人，他能够从非专业的角度来阐述绘画问题，也更容易被大家人群接受，这也是我推荐的一个原因。</p>
-
-<p>&emsp;&emsp;比如，下面我截取了一篇关于印象大师梵蒿的介绍。</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2013/12/17/talk-about-art-vangogh/">阅读全文☺→♥</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/4/">&larr; 更多早期老文章</a>
@@ -849,11 +903,11 @@
       </li>
     
       <li class="post">
-        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
+        <a href="/blog/2014/07/18/art-love/">油画-且末.考古现场之一号墓</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
+        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
       </li>
     
   </ul>

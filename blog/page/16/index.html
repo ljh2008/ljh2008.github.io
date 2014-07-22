@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;做架构设计必须要根据系统非功能性需求来开展，以使系统的架构可以在一定程度上满足将来系统发展、变化。但是将来的事情认谁也无法预测，因此，我们的架构在运行维护期随着用户需求的变化而调整的情况也比较常见，下面我结合以前的一次项目经历，谈谈大数据量应用中的一些设计经验。 &emsp &hellip;">
+  <meta name="description" content="&emsp;&emsp;我在前面的文章中讲过定时任务在项目中的应用 —【项目中定时任务实现方式比较】，并且我推荐大家利用操作系统的定时任务去完成相应的功能，对于简单的定时任务，操作系统的定时任务功能完全没有问题的，但是，如果项目需求复杂一些，操作系统的定时任务恐怕就不能胜任了。最近， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -57,6 +57,421 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2011/01/11/quartz/">一个复杂的定时任务架构原型实现</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2011-01-11T15:18:00+08:00" pubdate data-updated="true">2011年01月11日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;我在前面的文章中讲过定时任务在项目中的应用 —<a href="/blog/2010/10/26/task/">【项目中定时任务实现方式比较】</a>，并且我推荐大家利用操作系统的定时任务去完成相应的功能，对于简单的定时任务，操作系统的定时任务功能完全没有问题的，但是，如果项目需求复杂一些，操作系统的定时任务恐怕就不能胜任了。最近，我们在重庆移动实时监控项目中就遇到了这个问题，下面贴出界面原型，并简单描述该部分的功能需求。</p>
+
+<p>&emsp;&emsp;实时监控系统中可以建立多个预警任务，每个预期任务中包含一个运行周期，运行周期从周期类型和天内频率两个方面来描述这个任务的执行触发条件，如下图所示：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/28.jpg' width='' height='' title='运行周期界面原型图'><span class='caption-text'>运行周期界面原型图</span></span></p>
+
+<p>&emsp;&emsp;每个预警任务建立完成后，还可以暂时、启动任务，或立即执行任务，并且预警任务的运行周期是可以修改的。预期任务列表界面原型如下图。</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/14.jpg' width='' height='' title='预警任务列表图'><span class='caption-text'>预警任务列表图</span></span></p>
+
+<p>&emsp;&emsp;预警任务在达到运行周期中设定的触发条件后就会自动运行，在运行过程中，系统将向预警任务中设计的目标网元、数据源等监控目标进行通讯，并采集性能数据，经过整理后将结果存入每个预期任务对应的预警结果中。</p>
+
+<p>&emsp;&emsp;预警任务可以由人工单独运行（即：立即执行一次），或者按照设计的运行周期自动触发。</p>
+
+<p>&emsp;&emsp;很显示，在这个需求中，用操作系统的定时任务已经无法达到我们要求，原因是：每个预期任务的运行同期都不相同，而且比较复杂，并且预期任务可以随时修改，周期也可以修改，我们不可能在这些东西修改后，再去修改操作系统的配置文件。</p>
+
+<p>&emsp;&emsp;根据预警任务这一块的需求，我们在项目之初设计了架构原型，并写出了相应的代码，实现思路是在项目中深度整合quartz框架。架构原型设计图如下：</p>
+
+<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/13.png' width='' height='' title='预警任务自动运行类图设计'><span class='caption-text'>预警任务自动运行类图设计</span></span></p>
+
+<p>&emsp;&emsp;图中粉红色类为我们所写，兰色类为quartz所定义，黄色为spring定义。</p>
+
+<p>&emsp;&emsp;先来看WarningTask（预期任务）。我们在其中定义了cronExpression属性，该属性字符串为任务触发条件字符串，由 WarningTask类中的+ convertToCronExpression() : String方法生成（该方法实现代码有点复杂哦，呵呵）。任务运行时，将执行+ runTask() : void方法，该方法根据本对象的监控目标执行一次运行，运行过程中将网元设备上采集到的运行结果保存到数据库，显然，这个对象不再是失血对象了。 IWarningTaskService，完成WarningTask相关的业务操作。MyJobDetail，触发条件满足时的具体执行类，该类实现 quartz的job接口。</p>
+
+<p>&emsp;&emsp;首先要清楚一个预警任务具体执行流程如下，只有理解了该流程，才能在项目中灵活运用好quartz：</p>
+
+<p>&emsp;&emsp;（1）得到Scheduler任务调度类，此类在spring中已经定义好了，我们使用时从beanfactory中得到，代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">BeanFactory</span> <span class="n">bf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ClassPathXmlApplicationContext</span><span class="o">(</span><span class="s">&quot;classpath:config/spring/spring*.xml&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Scheduler</span> <span class="n">sfb</span> <span class="o">=</span> <span class="o">(</span><span class="n">Scheduler</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;scheduler&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;（2）得到一个工作bean，即JobDetail,我们也从spring中得到（注:当然也可以自己new一个jobDetail对象，如果从spring容器中得到，注意将scope设置为”prototype”）：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">IWarningTaskService</span> <span class="n">warningService</span> <span class="o">=</span> <span class="o">(</span><span class="n">IWarningTaskService</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;warningTaskService&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">JobDetailBean</span> <span class="n">job</span> <span class="o">=</span> <span class="o">(</span><span class="n">JobDetailBean</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myJobDetail&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;wt_id&quot;</span><span class="o">,</span> <span class="o">(</span><span class="kt">long</span><span class="o">)</span><span class="mi">1</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;warningService&quot;</span><span class="o">,</span> <span class="n">warningService</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;每个预期任务都与一个JobDetail实例关联，我们通过向JobDetail实例中的JobDataMap中放入相应的预期任务数据（在一个工作组中，jobdetail的名称要唯一），本示例中我们放的是预期任务的id，以及预期任务业务对象。</p>
+
+<p>&emsp;&emsp;（3）新建一个CronTrigger，将JobDetail与触发器关联起来，要注意的是，每个Trigger都要有一个唯一的名字（在一个组中），以后要取出这个Trigger就非常容易了。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">CronTriggerBean</span> <span class="n">trigger1</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CronTriggerBean</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setJobName</span><span class="o">(</span><span class="s">&quot;myJobDetail&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setCronExpression</span><span class="o">(</span><span class="s">&quot;0/1 * * * * ?&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">trigger1</span><span class="o">.</span><span class="na">setJobDetail</span><span class="o">(</span><span class="n">job</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;（4）最后，就可以启动、暂停、或重新启动任务了，下面的代码演示了对任务的操作。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">addJob</span><span class="o">(</span><span class="n">trigger1</span><span class="o">.</span><span class="na">getJobDetail</span><span class="o">(),</span> <span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">scheduleJob</span><span class="o">(</span><span class="n">trigger1</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//sfb.start();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">CronTrigger</span> <span class="n">trigger2</span> <span class="o">=</span> <span class="o">(</span><span class="n">CronTrigger</span><span class="o">)</span><span class="n">sfb</span><span class="o">.</span><span class="na">getTrigger</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">,</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">5000</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;修改运行周期为5秒&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">trigger2</span><span class="o">.</span><span class="na">setCronExpression</span><span class="o">(</span><span class="s">&quot;0/5 * * * * ?&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">rescheduleJob</span><span class="o">(</span><span class="n">trigger2</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">,</span> <span class="n">trigger2</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">10000</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;停止....&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">pauseTrigger</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">,</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Thread</span><span class="o">.</span><span class="na">sleep</span><span class="o">(</span><span class="mi">10000</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;再次重新启动.....&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">sfb</span><span class="o">.</span><span class="na">resumeTrigger</span><span class="o">(</span><span class="s">&quot;triger&quot;</span><span class="o">,</span> <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;搞清楚了最基本的操作流程后，最重要的是如何在本项目中集成quartz，我们可以从下面几个技术点上来考虑：</p>
+
+<p>&emsp;&emsp;（1）如何在项目服务器启动时，将系统中已经有的预警任务全部运行起来？答案是：用监听器。架构原型中的代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">TaskServletContextListener</span> <span class="kd">implements</span> <span class="n">ServletContextListener</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">contextInitialized</span><span class="o">(</span><span class="n">ServletContextEvent</span> <span class="n">sce</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">BeanFactory</span> <span class="n">bf</span> <span class="o">=</span> <span class="n">WebApplicationContextUtils</span><span class="o">.</span><span class="na">getWebApplicationContext</span><span class="o">(</span><span class="n">sce</span><span class="o">.</span><span class="na">getServletContext</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Scheduler</span> <span class="n">sfb</span> <span class="o">=</span> <span class="o">(</span><span class="n">Scheduler</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;scheduler&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">IWarningTaskService</span> <span class="n">wts</span> <span class="o">=</span> <span class="o">(</span><span class="n">IWarningTaskService</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;warningTaskService&quot;</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//通过预警任务业务类，得到所有的可运行任务</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">List</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="n">WarningTask</span><span class="o">&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">ws</span> <span class="o">=</span> <span class="n">wts</span><span class="o">.</span><span class="na">getAllWarningTasks</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//将每个预警任务跑起来</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">for</span> <span class="o">(</span><span class="n">WarningTask</span> <span class="nl">w:</span> <span class="n">ws</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//创建一个新的工作（从spring中得到）</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">JobDetailBean</span> <span class="n">job</span> <span class="o">=</span> <span class="o">(</span><span class="n">JobDetailBean</span><span class="o">)</span><span class="n">bf</span><span class="o">.</span><span class="na">getBean</span><span class="o">(</span><span class="s">&quot;myJobDetail&quot;</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//给工作设计一个唯一名称，我们直接调用预警任务中的一个方法生成</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="n">w</span><span class="o">.</span><span class="na">generateQuartzRuningName</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//将工作与一个预警任务关联在一起，这里是通过预警任务id</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;wt_id&quot;</span><span class="o">,</span> <span class="n">w</span><span class="o">.</span><span class="na">getId</span><span class="o">());</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">put</span><span class="o">(</span><span class="s">&quot;warningService&quot;</span><span class="o">,</span> <span class="n">wts</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//新建Trigger，在构造方法中与job进行了联，Trigger名称也是唯一的，我们直接调用预警任务中的一个方法生成</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">CronTrigger</span> <span class="n">ct</span> <span class="o">=</span> <span class="k">new</span> <span class="n">CronTrigger</span><span class="o">(</span><span class="n">w</span><span class="o">.</span><span class="na">generateQuartzRuningName</span><span class="o">(),</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">,</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">job</span><span class="o">.</span><span class="na">getName</span><span class="o">(),</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Scheduler</span><span class="o">.</span><span class="na">DEFAULT_GROUP</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="c1">//设置触发条件，直接从预警任务中取到</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">ct</span><span class="o">.</span><span class="na">setCronExpression</span><span class="o">(</span><span class="n">w</span><span class="o">.</span><span class="na">getCronExpression</span><span class="o">());</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">sfb</span><span class="o">.</span><span class="na">addJob</span><span class="o">(</span><span class="n">job</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="c1">//开始运行此预期任务</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="n">sfb</span><span class="o">.</span><span class="na">scheduleJob</span><span class="o">(</span><span class="n">ct</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">Exception</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  
+</span><span class='line'>      <span class="n">e</span><span class="o">.</span><span class="na">printStackTrace</span><span class="o">();</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//........................</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;最后在web.xml中加载些监听器，注意要在spring监听器之后加载。你需要重点看我写的每一行代码注释。</p>
+
+<p>&emsp;&emsp;（2）任务运行时，如何执行每个预警任务中的runTask()方法？核心代码在JobDetail中，需要用到JobDataMap中存放的预警任务id，代码如下所示：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyJobDetail</span> <span class="kd">implements</span>  <span class="n">Job</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">execute</span><span class="o">(</span><span class="n">JobExecutionContext</span> <span class="n">jec</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">JobExecutionException</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">//得到业务操作类</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">IWarningTaskService</span> <span class="n">warningService</span> <span class="o">=</span> <span class="o">(</span><span class="n">IWarningTaskService</span><span class="o">)</span><span class="n">jec</span><span class="o">.</span><span class="na">getJobDetail</span><span class="o">().</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;warningService&quot;</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//得到与该工作任务相关的预警任务id</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">Long</span> <span class="n">id</span> <span class="o">=</span> <span class="o">(</span><span class="n">Long</span><span class="o">)</span><span class="n">jec</span><span class="o">.</span><span class="na">getJobDetail</span><span class="o">().</span><span class="na">getJobDataMap</span><span class="o">().</span><span class="na">get</span><span class="o">(</span><span class="s">&quot;wt_id&quot;</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//查出预警任务</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">WarningTask</span> <span class="n">wt</span> <span class="o">=</span> <span class="n">warningService</span><span class="o">.</span><span class="na">getWarningTaskById</span><span class="o">(</span><span class="n">id</span><span class="o">);</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="c1">//执行预警任务</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="n">wt</span><span class="o">.</span><span class="na">runTask</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，预警任务的runTask方法实现时，需要要从spring beanfactory中得到相应的service，以处理执行后得到的数据。</p>
+
+<p>&emsp;&emsp;（3）在页面上对预警任务执行暂停、重启动等操作，代码就没有写了，我只说一下实现流程：</p>
+
+<p>&emsp;&emsp;a、获得页面传入的预期任务id；</p>
+
+<p>&emsp;&emsp;b、查询得到预警任务实例；</p>
+
+<p>&emsp;&emsp;c、从spring容器中得到Scheduler，根据预期任务实例生成的触发器名，取得触发器；</p>
+
+<p>&emsp;&emsp;d、对触发器进行相应的操作（pause, resume等）；</p>
+
+<p>&emsp;&emsp;f、对预警任务状态进行持久化。</p>
+
+<p>&emsp;&emsp;通过这个架构原型，我们对系统的一个技术点进行了验证，降低了系统后期的风险，并且为详细设计提供了依据。</p>
+
+<p>&emsp;&emsp;（附：quartz在spring配置代码，一共3个bean）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;scheduler&quot;</span>
+</span><span class='line'>    <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.SchedulerFactoryBean&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;autoStartup&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;value&gt;</span>true<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;warningTaskService&quot;</span> <span class="na">class=</span><span class="s">&quot;com.yourcompany.yourproject.service.impl.WarningTaskServiceImpl&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;myJobDetail&quot;</span>
+</span><span class='line'>    <span class="na">class=</span><span class="s">&quot;org.springframework.scheduling.quartz.JobDetailBean&quot;</span> <span class="na">scope=</span><span class="s">&quot;prototype&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;jobClass&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;value&gt;</span>com.yourcompany.yourproject.service.impl.MyJobDetail<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'><span class="nt">&lt;/bean&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2125,66 +2540,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2010/11/29/domain/">领域对象的关联设计</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2010-11-29T15:18:00+08:00" pubdate data-updated="true">2010年11月29日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;正如DDD这本书所说的，领域驱动设计是应对日益复杂的软件系统开发的有效途径，前面的文章中我也讲过，领域模型是一个系统更本质、更核心的东西，准确地抓住了域模型，你就抓住了系统的“神”，也就能更加灵活地应对需求的变化。我见过很多初学者在学会了ooad和一些设计模式的知识后，恨不得把学到的所有东西都应用到系统设计当中去，最终的结果就是系统非常的复杂，难于实现和维护。我们知道，真正设计得好的系统，应该是简单的，一目了然。在进行领域模型设计时，我们的一个原则就是要将复杂的系统简单化，关系要由多对多、一对多双向、一对多单向、一对一，直至独立的对象。大道至简，切不可走入“分析瘫痪”的歧途。</p>
-
-<p>&emsp;&emsp;在这里，我只想结合一个项目实际中的一部分，谈谈一对多双向及一对多单向的设计，希望大家在实际项目中能做到举一反三。</p>
-
-<p>&emsp;&emsp;本项目是一个风电场实时监控系统，系统中有这么两组一对多关系：一级菜单和二级菜单，风机与风机实时监控记录，根据我们对需求的理解，有人很快设计出下面的领域图：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2011/03/16.jpg' width='' height='' title='领域对象关联设计示例图'><span class='caption-text'>领域对象关联设计示例图</span></span></p>
-
-<p>&emsp;&emsp;从图中可以看到，一级菜单和二级菜单均为一对多双向关联，注意secondMeuns与fanRecords集合是多方在一方中的代码体现，那像这种设计有什么好处、有什么问题呢？我们可以从两个方面来考虑这个问题：</p>
-
-<p>&emsp;&emsp;一，建立对象之间的关联关系，好处是对象之间可以方便地实现导航，即：得到聚合根对象后，就可以得到与之相关联的对象；缺点是实例化聚合根对象时将实例化与之相关的所有对象，如果这些相关对象的在业务中从来没有被用到，则会造成不必要的内存与性能开销（当然，现在的很多ORM框架都有lazy功能，性能倒不是大的问题）。</p>
-
-<p>&emsp;&emsp;那也就是说，我们可以根据业务来确定一对多的关联关系，如果业务中90%的情况是读取到聚合根对象，都一定需要访问它相关的对象，则可以设计为双向关联，在一方中添加一个集合存储多方对象，否则，则可简化为单向关联，也就成了多对一了（注意：我们这时站在多方的立场来看，是多对一）。</p>
-
-<p>根据需求及业务，我们可以做出这样的决策：一级菜单和二级菜单的设计要做成一对多双向关联；风机与风机实时记录，可设计为一对多双向关联，也可以设计为单向，因为很多时候仅仅是查看一下风机的信息，并不去关注该风机的实时记录，但有的时候也要查看。</p>
-
-<p>&emsp;&emsp;二、综合业务与界面呈现来考虑。</p>
-
-<p>&emsp;&emsp;根据需求来看，一个一级菜单中的二级菜单数据不会太多，即时全部加载出来，也不存在性能问题，从界面呈现来看，一级菜单中的二级菜单会一般情况下都会全部显示出来，因此，一级菜单和二级菜单两者设计为一对多双向关联关系，不存在任何问题。</p>
-
-<p>&emsp;&emsp;再来看风机和风机实时记录，根据需求，一个风机每10秒钟就会产生一条实时记录（每半年清理一次），实时记录的数据量将非常庞大，如果在风机这边设计一个实时记录的集合，我敢保证你永远都不会直接去取这个集合中的数据（不信你调用fan.getFanRecordes()试一下哈），从界面上来看，一般都是通过分页来查看风机实时记录的，因此，在Fan中包含FanRecordes集合，没有实际意义，也就是说，Fan与FanRecord设计为单向关系，把前面的一对多双向关联改为现在的FanRecord与Fan的多对一关系（图我就不再去画了）。</p>
-
-<p>&emsp;&emsp;也许你有疑问，在一方去掉多方的关联，要是业务实现时又要得到一方所关联的对象怎么办呢？答案是，添加一个相应的业务方法。</p>
-
-<p>&emsp;&emsp;总的来说，领域对象之间关系在设计时，应根据需求、业务及界面实现等几个方面综合考虑，尽量将问题简化，当然，初学者喜欢将所学的全部应用到设计中，这也很正常的，我相信每个设计师经历过，大家都是这么过来的。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/17/">&larr; 更多早期老文章</a>
@@ -2210,15 +2565,15 @@
       </li>
     
       <li class="post">
+        <a href="/blog/2014/07/19/art-arter/">拜访画家朋友丁老师</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
       </li>
     
       <li class="post">
         <a href="/blog/2014/07/15/spring-mvc-test/">Spring Mvc 表现层测试</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/06/03/fastDFS-config/">分布式文件系统fastdfs解析之二(配置)</a>
       </li>
     
   </ul>

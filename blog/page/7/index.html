@@ -9,7 +9,7 @@
   <meta name="author" content="冰雨">
 
   
-  <meta name="description" content="&emsp;&emsp;在实现loadFilterChainDefinitions方法时，我把权限规则分成了三个部分，一个是固定规则，比如哪些不需要过渡等，另一部分是菜单级动态规则，最后一部分是基于restful的功能规则（当然，如果系统不是基于restful的，需要根据实际情况修改）。 & &hellip;">
+  <meta name="description" content="&emsp;&emsp;企业经过多年的发展，在运行的系统可能有多套并存，而这个时候，一个员工往往会有多个系统的账号，用不同的账号、密码登录不同的系统，获得不同系统的权限并进行操作，这样的场景将加大员工记忆每个系统账号、密码的难度和操作上的繁琐，因此，不少企业提出只需要一次登录， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -57,6 +57,353 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/05/06/cas1/">Cas单点登录实现</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-05-06T15:18:00+08:00" pubdate data-updated="true">2013年05月06日</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>&emsp;&emsp;企业经过多年的发展，在运行的系统可能有多套并存，而这个时候，一个员工往往会有多个系统的账号，用不同的账号、密码登录不同的系统，获得不同系统的权限并进行操作，这样的场景将加大员工记忆每个系统账号、密码的难度和操作上的繁琐，因此，不少企业提出只需要一次登录，就可访问各种系统的思路，这就是间点登录，即在一个地方登录即可。</p>
+
+<p>&emsp;&emsp;要实现单点登录，各个子系统一定要进行某些改造，否则，实现难度将很大。我考虑了一上，一般会有这样的两种改造方案。</p>
+
+<h2>方案一</h2>
+
+<p>&emsp;&emsp;建立统一的账户密码数据库，做为单点登录认证的数据来源，而其它子系统，也将每个用户在自身系统中的登录账号与单点登录数据库中的账号相统一。在这种方案中，用户首先要登录单点认证服务器，在成功登录后，会得到一个ticket，而在访问子系统时入口时，必须同时携带该ticket，子系统得到ticket后立即向单点登录服务器发出查询请求，服务器会返回持有该ticket是否有效，如果有效，就可得到登录者的账号，子系统根据该账号，即可进行类似原来的登录后业务逻辑处理（注：密码的验证子系统不再需要做），比如：初始化session中的东西，进行用户授权权等。</p>
+
+<p>&emsp;&emsp;当然，这种方式对于子系统的改造并不大，当然，如果子系统采用的是 登录编码 业务主键 做数据库主键，改造难度会大很多。</p>
+
+<h2>方案二</h2>
+
+<p>&emsp;&emsp;各个子系统提供登录调用接口，比如webservice接口，当用户在单点服务器登录时，同时调用子系统登录接口完成登录。</p>
+
+<p>&emsp;&emsp;在下，我主要给大家介绍第一种方案。我们使用开源的cas服务器做为单点登录服务器。</p>
+
+<p>&emsp;&emsp;一、下载服务器端软件，是一个war包，部署到tomcat中。</p>
+
+<p>&emsp;&emsp;二、运行cas服务器，运行前，请先配置https协议所需要的证书，我把windows下的证书配置代码写到了一个windows批处理文件中。</p>
+
+<p>&emsp;&emsp;以下内容写到一个bat文件中，运行即可，如果是linux服务器，自己需要做些小改动即可，比如rem改为echo。我的例子中，JAVA_HOME位置是：C:/Program Files/Java/jdk1.6.0_31/</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='bat'><span class='line'><span class="c">rem 清除系统中可能存在的名字为tomcatsso 的同名证书</span>
+</span><span class='line'><span class="k">cls</span>
+</span><span class='line'><span class="c">rem please set the env JAVA_HOME before run this bat file</span>
+</span><span class='line'><span class="c">rem delete alia tomcat if it is existed</span>
+</span><span class='line'>keytool -delete -alias tomcatsso -keystore <span class="s2">&quot;%JAVA_HOME%/jre/lib/security/cacerts&quot;</span> -storepass changeit
+</span><span class='line'>keytool -delete -alias tomcatsso -storepass changeit
+</span><span class='line'>
+</span><span class='line'><span class="c">rem  列出系统证书仓库中存在证书名称列表</span>
+</span><span class='line'><span class="c">rem list all alias in the cacerts</span>
+</span><span class='line'>keytool -list -keystore <span class="s2">&quot;%JAVA_HOME%/jre/lib/security/cacerts&quot;</span> -storepass changeit
+</span><span class='line'>
+</span><span class='line'><span class="c">rem 指定使用RSA算法，生成别名为tomcatsso的证书，存贮口令为changeit</span>
+</span><span class='line'><span class="c">rem generator a key</span>
+</span><span class='line'>keytool -genkey -keyalg RSA -alias tomcatsso -dname <span class="s2">&quot;cn=localhost&quot;</span> -storepass changeit
+</span><span class='line'>
+</span><span class='line'><span class="c">rem 从keystore中导出别名为tomcatsso的证书，生成文件tomcatsso.crt</span>
+</span><span class='line'>keytool -export -alias tomcatsso -file <span class="s2">&quot;%JAVA_HOME%/jre/lib/security/tomcatsso.crt&quot;</span> -storepass changeit
+</span><span class='line'>
+</span><span class='line'><span class="c">rem 将tomcatsso.crt导入jre的可信任证书仓库</span>
+</span><span class='line'><span class="c">rem import into trust cacerts</span>
+</span><span class='line'>keytool -import -alias tomcatsso -file <span class="s2">&quot;%JAVA_HOME%/jre/lib/security/tomcatsso.crt&quot;</span> -keystore <span class="s2">&quot;%JAVA_HOME%/jre/lib/security/cacerts&quot;</span> -storepass changeit
+</span><span class='line'><span class="c">rem 列出jre可信任证书仓库中证书名单</span>
+</span><span class='line'><span class="c">rem list all alias in the cacerts</span>
+</span><span class='line'>keytool -list -keystore <span class="s2">&quot;%JAVA_HOME%/jre/lib/security/cacerts&quot;</span> -storepass changeit
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;运行上面的bat文件，即可建立好信任证书。</p>
+
+<p>&emsp;&emsp;三、修改cas服务器的tomcat配置， server.xml</p>
+
+<p>&emsp;&emsp;ssl部分修改如下：</p>
+
+<figure class='code'><figcaption><span>server.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'> <span class="nt">&lt;Connector</span> <span class="na">port=</span><span class="s">&quot;8443&quot;</span> <span class="na">protocol=</span><span class="s">&quot;HTTP/1.1&quot;</span> <span class="na">SSLEnabled=</span><span class="s">&quot;true&quot;</span>
+</span><span class='line'>               <span class="na">maxThreads=</span><span class="s">&quot;150&quot;</span> <span class="na">scheme=</span><span class="s">&quot;https&quot;</span> <span class="na">secure=</span><span class="s">&quot;true&quot;</span>
+</span><span class='line'>               <span class="na">clientAuth=</span><span class="s">&quot;false&quot;</span> <span class="na">sslProtocol=</span><span class="s">&quot;TLS&quot;</span>
+</span><span class='line'>               <span class="na">keystoreFile=</span><span class="s">&quot;C:/Documents and Settings/Administrator/.keystore&quot;</span>
+</span><span class='line'>               <span class="na">keystorePass=</span><span class="s">&quot;changeit&quot;</span>
+</span><span class='line'>               <span class="na">truststoreFile=</span><span class="s">&quot;C:/Program Files/Java/jdk1.6.0_31/jre/lib/security/cacerts&quot;</span>
+</span><span class='line'>               <span class="na">truststorePass=</span><span class="s">&quot;changeit&quot;</span>
+</span><span class='line'>               <span class="nt">/&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;四、客户端配置</p>
+
+<p>&emsp;&emsp;在子系统中，需要加入cas客户端，其实主要是添加过过滤器，将对子系统入口拦截到cas服务器，并会对302回转的ticket进行验证。</p>
+
+<p>&emsp;&emsp;添加cas-client-core-3.2.1.jar支持包，在cas服务器的lib下有。</p>
+
+<p>&emsp;&emsp;如果你的客户端是运行在另外一个tomcat的，还需要加入信任证书，可以在自己的项目中写一个ServletContextListener，在 contextInitialized中添加如下代码，路径你根据你的环境配置。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'> <span class="n">System</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">&quot;javax.net.ssl.trustStore&quot;</span><span class="o">,</span> <span class="s">&quot;C:/Program Files/Java/jdk1.6.0_31/jre/lib/security/cacerts&quot;</span><span class="o">);</span>
+</span><span class='line'> <span class="n">System</span><span class="o">.</span><span class="na">setProperty</span><span class="o">(</span><span class="s">&quot;javax.net.ssl.trustStorePassword&quot;</span><span class="o">,</span> <span class="s">&quot;changeit&quot;</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;五、密码加密方案</p>
+
+<p>&emsp;&emsp;配置服务器，从数据库中取用户名和密码信息，并实现自定义的密码加密处理。我们重写密码处理类，导出jar包，并copy至cas服务器的lib目录下：</p>
+
+<figure class='code'><figcaption><span>MyCasPasswordEncoder.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kn">import</span> <span class="nn">org.apache.commons.codec.digest.DigestUtils</span><span class="o">;</span>
+</span><span class='line'><span class="kn">import</span> <span class="nn">org.jasig.cas.authentication.handler.PasswordEncoder</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">MyCasPasswordEncoder</span> <span class="kd">implements</span> <span class="n">PasswordEncoder</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">String</span> <span class="nf">encode</span><span class="o">(</span><span class="n">String</span> <span class="n">pwd</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="n">DigestUtils</span><span class="o">.</span><span class="na">md5Hex</span><span class="o">(</span><span class="n">pwd</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;修改cas服务器上的deployerConfigContext.xml文件，添加数据源等、密码加密类等信息，配置代码如下：</p>
+
+<figure class='code'><figcaption><span>deployerConfigContext.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">id=</span><span class="s">&quot;dataSource&quot;</span>
+</span><span class='line'>        <span class="na">class=</span><span class="s">&quot;org.apache.commons.dbcp.BasicDataSource&quot;</span>
+</span><span class='line'>    <span class="nt">&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;driverClassName&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;value&gt;</span>com.mysql.jdbc.Driver<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;url&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;value&gt;</span>jdbc:mysql://localhost:3306/cas?setUnicode=true<span class="ni">&amp;amp;</span>characterEncoding=utf8<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;username&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;value&gt;</span>root<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;password&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;value&gt;&lt;/value&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;defaultAutoCommit&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>            <span class="nt">&lt;value&gt;</span>false<span class="nt">&lt;/value&gt;</span>
+</span><span class='line'>        <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/bean&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;authenticationManager配置部分，<property name="authenticationHandlers">中的list中，添加</p>
+
+<figure class='code'><figcaption><span>deployerConfigContext.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;org.jasig.cas.adaptors.jdbc.QueryDatabaseAuthenticationHandler&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;dataSource&quot;</span> <span class="na">ref=</span><span class="s">&quot;dataSource&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>                      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;sql&quot;</span> <span class="na">value=</span><span class="s">&quot;select f_password from t_user where lower(f_code) = lower(?)&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>                      <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;passwordEncoder&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>                        <span class="nt">&lt;bean</span> <span class="na">class=</span><span class="s">&quot;com.my.commons.MyCasPasswordEncoder&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>                      <span class="nt">&lt;/property&gt;</span>
+</span><span class='line'> <span class="nt">&lt;/bean&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>&emsp;&emsp;当然，如果你的f_code不是字符类型，请删除sql中的lower。</p>
+
+<p>&emsp;&emsp;注意要将原配置中的SimpleTestUsernamePasswordAuthenticationHandler验证处理类屏蔽。</p>
+
+<p>&emsp;&emsp;上面的代码要成功运行，还需要建立cas数据库，新建表t_user,包含pk_id,f_code,f_password字段，其中后两个字段用于登录。另外，还需要加入cas-server-jdbc-3.0.5-rc3.jar以及mysql驱动包、dbcp驱动包等。</p>
+
+<p>&emsp;&emsp;下篇给大家介绍cas与shiro的整合。</p>
+
+<p>&emsp;&emsp;附：子系统中web.xml中的配置</p>
+
+<figure class='code'><figcaption><span>web.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'>  <span class="nt">&lt;filter&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>CasSingleSignOutFilter<span class="nt">&lt;/filter-name&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-class&gt;</span>org.jasig.cas.client.session.SingleSignOutFilter<span class="nt">&lt;/filter-class&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/filter&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;filter&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>CasAuthenticationFilter<span class="nt">&lt;/filter-name&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-class&gt;</span>org.jasig.cas.client.authentication.AuthenticationFilter<span class="nt">&lt;/filter-class&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;init-param&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;param-name&gt;</span>casServerLoginUrl<span class="nt">&lt;/param-name&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;param-value&gt;</span>https://localhost:8443/cas/login<span class="nt">&lt;/param-value&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/init-param&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;init-param&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;param-name&gt;</span>serverName<span class="nt">&lt;/param-name&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;param-value&gt;</span>http://localhost:8081<span class="nt">&lt;/param-value&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/init-param&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/filter&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;filter&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>CasValidationFilter<span class="nt">&lt;/filter-name&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-class&gt;</span>org.jasig.cas.client.validation.Cas20ProxyReceivingTicketValidationFilter<span class="nt">&lt;/filter-class&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;init-param&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;param-name&gt;</span>casServerUrlPrefix<span class="nt">&lt;/param-name&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;param-value&gt;</span>https://localhost:8443/cas<span class="nt">&lt;/param-value&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/init-param&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;init-param&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;param-name&gt;</span>serverName<span class="nt">&lt;/param-name&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;param-value&gt;</span>http://localhost:8081<span class="nt">&lt;/param-value&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/init-param&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;init-param&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;param-name&gt;</span>redirectAfterValidation<span class="nt">&lt;/param-name&gt;</span>
+</span><span class='line'>      <span class="nt">&lt;param-value&gt;</span>true<span class="nt">&lt;/param-value&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;/init-param&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/filter&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;filter-mapping&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>CasSingleSignOutFilter<span class="nt">&lt;/filter-name&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;url-pattern&gt;</span>/*<span class="nt">&lt;/url-pattern&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/filter-mapping&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;filter-mapping&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>CasValidationFilter<span class="nt">&lt;/filter-name&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;url-pattern&gt;</span>/*<span class="nt">&lt;/url-pattern&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/filter-mapping&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;filter-mapping&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;filter-name&gt;</span>CasAuthenticationFilter<span class="nt">&lt;/filter-name&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;url-pattern&gt;</span>/*<span class="nt">&lt;/url-pattern&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/filter-mapping&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;listener&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;listener-class&gt;</span>org.jasig.cas.client.session.SingleSignOutHttpSessionListener<span class="nt">&lt;/listener-class&gt;</span>
+</span><span class='line'>  <span class="nt">&lt;/listener&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -3850,282 +4197,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013/03/29/restful-gui/">Restful复杂界面参数的接收设计</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2013-03-29T15:18:00+08:00" pubdate data-updated="true">2013年03月29日</time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>&emsp;&emsp;请看下面的演示界面：</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/03/4.jpg' width='' height='' title='多行restful界面原型'><span class='caption-text'>多行restful界面原型</span></span></p>
-
-<p>&emsp;&emsp;用户可以动态添加数据行，在输入值后，一次提交至服务器，这么多的参数，该如何设计呢？</p>
-
-<p>&emsp;&emsp;服务器上有如下对象来接收前端数据：</p>
-
-<figure class='code'><figcaption><span>User.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//用户 </span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">class</span> <span class="nc">User</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">id</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">name</span><span class="o">;</span>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Date</span> <span class="n">birthday</span><span class="o">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">Dog</span> <span class="n">dog</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span>Dog.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="c1">//宠物</span>
-</span><span class='line'>
-</span><span class='line'><span class="kd">class</span> <span class="nc">Dog</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">nickName</span><span class="o">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;也就是说，界面上的每一行，将映射到一个复合对象中，而且是采用restful方式提交。</p>
-
-<p>&emsp;&emsp;<strong>解决方案一：</strong></p>
-
-<p>&emsp;&emsp;手工得到每一行中每一列数据，使用特殊字符串加以拼接，再把拼接好的字串作为参数上传。这种方案不建议采用，主要原因是拼接太为繁烦，再一个是服务器端解析也非常麻烦。</p>
-
-<p>&emsp;&emsp;<strong>解决方案二：</strong></p>
-
-<p>&emsp;&emsp;使用json2.js帮助我们完成对象自动转换为js字串，再上传，服务器上用第三方josn处理工具，反序列化生成对象。</p>
-
-<p>&emsp;&emsp;如下代码JSON.stringify(obj)即可生成对象的json字符串。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2013/03/5.jpg' width='' height='' title='json格式'><span class='caption-text'>json格式</span></span></p>
-
-<p>&emsp;&emsp;上面示例中的<strong>客户端代码</strong>是：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-</pre></td><td class='code'><pre><code class='html'><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;js/jquery-1.6.2.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src=</span><span class="s">&quot;js/json2.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;script </span><span class="na">type=</span><span class="s">&quot;text/javascript&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#add_row&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;&lt;tr class=&#39;user_row&#39;&gt;&lt;td&gt;&lt;input type=&#39;text&#39; class=&#39;c_id&#39;/&gt;&lt;/td&gt;&lt;td&gt;&lt;input type=&#39;text&#39; class=&#39;c_name&#39;/&gt;&lt;/td&gt;&lt;td&gt;&lt;input type=&#39;text&#39; class=&#39;c_birthday&#39;/&gt;&lt;/td&gt;&lt;td&gt;&lt;input type=&#39;text&#39; class=&#39;c_nickname&#39;/&gt;&lt;/td&gt;&lt;/tr&gt;&quot;</span><span class="p">)</span>
-</span><span class='line'>        <span class="p">.</span><span class="nx">appendTo</span><span class="p">(</span><span class="s2">&quot;#my_user_list&quot;</span><span class="p">);</span>
-</span><span class='line'>        <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;#btn_save&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>        <span class="kd">var</span> <span class="nx">users</span> <span class="o">=</span> <span class="p">[];</span>
-</span><span class='line'>        <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.user_row&quot;</span><span class="p">).</span><span class="nx">each</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-</span><span class='line'>            <span class="kd">var</span> <span class="nx">user</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Object</span><span class="p">();</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">id</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.c_id&quot;</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">)).</span><span class="nx">val</span><span class="p">();</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.c_name&quot;</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">)).</span><span class="nx">val</span><span class="p">();</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">birthday</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.c_birthday&quot;</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">)).</span><span class="nx">val</span><span class="p">();</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">dog</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Object</span><span class="p">();</span>
-</span><span class='line'>            <span class="nx">user</span><span class="p">.</span><span class="nx">dog</span><span class="p">.</span><span class="nx">nickName</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;.c_nickname&quot;</span><span class="p">,</span> <span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">)).</span><span class="nx">val</span><span class="p">();</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="nx">users</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">user</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">//alert(JSON.stringify(users));</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span>
-</span><span class='line'>            <span class="nx">type</span><span class="o">:</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">url</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">dataType</span><span class="o">:</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-</span><span class='line'>            <span class="nx">data</span><span class="o">:</span><span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">users</span><span class="p">),</span>
-</span><span class='line'>            <span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span><span class="p">);</span>
-</span><span class='line'>                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                    <span class="nx">alert</span><span class="p">(</span><span class="s2">&quot;恭喜&quot;</span> <span class="o">+</span> <span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">name</span> <span class="o">+</span> <span class="s2">&quot;登录成功！&quot;</span><span class="p">);</span>
-</span><span class='line'>                    <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="s2">&quot;userManager/main.html&quot;</span><span class="p">;</span>
-</span><span class='line'>                <span class="p">}</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="p">});</span>
-</span><span class='line'><span class="nt">&lt;/script&gt;</span>
-</span><span class='line'><span class="nt">&lt;/head&gt;</span>
-</span><span class='line'><span class="nt">&lt;body&gt;</span>
-</span><span class='line'><span class="nt">&lt;h1&gt;</span>批量添加<span class="nt">&lt;/h1&gt;</span>
-</span><span class='line'><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;#&quot;</span> <span class="na">id=</span><span class="s">&quot;add_row&quot;</span><span class="nt">&gt;</span>新增一行<span class="nt">&lt;/a&gt;</span>
-</span><span class='line'><span class="nt">&lt;table&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;tr&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;th&gt;</span>id<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;th&gt;</span>姓名<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;th&gt;</span>出生日期<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;th&gt;</span>宠物性名<span class="nt">&lt;/th&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/tr&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;tbody</span> <span class="na">id=</span><span class="s">&quot;my_user_list&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;tr</span> <span class="na">class=</span><span class="s">&quot;user_row&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">class=</span><span class="s">&quot;c_id&quot;</span><span class="nt">/&gt;&lt;/td&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">class=</span><span class="s">&quot;c_name&quot;</span><span class="nt">/&gt;&lt;/td&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">class=</span><span class="s">&quot;c_birthday&quot;</span><span class="nt">/&gt;&lt;/td&gt;</span>
-</span><span class='line'>            <span class="nt">&lt;td&gt;&lt;input</span> <span class="na">type=</span><span class="s">&#39;text&#39;</span> <span class="na">class=</span><span class="s">&quot;c_nickname&quot;</span><span class="nt">/&gt;&lt;/td&gt;</span>
-</span><span class='line'>        <span class="nt">&lt;/tr&gt;</span>
-</span><span class='line'>    <span class="nt">&lt;/tbody&gt;</span>
-</span><span class='line'><span class="nt">&lt;/table&gt;</span>
-</span><span class='line'><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">value=</span><span class="s">&quot;保存&quot;</span> <span class="na">id=</span><span class="s">&quot;btn_save&quot;</span><span class="nt">&gt;</span>
-</span><span class='line'><span class="nt">&lt;/body&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;请注意 data:JSON.stringify(users)部分的转换。</p>
-
-<p>&emsp;&emsp;<strong>服务器端代码：</strong></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@RequestMapping</span><span class="o">(</span><span class="n">value</span><span class="o">=</span><span class="s">&quot;json&quot;</span><span class="o">,</span><span class="n">method</span><span class="o">=</span><span class="n">RequestMethod</span><span class="o">.</span><span class="na">POST</span><span class="o">)</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">getJson</span><span class="o">(</span>
-</span><span class='line'>            <span class="nd">@RequestBody</span> <span class="n">String</span> <span class="n">json</span><span class="o">,</span>
-</span><span class='line'>            <span class="n">HttpServletResponse</span> <span class="n">response</span><span class="o">,</span>
-</span><span class='line'>            <span class="n">HttpSession</span> <span class="n">session</span>
-</span><span class='line'>            <span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">ObjectMapper</span> <span class="n">om</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ObjectMapper</span><span class="o">();</span>
-</span><span class='line'>        <span class="n">om</span><span class="o">.</span><span class="na">setDateFormat</span><span class="o">(</span><span class="k">new</span> <span class="n">SimpleDateFormat</span><span class="o">(</span><span class="s">&quot;yyyy-MM-dd&quot;</span><span class="o">));</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">User</span><span class="o">[]</span> <span class="n">users</span> <span class="o">=</span> <span class="n">om</span><span class="o">.</span><span class="na">readValue</span><span class="o">(</span><span class="n">URLDecoder</span><span class="o">.</span><span class="na">decode</span><span class="o">(</span><span class="n">json</span><span class="o">,</span><span class="s">&quot;utf-8&quot;</span><span class="o">),</span> <span class="n">User</span><span class="o">[].</span><span class="na">class</span><span class="o">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">Arrays</span><span class="o">.</span><span class="na">asList</span><span class="o">(</span><span class="n">users</span><span class="o">));</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>&emsp;&emsp;其中URLDecoder.decode是解决ie下会将字符串encoder的问题。</p>
-
-<p>&emsp;&emsp;项目中建议使用第二种方案，它将使restful接口更加的规范化，也简化了编码量。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/blog/page/8/">&larr; 更多早期老文章</a>
@@ -4143,6 +4214,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2014/07/25/springmvc-global-exceptionhandler/">Spring Mvc Restful全局异常处理</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014/07/22/security-filter-client-call/">客户端无状态参数调用实现</a>
       </li>
     
@@ -4156,10 +4231,6 @@
     
       <li class="post">
         <a href="/blog/2014/07/18/art-love/">油画-且末.考古现场之一号墓</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014/07/16/spring-restful-validator/">Spring Mvc Restful服务器端数据验证实现</a>
       </li>
     
   </ul>

@@ -4,7 +4,7 @@
   <title><![CDATA[☺分类☺：技术 | 刘江华的博客]]></title>
   <link href="http://yanyaner.com/blog/categories/ji-zhu/atom.xml" rel="self"/>
   <link href="http://yanyaner.com/"/>
-  <updated>2014-07-22T17:13:34+08:00</updated>
+  <updated>2014-07-25T17:29:26+08:00</updated>
   <id>http://yanyaner.com/</id>
   <author>
     <name><![CDATA[冰雨]]></name>
@@ -12,6 +12,83 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[spring mvc restful全局异常处理]]></title>
+    <link href="http://yanyaner.com/blog/2014/07/25/springmvc-global-exceptionhandler/"/>
+    <updated>2014-07-25T15:18:00+08:00</updated>
+    <id>http://yanyaner.com/blog/2014/07/25/springmvc-global-exceptionhandler</id>
+    <content type="html"><![CDATA[<p>&emsp;&emsp;在提供restful服务的服务器端，当发生一些我们没有捕获的异常错误时，我们也应该向客户端返回标准统一的数据格式（比如json数据格式），而不应该返回html内容的出错信息。</p>
+
+<p>&emsp;&emsp;在spring mvc中定义全局异常处理类非常的容易，但在传统的MVC交互方式中，我们一般都是返加一个自定义的友好出错页面给客户端。</p>
+
+<p>&emsp;&emsp;回到restful中，我们同样也是采用这种方式，参考代码如下：</p>
+
+<p>``` java GlobalJsonHandlerExceptionResolver.java</p>
+
+<p>package com.lovo.videoplatform.commons;</p>
+
+<p>import java.io.IOException;</p>
+
+<p>import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;</p>
+
+<p>import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerExceptionResolver;
+import org.springframework.web.servlet.ModelAndView;</p>
+
+<p>import com.my.ms.framework.commons.JsonMapper;
+import com.my.ms.framework.web.dto.RespMessage;
+/<em>*
+ * 定义全局错误处理器
+ * @author ljh
+ *
+ </em>/
+@Component
+public class GlobalJsonHandlerExceptionResolver implements</p>
+
+<pre><code>    HandlerExceptionResolver  {
+
+@Resource
+private JsonMapper jm;
+
+public static Logger LOG = LoggerFactory.getLogger(GlobalJsonHandlerExceptionResolver.class);
+
+@Override
+public ModelAndView resolveException(HttpServletRequest req,
+        HttpServletResponse resp, Object handler, Exception ex) {
+
+    resp.setCharacterEncoding("utf-8");
+
+    RespMessage result = new RespMessage();
+    result.setCode(RespMessage.FAIL);
+
+    result.setData(ex.getMessage());
+    result.setMsg("服务器端运行您的请求出现错误！");
+
+    LOG.warn("Global exception found, Exception is: {}", ex);
+
+    try {
+        jm.writeValue(resp.getOutputStream(), result);
+
+    } catch (IOException e) {
+        LOG.error("Write exception error: {}", e);
+    }
+
+    return null;
+}
+</code></pre>
+
+<p>}</p>
+
+<p>```</p>
+
+<p>&emsp;&emsp;这个类我是通过@Component注册到容器中的，当然你也可以在xml中通过bean配置。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[客户端无状态参数调用实现]]></title>
@@ -827,440 +904,6 @@ public void testLogin() throws Exception {
 <p>&emsp;&emsp;我们自己实例化了一个MockMultipartFile，并指定了一些参数，比如文件字段名，原始文件名，内容类型，文件内容等。有一点要提醒大家的是，在你的Action中，一定要用MultipartFile类型来接收文件参数，而不是用CommonsMultipartFile哦，切记（其实这也是您对依赖倒转原则理解的体现哦）。</p>
 
 <p>&emsp;&emsp;各位，时间关系，先写到这，以后再补充。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[分布式文件系统fastdfs解析之二(配置)]]></title>
-    <link href="http://yanyaner.com/blog/2014/06/03/fastDFS-config/"/>
-    <updated>2014-06-03T15:18:00+08:00</updated>
-    <id>http://yanyaner.com/blog/2014/06/03/fastDFS-config</id>
-    <content type="html"><![CDATA[<p>&emsp;&emsp;我计划在两台服务器上安装fdfs，ip分别是:192.168.68.133（1号服务器）, 192.168.68.136（2号服务器），fdfs在两台服务器上的安装部署图如下。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/fdfs_deploy.jpg' width='' height='' title='fastdfs部署示意图'><span class='caption-text'>fastdfs部署示意图</span></span></p>
-
-<p>&emsp;&emsp;1号服务器上安装tracker实例一个，storage实例2个，分别位于group1,group2两个不同的组中；2号服务器上也安装tracker实例一个，storage实例1个，这个storage和1号服务器中的其中一个storage位于同一个组中。下面给大家贴出具体配置。</p>
-
-<p>&emsp;&emsp;1号服务器中，我们先： vim /usr/local/fastdfs/conf/storage_ids.conf</p>
-
-<p>```</p>
-
-<h1><id>  &lt;group_name>  &lt;ip_or_hostname></h1>
-
-<p>100001   group1  192.168.68.133
-100002   group2  192.168.68.133
-100003   group1  192.168.68.136
-```</p>
-
-<p>&emsp;&emsp;在这个文件中为所有存储服务器指定id, 这样可以免更换ip带来的影响，也就是说当服务器ip发生改变后只需要更改这个文件中的ip地址即可。</p>
-
-<p>&emsp;&emsp;编辑tracker.conf，vim /usr/local/fastdfs/conf/tracker.conf配置文件，以下仅仅列出我改过的或者我认为需要给大家说明的配置项，没有贴出的均保持配置文件中的默认值。</p>
-
-<p>```</p>
-
-<h1>the tracker server port</h1>
-
-<p>port=22122</p>
-
-<h1>the base path to store data and log files</h1>
-
-<p>base_path=/var/fastdfs/tracker</p>
-
-<h1>the method of selecting group to upload files</h1>
-
-<h1>0: round robin</h1>
-
-<h1>1: specify group</h1>
-
-<h1>2: load balance, select the max free space group to upload file</h1>
-
-<p>store_lookup=2</p>
-
-<h1>which group to upload file</h1>
-
-<h1>when store_lookup set to 1, must set store_group to the group name</h1>
-
-<p>store_group=group2</p>
-
-<h1>unix group name to run this program,</h1>
-
-<h1>not set (empty) means run by the group of current user</h1>
-
-<p>run_by_group=</p>
-
-<h1>unix username to run this program,</h1>
-
-<h1>not set (empty) means run by current user</h1>
-
-<p>run_by_user=</p>
-
-<h1>if use storage ID instead of IP address</h1>
-
-<h1>default value is false</h1>
-
-<h1>since V4.00</h1>
-
-<p>use_storage_id = true</p>
-
-<h1>the max time of storage sync a file</h1>
-
-<h1>default value is 300 seconds</h1>
-
-<h1>since V2.00</h1>
-
-<p>storage_sync_file_max_time = 300</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;现对上面列出的一些配置项进行解释：</p>
-
-<p>&emsp;&emsp;<strong>port</strong>：tracker服务器的端口号，如果一台服务器上要运行多个tracker实例就需要更改此端口号以避免冲突。</p>
-
-<p>&emsp;&emsp;<strong>base_path</strong>：tracker自身配置信息以及日志信息保存的位置，这个目录本不会占用太大的空间，但日志文件会随着使用而慢慢变大。</p>
-
-<p>&emsp;&emsp;<strong>store_lookup</strong>：负载分配机制，2表示选择存储空间最大的组来保存文件。</p>
-
-<p>&emsp;&emsp;<strong>run_by_group，run_by_user</strong>：指定运行tracker的用户组及用户，这是为了保存系统的安全，我们一般会为fdfs新建组及用户。</p>
-
-<p>&emsp;&emsp;<strong>use_storage_id</strong>：使用存储服务器id替代ip地址，我们刚才编辑的storage_ids.conf中指定了每个实例的id。</p>
-
-<p>&emsp;&emsp;<strong>storage_sync_file_max_time</strong>：同一组中的不同storate进行文件同步的时间，默认是5分钟内完成同步，你可以根据实际情况把这个值改小（改变这个值后可以观察到文件同步的效果，这个值不要设置得太小以避免造成系统同步网络压力）。</p>
-
-<p>&emsp;&emsp;接下来我们配置本台服务器上的storage实例，先配置storage1.conf实例，这个实例位于group1中。</p>
-
-<p>&emsp;&emsp;vim /usr/local/fastdfs/conf/storage1.conf，同样限于篇幅，我仅仅贴出重要配置项，其它的使用默认值。<!-- more--></p>
-
-<p>```</p>
-
-<h1>the name of the group this storage server belongs to</h1>
-
-<p>group_name=group1</p>
-
-<h1>the storage server port</h1>
-
-<p>port=23001</p>
-
-<h1>the base path to store data and log files</h1>
-
-<p>base_path=/var/fastdfs/storage1</p>
-
-<h1>store_path#, based 0, if store_path0 not exists, it&rsquo;s value is base_path</h1>
-
-<h1>the paths must be exist</h1>
-
-<p>store_path0=/var/fastdfs/store_group1_path0</p>
-
-<h1>tracker_server can ocur more than once, and tracker_server format is</h1>
-
-<h1>&ldquo;host:port&rdquo;, host can be hostname or ip address</h1>
-
-<p>tracker_server=192.168.68.133:22122
-tracker_server=192.168.68.136:22122</p>
-
-<p>run_by_group=
-run_by_user=</p>
-
-<p>```
-&emsp;&emsp;现在对上面的配置项进行解释：</p>
-
-<p>&emsp;&emsp;<strong>group_name</strong>：本storage实例所属的组名称。</p>
-
-<p>&emsp;&emsp;<strong>port</strong>：storage的端口号，同一组的storage实例必须采用同样的端口号，这就是说同一组中的storage实例必须部署在不同学的机器上，因为同一台机器上的端口号不能相同。</p>
-
-<p>&emsp;&emsp;<strong>base_path</strong>：本storage的配置数据及运行日志文件存放的位置，和tracker中的base_path含义相同。</p>
-
-<p>&emsp;&emsp;<strong>store_path0</strong>：真正的用户上传文件保存的位置目录，fastDfs会在该目录下新建许多子目录，在第一次启动实例时会进行这个操作。store_path可以有多个，一般可以分配成单独的磁盘挂载点。</p>
-
-<p>&emsp;&emsp;<strong>tracker_server</strong>：指定本storaged的信息会注册到哪些tracker中去，故这里的tracker_server可以配置多个。</p>
-
-<p>&emsp;&emsp;<strong>run_by_group、run_by_user</strong>与tracker中的含义相同，不再细说。</p>
-
-<p>&emsp;&emsp;接下来，我们再来看本服务器上的另一个storage实例，这个实例是运行在group2中的，端口号与上面配置的那个storage是不同的，请看配置关键项：</p>
-
-<p>```</p>
-
-<h1>the name of the group this storage server belongs to</h1>
-
-<p>group_name=group2</p>
-
-<h1>the storage server port</h1>
-
-<p>port=23002</p>
-
-<p>base_path=/var/fastdfs/storage2</p>
-
-<h1>store_path#, based 0, if store_path0 not exists, it&rsquo;s value is base_path</h1>
-
-<h1>the paths must be exist</h1>
-
-<p>store_path0=/var/fastdfs/store_group2_path0</p>
-
-<h1>tracker_server can ocur more than once, and tracker_server format is</h1>
-
-<h1>&ldquo;host:port&rdquo;, host can be hostname or ip address</h1>
-
-<p>tracker_server=192.168.68.133:22122</p>
-
-<p>```</p>
-
-<p>&emsp;&emsp;上面配置文件中的内容和storage1.conf中的类似，只不过group_name、port不相同，两个文件的保存路径也是不同的，经过这些配置后，我们就可以启动服务实例了。</p>
-
-<p>&emsp;&emsp;先来启动tracker实例，先编辑启动脚本文，vim /etc/init.d/fdfs_trackerd。</p>
-
-<p>``` sh fdfs_trackerd</p>
-
-<h1>!/bin/bash</h1>
-
-<p>#</p>
-
-<h1>fdfs_trackerd Starts fdfs_trackerd</h1>
-
-<p>#
-#</p>
-
-<h1>chkconfig: 2345 99 01</h1>
-
-<h1>description: FastDFS tracker server</h1>
-
-<h3>BEGIN INIT INFO</h3>
-
-<h1>Provides: $fdfs_trackerd</h1>
-
-<h3>END INIT INFO</h3>
-
-<h1>Source function library.</h1>
-
-<p>. /etc/init.d/functions
-FastDfs=&lsquo;/usr/local/fastdfs&rsquo;
-CONF=&ldquo;$FastDfs/conf/tracker.conf&rdquo;
-if [ ! -f $CONF ]; then
-  echo &ldquo;file $CONF does not exist!&rdquo;
-  exit 2
-fi
-PRG=&ldquo;$FastDfs/bin/fdfs_trackerd&rdquo;
-if [ ! -f $PRG ]; then
-  echo &ldquo;file $PRG does not exist!&rdquo;
-  exit 2
-fi
-Stop=&ldquo;$FastDfs/bin/stop.sh&rdquo;
-if [ ! -f $Stop ]; then
-  echo &ldquo;file $Stop does not exist!&rdquo;
-  exit 2
-fi
-Restart=&ldquo;$FastDfs/bin/restart.sh&rdquo;
-if [ ! -f $Restart ]; then
-  echo &ldquo;file $Restart does not exist!&rdquo;
-  exit 2
-fi
-RETVAL=0
-start() {</p>
-
-<pre><code>echo -n $"Starting FastDFS tracker server: "
-$PRG $CONF &amp;
-RETVAL=$?
-echo
-return $RETVAL
-</code></pre>
-
-<p>}
-stop() {</p>
-
-<pre><code>echo -n $"Stop FastDFS tracker server: "
-$Stop $PRG $CONF
-RETVAL=$?
-return $RETVAL
-</code></pre>
-
-<p>}
-rhstatus() {</p>
-
-<pre><code>status fdfs_trackerd
-</code></pre>
-
-<p>}
-restart() {</p>
-
-<pre><code>    $Restart $PRG $CONF &amp;
-</code></pre>
-
-<p>}
-case &ldquo;$1&rdquo; in
-  start)</p>
-
-<pre><code>start
-;;
-</code></pre>
-
-<p>  stop)</p>
-
-<pre><code>stop
-;;
-</code></pre>
-
-<p>  status)</p>
-
-<pre><code>rhstatus
-;;
-</code></pre>
-
-<p>  restart|reload)</p>
-
-<pre><code>restart
-;;
-</code></pre>
-
-<p>  condrestart)</p>
-
-<pre><code>restart
-;;
-</code></pre>
-
-<p>  *)</p>
-
-<pre><code>echo $"Usage: $0 {start|stop|status|restart|condrestart}"
-exit 1
-</code></pre>
-
-<p>esac
-exit $?
-```</p>
-
-<p>&emsp;&emsp;这篇启动脚本中，主要修改的地方是FastDfs及CONF变量参数，这两个用来指定tracker配置文件所在的位置。</p>
-
-<p>&emsp;&emsp;完成编辑后，使用命令：sudo /etc/init.d/fdfs_trackerd start，即可完成服务器的启动，如果启动成功你可通过netstat -lnpt查看到tracker的端口号。</p>
-
-<p>&emsp;&emsp;接下来，将fdfs_storaged拷贝为fdfs_storaged1，用于启动storage1实例，要修改的地方也是FastDfs及CONF参数，这两个参数用来指定storage1.conf文件的在的目录及配置文件的名称。</p>
-
-<p>``` sh fdfs_storaged1</p>
-
-<h1>!/bin/bash</h1>
-
-<p>#</p>
-
-<h1>fdfs_storaged Starts fdfs_storaged</h1>
-
-<p>#
-#</p>
-
-<h1>chkconfig: 2345 99 01</h1>
-
-<h1>description: FastDFS storage server</h1>
-
-<h3>BEGIN INIT INFO</h3>
-
-<h1>Provides: $fdfs_storaged</h1>
-
-<h3>END INIT INFO</h3>
-
-<h1>Source function library.</h1>
-
-<p>. /etc/init.d/functions
-FastDfs=&lsquo;/usr/local/fastdfs&rsquo;
-CONF=&ldquo;$FastDfs/conf/storage1.conf&rdquo;
-if [ ! -f $CONF ]; then
-  echo &ldquo;file $CONF does not exist!&rdquo;
-  exit 2
-fi
-PRG=&ldquo;$FastDfs/bin/fdfs_storaged&rdquo;
-if [ ! -f $PRG ]; then
-  echo &ldquo;file $PRG does not exist!&rdquo;
-  exit 2
-fi
-Stop=&ldquo;$FastDfs/bin/stop.sh&rdquo;
-if [ ! -f $Stop ]; then
-  echo &ldquo;file $Stop does not exist!&rdquo;
-  exit 2
-fi
-Restart=&ldquo;$FastDfs/bin/restart.sh&rdquo;
-if [ ! -f $Restart ]; then
-  echo &ldquo;file $Restart does not exist!&rdquo;
-  exit 2
-fi
-RETVAL=0
-start() {</p>
-
-<pre><code>echo -n $"Starting FastDFS storage server: "
-$PRG $CONF &amp;
-RETVAL=$?
-echo
-return $RETVAL
-</code></pre>
-
-<p>}
-stop() {</p>
-
-<pre><code>echo -n $"Stop FastDFS storage server: "
-$Stop $PRG $CONF
-RETVAL=$?
-return $RETVAL
-</code></pre>
-
-<p>}
-rhstatus() {</p>
-
-<pre><code>status fdfs_storaged
-</code></pre>
-
-<p>}
-restart() {</p>
-
-<pre><code>    $Restart $PRG $CONF &amp;
-</code></pre>
-
-<p>}
-case &ldquo;$1&rdquo; in
-  start)</p>
-
-<pre><code>start
-;;
-</code></pre>
-
-<p>  stop)</p>
-
-<pre><code>stop
-;;
-</code></pre>
-
-<p>  status)</p>
-
-<pre><code>rhstatus
-;;
-</code></pre>
-
-<p>  restart|reload)</p>
-
-<pre><code>restart
-;;
-</code></pre>
-
-<p>  condrestart)</p>
-
-<pre><code>restart
-;;
-</code></pre>
-
-<p>  *)</p>
-
-<pre><code>echo $"Usage: $0 {start|stop|status|restart|condrestart}"
-exit 1
-</code></pre>
-
-<p>esac</p>
-
-<p>exit $?
-```</p>
-
-<p>&emsp;&emsp;好，该来启动storaged1实例了，命令： sudo /etc/init.d/fdfs_storaged1 start，如果是第一次启动会观察到创建存储目录的过程。</p>
-
-<p>&emsp;&emsp;启动storaged2实例的过程和storaged1相同，先编辑fdfs_storaged2文件，再fdfs_storaged2 start即完成。</p>
-
-<p>&emsp;&emsp;当1号服务器上的fdfs全部服务都成功启动后，我们可以看到如下目录结构会建立起来。</p>
-
-<p><span class='caption-wrapper'><img class='caption' src='/uploads/2014/05/fdfs_dir_struct.jpg' width='' height='' title='fastdfs目录结构'><span class='caption-text'>fastdfs目录结构</span></span></p>
-
-<p>&emsp;&emsp;至此，1号服务器上的所有配置及服务启动工作已经完成。2号服务器的配置及服务实例启动与1号服务器基本相同，惟一需要大家要注意的是group的名称，port端口号等，要和1号服务器相“呼应”，同时，我们在2号服务器上也配置了一个tracker实例以保证高可用性。</p>
-
-<p>&emsp;&emsp;好了，fastDFS的配置先告一段落，下一篇我们来聊聊客户端对fastDFS的调用，除了java客户端外，还包括tengine-2.0.1服务器上访问插件的配置(2014-7-15:不写了，以后有空再说，大家在使用时，最后在网上找带连接池功能的fastDFS驱动)。</p>
 ]]></content>
   </entry>
   
